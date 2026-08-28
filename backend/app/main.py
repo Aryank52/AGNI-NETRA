@@ -14,7 +14,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
-    description="AGNI-NETRA — AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis (SIH26162)"
+    description="AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform"
 )
 
 # Set all CORS enabled origins
@@ -31,6 +31,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])
+@app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
 def health_check():
     return {
         "status": "HEALTHY",

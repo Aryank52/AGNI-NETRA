@@ -59,7 +59,7 @@ export default function LandingPage() {
           <div>
             <span className="font-extrabold text-xl tracking-wider text-white">AGNI-NETRA</span>
             <span className="text-[10px] uppercase font-mono px-2 py-0.5 ml-2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              SIH26162
+              ENTERPRISE PLATFORM
             </span>
           </div>
         </div>
@@ -170,10 +170,10 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="mt-auto border-t border-agni-border/60 py-8 px-6 lg:px-12 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <strong>AGNI-NETRA</strong> • Smart India Hackathon 2026 (SIH26162)
+          <strong>AGNI-NETRA</strong> • AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform
         </div>
         <div className="flex items-center gap-6">
-          <span>ISRO / NASA FIRMS Sensor Integration</span>
+          <span>NASA FIRMS • ISRO Bhuvan • OpenStreetMap</span>
           <Link href="/dashboard" className="text-amber-400 hover:underline">Launch App →</Link>
         </div>
       </footer>

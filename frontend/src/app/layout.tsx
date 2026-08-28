@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/authContext";
 
 export const metadata: Metadata = {
-  title: "AGNI-NETRA — AI Geospatial Industrial Thermal Risk & Anomaly Intelligence",
-  description: "AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis (SIH26162). Transforming NASA FIRMS, OSM, and multi-sensor satellite observations into explainable decision intelligence.",
+  title: "AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform",
+  description: "AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform. Detect → Classify → Explain → Prioritize → Verify. Transforming NASA FIRMS, ISRO Bhuvan, and multi-sensor satellite observations into actionable industrial intelligence.",
 };
 
 export default function RootLayout({

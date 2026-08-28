@@ -124,8 +124,8 @@ export default function Sidebar() {
 
       {/* Footer Provenance */}
       <div className="px-3 text-[10px] text-slate-500 border-t border-slate-800 pt-3 mt-4">
-        <div>Smart India Hackathon 2026</div>
-        <div className="text-[9px] text-slate-600">Problem SIH26162 • ISRO / NASA FIRMS</div>
+        <div>AGNI-NETRA Platform</div>
+        <div className="text-[9px] text-slate-600">NASA FIRMS • ISRO Bhuvan • OpenStreetMap</div>
       </div>
     </aside>
   );

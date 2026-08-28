@@ -27,7 +27,7 @@ export default function Header() {
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-wider text-white">AGNI-NETRA</span>
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                v1.0 • SIH26162
+                v1.0 • Enterprise
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">

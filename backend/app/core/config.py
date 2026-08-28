@@ -37,6 +37,18 @@ class Settings(BaseSettings):
     MODEL_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "ml", "models")
     DEFAULT_MODEL_VERSION: str = "v1.0.0"
     
+    # Notifications (Optional Configurable Services)
+    EMAIL_ENABLED: bool = False
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    ALERT_FROM_EMAIL: str = "alerts@agni-netra.gov.in"
+    
+    SMS_ENABLED: bool = False
+    SMS_PROVIDER: str = "CONSOLE"
+    SMS_API_KEY: str = ""
+
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

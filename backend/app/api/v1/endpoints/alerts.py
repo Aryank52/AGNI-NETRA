@@ -1,13 +1,22 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from backend.app.core.database import get_db
 from backend.app.api.deps import require_analyst, get_current_active_user
 from backend.app.models.domain import Alert, User, AuditLog
 from backend.app.models.schemas import AlertOut, AlertUpdate
+from backend.app.services.notification_service import notification_service
 
 router = APIRouter()
+
+
+class TestNotificationRequest(BaseModel):
+    recipient_email: Optional[str] = None
+    recipient_phone: Optional[str] = None
+    subject: str = "Test Thermal Alert"
+    message: str = "Test notification dispatch from AGNI-NETRA alert pipeline."
 
 
 @router.get("", response_model=List[AlertOut])
@@ -37,7 +46,7 @@ def update_alert_status(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Updates alert status (e.g. ACKNOWLEDGED, RESOLVED).
+    Updates alert status (e.g. NEW, ACKNOWLEDGED, UNDER REVIEW, VERIFIED, RESOLVED).
     """
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
@@ -57,3 +66,29 @@ def update_alert_status(
     db.commit()
     db.refresh(alert)
     return alert
+
+
+@router.post("/test-notification")
+def send_test_notification(
+    req: TestNotificationRequest,
+    current_user: User = Depends(require_analyst)
+):
+    """
+    Dispatches a test notification through configured email and SMS providers.
+    """
+    results: Dict[str, Any] = {}
+    if req.recipient_email:
+        results["email"] = notification_service.send_alert_email(
+            recipient_email=req.recipient_email,
+            subject=req.subject,
+            alert_details={"event_code": "TEST-EVT-001", "risk_level": "CRITICAL", "max_frp": 120.0, "facility_name": "Test Facility", "state": "Gujarat"}
+        )
+    if req.recipient_phone:
+        results["sms"] = notification_service.send_sms_alert(
+            phone_number=req.recipient_phone,
+            message=req.message
+        )
+    return {
+        "status": "PROCESSED",
+        "results": results
+    }

@@ -98,7 +98,7 @@ export default function LoginPage() {
           Sign In to Decision Support Command Portal
         </h2>
         <p className="mt-1 text-xs text-slate-400">
-          Smart India Hackathon 2026 • AI Geospatial Thermal Intelligence
+          AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform
         </p>
       </div>
 
