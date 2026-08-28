@@ -1,13 +1,21 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.api.deps import require_analyst
-from backend.app.models.domain import CandidateFacility, IndustrialFacility, User, AuditLog
+from backend.app.models.domain import CandidateFacility, IndustrialFacility, User
 from backend.app.models.schemas import CandidateFacilityOut
+from backend.app.services.candidate_service import promote_candidate_to_verified_facility
 
 router = APIRouter()
+
+
+class CandidatePromotionRequest(BaseModel):
+    verified_name: Optional[str] = None
+    facility_type: Optional[str] = "REFINERY"
+    notes: Optional[str] = None
 
 
 @router.get("", response_model=List[CandidateFacilityOut])
@@ -31,6 +39,7 @@ def get_candidate_facilities(
 @router.post("/{candidate_id}/promote")
 def promote_candidate_to_known(
     candidate_id: str,
+    payload: Optional[CandidatePromotionRequest] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_analyst)
 ):
@@ -42,32 +51,17 @@ def promote_candidate_to_known(
     if not cand:
         raise HTTPException(status_code=404, detail="Candidate facility not found")
 
-    # Create canonical facility record
-    new_fac = IndustrialFacility(
-        name=f"Verified: {cand.name_label}",
-        facility_type="OTHER",
-        status="VERIFIED",
-        source="PROMOTED_CANDIDATE",
-        source_id=cand.id,
-        state=cand.state,
-        district=cand.district,
-        latitude=cand.latitude,
-        longitude=cand.longitude,
-        confidence_score=0.92,
-        operating_hours="24x7",
-        contact_info={"promoted_by": current_user.email}
-    )
-    db.add(new_fac)
-    cand.status = "PROMOTED"
+    v_name = (payload.verified_name if payload and payload.verified_name else f"Verified: {cand.name_label}")
+    f_type = (payload.facility_type if payload and payload.facility_type else "REFINERY")
+    notes = (payload.notes if payload else "Promoted via analyst HITL console")
 
-    audit = AuditLog(
-        user_id=current_user.id,
-        action="PROMOTE_CANDIDATE",
-        resource_type="CandidateFacility",
-        resource_id=candidate_id,
-        details={"candidate_label": cand.name_label}
+    res = promote_candidate_to_verified_facility(
+        db=db,
+        candidate_id=candidate_id,
+        verified_name=v_name,
+        facility_type=f_type,
+        analyst_id=current_user.id,
+        notes=notes
     )
-    db.add(audit)
-    db.commit()
 
-    return {"status": "SUCCESS", "message": f"Candidate promoted to Industrial Facility ID: {new_fac.id}"}
+    return {"status": "SUCCESS", "result": res}

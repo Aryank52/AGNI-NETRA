@@ -1,56 +1,123 @@
 import csv
 import io
+import time
 import json
-from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone, timedelta
+from typing import List, Dict, Any, Optional, Tuple
 import httpx
-from data_pipeline.adapters.base import DataSourceAdapter, NormalizedThermalObservation
+
+from data_pipeline.adapters.base import (
+    ThermalSourceAdapter, NormalizedThermalObservation, SourceProvenance
+)
+from backend.app.core.config import settings
 
 
-class FIRMSAdapter(DataSourceAdapter):
+# Supported NASA FIRMS Sensors
+DEFAULT_FIRMS_SENSORS = [
+    "VIIRS_NOAA21_NRT",
+    "VIIRS_NOAA20_NRT",
+    "VIIRS_SNPP_NRT",
+    "MODIS_NRT"
+]
+
+# Canonical India Subcontinent Bounding Box [min_lat, min_lon, max_lat, max_lon]
+INDIA_BBOX = (6.0, 68.0, 37.5, 97.5)
+
+
+class FIRMSAdapter(ThermalSourceAdapter):
     """
-    NASA FIRMS Adapter for VIIRS (375m) and MODIS (1km) Active Fire & Thermal Anomaly feeds.
-    Supports live NASA EOSDIS API, local CSV uploads, and JSON datasets without requiring API keys.
+    NASA FIRMS (EOSDIS) Production Ingestion Adapter.
+    Supports VIIRS (NOAA-21, NOAA-20, Suomi-NPP @ 375m) and MODIS (Terra/Aqua @ 1km).
+    Features:
+    - Bounding-box and national country queries
+    - Multi-sensor configurable ingestion
+    - Retry logic with exponential backoff & rate-limiting protection
+    - Duplicate detection via spatial-temporal coordinate hash
+    - Standardized SourceProvenance & DataQuality indicators
     """
 
-    def __init__(self, api_key: str = "", base_url: str = "https://firms.modaps.eosdis.nasa.gov/api/country/csv"):
-        self.api_key = api_key.strip()
-        self.base_url = base_url
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: str = "https://firms.modaps.eosdis.nasa.gov/api"
+    ):
+        self.api_key = (api_key if api_key is not None else settings.FIRMS_MAP_KEY).strip()
+        self.base_url = base_url.rstrip("/")
+        self._max_retries = 3
+        self._backoff_factor = 1.5
 
-    def validate_connection(self) -> bool:
+    @property
+    def source_name(self) -> str:
+        return "NASA_FIRMS"
+
+    def validate_connection(self) -> Dict[str, Any]:
         """
-        Validates FIRMS API availability if key is configured.
+        Validates FIRMS API availability and authentication status.
         """
         if not self.api_key:
-            return False
+            return {
+                "source": self.source_name,
+                "status": "NOT_CONFIGURED",
+                "configured": False,
+                "message": "FIRMS_MAP_KEY environment variable is not set. Operating in verified demo mode.",
+                "latency_ms": 0
+            }
+
+        start_time = time.time()
         try:
-            resp = httpx.get(
-                f"https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/{self.api_key}/VIIRS_NOAA20_NRT",
-                timeout=5.0
-            )
-            return resp.status_code == 200
-        except Exception:
-            return False
+            url = f"{self.base_url}/data_availability/csv/{self.api_key}/VIIRS_NOAA20_NRT"
+            resp = httpx.get(url, timeout=6.0)
+            latency = int((time.time() - start_time) * 1000)
+
+            if resp.status_code == 200:
+                return {
+                    "source": self.source_name,
+                    "status": "HEALTHY",
+                    "configured": True,
+                    "message": "NASA EOSDIS FIRMS API is online and authenticated.",
+                    "latency_ms": latency
+                }
+            elif resp.status_code in (401, 403):
+                return {
+                    "source": self.source_name,
+                    "status": "UNAUTHORIZED",
+                    "configured": True,
+                    "message": "Invalid FIRMS_MAP_KEY credentials.",
+                    "latency_ms": latency
+                }
+            else:
+                return {
+                    "source": self.source_name,
+                    "status": "DEGRADED",
+                    "configured": True,
+                    "message": f"NASA API returned HTTP {resp.status_code}",
+                    "latency_ms": latency
+                }
+        except Exception as e:
+            return {
+                "source": self.source_name,
+                "status": "UNAVAILABLE",
+                "configured": True,
+                "message": f"Connection error: {str(e)}",
+                "latency_ms": int((time.time() - start_time) * 1000)
+            }
 
     def validate_coordinates(self, lat: float, lon: float) -> bool:
         """
-        Validates latitude/longitude bounds for geographic validity and India subcontinent focus.
+        Validates latitude/longitude bounds for broad India geographic scope.
         """
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             return False
-        # Validates broad India geographic boundary (6.0N to 38.0N, 68.0E to 98.0E)
-        if not (5.0 <= lat <= 39.0 and 65.0 <= lon <= 100.0):
-            return False
-        return True
+        # Broad India subcontinent + coastal EEZ envelope (5.0N to 39.0N, 65.0E to 100.0E)
+        return (5.0 <= lat <= 39.0 and 65.0 <= lon <= 100.0)
 
     def deduplicate(self, observations: List[NormalizedThermalObservation]) -> List[NormalizedThermalObservation]:
         """
-        Deduplicates satellite thermal observations by sensor, rounded coordinates, and acquisition time.
+        Deduplicates satellite observations by sensor, rounded coordinates (~11m), and acquisition minute.
         """
         seen = set()
         deduped = []
         for obs in observations:
-            # Hash key: (sensor, lat rounded to 4 decimals ~ 11m, lon rounded to 4 decimals, timestamp)
             key = (
                 obs.sensor,
                 round(obs.latitude, 4),
@@ -62,6 +129,60 @@ class FIRMSAdapter(DataSourceAdapter):
                 deduped.append(obs)
         return deduped
 
+    def fetch_thermal_observations(
+        self,
+        bbox: Optional[Tuple[float, float, float, float]] = None,
+        date_str: Optional[str] = None,
+        sensor: Optional[str] = None,
+        incremental_since: Optional[datetime] = None,
+        country: str = "IND",
+        days: int = 1,
+        **kwargs
+    ) -> List[NormalizedThermalObservation]:
+        """
+        Fetches satellite thermal observations with retry backoff and rate limiting.
+        """
+        if not self.api_key:
+            return []
+
+        active_sensor = sensor or "VIIRS_NOAA20_NRT"
+        
+        # Build URL for area bbox or country
+        if bbox:
+            # NASA FIRMS Area API format: /api/area/csv/[MAP_KEY]/[SOURCE]/[W_LON],[S_LAT],[E_LON],[N_LAT]/[DAY_RANGE]
+            min_lat, min_lon, max_lat, max_lon = bbox
+            url = f"{self.base_url}/area/csv/{self.api_key}/{active_sensor}/{min_lon},{min_lat},{max_lon},{max_lat}/{days}"
+        else:
+            # NASA FIRMS Country API format: /api/country/csv/[MAP_KEY]/[SOURCE]/[COUNTRY]/[DAY_RANGE]
+            url = f"{self.base_url}/country/csv/{self.api_key}/{active_sensor}/{country}/{days}"
+
+        if date_str:
+            url += f"/{date_str}"
+
+        # Execute HTTP GET with Exponential Backoff
+        for attempt in range(1, self._max_retries + 1):
+            try:
+                resp = httpx.get(url, timeout=30.0)
+                if resp.status_code == 200:
+                    raw_obs = self.parse_csv_content(resp.text, source_name=active_sensor, is_demo=False)
+                    # Filter incremental if requested
+                    if incremental_since:
+                        raw_obs = [o for o in raw_obs if o.acq_timestamp > incremental_since]
+                    return self.deduplicate(raw_obs)
+                elif resp.status_code == 429:
+                    # Rate limit encountered: backoff and retry
+                    time.sleep(self._backoff_factor ** attempt)
+                    continue
+                else:
+                    break
+            except Exception:
+                if attempt < self._max_retries:
+                    time.sleep(self._backoff_factor ** attempt)
+                else:
+                    break
+
+        return []
+
     def fetch_data(
         self,
         country: str = "IND",
@@ -69,20 +190,13 @@ class FIRMSAdapter(DataSourceAdapter):
         source_type: str = "VIIRS_NOAA20_NRT"
     ) -> List[NormalizedThermalObservation]:
         """
-        Fetches live FIRMS NRT CSV records for India from NASA EOSDIS API.
+        Backward-compatible interface for standard country queries.
         """
-        if not self.api_key:
-            return []
-
-        url = f"{self.base_url}/{self.api_key}/{source_type}/{country}/{days}"
-        try:
-            resp = httpx.get(url, timeout=30.0)
-            if resp.status_code != 200:
-                return []
-            raw_obs = self.parse_csv_content(resp.text, source_name=source_type, is_demo=False)
-            return self.deduplicate(raw_obs)
-        except Exception:
-            return []
+        return self.fetch_thermal_observations(
+            country=country,
+            days=days,
+            sensor=source_type
+        )
 
     def parse_csv_content(
         self,
@@ -91,17 +205,17 @@ class FIRMSAdapter(DataSourceAdapter):
         is_demo: bool = False
     ) -> List[NormalizedThermalObservation]:
         """
-        Parses FIRMS CSV strings (from NASA API or local file upload) into normalized observations.
+        Parses NASA FIRMS CSV telemetry strings into normalized observations with full provenance.
         """
         observations = []
         reader = csv.DictReader(io.StringIO(csv_text.strip()))
+        ingestion_time = datetime.now(timezone.utc)
         
         for row in reader:
             try:
                 lat = float(row.get("latitude", 0.0))
                 lon = float(row.get("longitude", 0.0))
 
-                # Coordinate validation
                 if not self.validate_coordinates(lat, lon):
                     continue
 
@@ -109,13 +223,12 @@ class FIRMSAdapter(DataSourceAdapter):
                 bright_ti4 = float(row.get("bright_ti4") or row.get("brightness") or 300.0)
                 bright_ti5 = float(row.get("bright_ti5") or row.get("bright_t31") or 290.0)
                 
-                # Timestamp formatting
                 acq_date = row.get("acq_date", "2026-01-01")
                 acq_time = str(row.get("acq_time", "0000")).strip().zfill(4)
                 dt_str = f"{acq_date} {acq_time[:2]}:{acq_time[2:]}:00"
                 acq_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
                 
-                # Confidence translation
+                # Confidence score translation
                 conf_raw = str(row.get("confidence", "n")).lower().strip()
                 if conf_raw == "l":
                     conf_val = 30.0
@@ -131,9 +244,28 @@ class FIRMSAdapter(DataSourceAdapter):
 
                 dn = str(row.get("daynight", "D")).upper().strip()
                 satellite = row.get("satellite", "NOAA-20")
+                record_id = f"FIRMS_{source_name}_{lat:.4f}_{lon:.4f}_{acq_date}_{acq_time}"
+
+                # Calculate objective Data Quality Score (0.0 to 1.0)
+                quality_score = min(1.0, max(0.2, (conf_val / 100.0) * (1.0 if bright_ti4 > 300 else 0.85)))
+
+                provenance = SourceProvenance(
+                    source_name=f"NASA_FIRMS_{source_name}",
+                    source_record_id=record_id,
+                    source_version="NRT-v2.0",
+                    acquisition_time=acq_dt,
+                    ingestion_time=ingestion_time,
+                    raw_reference="NASA_EOSDIS_API",
+                    data_quality_score=quality_score,
+                    additional_metadata={
+                        "scan": row.get("scan"),
+                        "track": row.get("track"),
+                        "version": row.get("version")
+                    }
+                )
 
                 obs = NormalizedThermalObservation(
-                    source_record_id=f"{source_name}_{lat:.4f}_{lon:.4f}_{acq_date}_{acq_time}",
+                    source_record_id=record_id,
                     source="FIRMS",
                     sensor=source_name,
                     satellite=satellite,
@@ -145,6 +277,7 @@ class FIRMSAdapter(DataSourceAdapter):
                     frp=frp,
                     confidence=conf_val,
                     day_night=dn,
+                    provenance=provenance,
                     metadata=dict(row),
                     is_demo=is_demo
                 )
@@ -161,9 +294,11 @@ class FIRMSAdapter(DataSourceAdapter):
         is_demo: bool = False
     ) -> List[NormalizedThermalObservation]:
         """
-        Parses structured JSON thermal records (from local files or API payloads).
+        Parses structured JSON thermal records into normalized observations.
         """
         observations = []
+        ingestion_time = datetime.now(timezone.utc)
+
         for item in json_data:
             try:
                 lat = float(item.get("latitude", 0.0))
@@ -179,8 +314,22 @@ class FIRMSAdapter(DataSourceAdapter):
                 else:
                     acq_dt = datetime.now(timezone.utc)
 
+                record_id = item.get("source_record_id") or f"{source_name}_{lat:.4f}_{lon:.4f}_{acq_dt.strftime('%Y%m%d%H%M')}"
+                conf_val = float(item.get("confidence", 85.0))
+                quality_score = min(1.0, max(0.3, conf_val / 100.0))
+
+                provenance = SourceProvenance(
+                    source_name=f"NASA_FIRMS_{source_name}",
+                    source_record_id=record_id,
+                    source_version="NRT-v2.0",
+                    acquisition_time=acq_dt,
+                    ingestion_time=ingestion_time,
+                    raw_reference="JSON_PAYLOAD",
+                    data_quality_score=quality_score
+                )
+
                 obs = NormalizedThermalObservation(
-                    source_record_id=item.get("source_record_id") or f"{source_name}_{lat:.4f}_{lon:.4f}",
+                    source_record_id=record_id,
                     source=item.get("source", "FIRMS"),
                     sensor=item.get("sensor", source_name),
                     satellite=item.get("satellite", "NOAA-20"),
@@ -190,8 +339,9 @@ class FIRMSAdapter(DataSourceAdapter):
                     brightness=float(item.get("brightness", 320.0)),
                     bright_t31=float(item.get("bright_t31", 295.0)),
                     frp=float(item.get("frp", 10.0)),
-                    confidence=float(item.get("confidence", 85.0)),
+                    confidence=conf_val,
                     day_night=str(item.get("day_night", "D")).upper(),
+                    provenance=provenance,
                     metadata=item.get("metadata", {}),
                     is_demo=is_demo
                 )
@@ -200,3 +350,6 @@ class FIRMSAdapter(DataSourceAdapter):
                 continue
 
         return self.deduplicate(observations)
+
+
+firms_adapter = FIRMSAdapter()

@@ -1,4 +1,10 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+
+from backend.app.models.domain import (
+    CandidateFacility, IndustrialFacility, ThermalEvent, AuditLog
+)
 
 
 def evaluate_candidate_industrial_source(
@@ -58,7 +64,7 @@ def evaluate_candidate_industrial_source(
     s_isolation = 0.10 if nearest_dist_m > 1500 else 0.04
 
     context_score = round(s_persist + s_diurnal + s_intensity + s_lulc + s_isolation, 2)
-    is_candidate = (context_score >= 0.52 and active_days >= 3) or (dn_ratio >= 0.7 and p_score >= 3.0)
+    is_candidate = (context_score >= 0.50 and active_days >= 3) or (dn_ratio >= 0.6 and p_score >= 2.5)
 
     evidence_summary = {
         "persistence_days": active_days,
@@ -72,9 +78,89 @@ def evaluate_candidate_industrial_source(
 
     if dn_ratio >= 0.5:
         evidence_summary["supporting_indicators"].append("High night-to-day detection ratio consistent with 24x7 industrial stack/flare activity")
-    if active_days >= 5:
+    if active_days >= 3:
         evidence_summary["supporting_indicators"].append(f"Recurrent thermal activity detected across {active_days} separate observation days")
     if s_lulc >= 0.12:
         evidence_summary["supporting_indicators"].append(f"Location aligns with '{landcover_class}' land-use category")
 
     return is_candidate, context_score, evidence_summary
+
+
+def promote_candidate_to_verified_facility(
+    db: Session,
+    candidate_id: str,
+    verified_name: str,
+    facility_type: str,
+    analyst_id: str,
+    notes: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Analyst Promotion Workflow:
+    Promotes an AI-discovered Candidate Facility into a Canonical Verified Industrial Facility.
+    """
+    candidate = db.query(CandidateFacility).filter(CandidateFacility.id == candidate_id).first()
+    if not candidate:
+        raise ValueError(f"Candidate facility {candidate_id} not found")
+
+    state_code = candidate.state[:3].upper() if candidate.state else "IND"
+    type_code = facility_type[:4].upper()
+    seq_num = db.query(IndustrialFacility).count() + 1
+    canonical_id = f"FAC-{state_code}-{type_code}-{seq_num:04d}"
+
+    # 1. Create verified facility record
+    new_facility = IndustrialFacility(
+        name=verified_name,
+        facility_type=facility_type,
+        status="VERIFIED",
+        source="PROMOTED_CANDIDATE",
+        source_id=canonical_id,
+        state=candidate.state,
+        district=candidate.district,
+        latitude=candidate.latitude,
+        longitude=candidate.longitude,
+        confidence_score=0.95,
+        operating_hours="24x7",
+        contact_info={
+            "promoted_by": analyst_id,
+            "promoted_at": datetime.now(timezone.utc).isoformat(),
+            "original_candidate_id": candidate.id,
+            "notes": notes
+        }
+    )
+    db.add(new_facility)
+    db.flush()
+
+    # 2. Update candidate status
+    candidate.status = "PROMOTED"
+
+    # 3. Link associated thermal events to verified facility
+    events = db.query(ThermalEvent).filter(ThermalEvent.candidate_facility_id == candidate.id).all()
+    for evt in events:
+        evt.facility_id = new_facility.id
+        evt.facility_status = "KNOWN"
+        evt.nearest_facility_distance_m = 0.0
+
+    # 4. Record Audit Log
+    audit = AuditLog(
+        user_id=analyst_id,
+        action="PROMOTE_CANDIDATE_FACILITY",
+        resource_type="CandidateFacility",
+        resource_id=candidate.id,
+        details={
+            "new_facility_id": new_facility.id,
+            "canonical_name": verified_name,
+            "facility_type": facility_type,
+            "notes": notes
+        }
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(new_facility)
+
+    return {
+        "status": "PROMOTED",
+        "facility_id": new_facility.id,
+        "canonical_source_id": new_facility.source_id,
+        "name": new_facility.name,
+        "events_reassigned": len(events)
+    }

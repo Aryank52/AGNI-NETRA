@@ -9,7 +9,7 @@ import {
   AlertOctagon, CheckSquare, BarChart3, 
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
-  Sliders, Database, ShieldAlert, BookOpen
+  Sliders, Database, ShieldAlert, BookOpen, Globe
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,6 +18,7 @@ export default function Sidebar() {
 
   const commandCenter = [
     { label: "GIS Tactical Map", href: "/dashboard", icon: Map, badge: "NRT" },
+    { label: "India Thermal Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
     { label: "Thermal Events", href: "/dashboard/events", icon: Flame },
     { label: "Incident Alerts", href: "/dashboard/alerts", icon: Bell, badge: "ALERT" },
   ];
@@ -41,6 +42,7 @@ export default function Sidebar() {
     { label: "Research Portal", href: "/portal/research", icon: BookOpen },
     { label: "Industry Portal", href: "/portal/industry", icon: Building2 },
     { label: "Public Transparency", href: "/portal/public", icon: Eye },
+    { label: "Data Ingestion Control", href: "/admin/data-sources", icon: Database, badge: "LIVE" },
     { label: "Admin & Audit", href: "/admin", icon: Settings, minRole: "ADMIN" },
   ];
 
@@ -76,6 +78,8 @@ export default function Sidebar() {
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                     : item.badge === "ALERT"
                     ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                    : item.badge === "ATLAS"
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 }`}>
                   {item.badge}
