@@ -4,12 +4,12 @@ from typing import Dict, Any, Optional, List
 
 def compare_with_historical_baseline(
     current_frp: float,
-    baseline: Optional[Dict[str, Any]]
+    baseline: Optional[Any]
 ) -> Dict[str, Any]:
     """
     Evaluates current thermal intensity against historical baseline metrics for a facility or spatial cell.
     """
-    if not baseline or baseline.get("mean_frp", 0.0) <= 0:
+    if not baseline:
         return {
             "baseline_status": "NO_BASELINE",
             "deviation_ratio": 1.0,
@@ -18,8 +18,22 @@ def compare_with_historical_baseline(
             "explanation": "No established historical baseline exists for this location."
         }
 
-    mean_frp = float(baseline["mean_frp"])
-    std_frp = float(baseline.get("std_frp", mean_frp * 0.35)) or (mean_frp * 0.35)
+    # Handle both ORM object and dictionary
+    if isinstance(baseline, dict):
+        mean_frp = float(baseline.get("mean_frp", 0.0))
+        std_frp = float(baseline.get("std_frp", mean_frp * 0.35)) or (mean_frp * 0.35)
+    else:
+        mean_frp = float(getattr(baseline, "mean_frp", 0.0))
+        std_frp = float(getattr(baseline, "std_frp", mean_frp * 0.35)) or (mean_frp * 0.35)
+
+    if mean_frp <= 0:
+        return {
+            "baseline_status": "NO_BASELINE",
+            "deviation_ratio": 1.0,
+            "z_score": 0.0,
+            "is_anomaly": False,
+            "explanation": "No established historical baseline exists for this location."
+        }
     
     deviation_ratio = round(current_frp / max(1.0, mean_frp), 2)
     z_score = round((current_frp - mean_frp) / max(1.0, std_frp), 2)
@@ -50,6 +64,10 @@ def compare_with_historical_baseline(
         "std_frp": std_frp,
         "explanation": explanation
     }
+
+
+# Backward-compatible alias
+calculate_baseline_deviation = compare_with_historical_baseline
 
 
 def generate_thermal_fingerprint(

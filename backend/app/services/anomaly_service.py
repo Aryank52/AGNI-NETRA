@@ -37,11 +37,11 @@ class AnomalyDetectionEngine:
         """
         Evaluates whether a thermal event exhibits anomalous intensity or behavior.
         """
-        avg_frp = float(event_features.get("frp_avg", 0.0))
-        max_frp = float(event_features.get("frp_max", 0.0))
-        frp_std = float(event_features.get("frp_std", 0.0))
-        dn_ratio = float(event_features.get("day_night_ratio", 0.0))
-        p_score = float(event_features.get("persistence_score", 0.0))
+        avg_frp = float(event_features.get("frp_avg", event_features.get("avg_frp", 0.0)))
+        max_frp = float(event_features.get("frp_max", event_features.get("max_frp", 0.0)))
+        frp_std = float(event_features.get("frp_std", event_features.get("frp_variance", 0.0) ** 0.5))
+        dn_ratio = float(event_features.get("day_night_ratio", 1.0))
+        p_score = float(event_features.get("persistence_score", 5.0))
 
         # 1. Statistical Baseline Check
         stat_anomaly = False
@@ -87,3 +87,13 @@ class AnomalyDetectionEngine:
 
 
 anomaly_engine = AnomalyDetectionEngine()
+
+
+def detect_thermal_anomalies(
+    event_features: Dict[str, Any],
+    baseline_stats: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """
+    Convenience wrapper for anomaly evaluation.
+    """
+    return anomaly_engine.evaluate_anomaly(event_features, baseline_stats)

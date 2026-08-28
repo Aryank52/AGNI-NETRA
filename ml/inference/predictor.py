@@ -80,6 +80,7 @@ class ThermalClassifierInference:
             "predicted_class": pred_class,
             "confidence": round(confidence, 3),
             "class_probabilities": class_probs,
+            "probabilities": class_probs,
             "shap_values": shap_details,
             "explanation_summary": explanation_summary
         }

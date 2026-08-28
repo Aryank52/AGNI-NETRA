@@ -151,6 +151,14 @@ class ThermalEventGeoJSON(BaseModel):
     features: List[Dict[str, Any]]
 
 
+class PaginatedEventsOut(BaseModel):
+    total_count: int
+    page: int
+    limit: int
+    total_pages: int
+    items: List[ThermalEventOut]
+
+
 # ------------------------------------------------------------------------------
 # Facility Schemas
 # ------------------------------------------------------------------------------
