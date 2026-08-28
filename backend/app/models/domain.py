@@ -68,7 +68,7 @@ class IndustrialFacility(Base):
     name = Column(String(255), index=True, nullable=False)
     facility_type = Column(String(100), nullable=False)  # REFINERY, POWER_PLANT, STEEL_PLANT, CHEMICAL, CEMENT, MINING, TEXTILE, OTHER
     status = Column(String(50), default="KNOWN")        # KNOWN, VERIFIED, REJECTED
-    source = Column(String(100), default="OSM")         # OSM, OFFICIAL_REGISTRY, MANUAL_SURVEY, PROMOTED_CANDIDATE
+    source = Column(String(100), default="OSM")         # OSM, CEA, OFFICIAL_REGISTRY, MANUAL_SURVEY, PROMOTED_CANDIDATE
     source_id = Column(String(100), nullable=True)
     state = Column(String(100), index=True, nullable=False)
     district = Column(String(100), index=True, nullable=True)
@@ -83,6 +83,7 @@ class IndustrialFacility(Base):
 
     events = relationship("ThermalEvent", back_populates="facility")
     baselines = relationship("HistoricalBaseline", back_populates="facility")
+    facility_baseline = relationship("FacilityBaseline", back_populates="facility", uselist=False)
 
 
 class CandidateFacility(Base):
@@ -159,7 +160,7 @@ class ThermalDetection(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     source = Column(String(50), nullable=False)  # FIRMS_VIIRS, FIRMS_MODIS, S2_SWIR, LANDSAT_TIRS
-    sensor = Column(String(50), nullable=False)  # VIIRS_NOAA20, VIIRS_SNPP, MODIS_AQUA, MODIS_TERRA
+    sensor = Column(String(50), nullable=False)  # VIIRS_NOAA20, VIIRS_NOAA21, VIIRS_SNPP, MODIS_AQUA, MODIS_TERRA
     satellite = Column(String(50), nullable=True)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
@@ -193,6 +194,25 @@ class HistoricalBaseline(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     facility = relationship("IndustrialFacility", back_populates="baselines")
+
+
+class FacilityBaseline(Base):
+    __tablename__ = "facility_baselines"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id"), unique=True, nullable=False)
+    mean_frp = Column(Float, default=0.0)
+    median_frp = Column(Float, default=0.0)
+    variance_frp = Column(Float, default=0.0)
+    max_historical_frp = Column(Float, default=0.0)
+    frp_distribution = Column(JSON, default=dict)  # Percentiles e.g. {"p25": 12.0, "p50": 24.5, "p75": 48.0, "p90": 85.0, "p99": 140.0}
+    frequency_days = Column(Integer, default=0)
+    day_night_ratio = Column(Float, default=1.0)
+    status_band = Column(String(50), default="NORMAL")  # NORMAL, ELEVATED, ABNORMAL, CRITICAL (operational flags, not regulatory)
+    notes = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    facility = relationship("IndustrialFacility", back_populates="facility_baseline")
 
 
 class EventFeature(Base):
@@ -239,6 +259,41 @@ class ModelVersion(Base):
     trained_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     predictions = relationship("ModelPrediction", back_populates="model_version")
+
+
+class MLModelRegistry(Base):
+    __tablename__ = "ml_model_registry"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    model_name = Column(String(100), nullable=False)
+    version = Column(String(50), unique=True, nullable=False)
+    dataset_version = Column(String(50), nullable=False)
+    algorithm = Column(String(50), nullable=False)  # XGBoost, Random Forest, Isolation Forest
+    metrics = Column(JSON, default=dict)            # accuracy, macro_f1, brier_score, spatial_holdout_f1, temporal_holdout_f1, confusion_matrix
+    artifact_path = Column(String(255), nullable=False)
+    status = Column(String(50), default="CANDIDATE")  # TRAINING, VALIDATION, CANDIDATE, APPROVED, ACTIVE, RETIRED
+    is_active = Column(Boolean, default=False)
+    trained_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    approved_by = Column(String(100), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+class DatasetRegistry(Base):
+    __tablename__ = "dataset_registry"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(150), nullable=False)
+    version = Column(String(50), unique=True, nullable=False)
+    dataset_type = Column(String(50), nullable=False)  # REAL, WEAKLY_LABELED, HUMAN_VERIFIED, SYNTHETIC, DEMO
+    source = Column(String(100), nullable=False)       # NASA_FIRMS_VIIRS, GROUND_TRUTH_SURVEY, CEA_REGISTRY, SYNTHETIC_GENERATOR
+    record_count = Column(Integer, default=0)
+    verified_count = Column(Integer, default=0)
+    class_distribution = Column(JSON, default=dict)
+    training_eligible = Column(Boolean, default=True)
+    manifest_path = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class ModelPrediction(Base):
@@ -351,7 +406,7 @@ class AuditLog(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
-    action = Column(String(100), nullable=False)           # LOGIN, LOGOUT, VERIFY_EVENT, OVERRIDE_PREDICTION, EXPORT_DATA, GENERATE_REPORT
+    action = Column(String(100), nullable=False)           # LOGIN, LOGOUT, VERIFY_EVENT, OVERRIDE_PREDICTION, EXPORT_DATA, GENERATE_REPORT, PROMOTE_MODEL
     resource_type = Column(String(100), nullable=True)
     resource_id = Column(String(100), nullable=True)
     ip_address = Column(String(50), nullable=True)

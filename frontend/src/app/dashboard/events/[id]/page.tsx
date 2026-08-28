@@ -15,8 +15,27 @@ import {
   ArrowLeft, Download, CheckSquare, Shield, 
   Activity, MapPin, Calendar, Clock, AlertTriangle, 
   CheckCircle2, Sparkles, Database, FileText,
-  HelpCircle, Cpu, Layers, ExternalLink, RefreshCw
+  HelpCircle, Cpu, Layers, ExternalLink, RefreshCw,
+  GitCommit, ChevronRight, Binary, Globe
 } from "lucide-react";
+
+interface TraceStep {
+  step_number: number;
+  stage: string;
+  title: string;
+  status: string;
+  timestamp: string;
+  details: Record<string, any>;
+  provenance_source: string;
+}
+
+interface EventTraceLineage {
+  event_id: string;
+  event_code: string;
+  generated_at: string;
+  total_steps: number;
+  stages: TraceStep[];
+}
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -26,6 +45,11 @@ export default function EventDetailPage() {
 
   const [event, setEvent] = useState<ThermalEvent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"DOSSIER" | "TRACE" | "SHAP">("DOSSIER");
+  const [traceData, setTraceData] = useState<EventTraceLineage | null>(null);
+  const [loadingTrace, setLoadingTrace] = useState(false);
+
+  // Verification modal state
   const [verifModalOpen, setVerifModalOpen] = useState(false);
   const [verifAction, setVerifAction] = useState("CONFIRM");
   const [verifiedLabel, setVerifiedLabel] = useState("Industrial Fire");
@@ -45,11 +69,29 @@ export default function EventDetailPage() {
     }
   };
 
+  const loadTraceData = async () => {
+    setLoadingTrace(true);
+    try {
+      const trace = await fetchApi<EventTraceLineage>(`/events/${eventId}/trace`);
+      setTraceData(trace);
+    } catch (err) {
+      console.warn("Failed to load event trace data:", err);
+    } finally {
+      setLoadingTrace(false);
+    }
+  };
+
   useEffect(() => {
     if (eventId) {
       loadEvent();
     }
   }, [eventId]);
+
+  useEffect(() => {
+    if (activeTab === "TRACE" && !traceData) {
+      loadTraceData();
+    }
+  }, [activeTab]);
 
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +141,7 @@ export default function EventDetailPage() {
 
   const pClass = event.prediction?.predicted_class || "Uncertain";
   const confidence = event.prediction?.confidence || 0.85;
-  const uncertainty = (1.0 - confidence) * 0.8; // Normalized uncertainty display
+  const uncertainty = (1.0 - confidence) * 0.8;
   const modelVersion = "v1.0.0-xgboost";
   const isCandidate = event.facility_status === "CANDIDATE";
 
@@ -221,71 +263,145 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {/* Model Architecture & Provenance Strip */}
-            <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-amber-400" />
-                  <strong>Model:</strong> {modelVersion} (XGBoost 7-Class + SHAP)
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                  <strong>Sources:</strong> NASA FIRMS VIIRS/MODIS • ISRO Bhuvan (10m) • OSM
-                </span>
-              </div>
-              <div>
-                <span>LULC: <strong className="text-white">{event.landcover_class}</strong></span>
-              </div>
+            {/* View Selection Tabs */}
+            <div className="flex items-center gap-2 border-t border-slate-800 pt-3 text-xs font-semibold">
+              <button
+                onClick={() => setActiveTab("DOSSIER")}
+                className={`px-3.5 py-1.5 rounded-xl transition-all ${
+                  activeTab === "DOSSIER"
+                    ? "bg-amber-500 text-slate-950 font-bold"
+                    : "bg-slate-850 text-slate-400 hover:text-white"
+                }`}
+              >
+                Intelligence Dossier & SHAP
+              </button>
+
+              <button
+                onClick={() => setActiveTab("TRACE")}
+                className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                  activeTab === "TRACE"
+                    ? "bg-cyan-500 text-slate-950 font-bold"
+                    : "bg-slate-850 text-slate-400 hover:text-white"
+                }`}
+              >
+                <GitCommit className="w-3.5 h-3.5" />
+                <span>Trace Data (10-Stage Lineage)</span>
+              </button>
             </div>
           </div>
 
-          {/* Explainable AI SHAP Waterfall Chart */}
-          <ShapWaterfallChart
-            shapData={event.prediction?.shap_values}
-            predictedClass={pClass}
-            confidence={confidence}
-          />
+          {activeTab === "DOSSIER" && (
+            <>
+              {/* Explainable AI SHAP Waterfall Chart */}
+              <ShapWaterfallChart
+                shapData={event.prediction?.shap_values}
+                predictedClass={pClass}
+                confidence={confidence}
+              />
 
-          {/* Two-Column Intelligence Grid: Risk & Multi-Sensor Provenance */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Risk Drivers Breakdown */}
-            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-red-400" />
-                AGNI-NETRA Risk Evaluation Matrix
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Transparent multi-factor formula evaluating thermal intensity, baseline deviation, and surrounding exposure.
-              </p>
+              {/* Two-Column Intelligence Grid: Risk & Multi-Sensor Provenance */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Risk Drivers Breakdown */}
+                <div className="p-5 rounded-2xl bg-agni-card border border-agni-border space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-red-400" />
+                    AGNI-NETRA Risk Evaluation Matrix
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Transparent multi-factor formula evaluating thermal intensity, baseline deviation, and surrounding exposure.
+                  </p>
 
-              <div className="space-y-2 pt-2">
-                {event.risk?.risk_reasons?.map((reason, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
-                    <span>{reason}</span>
+                  <div className="space-y-2 pt-2">
+                    {event.risk?.risk_reasons?.map((reason, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                        <span>{reason}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+
+                  <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2 text-[11px] font-mono text-center">
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <div className="text-slate-500">INTENSITY</div>
+                      <div className="font-bold text-white">{event.risk?.intensity_subscore?.toFixed(0) || 60}/100</div>
+                    </div>
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <div className="text-slate-500">ABNORMALITY</div>
+                      <div className="font-bold text-amber-400">{event.risk?.abnormality_subscore?.toFixed(0) || 20}/100</div>
+                    </div>
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <div className="text-slate-500">EXPOSURE</div>
+                      <div className="font-bold text-red-400">{event.risk?.exposure_subscore?.toFixed(0) || 40}/100</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Evidence Card */}
+                <EvidenceSummaryCard event={event} />
+              </div>
+            </>
+          )}
+
+          {activeTab === "TRACE" && (
+            <div className="p-6 rounded-2xl bg-agni-card border border-cyan-500/30 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                    <GitCommit className="w-5 h-5 text-cyan-400" />
+                    End-to-End Scientific Data Lineage (Trace Data)
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Complete verifiable 10-step telemetry pipeline from satellite sensor reception to human verification.
+                  </p>
+                </div>
+                <span className="text-xs font-mono text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/30 font-bold">
+                  {traceData?.total_steps || 10} VERIFIABLE STAGES
+                </span>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2 text-[11px] font-mono text-center">
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-500">INTENSITY</div>
-                  <div className="font-bold text-white">{event.risk?.intensity_subscore?.toFixed(0) || 60}/100</div>
+              {loadingTrace ? (
+                <div className="p-8 text-center text-slate-400 font-mono text-xs flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
+                  Extracting complete telemetry audit trail...
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-500">ABNORMALITY</div>
-                  <div className="font-bold text-amber-400">{event.risk?.abnormality_subscore?.toFixed(0) || 20}/100</div>
+              ) : (
+                <div className="space-y-4">
+                  {traceData?.stages.map((st) => (
+                    <div
+                      key={st.step_number}
+                      className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 transition-all space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold flex items-center justify-center border border-cyan-500/30">
+                            {st.step_number}
+                          </span>
+                          <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+                            {st.stage}
+                          </span>
+                          <span className="text-slate-400 text-xs">— {st.title}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                          {st.provenance_source}
+                        </span>
+                      </div>
+
+                      <div className="pl-8.5 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                        {Object.entries(st.details).map(([key, val]) => (
+                          <div key={key} className="p-2 rounded bg-slate-950/80 border border-slate-850 font-mono text-[11px]">
+                            <div className="text-[9px] text-slate-500 uppercase font-bold truncate">{key.replace(/_/g, " ")}</div>
+                            <div className="text-slate-200 mt-0.5 truncate font-medium">
+                              {typeof val === "object" ? JSON.stringify(val) : String(val)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-500">EXPOSURE</div>
-                  <div className="font-bold text-red-400">{event.risk?.exposure_subscore?.toFixed(0) || 40}/100</div>
-                </div>
-              </div>
+              )}
             </div>
-
-            {/* Evidence Card */}
-            <EvidenceSummaryCard event={event} />
-          </div>
+          )}
 
           {/* HITL Analyst Verification Modal */}
           {verifModalOpen && (

@@ -7,7 +7,8 @@ from sqlalchemy import or_, and_
 
 from backend.app.core.database import get_db
 from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature
-from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut
+from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut, EventTraceLineageOut
+from backend.app.services.lineage_service import generate_event_trace_lineage
 
 router = APIRouter()
 
@@ -81,17 +82,14 @@ def get_thermal_events(
     # 5. Nested filter evaluations (Risk level, Classification class, Persistence score)
     filtered = []
     for e in events:
-        # Risk level filter
         if risk_level and risk_level.upper() not in ["ALL"]:
             if not e.risk or e.risk.risk_level != risk_level:
                 continue
 
-        # Event type / Predicted class filter
         if event_type and event_type.upper() not in ["ALL"]:
             if not e.prediction or event_type.lower() not in e.prediction.predicted_class.lower():
                 continue
 
-        # Persistence score filter
         if min_persistence is not None:
             p_score = e.features.persistence_score if e.features else 0.0
             if p_score < min_persistence:
@@ -102,7 +100,6 @@ def get_thermal_events(
     total_count = len(filtered)
     response.headers["X-Total-Count"] = str(total_count)
 
-    # If page parameter is provided, return PaginatedEventsOut structure
     if page is not None and page > 0:
         total_pages = max(1, math.ceil(total_count / limit))
         start_idx = (page - 1) * limit
@@ -116,7 +113,6 @@ def get_thermal_events(
             items=paginated_items
         )
 
-    # Standard offset/limit slice
     return filtered[offset:offset + limit]
 
 
@@ -231,3 +227,17 @@ def get_event_detections(event_id: str, db: Session = Depends(get_db)):
         ThermalDetection.event_id == event_id
     ).order_by(ThermalDetection.acq_timestamp.desc()).all()
     return detections
+
+
+@router.get("/{event_id}/trace", response_model=EventTraceLineageOut)
+def get_event_trace(event_id: str, db: Session = Depends(get_db)):
+    """
+    Trace Data API:
+    Generates a complete 10-stage scientific data lineage from raw sensor telemetry
+    to PostGIS enrichment, machine learning inference, explainability, and decision support.
+    """
+    try:
+        lineage = generate_event_trace_lineage(db, event_id)
+        return lineage
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

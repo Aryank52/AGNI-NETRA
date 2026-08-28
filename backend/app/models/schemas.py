@@ -178,6 +178,24 @@ class HistoricalBaselineOut(BaseModel):
         from_attributes = True
 
 
+class FacilityBaselineOut(BaseModel):
+    id: str
+    facility_id: str
+    mean_frp: float
+    median_frp: float
+    variance_frp: float
+    max_historical_frp: float
+    frp_distribution: Dict[str, float]
+    frequency_days: int
+    day_night_ratio: float
+    status_band: str
+    notes: Optional[str] = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class IndustrialFacilityOut(BaseModel):
     id: str
     name: str
@@ -192,6 +210,7 @@ class IndustrialFacilityOut(BaseModel):
     operating_hours: str
     contact_info: Dict[str, Any]
     baselines: List[HistoricalBaselineOut] = []
+    facility_baseline: Optional[FacilityBaselineOut] = None
 
     class Config:
         from_attributes = True
@@ -259,6 +278,74 @@ class VerificationRecordOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ------------------------------------------------------------------------------
+# Model Registry & Dataset Schemas
+# ------------------------------------------------------------------------------
+
+class MLModelRegistryOut(BaseModel):
+    id: str
+    model_name: str
+    version: str
+    dataset_version: str
+    algorithm: str
+    metrics: Dict[str, Any]
+    artifact_path: str
+    status: str
+    is_active: bool
+    trained_at: datetime
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MLModelStatusUpdate(BaseModel):
+    status: str  # TRAINING, VALIDATION, CANDIDATE, APPROVED, ACTIVE, RETIRED
+    notes: Optional[str] = None
+
+
+class DatasetRegistryOut(BaseModel):
+    id: str
+    name: str
+    version: str
+    dataset_type: str
+    source: str
+    record_count: int
+    verified_count: int
+    class_distribution: Dict[str, int]
+    training_eligible: bool
+    manifest_path: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ------------------------------------------------------------------------------
+# Event Data Lineage (Trace Data) Schemas
+# ------------------------------------------------------------------------------
+
+class EventTraceStep(BaseModel):
+    step_number: int
+    stage: str
+    title: str
+    status: str  # COMPLETED, WARNING, INFO
+    timestamp: str
+    details: Dict[str, Any]
+    provenance_source: str
+
+
+class EventTraceLineageOut(BaseModel):
+    event_id: str
+    event_code: str
+    generated_at: str
+    total_steps: int
+    stages: List[EventTraceStep]
 
 
 # ------------------------------------------------------------------------------

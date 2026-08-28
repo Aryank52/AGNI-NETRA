@@ -1,5 +1,10 @@
 import math
+import numpy as np
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
+from sqlalchemy.orm import Session
+
+from backend.app.models.domain import IndustrialFacility, FacilityBaseline, ThermalEvent
 
 
 def compare_with_historical_baseline(
@@ -39,9 +44,9 @@ def compare_with_historical_baseline(
     z_score = round((current_frp - mean_frp) / max(1.0, std_frp), 2)
 
     if z_score >= 3.0 or deviation_ratio >= 3.5:
-        status = "CRITICAL_DEVIATION"
+        status = "CRITICAL"
         is_anomaly = True
-        explanation = f"Current FRP ({current_frp} MW) is critically elevated (+{z_score}σ above historical mean of {mean_frp} MW)."
+        explanation = f"Current FRP ({current_frp} MW) is statistically critical (+{z_score}σ above historical baseline mean of {mean_frp} MW)."
     elif z_score >= 1.8 or deviation_ratio >= 1.8:
         status = "ABNORMAL"
         is_anomaly = True
@@ -68,6 +73,99 @@ def compare_with_historical_baseline(
 
 # Backward-compatible alias
 calculate_baseline_deviation = compare_with_historical_baseline
+
+
+def calculate_facility_baseline(
+    db: Session,
+    facility_id: str
+) -> Dict[str, Any]:
+    """
+    Calculates empirical thermal baseline profile for a specific industrial facility
+    using historical event detections over satellite observation history.
+    """
+    facility = db.query(IndustrialFacility).filter(IndustrialFacility.id == facility_id).first()
+    if not facility:
+        raise ValueError(f"Facility {facility_id} not found")
+
+    events = db.query(ThermalEvent).filter(ThermalEvent.facility_id == facility_id).all()
+    
+    if not events:
+        return {
+            "facility_id": facility_id,
+            "facility_name": facility.name,
+            "status": "NO_HISTORICAL_EVENTS",
+            "mean_frp": 0.0,
+            "status_band": "NORMAL"
+        }
+
+    frp_values = [e.avg_frp for e in events if e.avg_frp > 0]
+    if not frp_values:
+        frp_values = [10.0]
+
+    mean_frp = float(np.mean(frp_values))
+    median_frp = float(np.median(frp_values))
+    variance_frp = float(np.var(frp_values))
+    max_historical = float(np.max(frp_values))
+
+    percentiles = {
+        "p25": round(float(np.percentile(frp_values, 25)), 1),
+        "p50": round(float(np.percentile(frp_values, 50)), 1),
+        "p75": round(float(np.percentile(frp_values, 75)), 1),
+        "p90": round(float(np.percentile(frp_values, 90)), 1),
+        "p99": round(float(np.percentile(frp_values, 99)), 1),
+    }
+
+    # Latest event status band
+    latest_event = max(events, key=lambda e: e.last_seen)
+    dev_check = compare_with_historical_baseline(
+        latest_event.avg_frp,
+        {"mean_frp": mean_frp, "std_frp": math.sqrt(max(1.0, variance_frp))}
+    )
+    status_band = dev_check["baseline_status"]
+
+    # Upsert into FacilityBaseline
+    fb = db.query(FacilityBaseline).filter(FacilityBaseline.facility_id == facility_id).first()
+    if not fb:
+        fb = FacilityBaseline(
+            facility_id=facility_id,
+            mean_frp=round(mean_frp, 1),
+            median_frp=round(median_frp, 1),
+            variance_frp=round(variance_frp, 1),
+            max_historical_frp=round(max_historical, 1),
+            frp_distribution=percentiles,
+            frequency_days=len(events),
+            day_night_ratio=0.85,
+            status_band=status_band,
+            notes="Statistical baseline computed from historical satellite passes. Not a statutory regulatory limit."
+        )
+        db.add(fb)
+    else:
+        fb.mean_frp = round(mean_frp, 1)
+        fb.median_frp = round(median_frp, 1)
+        fb.variance_frp = round(variance_frp, 1)
+        fb.max_historical_frp = round(max_historical, 1)
+        fb.frp_distribution = percentiles
+        fb.frequency_days = len(events)
+        fb.status_band = status_band
+        fb.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(fb)
+
+    return {
+        "facility_id": facility_id,
+        "facility_name": facility.name,
+        "mean_frp": fb.mean_frp,
+        "median_frp": fb.median_frp,
+        "variance_frp": fb.variance_frp,
+        "max_historical_frp": fb.max_historical_frp,
+        "frp_distribution": fb.frp_distribution,
+        "frequency_days": fb.frequency_days,
+        "day_night_ratio": fb.day_night_ratio,
+        "status_band": fb.status_band,
+        "notes": fb.notes,
+        "updated_at": fb.updated_at.isoformat()
+    }
 
 
 def generate_thermal_fingerprint(

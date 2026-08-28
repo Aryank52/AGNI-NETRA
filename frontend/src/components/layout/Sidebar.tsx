@@ -9,7 +9,7 @@ import {
   AlertOctagon, CheckSquare, BarChart3, 
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
-  Sliders, Database, ShieldAlert, BookOpen, Globe
+  Sliders, Database, ShieldAlert, BookOpen, Globe, Layers
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -43,6 +43,8 @@ export default function Sidebar() {
     { label: "Industry Portal", href: "/portal/industry", icon: Building2 },
     { label: "Public Transparency", href: "/portal/public", icon: Eye },
     { label: "Data Ingestion Control", href: "/admin/data-sources", icon: Database, badge: "LIVE" },
+    { label: "Model Registry", href: "/admin/models", icon: Cpu, badge: "ML" },
+    { label: "Dataset Control", href: "/admin/datasets", icon: Layers, badge: "DATA" },
     { label: "Admin & Audit", href: "/admin", icon: Settings, minRole: "ADMIN" },
   ];
 
@@ -80,6 +82,10 @@ export default function Sidebar() {
                     ? "bg-red-500/20 text-red-300 border border-red-500/30"
                     : item.badge === "ATLAS"
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                    : item.badge === "ML"
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                    : item.badge === "DATA"
+                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                     : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 }`}>
                   {item.badge}
@@ -110,7 +116,7 @@ export default function Sidebar() {
             18-feature remote sensing tabular intelligence with TreeExplainer attributions.
           </p>
           <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-400">
-            <span>F1: <strong className="text-emerald-400">0.978</strong></span>
+            <span>F1: <strong className="text-emerald-400">0.962</strong></span>
             <span>CV: <strong className="text-emerald-400">5-Fold</strong></span>
           </div>
         </div>

@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
-    ingestion, ml, admin, baselines, portals
+    ingestion, ml, admin, baselines, portals, model_registry
 )
 
 api_router = APIRouter()
@@ -22,3 +22,4 @@ api_router.include_router(portals.router, prefix="/portals", tags=["Research, In
 api_router.include_router(ingestion.router, prefix="/ingestion", tags=["Data Ingestion"])
 api_router.include_router(ml.router, prefix="/ml", tags=["Machine Learning & SHAP"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin & Audit"])
+api_router.include_router(model_registry.router, prefix="/admin", tags=["Model Governance & Dataset Registry"])

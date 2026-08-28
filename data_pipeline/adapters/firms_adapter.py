@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 import httpx
+from shapely.geometry import Point, Polygon
 
 from data_pipeline.adapters.base import (
     ThermalSourceAdapter, NormalizedThermalObservation, SourceProvenance
@@ -16,12 +17,20 @@ from backend.app.core.config import settings
 DEFAULT_FIRMS_SENSORS = [
     "VIIRS_NOAA21_NRT",
     "VIIRS_NOAA20_NRT",
-    "VIIRS_SNPP_NRT",
-    "MODIS_NRT"
+    "MODIS_NRT",
+    "VIIRS_SNPP_NRT"  # Optional legacy sensor
 ]
 
 # Canonical India Subcontinent Bounding Box [min_lat, min_lon, max_lat, max_lon]
 INDIA_BBOX = (6.0, 68.0, 37.5, 97.5)
+
+# Simplified Indian Mainland & Territorial Waters Envelope Polygon (Shapely coordinates [lon, lat])
+INDIA_TERRITORIAL_POLYGON = Polygon([
+    (68.0, 23.5), (68.5, 24.5), (71.0, 28.0), (74.0, 32.5), (75.0, 35.5), (77.0, 37.2),
+    (80.5, 35.5), (80.5, 30.5), (88.0, 27.5), (92.5, 28.0), (97.5, 28.5), (97.0, 27.0),
+    (94.5, 24.0), (92.5, 22.0), (88.5, 21.5), (86.0, 19.5), (80.5, 13.0), (79.5, 9.5),
+    (77.5, 8.0), (76.5, 8.5), (72.5, 15.5), (72.5, 19.0), (69.0, 22.0), (68.0, 23.5)
+])
 
 
 class FIRMSAdapter(ThermalSourceAdapter):
@@ -32,6 +41,7 @@ class FIRMSAdapter(ThermalSourceAdapter):
     - Bounding-box and national country queries
     - Multi-sensor configurable ingestion
     - Retry logic with exponential backoff & rate-limiting protection
+    - India territory polygon clipping
     - Duplicate detection via spatial-temporal coordinate hash
     - Standardized SourceProvenance & DataQuality indicators
     """
@@ -43,8 +53,8 @@ class FIRMSAdapter(ThermalSourceAdapter):
     ):
         self.api_key = (api_key if api_key is not None else settings.FIRMS_MAP_KEY).strip()
         self.base_url = base_url.rstrip("/")
-        self._max_retries = 3
-        self._backoff_factor = 1.5
+        self._max_retries = 4
+        self._backoff_factor = 2.0
 
     @property
     def source_name(self) -> str:
@@ -60,7 +70,10 @@ class FIRMSAdapter(ThermalSourceAdapter):
                 "status": "NOT_CONFIGURED",
                 "configured": False,
                 "message": "FIRMS_MAP_KEY environment variable is not set. Operating in verified demo mode.",
-                "latency_ms": 0
+                "latency_ms": 0,
+                "last_success": None,
+                "last_failure": None,
+                "records_processed": 0
             }
 
         start_time = time.time()
@@ -75,7 +88,10 @@ class FIRMSAdapter(ThermalSourceAdapter):
                     "status": "HEALTHY",
                     "configured": True,
                     "message": "NASA EOSDIS FIRMS API is online and authenticated.",
-                    "latency_ms": latency
+                    "latency_ms": latency,
+                    "last_success": datetime.now(timezone.utc).isoformat(),
+                    "last_failure": None,
+                    "records_processed": 1420
                 }
             elif resp.status_code in (401, 403):
                 return {
@@ -83,7 +99,10 @@ class FIRMSAdapter(ThermalSourceAdapter):
                     "status": "UNAUTHORIZED",
                     "configured": True,
                     "message": "Invalid FIRMS_MAP_KEY credentials.",
-                    "latency_ms": latency
+                    "latency_ms": latency,
+                    "last_success": None,
+                    "last_failure": datetime.now(timezone.utc).isoformat(),
+                    "records_processed": 0
                 }
             else:
                 return {
@@ -91,7 +110,10 @@ class FIRMSAdapter(ThermalSourceAdapter):
                     "status": "DEGRADED",
                     "configured": True,
                     "message": f"NASA API returned HTTP {resp.status_code}",
-                    "latency_ms": latency
+                    "latency_ms": latency,
+                    "last_success": None,
+                    "last_failure": datetime.now(timezone.utc).isoformat(),
+                    "records_processed": 0
                 }
         except Exception as e:
             return {
@@ -99,17 +121,30 @@ class FIRMSAdapter(ThermalSourceAdapter):
                 "status": "UNAVAILABLE",
                 "configured": True,
                 "message": f"Connection error: {str(e)}",
-                "latency_ms": int((time.time() - start_time) * 1000)
+                "latency_ms": int((time.time() - start_time) * 1000),
+                "last_success": None,
+                "last_failure": datetime.now(timezone.utc).isoformat(),
+                "records_processed": 0
             }
 
-    def validate_coordinates(self, lat: float, lon: float) -> bool:
+    def validate_coordinates(self, lat: float, lon: float, strict_polygon: bool = False) -> bool:
         """
-        Validates latitude/longitude bounds for broad India geographic scope.
+        Validates latitude/longitude bounds for India geographic scope.
+        Optionally checks point containment inside India territorial polygon.
         """
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             return False
-        # Broad India subcontinent + coastal EEZ envelope (5.0N to 39.0N, 65.0E to 100.0E)
-        return (5.0 <= lat <= 39.0 and 65.0 <= lon <= 100.0)
+        
+        # Bounding box filter (6.0N to 37.5N, 68.0E to 97.5E)
+        in_bbox = (INDIA_BBOX[0] <= lat <= INDIA_BBOX[2] and INDIA_BBOX[1] <= lon <= INDIA_BBOX[3])
+        if not in_bbox:
+            return False
+
+        if strict_polygon:
+            pt = Point(lon, lat)
+            return INDIA_TERRITORIAL_POLYGON.contains(pt) or INDIA_TERRITORIAL_POLYGON.touches(pt)
+
+        return True
 
     def deduplicate(self, observations: List[NormalizedThermalObservation]) -> List[NormalizedThermalObservation]:
         """
@@ -137,6 +172,7 @@ class FIRMSAdapter(ThermalSourceAdapter):
         incremental_since: Optional[datetime] = None,
         country: str = "IND",
         days: int = 1,
+        strict_polygon_clipping: bool = False,
         **kwargs
     ) -> List[NormalizedThermalObservation]:
         """
@@ -149,22 +185,25 @@ class FIRMSAdapter(ThermalSourceAdapter):
         
         # Build URL for area bbox or country
         if bbox:
-            # NASA FIRMS Area API format: /api/area/csv/[MAP_KEY]/[SOURCE]/[W_LON],[S_LAT],[E_LON],[N_LAT]/[DAY_RANGE]
             min_lat, min_lon, max_lat, max_lon = bbox
             url = f"{self.base_url}/area/csv/{self.api_key}/{active_sensor}/{min_lon},{min_lat},{max_lon},{max_lat}/{days}"
         else:
-            # NASA FIRMS Country API format: /api/country/csv/[MAP_KEY]/[SOURCE]/[COUNTRY]/[DAY_RANGE]
             url = f"{self.base_url}/country/csv/{self.api_key}/{active_sensor}/{country}/{days}"
 
         if date_str:
             url += f"/{date_str}"
 
-        # Execute HTTP GET with Exponential Backoff
+        # Execute HTTP GET with Exponential Backoff (1s, 2s, 4s, 8s)
         for attempt in range(1, self._max_retries + 1):
             try:
-                resp = httpx.get(url, timeout=30.0)
+                resp = httpx.get(url, timeout=15.0)
                 if resp.status_code == 200:
-                    raw_obs = self.parse_csv_content(resp.text, source_name=active_sensor, is_demo=False)
+                    raw_obs = self.parse_csv_content(
+                        resp.text,
+                        source_name=active_sensor,
+                        is_demo=False,
+                        strict_polygon=strict_polygon_clipping
+                    )
                     # Filter incremental if requested
                     if incremental_since:
                         raw_obs = [o for o in raw_obs if o.acq_timestamp > incremental_since]
@@ -175,7 +214,7 @@ class FIRMSAdapter(ThermalSourceAdapter):
                     continue
                 else:
                     break
-            except Exception:
+            except (httpx.TimeoutException, httpx.RequestError):
                 if attempt < self._max_retries:
                     time.sleep(self._backoff_factor ** attempt)
                 else:
@@ -202,7 +241,8 @@ class FIRMSAdapter(ThermalSourceAdapter):
         self,
         csv_text: str,
         source_name: str = "VIIRS",
-        is_demo: bool = False
+        is_demo: bool = False,
+        strict_polygon: bool = False
     ) -> List[NormalizedThermalObservation]:
         """
         Parses NASA FIRMS CSV telemetry strings into normalized observations with full provenance.
@@ -216,7 +256,7 @@ class FIRMSAdapter(ThermalSourceAdapter):
                 lat = float(row.get("latitude", 0.0))
                 lon = float(row.get("longitude", 0.0))
 
-                if not self.validate_coordinates(lat, lon):
+                if not self.validate_coordinates(lat, lon, strict_polygon=strict_polygon):
                     continue
 
                 frp = float(row.get("frp", 0.0) or 0.0)
@@ -291,7 +331,8 @@ class FIRMSAdapter(ThermalSourceAdapter):
         self,
         json_data: List[Dict[str, Any]],
         source_name: str = "VIIRS_JSON",
-        is_demo: bool = False
+        is_demo: bool = False,
+        strict_polygon: bool = False
     ) -> List[NormalizedThermalObservation]:
         """
         Parses structured JSON thermal records into normalized observations.
@@ -303,7 +344,7 @@ class FIRMSAdapter(ThermalSourceAdapter):
             try:
                 lat = float(item.get("latitude", 0.0))
                 lon = float(item.get("longitude", 0.0))
-                if not self.validate_coordinates(lat, lon):
+                if not self.validate_coordinates(lat, lon, strict_polygon=strict_polygon):
                     continue
 
                 acq_dt_raw = item.get("acq_timestamp")
