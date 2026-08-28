@@ -1,0 +1,191 @@
+{
+  "model_name": "AGNI-NETRA XGBoost Thermal Classifier",
+  "version": "v1.0.0",
+  "algorithm": "XGBOOST",
+  "benchmark_algorithm": "RANDOM_FOREST",
+  "dataset_provenance": {
+    "dataset_name": "AGNI-NETRA Synthetic Grounded Calibration Set",
+    "dataset_version": "v1.0-synthetic-grounded",
+    "total_samples": 2800,
+    "is_demo_dataset": true,
+    "class_distribution": {
+      "Industrial Fire": 400,
+      "Gas Flare": 400,
+      "Forest Fire": 400,
+      "Agricultural Burning": 400,
+      "Mining Activity": 400,
+      "Other Thermal Source": 400,
+      "Uncertain": 400
+    }
+  },
+  "evaluation_metrics": {
+    "overall_accuracy": 1.0,
+    "macro_f1": 1.0,
+    "macro_precision": 1.0,
+    "macro_recall": 1.0,
+    "cv_5fold_xgb_f1_mean": 1.0,
+    "cv_5fold_xgb_f1_std": 0.0,
+    "cv_5fold_xgb_acc_mean": 1.0,
+    "cv_5fold_rf_f1_mean": 1.0,
+    "cv_5fold_rf_acc_mean": 1.0,
+    "benchmark_lift_f1": 0.0
+  },
+  "per_class_metrics": {
+    "Industrial Fire": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Gas Flare": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Forest Fire": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Agricultural Burning": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Mining Activity": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Other Thermal Source": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "Uncertain": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    }
+  },
+  "confusion_matrix": [
+    [
+      400,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      400,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      400,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      400,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      400,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      400,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      400
+    ]
+  ],
+  "feature_importances": {
+    "frp_max": 0.0299,
+    "frp_avg": 0.0121,
+    "frp_std": 0.0138,
+    "bright_max": 0.0022,
+    "bright_avg": 0.0004,
+    "delta_brightness": 0.0062,
+    "dist_to_facility_m": 0.0304,
+    "dist_to_forest_m": 0.1441,
+    "dist_to_agriculture_m": 0.0968,
+    "dist_to_settlement_m": 0.0508,
+    "dist_to_water_m": 0.1078,
+    "dist_to_mine_m": 0.0861,
+    "landcover_code": 0.1337,
+    "persistence_score": 0.0822,
+    "recurrence_rate": 0.0087,
+    "day_night_ratio": 0.0573,
+    "baseline_deviation_ratio": 0.0996,
+    "industrial_context_score": 0.0379
+  },
+  "classes": [
+    "Industrial Fire",
+    "Gas Flare",
+    "Forest Fire",
+    "Agricultural Burning",
+    "Mining Activity",
+    "Other Thermal Source",
+    "Uncertain"
+  ],
+  "features": [
+    "frp_max",
+    "frp_avg",
+    "frp_std",
+    "bright_max",
+    "bright_avg",
+    "delta_brightness",
+    "dist_to_facility_m",
+    "dist_to_forest_m",
+    "dist_to_agriculture_m",
+    "dist_to_settlement_m",
+    "dist_to_water_m",
+    "dist_to_mine_m",
+    "landcover_code",
+    "persistence_score",
+    "recurrence_rate",
+    "day_night_ratio",
+    "baseline_deviation_ratio",
+    "industrial_context_score"
+  ]
+}

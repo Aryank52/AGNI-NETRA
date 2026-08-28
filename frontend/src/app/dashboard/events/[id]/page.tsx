@@ -14,7 +14,8 @@ import { useAuth } from "@/lib/authContext";
 import { 
   ArrowLeft, Download, CheckSquare, Shield, 
   Activity, MapPin, Calendar, Clock, AlertTriangle, 
-  CheckCircle2, Sparkles, Database, FileText
+  CheckCircle2, Sparkles, Database, FileText,
+  HelpCircle, Cpu, Layers, ExternalLink, RefreshCw
 } from "lucide-react";
 
 export default function EventDetailPage() {
@@ -32,18 +33,19 @@ export default function EventDetailPage() {
   const [verifSubmitting, setVerifSubmitting] = useState(false);
   const [verifSuccess, setVerifSuccess] = useState(false);
 
+  const loadEvent = async () => {
+    try {
+      const data = await fetchApi<ThermalEvent>(`/events/${eventId}`);
+      setEvent(data);
+      setVerifiedLabel(data.prediction?.predicted_class || "Industrial Fire");
+    } catch (err) {
+      console.warn("Failed to fetch event detail:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadEvent = async () => {
-      try {
-        const data = await fetchApi<ThermalEvent>(`/events/${eventId}`);
-        setEvent(data);
-        setVerifiedLabel(data.prediction?.predicted_class || "Industrial Fire");
-      } catch (err) {
-        console.warn("Failed to fetch event detail:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     if (eventId) {
       loadEvent();
     }
@@ -66,7 +68,8 @@ export default function EventDetailPage() {
       setTimeout(() => {
         setVerifModalOpen(false);
         setVerifSuccess(false);
-      }, 1500);
+        loadEvent();
+      }, 1200);
     } catch (err) {
       alert("Failed to submit verification: " + err);
     } finally {
@@ -77,7 +80,8 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-agni-navy flex items-center justify-center text-slate-400 font-mono text-sm">
-        Loading AGNI-NETRA Intelligence Dossier...
+        <RefreshCw className="w-5 h-5 animate-spin mr-2 text-amber-400" />
+        Loading AGNI-NETRA AI Intelligence Dossier...
       </div>
     );
   }
@@ -95,6 +99,9 @@ export default function EventDetailPage() {
 
   const pClass = event.prediction?.predicted_class || "Uncertain";
   const confidence = event.prediction?.confidence || 0.85;
+  const uncertainty = (1.0 - confidence) * 0.8; // Normalized uncertainty display
+  const modelVersion = "v1.0.0-xgboost";
+  const isCandidate = event.facility_status === "CANDIDATE";
 
   return (
     <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
@@ -135,7 +142,7 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Dossier Header Banner */}
+          {/* Dossier Header Banner with Provenance */}
           <div className="p-6 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -143,17 +150,28 @@ export default function EventDetailPage() {
                   <h1 className="text-2xl font-extrabold text-white tracking-wide font-mono">
                     {event.event_code}
                   </h1>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                     {event.state} {event.district ? `• ${event.district}` : ""}
                   </span>
-                  {event.is_demo && (
+                  {event.is_demo ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      VERIFIED SAMPLE DATA
+                      SAMPLE CALIBRATION DATA
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      LIVE NRT TELEMETRY
                     </span>
                   )}
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                    event.status === "VERIFIED"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                      : "bg-slate-800 text-slate-400 border-slate-700"
+                  }`}>
+                    STATUS: {event.status}
+                  </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  Location: {event.latitude.toFixed(5)}°N, {event.longitude.toFixed(5)}°E • Detected via NASA VIIRS NOAA-20 / MODIS
+                  Coordinates: {event.latitude.toFixed(5)}°N, {event.longitude.toFixed(5)}°E • First seen: {new Date(event.first_seen).toLocaleString()} • Last seen: {new Date(event.last_seen).toLocaleString()}
                 </p>
               </div>
 
@@ -162,8 +180,8 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {/* Classification Highlight Box */}
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-mono">
+            {/* AI Classification & Uncertainty Intelligence Matrix */}
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 grid grid-cols-1 sm:grid-cols-5 gap-4 text-xs font-mono">
               <div>
                 <div className="text-[10px] text-slate-500 uppercase">AI Classification</div>
                 <div className="text-base font-extrabold text-amber-400 font-sans">{pClass}</div>
@@ -171,7 +189,17 @@ export default function EventDetailPage() {
               </div>
 
               <div>
-                <div className="text-[10px] text-slate-500 uppercase">Peak Radiative Power</div>
+                <div className="text-[10px] text-slate-500 uppercase">Uncertainty Score</div>
+                <div className="text-base font-extrabold text-cyan-300">
+                  {uncertainty.toFixed(3)}
+                </div>
+                <div className="text-[10px] text-slate-400 font-sans">
+                  {uncertainty < 0.25 ? "Low Uncertainty" : uncertainty < 0.50 ? "Moderate" : "High (HITL Flag)"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase">Peak FRP</div>
                 <div className="text-base font-extrabold text-white">{event.max_frp.toFixed(1)} MW</div>
                 <div className="text-[10px] text-slate-400">Mean: {event.avg_frp.toFixed(1)} MW</div>
               </div>
@@ -185,11 +213,28 @@ export default function EventDetailPage() {
               </div>
 
               <div>
-                <div className="text-[10px] text-slate-500 uppercase">Facility Proximity</div>
+                <div className="text-[10px] text-slate-500 uppercase">Facility Context</div>
                 <div className="text-base font-extrabold text-white">
                   {event.nearest_facility_distance_m !== undefined ? `${event.nearest_facility_distance_m.toFixed(0)}m` : "Uncataloged"}
                 </div>
-                <div className="text-[10px] text-slate-400">{event.facility_status} STATUS</div>
+                <div className="text-[10px] text-purple-300 font-bold">{isCandidate ? "CANDIDATE DISCOVERY" : event.facility_status}</div>
+              </div>
+            </div>
+
+            {/* Model Architecture & Provenance Strip */}
+            <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                  <strong>Model:</strong> {modelVersion} (XGBoost 7-Class + SHAP)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <strong>Sources:</strong> NASA FIRMS VIIRS/MODIS • ISRO Bhuvan (10m) • OSM
+                </span>
+              </div>
+              <div>
+                <span>LULC: <strong className="text-white">{event.landcover_class}</strong></span>
               </div>
             </div>
           </div>
@@ -277,9 +322,9 @@ export default function EventDetailPage() {
                         className="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 text-white"
                       >
                         <option value="CONFIRM">Confirm AI Prediction</option>
-                        <option value="CORRECT">Correct / Override Classification</option>
+                        <option value="OVERRIDE">Correct / Override Classification</option>
                         <option value="MARK_UNCERTAIN">Mark Uncertain / Needs Ground Survey</option>
-                        <option value="FALSE_POSITIVE">Flag as False Positive Sensor Anomaly</option>
+                        <option value="REJECT">Flag as False Positive Sensor Glint</option>
                       </select>
                     </div>
 

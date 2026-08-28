@@ -1,0 +1,46 @@
+{
+  "features": [
+    "frp_max",
+    "frp_avg",
+    "frp_std",
+    "bright_max",
+    "bright_avg",
+    "delta_brightness",
+    "dist_to_facility_m",
+    "dist_to_forest_m",
+    "dist_to_agriculture_m",
+    "dist_to_settlement_m",
+    "dist_to_water_m",
+    "dist_to_mine_m",
+    "landcover_code",
+    "persistence_score",
+    "recurrence_rate",
+    "day_night_ratio",
+    "baseline_deviation_ratio",
+    "industrial_context_score"
+  ],
+  "classes": [
+    "Industrial Fire",
+    "Gas Flare",
+    "Forest Fire",
+    "Agricultural Burning",
+    "Mining Activity",
+    "Other Thermal Source",
+    "Uncertain"
+  ],
+  "landcover_mapping": {
+    "Industrial": 1,
+    "Mining": 2,
+    "Urban / Built-up": 3,
+    "Settlement": 3,
+    "Agriculture / Cropland": 4,
+    "Agricultural": 4,
+    "Forest": 5,
+    "Barren / Scrub": 6,
+    "Barren": 6,
+    "Water Body": 7,
+    "Water": 7,
+    "Unknown": 0
+  },
+  "version": "v1.0.0"
+}

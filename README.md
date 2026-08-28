@@ -1,4 +1,4 @@
-# 🔥 AGNI-NETRA (SIH26162)
+#  AGNI-NETRA (SIH26162)
 ### AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis
 *Smart India Hackathon 2026 — Software / AI / GIS / Remote Sensing Decision Support Platform*
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 🌟 Key Product Capabilities & USPs
+##  Key Product Capabilities & USPs
 
 1. **7-Class AI Thermal Source Classifier**: Primary XGBoost (F1: 0.958, Accuracy: 96.2%) + Random Forest benchmark classifying Industrial Fires, Gas Flares, Forest Fires, Agricultural Stubble Burning, Mining, Other, and Uncertain.
 2. **Autonomous Candidate Facility Discovery (USP)**: Discovers uncataloged industrial thermal sources based on multi-temporal recurrence, 24x7 diurnal emissions, and LULC isolation.
@@ -23,7 +23,7 @@
 
 ---
 
-## 🚀 Quick Start (Local Development)
+##  Quick Start (Local Development)
 
 ### 1. Backend Server (FastAPI)
 ```bash
@@ -51,14 +51,14 @@ npm run dev
 
 ---
 
-## 🐳 Docker Compose Deployment
+##  Docker Compose Deployment
 ```bash
 docker-compose -f deployment/docker-compose.yml up --build -d
 ```
 
 ---
 
-## 🏛 Project Architecture & Monorepo Layout
+##  Project Architecture & Monorepo Layout
 
 ```
 AGNI-NETRA/
@@ -84,7 +84,7 @@ AGNI-NETRA/
 
 ---
 
-## 👥 Demo Role Accounts (1-Click Login Ready)
+##  Demo Role Accounts (1-Click Login Ready)
 
 | Role | Demo Email | Password | Scope |
 |---|---|---|---|
