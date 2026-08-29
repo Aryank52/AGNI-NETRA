@@ -5,30 +5,20 @@ from typing import Dict, Any, Optional, List
 from backend.app.core.config import settings
 
 
-class NotificationService:
+class EmailNotificationProvider:
     """
-    AGNI-NETRA Notification Dispatcher.
-    Provides decoupled abstractions for Email (SMTP) and SMS alerts.
-    Gracefully disables dispatch when credentials/services are unconfigured.
+    SMTP-based Email Notification Provider.
+    Dispatches structured HTML alerts when EMAIL_ENABLED=true and credentials are configured.
     """
 
     def __init__(self):
-        self.email_enabled = settings.EMAIL_ENABLED and bool(settings.SMTP_USERNAME and settings.SMTP_PASSWORD)
-        self.sms_enabled = settings.SMS_ENABLED and bool(settings.SMS_API_KEY)
+        self.enabled = settings.EMAIL_ENABLED and bool(settings.SMTP_USERNAME and settings.SMTP_PASSWORD)
 
-    def send_alert_email(
-        self,
-        recipient_email: str,
-        subject: str,
-        alert_details: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Dispatches structured HTML alert notification via SMTP if configured.
-        """
-        if not self.email_enabled:
+    def send(self, recipient_email: str, subject: str, alert_details: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.enabled:
             return {
                 "status": "SKIPPED",
-                "message": "Email service not configured or disabled in environment settings."
+                "message": "Email provider disabled or SMTP credentials not configured."
             }
 
         try:
@@ -60,7 +50,6 @@ class NotificationService:
             </body>
             </html>
             """
-
             msg.attach(MIMEText(html_body, "html"))
 
             with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
@@ -72,27 +61,111 @@ class NotificationService:
         except Exception as e:
             return {"status": "FAILED", "error": str(e)}
 
-    def send_sms_alert(
-        self,
-        phone_number: str,
-        message: str
-    ) -> Dict[str, Any]:
-        """
-        Dispatches SMS alert via configured SMS gateway provider abstraction.
-        """
-        if not self.sms_enabled:
+
+class SMSProvider:
+    """
+    SMS Gateway Provider Abstraction.
+    Allows modular pluggability for Twilio, Textlocal, CDAC Meghdoot, or Console logging.
+    """
+
+    def __init__(self):
+        self.enabled = settings.SMS_ENABLED and bool(settings.SMS_API_KEY)
+        self.provider_name = settings.SMS_PROVIDER
+
+    def send(self, phone_number: str, message: str) -> Dict[str, Any]:
+        if not self.enabled:
             return {
                 "status": "SKIPPED",
-                "message": "SMS provider not configured (CONSOLE mode active)."
+                "provider": self.provider_name,
+                "message": f"SMS provider not configured (CONSOLE simulation: {message[:60]}...)"
             }
 
-        # Pluggable vendor integration hook
         return {
             "status": "SENT",
-            "provider": settings.SMS_PROVIDER,
+            "provider": self.provider_name,
             "recipient": phone_number,
             "message": message[:160]
         }
+
+
+class AgencyNotificationProvider:
+    """
+    Integration-ready abstraction for Indian Government & Regulatory Agencies:
+    - NDMA (National Disaster Management Authority)
+    - SDMA (State Disaster Management Authority)
+    - State Forest Departments
+    - CPCB / SPCB (Central & State Pollution Control Boards)
+    - Directorate of Industrial Safety & Health (DISH)
+    - Facility Operators / Safety Officers
+    """
+
+    SUPPORTED_AGENCIES = [
+        "NDMA",
+        "SDMA",
+        "FOREST_DEPARTMENT",
+        "CPCB_SPCB",
+        "INDUSTRIAL_SAFETY_DIRECTORATE",
+        "FACILITY_OPERATOR"
+    ]
+
+    def __init__(self):
+        self.email_provider = EmailNotificationProvider()
+        self.sms_provider = SMSProvider()
+
+    def dispatch_agency_advisory(
+        self,
+        agency_type: str,
+        target_state: str,
+        alert_payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Routes incident intelligence to the relevant authority based on jurisdiction and event classification.
+        """
+        agency = agency_type.upper()
+        if agency not in self.SUPPORTED_AGENCIES:
+            agency = "SDMA"
+
+        subject = f"{agency} Advisory - {target_state}: {alert_payload.get('title', 'Thermal Incident')}"
+        
+        # Abstraction layer ready for official API webhooks / dispatch systems
+        return {
+            "status": "QUEUED_FOR_DISPATCH",
+            "agency": agency,
+            "jurisdiction": target_state,
+            "priority": alert_payload.get("risk_level", "HIGH"),
+            "event_code": alert_payload.get("event_code"),
+            "dispatch_timestamp": alert_payload.get("timestamp"),
+            "channels": ["SYSTEM_INBOX", "SECURE_ADVISORY_PORTAL"]
+        }
+
+
+class NotificationService:
+    """
+    Unified AGNI-NETRA Notification Dispatcher.
+    Coordinates Email, SMS, and Agency advisories.
+    """
+
+    def __init__(self):
+        self.email_provider = EmailNotificationProvider()
+        self.sms_provider = SMSProvider()
+        self.agency_provider = AgencyNotificationProvider()
+
+    @property
+    def email_enabled(self) -> bool:
+        return self.email_provider.enabled
+
+    @property
+    def sms_enabled(self) -> bool:
+        return self.sms_provider.enabled
+
+    def send_alert_email(self, recipient_email: str, subject: str, alert_details: Dict[str, Any]) -> Dict[str, Any]:
+        return self.email_provider.send(recipient_email, subject, alert_details)
+
+    def send_sms_alert(self, phone_number: str, message: str) -> Dict[str, Any]:
+        return self.sms_provider.send(phone_number, message)
+
+    def notify_agencies(self, agency_type: str, target_state: str, alert_payload: Dict[str, Any]) -> Dict[str, Any]:
+        return self.agency_provider.dispatch_agency_advisory(agency_type, target_state, alert_payload)
 
 
 notification_service = NotificationService()

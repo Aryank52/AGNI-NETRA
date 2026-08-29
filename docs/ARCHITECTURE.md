@@ -2,9 +2,9 @@
 
 ## 1. Executive Summary
 
-**AGNI-NETRA** (*AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis*) is a comprehensive, production-grade geospatial intelligence and decision support platform built for **Smart India Hackathon 2026 (SIH26162)**.
+**AGNI-NETRA** (*AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis*) is a comprehensive, production-grade geospatial intelligence and decision support platform.
 
-The system ingests raw satellite thermal observations (NASA FIRMS VIIRS & MODIS, Sentinel-2 SWIR, Landsat TIRS), spatial data from OpenStreetMap, and Land Use / Land Cover (LULC) datasets to perform:
+The system ingests real satellite thermal observations (NASA FIRMS VIIRS & MODIS, Sentinel-2 SWIR, Landsat TIRS), spatial data from OpenStreetMap, and Land Use / Land Cover (LULC) datasets, alongside an integrated software satellite digital twin (**AGNI-SAT**) to perform:
 
 $$\text{DETECT} \longrightarrow \text{CLASSIFY} \longrightarrow \text{ANALYZE} \longrightarrow \text{EXPLAIN} \longrightarrow \text{PRIORITIZE} \longrightarrow \text{VERIFY}$$
 

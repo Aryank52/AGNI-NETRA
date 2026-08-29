@@ -1,12 +1,12 @@
-#  AGNI-NETRA (SIH26162)
-### AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis
-*Smart India Hackathon 2026 — Software / AI / GIS / Remote Sensing Decision Support Platform*
+# AGNI-NETRA
+### AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform
+*Detect → Classify → Analyze → Explain → Prioritize → Verify*
 
 ---
 
-> **Core Mission**: Transforming raw satellite thermal observations into explainable industrial thermal intelligence.
+> **Core Mission**: Transforming raw satellite thermal observations into explainable industrial thermal intelligence and decision support.
 > 
-> *&ldquo;FIRMS tells us where a thermal anomaly is. **AGNI-NETRA** tells us what it most likely is, whether it is persistent or abnormal, how risky it is, and why.&rdquo;*
+> *&ldquo;FIRMS tells us where a thermal anomaly is. **AGNI-NETRA** tells us what it most likely represents, whether it is persistent or abnormal, how risky it is, and why.&rdquo;*
 
 ---
 
@@ -97,4 +97,4 @@ AGNI-NETRA/
 
 ---
 
-*Built with passion for Smart India Hackathon 2026 (SIH26162).*
+*AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform.*

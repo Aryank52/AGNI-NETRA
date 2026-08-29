@@ -343,6 +343,7 @@ class EventTraceStep(BaseModel):
 class EventTraceLineageOut(BaseModel):
     event_id: str
     event_code: str
+    origin_type: Optional[str] = "REAL SATELLITE DATA"
     generated_at: str
     total_steps: int
     stages: List[EventTraceStep]

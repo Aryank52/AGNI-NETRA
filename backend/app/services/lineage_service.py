@@ -7,40 +7,69 @@ from backend.app.models.domain import ThermalEvent, ThermalDetection, EventFeatu
 
 def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
     """
-    Generates an end-to-end 10-stage scientific data lineage trail for an individual thermal event.
-    Traces from raw satellite telemetry to spatial enrichment, ML inference, explainability, and HITL decision support.
+    Generates an end-to-end scientific data lineage trail for an individual thermal event.
+    Traces from satellite simulation / raw telemetry to spatial enrichment, ML inference, explainability, and HITL decision support.
     """
     event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
     if not event:
         raise ValueError(f"Thermal Event {event_id} not found")
 
     stages = []
+    first_det = event.detections[0] if event.detections else None
+    
+    is_simulation = False
+    if first_det and ("SIMULATION" in first_det.source.upper() or "AGNI_SAT" in first_det.source.upper()):
+        is_simulation = True
+    elif event.event_code.startswith("EVT-SIM") or (event.candidate_facility and "SIM" in event.candidate_facility.facility_code):
+        is_simulation = True
+
+    step_counter = 1
+
+    # Stage 0 (if Simulation): AGNI-SAT Spacecraft Simulation
+    if is_simulation:
+        stages.append({
+            "step_number": step_counter,
+            "stage": "SATELLITE_SIMULATION",
+            "title": "AGNI-SAT-01 Virtual Orbit Pass & Synthetic Radiance Calculation",
+            "status": "COMPLETED",
+            "timestamp": event.first_seen.isoformat(),
+            "provenance_source": "AGNI_SAT_DIGITAL_TWIN",
+            "details": {
+                "origin_type": "SIMULATED SATELLITE DATA",
+                "spacecraft": "AGNI-SAT-01",
+                "orbit": "Sun-Synchronous LEO 505 km",
+                "active_sensor": first_det.sensor if first_det else "THERMAL_MWIR",
+                "simulation_fidelity": "High-Fidelity Tabular & Radiance Physics"
+            }
+        })
+        step_counter += 1
 
     # 1. Raw Telemetry Stage
-    first_det = event.detections[0] if event.detections else None
     stages.append({
-        "step_number": 1,
+        "step_number": step_counter,
         "stage": "RAW_TELEMETRY",
-        "title": "NASA FIRMS Telemetry Overpass",
+        "title": "Satellite Telemetry Ingestion" if is_simulation else "NASA FIRMS Telemetry Overpass",
         "status": "COMPLETED",
         "timestamp": event.first_seen.isoformat(),
-        "provenance_source": first_det.source if first_det else "NASA_FIRMS_VIIRS",
+        "provenance_source": first_det.source if first_det else ("AGNI_SAT_SIMULATION" if is_simulation else "NASA_FIRMS_VIIRS"),
         "details": {
-            "sensor": first_det.sensor if first_det else "VIIRS_NOAA20",
-            "satellite": first_det.satellite if first_det else "NOAA-20",
+            "origin_type": "SIMULATED SATELLITE DATA" if is_simulation else "REAL SATELLITE DATA",
+            "sensor": first_det.sensor if first_det else ("THERMAL_MWIR" if is_simulation else "VIIRS_NOAA20"),
+            "satellite": first_det.satellite if first_det else ("AGNI-SAT-01" if is_simulation else "NOAA-20"),
             "day_night": first_det.day_night if first_det else "D",
             "source_record_id": first_det.id if first_det else "N/A"
         }
     })
+    step_counter += 1
 
     # 2. Hotspot Detection
     stages.append({
-        "step_number": 2,
+        "step_number": step_counter,
         "stage": "DETECTION",
         "title": "Thermal Anomaly Radiometric Extraction",
         "status": "COMPLETED",
         "timestamp": event.first_seen.isoformat(),
-        "provenance_source": "NASA_FIRMS_375M",
+        "provenance_source": "AGNI_SAT_375M" if is_simulation else "NASA_FIRMS_375M",
         "details": {
             "latitude": event.latitude,
             "longitude": event.longitude,
@@ -50,10 +79,11 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "detection_count": event.detection_count
         }
     })
+    step_counter += 1
 
     # 3. DBSCAN Event Clustering
     stages.append({
-        "step_number": 3,
+        "step_number": step_counter,
         "stage": "EVENT_CLUSTER",
         "title": "Spatiotemporal DBSCAN Clustering",
         "status": "COMPLETED",
@@ -66,10 +96,11 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "bounding_box": event.bounding_box or [event.latitude, event.longitude, event.latitude, event.longitude]
         }
     })
+    step_counter += 1
 
     # 4. PostGIS Spatial Enrichment
     stages.append({
-        "step_number": 4,
+        "step_number": step_counter,
         "stage": "SPATIAL_ENRICHMENT",
         "title": "PostGIS Proximity & Cadastral Association",
         "status": "COMPLETED",
@@ -83,10 +114,11 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "district": event.district or "Unassigned"
         }
     })
+    step_counter += 1
 
     # 5. ISRO Bhuvan LULC Context
     stages.append({
-        "step_number": 5,
+        "step_number": step_counter,
         "stage": "LULC_CONTEXT",
         "title": "ISRO Bhuvan 24m LULC Spatial Classification",
         "status": "COMPLETED",
@@ -99,10 +131,11 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "is_industrial_zone": "Industrial" in event.landcover_class
         }
     })
+    step_counter += 1
 
     # 6. Event-Driven Satellite Scene Search
     stages.append({
-        "step_number": 6,
+        "step_number": step_counter,
         "stage": "SATELLITE_CONTEXT",
         "title": "Sentinel-2 / Landsat STAC Catalog Linkage",
         "status": "COMPLETED",
@@ -115,11 +148,12 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "scenes_matched": event.satellite_count
         }
     })
+    step_counter += 1
 
     # 7. 18-Feature Engineering
     feat = event.features
     stages.append({
-        "step_number": 7,
+        "step_number": step_counter,
         "stage": "FEATURE_VECTOR",
         "title": "18-Dimensional Remote Sensing Tabular Feature Vector",
         "status": "COMPLETED",
@@ -133,11 +167,12 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "dist_to_forest_m": feat.dist_to_forest_m if feat else 99999.0
         }
     })
+    step_counter += 1
 
     # 8. Model Inference & Uncertainty
     pred = event.prediction
     stages.append({
-        "step_number": 8,
+        "step_number": step_counter,
         "stage": "MODEL_INFERENCE",
         "title": "XGBoost Tabular Classification & Shannon Entropy",
         "status": "COMPLETED",
@@ -150,10 +185,11 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "model_version": "v1.0-synthetic-baseline"
         }
     })
+    step_counter += 1
 
     # 9. Explainability Waterfall
     stages.append({
-        "step_number": 9,
+        "step_number": step_counter,
         "stage": "SHAP_EXPLANATION",
         "title": "SHAP TreeExplainer Attribution Waterfall",
         "status": "COMPLETED",
@@ -164,11 +200,12 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
             "explanation": pred.explanation_summary if pred else "No SHAP explanation generated."
         }
     })
+    step_counter += 1
 
     # 10. Decision Support & HITL
     risk = event.risk
     stages.append({
-        "step_number": 10,
+        "step_number": step_counter,
         "stage": "DECISION_SUPPORT",
         "title": "Multi-Factor Risk Scoring & Human Verification Queue",
         "status": "COMPLETED",
@@ -184,6 +221,7 @@ def generate_event_trace_lineage(db: Session, event_id: str) -> Dict[str, Any]:
     return {
         "event_id": event.id,
         "event_code": event.event_code,
+        "origin_type": "SIMULATED SATELLITE DATA" if is_simulation else "REAL SATELLITE DATA",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_steps": len(stages),
         "stages": stages
