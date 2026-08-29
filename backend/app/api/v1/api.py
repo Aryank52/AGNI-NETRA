@@ -2,7 +2,8 @@ from fastapi import APIRouter
 from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
-    ingestion, ml, admin, baselines, portals, model_registry
+    ingestion, ml, admin, baselines, portals, model_registry,
+    satellite_simulator, historical, evidence
 )
 
 api_router = APIRouter()
@@ -23,3 +24,7 @@ api_router.include_router(ingestion.router, prefix="/ingestion", tags=["Data Ing
 api_router.include_router(ml.router, prefix="/ml", tags=["Machine Learning & SHAP"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin & Audit"])
 api_router.include_router(model_registry.router, prefix="/admin", tags=["Model Governance & Dataset Registry"])
+api_router.include_router(satellite_simulator.router, prefix="/satellite", tags=["AGNI-SAT Software Satellite & Mission Control"])
+api_router.include_router(historical.router, prefix="/historical", tags=["Historical Thermal Database & Atlas"])
+api_router.include_router(evidence.router, prefix="/evidence", tags=["Multimodal Evidence & Ground Verification"])
+

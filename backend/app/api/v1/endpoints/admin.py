@@ -111,13 +111,23 @@ def get_system_health(db: Session = Depends(get_db)):
     """
     Returns system status, database health, and active services.
     """
+    dialect = db.bind.dialect.name if db.bind else "sqlite"
+    if dialect == "postgresql":
+        db_desc = "CONNECTED (PostgreSQL + PostGIS)"
+        spatial_desc = "OPERATIONAL (PostGIS Extension)"
+    else:
+        db_desc = "CONNECTED (SQLite - TEST/DEMO FALLBACK)"
+        spatial_desc = "OPERATIONAL (Shapely R-Tree Engine - TEST/DEMO FALLBACK)"
+
     return {
         "status": "HEALTHY",
-        "system": "AGNI-NETRA v1.0.0 (Smart India Hackathon 2026)",
-        "database": "CONNECTED (PostgreSQL / SQLite Dual-Engine)",
-        "spatial_engine": "OPERATIONAL (PostGIS / Shapely R-Tree)",
+        "system": "AGNI-NETRA (AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis)",
+        "database": db_desc,
+        "spatial_engine": spatial_desc,
         "ml_inference": "OPERATIONAL (XGBoost + SHAP TreeExplainer)",
         "uncertainty_engine": "OPERATIONAL (Normalized Shannon Entropy)",
         "anomaly_engine": "OPERATIONAL (Isolation Forest)",
+        "satellite_simulator": "OPERATIONAL (AGNI-SAT-01 Digital Twin)",
         "demo_mode": "ACTIVE"
     }
+

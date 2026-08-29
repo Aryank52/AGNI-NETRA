@@ -391,3 +391,171 @@ class ReportOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ------------------------------------------------------------------------------
+# Data Source Registry & Ingestion Schemas
+# ------------------------------------------------------------------------------
+
+class DataSourceOut(BaseModel):
+    id: str
+    source_name: str
+    adapter_class: str
+    category: str
+    endpoint: Optional[str] = None
+    auth_type: str = "NONE"
+    configured: bool = False
+    description: Optional[str] = None
+    is_active: bool = True
+    health_status: str = "HEALTHY"
+    last_sync_at: Optional[datetime] = None
+    last_success_at: Optional[datetime] = None
+    last_failure_at: Optional[datetime] = None
+    latency_ms: float = 0.0
+    record_count: int = 0
+    provenance_info: Dict[str, Any] = {}
+    terms_url: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ThermalHistoryOut(BaseModel):
+    id: str
+    source: str
+    sensor: str
+    satellite: Optional[str] = None
+    latitude: float
+    longitude: float
+    acq_date: str
+    acq_time: str
+    acq_timestamp: datetime
+    brightness: Optional[float] = None
+    bright_t31: Optional[float] = None
+    frp: float
+    confidence: float
+    day_night: str
+    processing_type: str = "NRT"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    source_record_id: Optional[str] = None
+    raw_metadata: Dict[str, Any] = {}
+    is_demo: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+# ------------------------------------------------------------------------------
+# Evidence & Human Verification Schemas
+# ------------------------------------------------------------------------------
+
+class EvidenceRecordCreate(BaseModel):
+    event_id: str
+    evidence_type: str  # ANALYST_VERIFICATION, PHOTO_UPLOAD, OFFICIAL_DOCUMENT, SATELLITE_CONTEXT, GIS_EVIDENCE, HISTORICAL_BASELINE, FIELD_NOTE
+    evidence_source: str
+    title: str
+    notes: Optional[str] = None
+    evidence_data: Dict[str, Any] = {}
+
+
+class EvidenceRecordOut(BaseModel):
+    id: str
+    event_id: str
+    evidence_type: str
+    evidence_source: str
+    title: str
+    notes: Optional[str] = None
+    evidence_data: Dict[str, Any] = {}
+    verified: bool = False
+    verified_by: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ------------------------------------------------------------------------------
+# AGNI-SAT Software Satellite & Mission Control Schemas
+# ------------------------------------------------------------------------------
+
+class SimulationScenarioOut(BaseModel):
+    id: str
+    name: str
+    scenario_type: str
+    description: str
+    target_state: str
+    target_lat: float
+    target_lon: float
+    target_facility: Optional[str] = None
+    expected_class: str
+    expected_risk_level: str
+    parameters: Dict[str, Any] = {}
+    status: str
+    last_run_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SatelliteTaskingRequest(BaseModel):
+    satellite_id: str = "AGNI-SAT-01"
+    target_name: str
+    target_lat: float
+    target_lon: float
+    sensor_id: str = "THERMAL_MWIR"
+    observation_window_minutes: int = 15
+    priority: str = "HIGH"
+
+
+class SatelliteTelemetryOut(BaseModel):
+    id: str
+    satellite_id: str
+    sensor_id: str
+    scenario_id: Optional[str] = None
+    timestamp: datetime
+    latitude: float
+    longitude: float
+    frp: float
+    brightness: float
+    confidence: float
+    footprint_geojson: Dict[str, Any] = {}
+    status: str
+    raw_packet: Dict[str, Any] = {}
+    is_simulation: bool = True
+
+    class Config:
+        from_attributes = True
+
+
+class LatencyBenchmarkOut(BaseModel):
+    observation_to_telemetry_ms: float
+    telemetry_to_ingestion_ms: float
+    clustering_ms: float
+    gis_enrichment_ms: float
+    ml_inference_ms: float
+    shap_explanation_ms: float
+    risk_evaluation_ms: float
+    total_processing_ms: float
+    target_fps_or_hz: float
+
+
+class MissionTaskOut(BaseModel):
+    id: str
+    task_code: str
+    satellite_id: str
+    target_name: str
+    target_lat: float
+    target_lon: float
+    sensor_id: str
+    priority: str
+    status: str
+    scheduled_pass_time: datetime
+    observed_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+

@@ -12,6 +12,25 @@ from backend.app.models.schemas import TokenPayload
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
 )
+optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/login",
+    auto_error=False
+)
+
+
+def get_optional_current_user(
+    db: Session = Depends(get_db), token: Optional[str] = Depends(optional_oauth2)
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+        return db.query(User).filter(User.id == token_data.sub).first()
+    except Exception:
+        return None
 
 
 def get_current_user(

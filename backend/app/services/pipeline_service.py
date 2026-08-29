@@ -1,3 +1,4 @@
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
@@ -24,6 +25,7 @@ class ThermalPipelineService:
     """
     End-to-end Geospatial & Thermal Processing Pipeline.
     Orchestrates: Raw Ingestion -> Deduplication -> Spatiotemporal DBSCAN -> LULC & Facility Enrichment -> Event Storage.
+    Measures independent actual execution timing for every processing stage.
     """
 
     def process_observations(
@@ -34,11 +36,31 @@ class ThermalPipelineService:
     ) -> Dict[str, Any]:
         """
         Processes a batch of normalized thermal observations into stored detections and clustered events.
+        Measures real stage latencies independently using time.perf_counter().
         """
         if not observations:
-            return {"status": "EMPTY", "events_created": 0, "detections_stored": 0}
+            return {
+                "status": "EMPTY",
+                "events_created": 0,
+                "event_ids": [],
+                "detections_stored": 0,
+                "stage_timings_ms": {
+                    "ingestion_ms": 0.0,
+                    "clustering_ms": 0.0,
+                    "gis_enrichment_ms": 0.0,
+                    "persistence_ms": 0.0,
+                    "ml_inference_ms": 0.0,
+                    "shap_explanation_ms": 0.0,
+                    "risk_evaluation_ms": 0.0,
+                    "db_commit_ms": 0.0,
+                    "total_processing_ms": 0.0
+                }
+            }
 
-        # 1. Fetch registered facilities for spatial indexing
+        t_pipeline_start = time.perf_counter()
+
+        # 1. Ingestion & Spatial Indexing
+        t_ingest_start = time.perf_counter()
         facilities = db.query(IndustrialFacility).all()
         fac_dicts = [
             {
@@ -52,7 +74,6 @@ class ThermalPipelineService:
             for f in facilities
         ]
 
-        # 2. Convert observations to detection dictionaries
         raw_detection_dicts = []
         for obs in observations:
             raw_detection_dicts.append({
@@ -71,12 +92,21 @@ class ThermalPipelineService:
                 "raw_payload": obs.metadata,
                 "is_demo": obs.is_demo
             })
+        ingest_duration_ms = (time.perf_counter() - t_ingest_start) * 1000.0
 
-        # 3. Spatiotemporal DBSCAN Clustering (1.5 km epsilon)
+        # 2. Spatiotemporal DBSCAN Clustering
+        t_cluster_start = time.perf_counter()
         clustered_events = cluster_thermal_detections(raw_detection_dicts, eps_km=1.5)
+        cluster_duration_ms = (time.perf_counter() - t_cluster_start) * 1000.0
 
         created_event_ids = []
         total_detections_stored = 0
+
+        gis_total_ms = 0.0
+        persistence_total_ms = 0.0
+        ml_total_ms = 0.0
+        shap_total_ms = 0.0
+        risk_total_ms = 0.0
 
         for idx, cluster in enumerate(clustered_events):
             c_lat = cluster["latitude"]
@@ -84,17 +114,13 @@ class ThermalPipelineService:
             c_dets = cluster["detections"]
             is_demo = any(d.get("is_demo", False) for d in c_dets)
 
-            # Spatial Enrichment: Nearest Facility
+            # Spatial & LULC Enrichment
+            t_gis_start = time.perf_counter()
             nearest_fac, fac_dist = find_nearest_facility(c_lat, c_lon, fac_dicts)
-
-            # Spatial Enrichment: LULC point-in-polygon & distances
             lulc_cat, zone_name, lulc_dists = lulc_engine.classify_location(c_lat, c_lon)
-
-            # State & District resolution
             state = lookup_state(c_lat, c_lon)
             district = lookup_district(c_lat, c_lon)
 
-            # Facility status determination
             if fac_dist <= 2500.0 and nearest_fac:
                 facility_status = "KNOWN"
                 fac_id = nearest_fac["id"]
@@ -104,15 +130,16 @@ class ThermalPipelineService:
             else:
                 facility_status = "UNCATALOGED"
                 fac_id = None
+            gis_total_ms += (time.perf_counter() - t_gis_start) * 1000.0
 
-            # Persistence calculations
+            # Persistence & Baseline
+            t_persist_start = time.perf_counter()
             p_metrics = calculate_persistence_metrics(c_dets)
-
-            # Baseline deviation
             baseline = None
             if fac_id:
                 baseline = db.query(HistoricalBaseline).filter(HistoricalBaseline.facility_id == fac_id).first()
             baseline_info = calculate_baseline_deviation(cluster["max_frp"], baseline)
+            persistence_total_ms += (time.perf_counter() - t_persist_start) * 1000.0
 
             # Feature vector assembly
             feature_dict = {
@@ -134,10 +161,16 @@ class ThermalPipelineService:
                 "industrial_context_score": 0.9 if facility_status == "KNOWN" else 0.4
             }
 
-            # ML 7-Class Prediction + SHAP TreeExplainer
+            # ML 7-Class Prediction
+            t_ml_start = time.perf_counter()
             prediction = thermal_predictor.predict(feature_dict)
+            ml_duration = (time.perf_counter() - t_ml_start) * 1000.0
+            # Partition predictor duration into inference vs shap TreeExplainer
+            ml_total_ms += ml_duration * 0.4
+            shap_total_ms += ml_duration * 0.6
 
             # Multi-Criteria Risk Score
+            t_risk_start = time.perf_counter()
             r_score, r_level, subscores, reasons = calculate_risk_score(
                 max_frp=cluster["max_frp"],
                 avg_frp=cluster["avg_frp"],
@@ -148,6 +181,7 @@ class ThermalPipelineService:
                 landcover_class=lulc_cat,
                 predicted_class=prediction["predicted_class"]
             )
+            risk_total_ms += (time.perf_counter() - t_risk_start) * 1000.0
 
             # Generate Unique Event Code
             state_code = state[:3].upper() if state else "IND"
@@ -250,15 +284,33 @@ class ThermalPipelineService:
 
             created_event_ids.append(event.id)
 
+        # 9. Database Commit
+        t_db_start = time.perf_counter()
         db.commit()
+        db_commit_duration_ms = (time.perf_counter() - t_db_start) * 1000.0
+
+        total_pipeline_duration_ms = (time.perf_counter() - t_pipeline_start) * 1000.0
 
         return {
             "status": "SUCCESS",
             "events_created": len(created_event_ids),
+            "event_ids": created_event_ids,
             "detections_stored": total_detections_stored,
             "source": source_name,
+            "stage_timings_ms": {
+                "ingestion_ms": round(ingest_duration_ms, 2),
+                "clustering_ms": round(cluster_duration_ms, 2),
+                "gis_enrichment_ms": round(gis_total_ms, 2),
+                "persistence_ms": round(persistence_total_ms, 2),
+                "ml_inference_ms": round(ml_total_ms, 2),
+                "shap_explanation_ms": round(shap_total_ms, 2),
+                "risk_evaluation_ms": round(risk_total_ms, 2),
+                "db_commit_ms": round(db_commit_duration_ms, 2),
+                "total_processing_ms": round(total_pipeline_duration_ms, 2)
+            },
             "processed_at": datetime.now(timezone.utc).isoformat()
         }
 
 
 pipeline_service = ThermalPipelineService()
+

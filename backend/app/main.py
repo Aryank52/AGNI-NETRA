@@ -50,10 +50,13 @@ def database_health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         latency_ms = round((time.time() - start_time) * 1000, 2)
+        dialect = db.bind.dialect.name if db.bind else "sqlite"
+        db_mode = "PostgreSQL + PostGIS" if dialect == "postgresql" else "SQLite (TEST/DEMO FALLBACK)"
         return {
             "status": "HEALTHY",
             "database": "Connected",
-            "dialect": db.bind.dialect.name if db.bind else "sqlite",
+            "dialect": dialect,
+            "engine_mode": db_mode,
             "latency_ms": latency_ms
         }
     except Exception as e:

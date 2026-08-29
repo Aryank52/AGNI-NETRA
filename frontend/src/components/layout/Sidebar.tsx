@@ -9,7 +9,7 @@ import {
   AlertOctagon, CheckSquare, BarChart3, 
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
-  Sliders, Database, ShieldAlert, BookOpen, Globe, Layers
+  Sliders, Database, ShieldAlert, BookOpen, Globe, Layers, Radio
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,6 +18,7 @@ export default function Sidebar() {
 
   const commandCenter = [
     { label: "GIS Tactical Map", href: "/dashboard", icon: Map, badge: "NRT" },
+    { label: "Mission Control (AGNI-SAT)", href: "/dashboard/mission-control", icon: Radio, badge: "SIM" },
     { label: "India Thermal Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
     { label: "Thermal Events", href: "/dashboard/events", icon: Flame },
     { label: "Incident Alerts", href: "/dashboard/alerts", icon: Bell, badge: "ALERT" },
@@ -86,6 +87,8 @@ export default function Sidebar() {
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : item.badge === "DATA"
                     ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                    : item.badge === "SIM"
+                    ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30"
                     : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 }`}>
                   {item.badge}

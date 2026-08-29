@@ -33,12 +33,22 @@ class DataSource(Base):
     __tablename__ = "data_sources"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    source_name = Column(String(100), unique=True, nullable=False)  # FIRMS, OSM, LULC_BHUVAN, SENTINEL_2, LANDSAT
+    source_name = Column(String(100), unique=True, nullable=False)  # FIRMS, OSM, CEA, LULC_BHUVAN, SENTINEL_2, LANDSAT, MOSDAC
     adapter_class = Column(String(100), nullable=False)
+    category = Column(String(100), default="THERMAL_HOTSPOTS")     # THERMAL_HOTSPOTS, FACILITY_REGISTRY, LULC, MULTISPECTRAL, SATELLITE_ARCHIVE
+    endpoint = Column(String(500), nullable=True)
+    auth_type = Column(String(50), default="NONE")                 # NONE, MAP_KEY, OAUTH2, API_KEY, BASIC_AUTH
+    configured = Column(Boolean, default=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
+    health_status = Column(String(50), default="HEALTHY")          # HEALTHY, DEGRADED, NOT_CONFIGURED, UNAVAILABLE
     last_sync_at = Column(DateTime, nullable=True)
-    health_status = Column(String(50), default="HEALTHY")  # HEALTHY, DEGRADED, UNAVAILABLE
+    last_success_at = Column(DateTime, nullable=True)
+    last_failure_at = Column(DateTime, nullable=True)
+    latency_ms = Column(Float, default=0.0)
+    record_count = Column(Integer, default=0)
+    provenance_info = Column(JSON, default=dict)
+    terms_url = Column(String(500), nullable=True)
     metadata_info = Column(JSON, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -414,3 +424,103 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="audit_logs")
+
+
+class ThermalHistory(Base):
+    __tablename__ = "thermal_history"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    source = Column(String(50), nullable=False)            # FIRMS_VIIRS_NOAA21, FIRMS_VIIRS_NOAA20, FIRMS_MODIS, LANDSAT_TIRS
+    sensor = Column(String(50), nullable=False)            # VIIRS_NOAA21, VIIRS_NOAA20, MODIS_AQUA, MODIS_TERRA, LANDSAT_TIRS
+    satellite = Column(String(50), nullable=True)
+    latitude = Column(Float, nullable=False, index=True)
+    longitude = Column(Float, nullable=False, index=True)
+    acq_date = Column(String(20), index=True, nullable=False)
+    acq_time = Column(String(10), nullable=False)
+    acq_timestamp = Column(DateTime, index=True, nullable=False)
+    brightness = Column(Float, nullable=True)
+    bright_t31 = Column(Float, nullable=True)
+    frp = Column(Float, default=0.0)
+    confidence = Column(Float, default=0.0)
+    day_night = Column(String(1), default="D")
+    processing_type = Column(String(50), default="NRT")    # NRT, STANDARD_SCIENCE
+    state = Column(String(100), index=True, nullable=True)
+    district = Column(String(100), index=True, nullable=True)
+    source_record_id = Column(String(100), nullable=True)
+    raw_metadata = Column(JSON, default=dict)
+    is_demo = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class EvidenceRecord(Base):
+    __tablename__ = "evidence_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    event_id = Column(String(36), ForeignKey("thermal_events.id"), nullable=False)
+    evidence_type = Column(String(100), nullable=False)     # ANALYST_VERIFICATION, PHOTO_UPLOAD, OFFICIAL_DOCUMENT, SATELLITE_CONTEXT, GIS_EVIDENCE, HISTORICAL_BASELINE, FIELD_NOTE
+    evidence_source = Column(String(100), nullable=False)
+    title = Column(String(255), nullable=False)
+    notes = Column(Text, nullable=True)
+    evidence_data = Column(JSON, default=dict)
+    verified = Column(Boolean, default=False)
+    verified_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SimulationScenario(Base):
+    __tablename__ = "simulation_scenarios"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    scenario_type = Column(String(100), nullable=False)     # INDUSTRIAL_SURGE, GAS_FLARE, FOREST_FIRE, AGRICULTURAL_BURNING, MINING_ACTIVITY, UNKNOWN_PERSISTENT, MULTI_EVENT, MISSING_FACILITY, DELAYED_TELEMETRY, SENSOR_DROPOUT, CLOUD_OBSCURED
+    description = Column(Text, nullable=False)
+    target_state = Column(String(100), nullable=False)
+    target_lat = Column(Float, nullable=False)
+    target_lon = Column(Float, nullable=False)
+    target_facility = Column(String(255), nullable=True)
+    expected_class = Column(String(100), nullable=False)
+    expected_risk_level = Column(String(50), nullable=False)
+    parameters = Column(JSON, default=dict)
+    status = Column(String(50), default="IDLE")             # IDLE, RUNNING, COMPLETED, FAILED
+    last_run_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SatelliteTelemetryLog(Base):
+    __tablename__ = "satellite_telemetry_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    satellite_id = Column(String(100), default="AGNI-SAT-01", nullable=False)
+    sensor_id = Column(String(100), nullable=False)         # THERMAL_MWIR, OPTICAL_RGB, SWIR_2200NM, MULTISPECTRAL
+    scenario_id = Column(String(36), nullable=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    frp = Column(Float, default=0.0)
+    brightness = Column(Float, default=0.0)
+    confidence = Column(Float, default=0.0)
+    footprint_geojson = Column(JSON, default=dict)
+    status = Column(String(50), default="RECEIVED")         # RECEIVED, PROCESSING, PROCESSED, FAILED
+    raw_packet = Column(JSON, default=dict)
+    is_simulation = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class MissionTask(Base):
+    __tablename__ = "mission_tasks"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    task_code = Column(String(100), unique=True, index=True, nullable=False)
+    satellite_id = Column(String(100), default="AGNI-SAT-01", nullable=False)
+    target_name = Column(String(255), nullable=False)
+    target_lat = Column(Float, nullable=False)
+    target_lon = Column(Float, nullable=False)
+    sensor_id = Column(String(100), nullable=False)
+    priority = Column(String(50), default="NORMAL")          # LOW, NORMAL, HIGH, CRITICAL
+    status = Column(String(50), default="SIMULATED_TASK_ACCEPTED")  # SIMULATED_TASK_ACCEPTED, IN_ORBIT_QUEUE, EXECUTING, COMPLETED, FAILED
+    tasked_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    scheduled_pass_time = Column(DateTime, nullable=False)
+    observed_at = Column(DateTime, nullable=True)
+    metadata_info = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
