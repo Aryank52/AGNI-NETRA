@@ -101,47 +101,28 @@ def get_historical_timeline(
     """
     Computes monthly time-series thermal activity distributions across Indian industrial regions.
     """
-    query = db.query(ThermalHistory)
+    month_col = func.substr(ThermalHistory.acq_date, 1, 7)
+    query = db.query(
+        month_col.label("month"),
+        func.count(ThermalHistory.id).label("count"),
+        func.avg(ThermalHistory.frp).label("avg_frp"),
+        func.max(ThermalHistory.frp).label("max_frp")
+    )
     if state and state.upper() != "ALL":
         query = query.filter(ThermalHistory.state == state)
 
-    records = query.all()
-    months_map: Dict[str, Dict[str, Any]] = {}
-    for r in records:
-        if r.acq_timestamp:
-            m_key = r.acq_timestamp.strftime("%Y-%m")
-        else:
-            m_key = "2026-08"
+    query = query.filter(ThermalHistory.acq_date.isnot(None))
+    results = query.group_by(month_col).order_by(month_col).all()
 
-        if m_key not in months_map:
-            months_map[m_key] = {"month": m_key, "count": 0, "total_frp": 0.0, "max_frp": 0.0}
-
-        months_map[m_key]["count"] += 1
-        months_map[m_key]["total_frp"] += r.frp
-        if r.frp > months_map[m_key]["max_frp"]:
-            months_map[m_key]["max_frp"] = r.frp
-
-    sorted_timeline = []
-    for m in sorted(months_map.keys()):
-        c = months_map[m]["count"]
-        sorted_timeline.append({
-            "period": m,
-            "detection_count": c,
-            "avg_frp": round(months_map[m]["total_frp"] / max(c, 1), 2),
-            "max_frp": round(months_map[m]["max_frp"], 2)
-        })
-
-    # Default 6-month historical baseline trend if sparse records
-    if not sorted_timeline:
-        default_months = [
-            {"period": "2026-03", "detection_count": 480, "avg_frp": 62.4, "max_frp": 210.0},
-            {"period": "2026-04", "detection_count": 620, "avg_frp": 74.8, "max_frp": 280.0},
-            {"period": "2026-05", "detection_count": 750, "avg_frp": 88.2, "max_frp": 310.0},
-            {"period": "2026-06", "detection_count": 310, "avg_frp": 54.1, "max_frp": 160.0},
-            {"period": "2026-07", "detection_count": 290, "avg_frp": 48.6, "max_frp": 145.0},
-            {"period": "2026-08", "detection_count": 415, "avg_frp": 59.3, "max_frp": 220.0},
-        ]
-        sorted_timeline = default_months
+    sorted_timeline = [
+        {
+            "period": r.month,
+            "detection_count": r.count,
+            "avg_frp": round(float(r.avg_frp or 0.0), 2),
+            "max_frp": round(float(r.max_frp or 0.0), 2)
+        }
+        for r in results if r.month
+    ]
 
     return {"timeline": sorted_timeline}
 
