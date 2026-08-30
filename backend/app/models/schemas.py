@@ -185,7 +185,7 @@ class FacilityBaselineOut(BaseModel):
     median_frp: float
     variance_frp: float
     max_historical_frp: float
-    frp_distribution: Dict[str, float]
+    frp_distribution: Dict[str, Any] = {}
     frequency_days: int
     day_night_ratio: float
     status_band: str
@@ -203,12 +203,58 @@ class IndustrialFacilityOut(BaseModel):
     status: str
     source: str
     state: str
-    district: Optional[str]
-    latitude: float
-    longitude: float
-    confidence_score: float
-    operating_hours: str
-    contact_info: Dict[str, Any]
+    district: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    confidence_score: float = 1.0
+    operating_hours: str = "24x7"
+    contact_info: Dict[str, Any] = {}
+    
+    # Canonical Registry Fields
+    industry_id: Optional[str] = None
+    industry_name: Optional[str] = None
+    nic_code: Optional[str] = None
+    master_sector: Optional[str] = None
+    sub_sector: Optional[str] = None
+    industry_type: Optional[str] = None
+    company_name: Optional[str] = None
+    facility_name: Optional[str] = None
+    plant_name: Optional[str] = None
+    city: Optional[str] = None
+    industrial_area: Optional[str] = None
+    plant_capacity: Optional[str] = None
+    production_type: Optional[str] = None
+    energy_intensity: Optional[str] = None
+    electricity_consumption: Optional[str] = None
+    fuel_consumption: Optional[str] = None
+    water_consumption: Optional[str] = None
+    co2_emissions: Optional[str] = None
+    equipment_type: Optional[str] = None
+    major_machinery: Optional[str] = None
+    operating_status: Optional[str] = None
+    enterprise_size: Optional[str] = None
+    ownership_type: Optional[str] = None
+    data_source: Optional[str] = None
+    source_record_id: Optional[str] = None
+    source_url: Optional[str] = None
+    source_date: Optional[str] = None
+    source_file: Optional[str] = None
+    verification_status: Optional[str] = None
+    confidence: Optional[str] = None
+    last_updated: Optional[datetime] = None
+
+    # CEA Power Station & FIRMS Linking Attributes
+    prime_mover: Optional[str] = None
+    unit_count: Optional[int] = None
+    commissioning_year_min: Optional[int] = None
+    commissioning_year_max: Optional[int] = None
+    cea_project_name: Optional[str] = None
+    cea_organisation: Optional[str] = None
+    firms_detections_500m: Optional[int] = 0
+    firms_detections_1km: Optional[int] = 0
+    firms_detections_2km: Optional[int] = 0
+    thermal_activity_status: Optional[str] = None
+
     baselines: List[HistoricalBaselineOut] = []
     facility_baseline: Optional[FacilityBaselineOut] = None
 

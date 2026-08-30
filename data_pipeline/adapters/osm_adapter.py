@@ -175,27 +175,60 @@ class OSMIndustrialAdapter(FacilitySourceAdapter):
         max_lon: float = 98.0
     ) -> List[NormalizedFacilityRecord]:
         """
-        Queries OSM Overpass for industrial elements within bounding box.
-        Falls back to canonical Indian industrial database if API times out.
-        """
-        query = f"""
-        [out:json][timeout:20];
-        (
-          node["landuse"="industrial"]({min_lat},{min_lon},{max_lat},{max_lon});
-          way["landuse"="industrial"]({min_lat},{min_lon},{max_lat},{max_lon});
-          node["power"="plant"]({min_lat},{min_lon},{max_lat},{max_lon});
-          way["power"="plant"]({min_lat},{min_lon},{max_lat},{max_lon});
-          node["man_made"="petroleum_refinery"]({min_lat},{min_lon},{max_lat},{max_lon});
-        );
-        out center 50;
+        Queries the AGNI-NETRA PostgreSQL PostGIS database for OSM industrial facilities.
+        Falls back to canonical cache if database is unreachable.
         """
         try:
-            resp = httpx.post(self.OVERPASS_URL, data={"data": query}, timeout=10.0)
-            if resp.status_code == 200:
-                elements = resp.json().get("elements", [])
-                parsed = self._parse_elements(elements)
-                if parsed:
-                    return parsed
+            from backend.app.core.database import engine
+            from sqlalchemy import text
+
+            with engine.connect() as conn:
+                rows = conn.execute(text("""
+                    SELECT id, name, entity_classification, operator, state, district,
+                           latitude, longitude, confidence, verification_status,
+                           source_record_id, source_metadata
+                    FROM osm_staging_facilities
+                    WHERE latitude BETWEEN :min_lat AND :max_lat
+                      AND longitude BETWEEN :min_lon AND :max_lon
+                    LIMIT 2000;
+                """), {
+                    "min_lat": min_lat,
+                    "max_lat": max_lat,
+                    "min_lon": min_lon,
+                    "max_lon": max_lon
+                }).fetchall()
+
+                if rows:
+                    ingestion_time = datetime.now(timezone.utc)
+                    records = []
+                    for r in rows:
+                        prov = SourceProvenance(
+                            source_name="OSM_POSTGIS_REGISTRY",
+                            source_record_id=r[10],
+                            source_version="OSM-STAGING-V1",
+                            acquisition_time=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                            ingestion_time=ingestion_time,
+                            raw_reference="POSTGIS_STAGING",
+                            data_quality_score=0.95 if r[8] == "HIGH" else (0.80 if r[8] == "MEDIUM" else 0.60)
+                        )
+                        records.append(
+                            NormalizedFacilityRecord(
+                                source="OSM",
+                                source_id=r[10],
+                                name=r[1] or f"OSM Facility ({r[10]})",
+                                facility_type=r[2],
+                                operator=r[3],
+                                state=r[4] or "National / Unspecified",
+                                district=r[5],
+                                latitude=r[6],
+                                longitude=r[7],
+                                confidence_score=0.95 if r[8] == "HIGH" else (0.80 if r[8] == "MEDIUM" else 0.60),
+                                operating_status="OPERATIONAL",
+                                provenance=prov,
+                                raw_tags=r[11] if isinstance(r[11], dict) else {}
+                            )
+                        )
+                    return records
         except Exception:
             pass
 

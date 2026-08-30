@@ -134,8 +134,74 @@ class CEAFacilityAdapter(FacilitySourceAdapter):
         **kwargs
     ) -> List[NormalizedFacilityRecord]:
         """
-        Fetches canonical CEA thermal power plant records.
+        Fetches canonical CEA thermal and hydro power plant records from PostgreSQL if available.
         """
+        try:
+            from backend.app.core.database import engine
+            from sqlalchemy import text
+
+            query_str = """
+                SELECT id, name, state, district, latitude, longitude, company_name,
+                       plant_capacity, prime_mover, unit_count, verification_status, confidence,
+                       source_metadata
+                FROM industrial_facilities
+                WHERE (source = 'CEA' OR source = 'CEA+OSM' OR cea_project_name IS NOT NULL)
+            """
+            params = {}
+
+            if state and state.lower() != "all":
+                query_str += " AND state ILIKE :state"
+                params["state"] = f"%{state}%"
+
+            if bbox:
+                min_lat, min_lon, max_lat, max_lon = bbox
+                query_str += " AND latitude BETWEEN :min_lat AND :max_lat AND longitude BETWEEN :min_lon AND :max_lon"
+                params.update({"min_lat": min_lat, "max_lat": max_lat, "min_lon": min_lon, "max_lon": max_lon})
+
+            with engine.connect() as conn:
+                rows = conn.execute(text(query_str), params).fetchall()
+
+            if rows:
+                ingestion_time = datetime.now(timezone.utc)
+                db_records = []
+                for r in rows:
+                    p_id, p_name, p_state, p_dist, p_lat, p_lon, p_org, p_cap, p_pm, p_units, p_ver, p_conf, p_meta = r
+                    provenance = SourceProvenance(
+                        source_name="CEA_INDIA",
+                        source_record_id=p_id,
+                        source_version="CEA-2025-03-31",
+                        acquisition_time=datetime(2025, 3, 31, tzinfo=timezone.utc),
+                        ingestion_time=ingestion_time,
+                        raw_reference="List_of_Power_Station_as_on_31.03.2025.pdf",
+                        data_quality_score=0.98,
+                        additional_metadata={
+                            "capacity_mw": p_cap,
+                            "prime_mover": p_pm,
+                            "unit_count": p_units
+                        }
+                    )
+                    db_records.append(
+                        NormalizedFacilityRecord(
+                            source="CEA",
+                            source_id=p_id,
+                            name=p_name,
+                            facility_type="POWER_PLANT",
+                            operator=p_org or "CEA Organisation",
+                            state=p_state or "National / Unspecified",
+                            district=p_dist,
+                            latitude=p_lat or 0.0,
+                            longitude=p_lon or 0.0,
+                            confidence_score=0.98 if p_conf == "HIGH" else 0.85,
+                            operating_status="OPERATIONAL",
+                            provenance=provenance,
+                            raw_tags={"capacity": p_cap, "prime_mover": p_pm, "units": p_units}
+                        )
+                    )
+                return db_records
+        except Exception:
+            pass
+
+        # Fallback to local roster
         records = []
         ingestion_time = datetime.now(timezone.utc)
 

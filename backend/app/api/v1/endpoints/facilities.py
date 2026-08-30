@@ -15,10 +15,16 @@ def get_industrial_facilities(
     db: Session = Depends(get_db),
     facility_type: Optional[str] = None,
     state: Optional[str] = None,
-    status_filter: Optional[str] = "KNOWN"
+    district: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    search: Optional[str] = None,
+    sector: Optional[str] = None,
+    nic_code: Optional[str] = None,
+    limit: int = 500,
+    offset: int = 0
 ):
     """
-    Retrieves registered known and verified industrial facilities.
+    Retrieves registered known and verified industrial facilities with search and pagination support.
     """
     query = db.query(IndustrialFacility).options(
         joinedload(IndustrialFacility.baselines),
@@ -29,10 +35,26 @@ def get_industrial_facilities(
         query = query.filter(IndustrialFacility.facility_type == facility_type)
     if state and state != "ALL":
         query = query.filter(IndustrialFacility.state.ilike(f"%{state}%"))
+    if district and district != "ALL":
+        query = query.filter(IndustrialFacility.district.ilike(f"%{district}%"))
+    if sector and sector != "ALL":
+        query = query.filter(IndustrialFacility.master_sector.ilike(f"%{sector}%"))
+    if nic_code:
+        query = query.filter(IndustrialFacility.nic_code == nic_code)
     if status_filter and status_filter != "ALL":
         query = query.filter(IndustrialFacility.status == status_filter)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (IndustrialFacility.name.ilike(search_term)) |
+            (IndustrialFacility.industry_name.ilike(search_term)) |
+            (IndustrialFacility.company_name.ilike(search_term)) |
+            (IndustrialFacility.city.ilike(search_term)) |
+            (IndustrialFacility.district.ilike(search_term)) |
+            (IndustrialFacility.state.ilike(search_term))
+        )
 
-    return query.all()
+    return query.offset(offset).limit(min(limit, 5000)).all()
 
 
 @router.get("/{facility_id}", response_model=IndustrialFacilityOut)

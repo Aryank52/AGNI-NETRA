@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Float, Integer, Boolean, DateTime, ForeignKey, Text, JSON, Enum
+    Column, String, Float, Integer, BigInteger, Boolean, DateTime, ForeignKey, Text, JSON, Enum
 )
 from sqlalchemy.orm import relationship
 from backend.app.core.database import Base
@@ -82,8 +82,8 @@ class IndustrialFacility(Base):
     source_id = Column(String(100), nullable=True)
     state = Column(String(100), index=True, nullable=False)
     district = Column(String(100), index=True, nullable=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     boundary_geojson = Column(JSON, nullable=True)      # Polygon footprint if available
     confidence_score = Column(Float, default=1.0)
     operating_hours = Column(String(50), default="24x7")
@@ -91,9 +91,115 @@ class IndustrialFacility(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    # Canonical Industry & Registry Fields
+    industry_id = Column(String(100), nullable=True)
+    industry_name = Column(String(255), nullable=True)
+    nic_code = Column(String(20), index=True, nullable=True)
+    master_sector = Column(String(100), index=True, nullable=True)
+    sub_sector = Column(String(100), nullable=True)
+    industry_type = Column(String(150), nullable=True)
+    company_name = Column(String(255), nullable=True)
+    facility_name = Column(String(255), nullable=True)
+    plant_name = Column(String(255), nullable=True)
+    city = Column(String(100), nullable=True)
+    industrial_area = Column(String(255), nullable=True)
+    plant_capacity = Column(String(100), nullable=True)
+    production_type = Column(String(100), nullable=True)
+    energy_intensity = Column(String(50), nullable=True)
+    electricity_consumption = Column(String(50), nullable=True)
+    fuel_consumption = Column(String(50), nullable=True)
+    water_consumption = Column(String(50), nullable=True)
+    co2_emissions = Column(String(50), nullable=True)
+    equipment_type = Column(String(100), nullable=True)
+    major_machinery = Column(String(255), nullable=True)
+    operating_status = Column(String(50), default="OPERATIONAL")
+    enterprise_size = Column(String(50), nullable=True)
+    ownership_type = Column(String(50), nullable=True)
+    data_source = Column(String(50), default="OSM")
+    source_record_id = Column(String(100), nullable=True)
+    source_url = Column(String(500), nullable=True)
+    source_date = Column(String(50), nullable=True)
+    source_file = Column(String(255), nullable=True)
+    source_metadata = Column(JSON, nullable=True)
+    verification_status = Column(String(50), default="PROVISIONAL")
+    confidence = Column(String(20), default="MEDIUM")
+    last_updated = Column(DateTime, nullable=True)
+
+    # CEA Power Station & FIRMS Linking Attributes
+    prime_mover = Column(String(100), nullable=True)
+    unit_count = Column(Integer, nullable=True)
+    commissioning_year_min = Column(Integer, nullable=True)
+    commissioning_year_max = Column(Integer, nullable=True)
+    cea_project_name = Column(String(255), nullable=True)
+    cea_organisation = Column(String(100), nullable=True)
+    firms_detections_500m = Column(Integer, default=0)
+    firms_detections_1km = Column(Integer, default=0)
+    firms_detections_2km = Column(Integer, default=0)
+    thermal_activity_status = Column(String(50), nullable=True)
+
     events = relationship("ThermalEvent", back_populates="facility")
     baselines = relationship("HistoricalBaseline", back_populates="facility")
     facility_baseline = relationship("FacilityBaseline", back_populates="facility", uselist=False)
+
+
+class OSMStagingFacility(Base):
+    __tablename__ = "osm_staging_facilities"
+
+    id = Column(String(64), primary_key=True)
+    osm_type = Column(String(20), nullable=False)
+    osm_id = Column(BigInteger, nullable=False)
+    name = Column(String(255), nullable=True)
+    operator = Column(String(255), nullable=True)
+    entity_classification = Column(String(50), nullable=False, index=True)
+    industrial_tag = Column(String(100), nullable=True)
+    landuse_tag = Column(String(100), nullable=True)
+    man_made_tag = Column(String(100), nullable=True)
+    power_tag = Column(String(100), nullable=True)
+    amenity_tag = Column(String(100), nullable=True)
+    plant_source = Column(String(100), nullable=True)
+    plant_output = Column(String(100), nullable=True)
+    plant_method = Column(String(100), nullable=True)
+    product = Column(String(255), nullable=True)
+    resource = Column(String(255), nullable=True)
+    nic_code = Column(String(20), nullable=True, index=True)
+    master_sector = Column(String(100), nullable=True)
+    sub_sector = Column(String(100), nullable=True)
+    industry_type = Column(String(150), nullable=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    city = Column(String(100), nullable=True)
+    industrial_area = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    confidence = Column(String(20), nullable=False)
+    verification_status = Column(String(50), nullable=False)
+    source = Column(String(50), default="OSM")
+    source_record_id = Column(String(100), nullable=False)
+    source_file = Column(String(255), nullable=False)
+    source_metadata = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class CEAPowerStationStaging(Base):
+    __tablename__ = "cea_power_stations_staging"
+
+    id = Column(String(64), primary_key=True)
+    cea_record_id = Column(String(100), unique=True, nullable=False)
+    source_document = Column(String(255), nullable=False)
+    source_date = Column(String(50), nullable=False)
+    page_number = Column(Integer, nullable=False)
+    s_no = Column(String(50), nullable=True)
+    region = Column(String(50), nullable=True)
+    state = Column(String(100), nullable=True, index=True)
+    sector = Column(String(100), nullable=True)
+    organisation = Column(String(100), nullable=True, index=True)
+    project_name = Column(String(255), nullable=False, index=True)
+    prime_mover = Column(String(100), nullable=True, index=True)
+    unit_no = Column(String(50), nullable=True)
+    installed_capacity_mw = Column(Float, nullable=True)
+    year_of_commissioning = Column(Integer, nullable=True)
+    raw_row_text = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class CandidateFacility(Base):
