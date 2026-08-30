@@ -1,7 +1,16 @@
 import os
 from typing import List, Union
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, field_validator
+
+# Explicitly load .env from project root
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+ENV_PATH = os.path.join(ROOT_DIR, ".env")
+if os.path.exists(ENV_PATH):
+    load_dotenv(ENV_PATH, override=True)
+else:
+    load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -13,7 +22,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
     # Database: Primary = PostgreSQL + PostGIS; Fallback = SQLite (TEST/DEMO)
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/agninetra"
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
     
     # Redis & Async
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -34,7 +43,7 @@ class Settings(BaseSettings):
     FIRMS_API_URL: str = "https://firms.modaps.eosdis.nasa.gov/api/country/csv"
     
     # Machine Learning
-    MODEL_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "ml", "models")
+    MODEL_DIR: str = os.path.join(ROOT_DIR, "ml", "models")
     DEFAULT_MODEL_VERSION: str = "v1.0.0"
     
     # Notifications (Optional Configurable Services)
@@ -59,7 +68,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
-        env_file=".env",
+        env_file=ENV_PATH if os.path.exists(ENV_PATH) else ".env",
         env_file_encoding="utf-8",
         extra="allow"
     )

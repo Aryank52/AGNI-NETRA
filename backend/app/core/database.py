@@ -6,8 +6,31 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from backend.app.core.config import settings
 
 
-# 1. Determine Database Engine and Operational Mode
-raw_db_url = (settings.DATABASE_URL or "").strip()
+# 1. Helper Utilities (Defined First to Guarantee Availability in Exception Handlers)
+
+def sanitize_db_url(url: str) -> str:
+    """Removes sensitive passwords from connection strings for safe logging and diagnostics."""
+    if not url:
+        return ""
+    # Strip any accidental repeated environment variable assignment prefixes
+    cleaned = url
+    while cleaned.startswith("DATABASE_URL="):
+        cleaned = cleaned[len("DATABASE_URL="):].strip()
+    return re.sub(r":([^@/]+)@", r":****@", cleaned)
+
+
+def normalize_db_url(url: str) -> str:
+    """Cleans up and normalizes database connection strings."""
+    if not url:
+        return ""
+    cleaned = url.strip()
+    while cleaned.startswith("DATABASE_URL="):
+        cleaned = cleaned[len("DATABASE_URL="):].strip()
+    return cleaned
+
+
+# 2. Determine Database Engine and Operational Mode
+raw_db_url = normalize_db_url(settings.DATABASE_URL or "")
 
 if not raw_db_url:
     # Explicit fallback only when DATABASE_URL is completely unset
@@ -28,7 +51,7 @@ IS_POSTGRESQL = (DATABASE_MODE == "POSTGRESQL")
 IS_SQLITE_TEST = (DATABASE_MODE == "SQLITE_TEST")
 
 
-# 2. Configure Engine with Strict Operational Parameters
+# 3. Configure Engine with Strict Operational Parameters
 connect_args = {}
 engine_kwargs: Dict[str, Any] = {"pool_pre_ping": True}
 
@@ -57,14 +80,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# 3. Helper Utilities for Sanitization & Diagnostics
-
-def sanitize_db_url(url: str) -> str:
-    """Removes sensitive passwords from connection strings for safe logging."""
-    if not url:
-        return ""
-    return re.sub(r":([^@/]+)@", r":****@", url)
-
+# 4. Diagnostics & PostGIS Verification Methods
 
 def get_database_mode() -> str:
     """Returns the authoritative active database mode: POSTGRESQL or SQLITE_TEST."""
@@ -138,7 +154,7 @@ def get_database_diagnostics() -> Dict[str, Any]:
     return diag
 
 
-# 4. FastAPI Dependency Injection
+# 5. FastAPI Dependency Injection
 def get_db():
     """FastAPI Dependency for database session management."""
     db = SessionLocal()

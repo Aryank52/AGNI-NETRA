@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from backend.app.core.database import Base
 import backend.app.models.domain  # noqa: F401
 
-revision: str = '002_complete_schema_and_telemetry'
+revision: str = '002_complete_schema'
 down_revision: Union[str, None] = '001_initial_schema'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
