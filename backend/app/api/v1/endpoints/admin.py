@@ -115,19 +115,32 @@ def get_system_health(db: Session = Depends(get_db)):
     if dialect == "postgresql":
         db_desc = "CONNECTED (PostgreSQL + PostGIS)"
         spatial_desc = "OPERATIONAL (PostGIS Extension)"
+        mode = "POSTGRESQL"
     else:
         db_desc = "CONNECTED (SQLite - TEST/DEMO FALLBACK)"
         spatial_desc = "OPERATIONAL (Shapely R-Tree Engine - TEST/DEMO FALLBACK)"
+        mode = "SQLITE_TEST"
 
     return {
         "status": "HEALTHY",
         "system": "AGNI-NETRA (AI Geospatial Network for Industrial Thermal Risk & Anomaly Analysis)",
         "database": db_desc,
+        "database_mode": mode,
         "spatial_engine": spatial_desc,
         "ml_inference": "OPERATIONAL (XGBoost + SHAP TreeExplainer)",
         "uncertainty_engine": "OPERATIONAL (Normalized Shannon Entropy)",
         "anomaly_engine": "OPERATIONAL (Isolation Forest)",
         "satellite_simulator": "OPERATIONAL (AGNI-SAT-01 Digital Twin)",
-        "demo_mode": "ACTIVE"
+        "demo_mode": "ACTIVE" if mode == "SQLITE_TEST" else "INACTIVE"
     }
+
+
+@router.get("/database/diagnostics")
+def get_database_diagnostics_endpoint():
+    """
+    Comprehensive Database Diagnostic & PostGIS Configuration Monitor.
+    """
+    from backend.app.core.database import get_database_diagnostics
+    return get_database_diagnostics()
+
 

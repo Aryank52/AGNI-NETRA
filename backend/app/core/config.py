@@ -1,6 +1,6 @@
 import os
 from typing import List, Union
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, field_validator
 
 
@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "agni_netra_secret_key_change_in_production_2026_super_secure_key_12345"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # Database
-    DATABASE_URL: str = "sqlite:///./agni_netra.db"
+    # Database: Primary = PostgreSQL + PostGIS; Fallback = SQLite (TEST/DEMO)
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/agninetra"
     
     # Redis & Async
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -57,10 +57,12 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000"
     ]
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "allow"
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow"
+    )
 
 
 settings = Settings()
