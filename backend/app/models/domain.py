@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Float, Integer, BigInteger, Boolean, DateTime, ForeignKey, Text, JSON, Enum
 )
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from backend.app.core.database import Base
@@ -1016,5 +1017,229 @@ class PariveshAdministrativeContext(Base):
     administrative_method = Column(String(100), default="POSTGIS_SPATIAL_JOIN")
     administrative_confidence = Column(String(20), default="HIGH")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+# =========================================================================
+# LULC (Land Use / Land Cover) PostGIS Models
+# =========================================================================
+
+class LULCSource(Base):
+    __tablename__ = "lulc_sources"
+
+    id = Column(String(64), primary_key=True)
+    source_name = Column(String(100), unique=True, nullable=False)
+    organization = Column(String(255), nullable=False)
+    dataset_name = Column(String(255), nullable=False)
+    resolution_m = Column(Float, nullable=False)
+    reference_year = Column(Integer, nullable=False)
+    product_version = Column(String(50), nullable=False)
+    access_type = Column(String(50), nullable=False)
+    license = Column(String(150), nullable=False)
+    source_url = Column(String(500), nullable=False)
+    metadata_info = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    classes = relationship("LULCClass", back_populates="source", cascade="all, delete-orphan")
+
+
+class LULCClass(Base):
+    __tablename__ = "lulc_classes"
+
+    id = Column(String(64), primary_key=True)
+    source_id = Column(String(64), ForeignKey("lulc_sources.id", ondelete="CASCADE"), nullable=False)
+    source_class_code = Column(String(50), nullable=False)
+    source_class_name = Column(String(150), nullable=False)
+    canonical_class = Column(String(50), nullable=False)
+    is_industrial_compatible = Column(Boolean, default=False)
+    risk_weight = Column(Float, default=0.5)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    source = relationship("LULCSource", back_populates="classes")
+
+
+class LULCSpatialFeature(Base):
+    __tablename__ = "lulc_spatial_features"
+
+    id = Column(String(64), primary_key=True)
+    source_id = Column(String(64), ForeignKey("lulc_sources.id", ondelete="CASCADE"), nullable=False)
+    class_id = Column(String(64), ForeignKey("lulc_classes.id", ondelete="CASCADE"), nullable=False)
+    canonical_class = Column(String(50), nullable=False, index=True)
+    feature_name = Column(String(255), nullable=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=4326), nullable=False)
+    area_sqkm = Column(Float, nullable=True)
+    source_provenance = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ObservationLULCContext(Base):
+    __tablename__ = "observation_lulc_context"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    detection_id = Column(String(36), ForeignKey("thermal_detections.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    primary_lulc_class = Column(String(50), nullable=False, index=True)
+    source_lulc_class = Column(String(150), nullable=False)
+    is_industrial_zone = Column(Boolean, default=False, index=True)
+    is_mining_zone = Column(Boolean, default=False)
+    is_forest_zone = Column(Boolean, default=False, index=True)
+    is_agriculture_zone = Column(Boolean, default=False)
+    is_water_zone = Column(Boolean, default=False)
+    distance_to_forest_m = Column(Float, nullable=True)
+    distance_to_agriculture_m = Column(Float, nullable=True)
+    distance_to_water_m = Column(Float, nullable=True)
+    distance_to_industrial_m = Column(Float, nullable=True)
+    distance_to_mining_m = Column(Float, nullable=True)
+    spatial_match_method = Column(String(50), nullable=False)
+    source_id = Column(String(64), ForeignKey("lulc_sources.id"), nullable=True)
+    confidence_score = Column(Float, default=0.90)
+    reference_date = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class FacilityLULCContext(Base):
+    __tablename__ = "facility_lulc_context"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    primary_lulc_class = Column(String(50), nullable=False, index=True)
+    source_lulc_class = Column(String(150), nullable=False)
+    industrial_compatibility = Column(String(50), default="COMPATIBLE", index=True)
+    distance_to_forest_m = Column(Float, nullable=True)
+    distance_to_agriculture_m = Column(Float, nullable=True)
+    distance_to_water_m = Column(Float, nullable=True)
+    distance_to_mining_m = Column(Float, nullable=True)
+    source_id = Column(String(64), ForeignKey("lulc_sources.id"), nullable=True)
+    confidence_score = Column(Float, default=0.95)
+    reference_date = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class LULCRasterTile(Base):
+    __tablename__ = "lulc_raster_tiles"
+
+    id = Column(String(64), primary_key=True)
+    source_id = Column(String(64), ForeignKey("lulc_sources.id", ondelete="CASCADE"), nullable=False)
+    tile_id = Column(String(100), unique=True, nullable=False, index=True)
+    file_path = Column(String(500), nullable=False)
+    geom = Column(Geometry(geometry_type="POLYGON", srid=4326), nullable=False)
+    min_lat = Column(Float, nullable=False)
+    max_lat = Column(Float, nullable=False)
+    min_lon = Column(Float, nullable=False)
+    max_lon = Column(Float, nullable=False)
+    srid = Column(Integer, default=4326)
+    resolution_m = Column(Float, default=10.0)
+    reference_year = Column(Integer, default=2021)
+    checksum = Column(String(64), nullable=True)
+    status = Column(String(50), default="ACTIVE")
+    metadata_info = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+# =========================================================================
+# Forest Intelligence (FSI / ISFR / Protected Areas) PostGIS Models
+# =========================================================================
+
+class FSISource(Base):
+    __tablename__ = "fsi_sources"
+
+    id = Column(String(64), primary_key=True)
+    source_name = Column(String(100), unique=True, nullable=False)
+    organization = Column(String(255), nullable=False)
+    dataset_name = Column(String(255), nullable=False)
+    reference_year = Column(Integer, nullable=False)
+    product_version = Column(String(50), nullable=False)
+    access_method = Column(String(100), nullable=False)
+    source_url = Column(String(500), nullable=False)
+    license = Column(String(150), nullable=False)
+    metadata_info = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class FSIISFRDistrictStats(Base):
+    __tablename__ = "fsi_isfr_district_forest_stats"
+
+    id = Column(String(64), primary_key=True)
+    state = Column(String(100), nullable=False, index=True)
+    district = Column(String(100), nullable=False, index=True)
+    admin_boundary_id = Column(PG_UUID(as_uuid=True), ForeignKey("admin_boundaries.id", ondelete="SET NULL"), nullable=True)
+    geographical_area_sqkm = Column(Float, nullable=False)
+    very_dense_forest_sqkm = Column(Float, default=0.0)
+    moderately_dense_forest_sqkm = Column(Float, default=0.0)
+    open_forest_sqkm = Column(Float, default=0.0)
+    total_forest_sqkm = Column(Float, default=0.0)
+    percent_of_geo_area = Column(Float, default=0.0)
+    scrub_sqkm = Column(Float, default=0.0)
+    reference_year = Column(Integer, default=2021)
+    source_id = Column(String(64), ForeignKey("fsi_sources.id", ondelete="CASCADE"), nullable=False)
+    source_document = Column(String(255), nullable=False)
+    page_table_reference = Column(String(150), nullable=True)
+    provisional_flag = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ProtectedArea(Base):
+    __tablename__ = "protected_areas"
+
+    id = Column(String(64), primary_key=True)
+    pa_name = Column(String(255), nullable=False, index=True)
+    pa_type = Column(String(50), nullable=False, index=True)  # NATIONAL_PARK, WILDLIFE_SANCTUARY, TIGER_RESERVE, BIOSPHERE_RESERVE
+    state = Column(String(100), nullable=False, index=True)
+    district = Column(String(100), nullable=True)
+    established_year = Column(Integer, nullable=True)
+    area_sqkm = Column(Float, nullable=True)
+    geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=4326), nullable=False)
+    legal_status = Column(String(100), nullable=True)
+    source_id = Column(String(64), ForeignKey("fsi_sources.id", ondelete="CASCADE"), nullable=False)
+    source_record_id = Column(String(100), nullable=True)
+    reference_date = Column(String(50), nullable=True)
+    metadata_info = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ObservationForestContext(Base):
+    __tablename__ = "observation_forest_context"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    detection_id = Column(String(36), ForeignKey("thermal_detections.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    is_inside_forest = Column(Boolean, default=False, index=True)
+    forest_density_class = Column(String(50), default="NON_FOREST")  # VDF, MDF, OF, SCRUB, NON_FOREST
+    is_inside_recorded_forest = Column(Boolean, default=False)
+    is_inside_protected_area = Column(Boolean, default=False, index=True)
+    protected_area_id = Column(String(64), ForeignKey("protected_areas.id", ondelete="SET NULL"), nullable=True)
+    protected_area_type = Column(String(50), nullable=True)
+    protected_area_name = Column(String(255), nullable=True)
+    distance_to_protected_area_m = Column(Float, nullable=True)
+    distance_to_forest_m = Column(Float, nullable=True)
+    forest_context_level = Column(String(20), default="NONE", index=True)  # HIGH, MEDIUM, LOW, NONE
+    forest_fire_evidence = Column(String(100), default="NO_DIRECT_FIRE_EVIDENCE")
+    source_id = Column(String(64), ForeignKey("fsi_sources.id", ondelete="SET NULL"), nullable=True)
+    reference_year = Column(Integer, default=2021)
+    confidence_score = Column(Float, default=0.90)
+    spatial_match_method = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class FacilityForestContext(Base):
+    __tablename__ = "facility_forest_context"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    nearest_protected_area_id = Column(String(64), ForeignKey("protected_areas.id", ondelete="SET NULL"), nullable=True)
+    nearest_protected_area_name = Column(String(255), nullable=True)
+    nearest_protected_area_type = Column(String(50), nullable=True)
+    distance_to_protected_area_m = Column(Float, nullable=True)
+    distance_to_forest_m = Column(Float, nullable=True)
+    is_inside_esz_10km = Column(Boolean, default=False)
+    esz_evaluation_status = Column(String(50), default="DISTANCE_WITHIN_10KM")
+    forest_context_level = Column(String(20), default="NONE")
+    source_id = Column(String(64), ForeignKey("fsi_sources.id", ondelete="SET NULL"), nullable=True)
+    reference_year = Column(Integer, default=2021)
+    confidence_score = Column(Float, default=0.95)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+
 
 

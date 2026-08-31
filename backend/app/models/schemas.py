@@ -912,4 +912,245 @@ class AdministrativeReverseLookupOut(BaseModel):
     match_method: str = "POSTGIS_SPATIAL_JOIN"
 
 
+# =========================================================================
+# LULC (Land Use / Land Cover) Response Schemas
+# =========================================================================
+
+class LULCClassOut(BaseModel):
+    id: str
+    source_class_code: str
+    source_class_name: str
+    canonical_class: str
+    is_industrial_compatible: bool
+    risk_weight: float
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LULCSourceOut(BaseModel):
+    id: str
+    source_name: str
+    organization: str
+    dataset_name: str
+    resolution_m: float
+    reference_year: int
+    product_version: str
+    access_type: str
+    license: str
+    source_url: str
+    metadata_info: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LULCLookupOut(BaseModel):
+    latitude: float
+    longitude: float
+    coverage_status: str  # REAL, NO_COVERAGE, DEMO_FALLBACK
+    source_coverage: str  # COVERED, UNAVAILABLE, DEMO_MOCK
+    primary_class: Optional[str] = None
+    source_class_code: Optional[str] = None
+    source_class_name: Optional[str] = None
+    is_industrial_zone: bool = False
+    is_mining_zone: bool = False
+    is_forest_zone: bool = False
+    is_agriculture_zone: bool = False
+    is_water_zone: bool = False
+    distance_to_forest_m: float
+    distance_to_agriculture_m: float
+    distance_to_water_m: float
+    distance_to_industrial_m: float
+    distance_to_mining_m: float
+    source: str = "ISRO_BHUVAN_50K"
+    resolution_m: Optional[float] = 24.0
+    reference_year: Optional[int] = 2025
+    confidence: float
+    spatial_match_method: str
+
+
+class ObservationLULCContextOut(BaseModel):
+    id: str
+    detection_id: str
+    primary_lulc_class: str
+    source_lulc_class: str
+    is_industrial_zone: bool
+    is_mining_zone: bool
+    is_forest_zone: bool
+    is_agriculture_zone: bool
+    is_water_zone: bool
+    distance_to_forest_m: Optional[float] = None
+    distance_to_agriculture_m: Optional[float] = None
+    distance_to_water_m: Optional[float] = None
+    distance_to_industrial_m: Optional[float] = None
+    distance_to_mining_m: Optional[float] = None
+    spatial_match_method: str
+    confidence_score: float
+    reference_date: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class FacilityLULCContextOut(BaseModel):
+    id: str
+    facility_id: str
+    primary_lulc_class: str
+    source_lulc_class: str
+    industrial_compatibility: str
+    distance_to_forest_m: Optional[float] = None
+    distance_to_agriculture_m: Optional[float] = None
+    distance_to_water_m: Optional[float] = None
+    distance_to_mining_m: Optional[float] = None
+    confidence_score: float
+    reference_date: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LULCStatsOut(BaseModel):
+    total_sources: int
+    total_classes: int
+    total_features: int
+    sources: List[LULCSourceOut]
+    canonical_class_distribution: Dict[str, int]
+
+
+# =========================================================================
+# Forest Intelligence (FSI / ISFR / Protected Areas) Schemas
+# =========================================================================
+
+class FSISourceOut(BaseModel):
+    id: str
+    source_name: str
+    organization: str
+    dataset_name: str
+    reference_year: int
+    product_version: str
+    access_method: str
+    source_url: str
+    license: str
+    metadata_info: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class FSIISFRStatsOut(BaseModel):
+    id: str
+    state: str
+    district: str
+    admin_boundary_id: Optional[UUID] = None
+    geographical_area_sqkm: float
+    very_dense_forest_sqkm: float
+    moderately_dense_forest_sqkm: float
+    open_forest_sqkm: float
+    total_forest_sqkm: float
+    percent_of_geo_area: float
+    scrub_sqkm: float
+    reference_year: int
+    source_id: str
+    source_document: str
+    page_table_reference: Optional[str] = None
+    provisional_flag: bool
+
+    class Config:
+        from_attributes = True
+
+
+class ProtectedAreaOut(BaseModel):
+    id: str
+    pa_name: str
+    pa_type: str
+    state: str
+    district: Optional[str] = None
+    established_year: Optional[int] = None
+    area_sqkm: Optional[float] = None
+    legal_status: Optional[str] = None
+    source_id: str
+    source_record_id: Optional[str] = None
+    reference_date: Optional[str] = None
+    metadata_info: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ObservationForestContextOut(BaseModel):
+    id: str
+    detection_id: str
+    is_inside_forest: bool
+    forest_density_class: str
+    is_inside_recorded_forest: bool
+    is_inside_protected_area: bool
+    protected_area_id: Optional[str] = None
+    protected_area_type: Optional[str] = None
+    protected_area_name: Optional[str] = None
+    distance_to_protected_area_m: Optional[float] = None
+    distance_to_forest_m: Optional[float] = None
+    forest_context_level: str
+    forest_fire_evidence: str
+    source_id: Optional[str] = None
+    reference_year: Optional[int] = None
+    confidence_score: float
+    spatial_match_method: str
+
+    class Config:
+        from_attributes = True
+
+
+class FacilityForestContextOut(BaseModel):
+    id: str
+    facility_id: str
+    nearest_protected_area_id: Optional[str] = None
+    nearest_protected_area_name: Optional[str] = None
+    nearest_protected_area_type: Optional[str] = None
+    distance_to_protected_area_m: Optional[float] = None
+    distance_to_forest_m: Optional[float] = None
+    is_inside_esz_10km: bool
+    esz_evaluation_status: str
+    forest_context_level: str
+    source_id: Optional[str] = None
+    reference_year: Optional[int] = None
+    confidence_score: float
+
+    class Config:
+        from_attributes = True
+
+
+class ForestLookupOut(BaseModel):
+    latitude: float
+    longitude: float
+    forest_context_level: str  # HIGH, MEDIUM, LOW, NONE
+    is_inside_forest: bool
+    forest_density_class: str  # VDF, MDF, OF, SCRUB, NON_FOREST
+    is_inside_protected_area: bool
+    protected_area_id: Optional[str] = None
+    protected_area_name: Optional[str] = None
+    protected_area_type: Optional[str] = None
+    distance_to_forest_m: float
+    distance_to_protected_area_m: float
+    is_within_10km_esz_buffer: bool
+    nearest_isfr_district: Optional[str] = None
+    district_forest_cover_pct: Optional[float] = None
+    primary_source: str
+    reference_year: int
+    confidence: float
+    spatial_match_method: str
+
+
+class ForestStatsOut(BaseModel):
+    total_sources: int
+    total_district_records: int
+    total_protected_areas: int
+    sources: List[FSISourceOut]
+    protected_area_distribution: Dict[str, int]
+    top_forested_districts: List[FSIISFRStatsOut]
+
+
+
+
 
