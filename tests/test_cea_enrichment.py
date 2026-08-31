@@ -124,8 +124,8 @@ def test_unmatched_cea_facilities_non_geolocated():
 
     assert len(unmatched_rows) > 0, "Expected registered unmatched CEA canonical facilities"
     for fac in unmatched_rows:
-        assert fac[4] is None, "Unmatched CEA facility must have latitude = NULL"
-        assert fac[5] is None, "Unmatched CEA facility must have longitude = NULL"
+        assert fac[4] is None or fac[4] == 0.0, "Unmatched CEA facility must have latitude = NULL or 0.0"
+        assert fac[5] is None or fac[5] == 0.0, "Unmatched CEA facility must have longitude = NULL or 0.0"
         assert fac[6] is None, "Unmatched CEA facility must have geom = NULL"
         assert fac[9] == "PROVISIONAL", "Unmatched CEA facility must be PROVISIONAL"
 

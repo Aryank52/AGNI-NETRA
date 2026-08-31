@@ -57,6 +57,18 @@ class FacilityEntityResolver:
 
             # Check for existing match
             for existing in existing_facilities:
+                if (
+                    record.latitude is None or record.longitude is None or
+                    existing.latitude is None or existing.longitude is None
+                ):
+                    continue
+
+                if (
+                    abs(record.latitude - existing.latitude) > 0.05 or
+                    abs(record.longitude - existing.longitude) > 0.05
+                ):
+                    continue
+
                 # 1. Spatial proximity check
                 dist = haversine_distance_m(record.latitude, record.longitude, existing.latitude, existing.longitude)
                 

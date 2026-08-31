@@ -184,12 +184,15 @@ class OSMIndustrialAdapter(FacilitySourceAdapter):
 
             with engine.connect() as conn:
                 rows = conn.execute(text("""
-                    SELECT id, name, entity_classification, operator, state, district,
-                           latitude, longitude, confidence, verification_status,
-                           source_record_id, source_metadata
-                    FROM osm_staging_facilities
-                    WHERE latitude BETWEEN :min_lat AND :max_lat
-                      AND longitude BETWEEN :min_lon AND :max_lon
+                    SELECT inf.id, inf.name, inf.facility_type, inf.operator,
+                           COALESCE(fac.derived_state, inf.state, 'National / Unspecified') as state,
+                           COALESCE(fac.derived_district, inf.district) as district,
+                           inf.latitude, inf.longitude, inf.confidence_score, inf.verification_status,
+                           inf.source_id, inf.contact_info
+                    FROM industrial_facilities inf
+                    LEFT JOIN facility_administrative_context fac ON fac.facility_id = inf.id
+                    WHERE inf.latitude BETWEEN :min_lat AND :max_lat
+                      AND inf.longitude BETWEEN :min_lon AND :max_lon
                     LIMIT 2000;
                 """), {
                     "min_lat": min_lat,
@@ -202,27 +205,28 @@ class OSMIndustrialAdapter(FacilitySourceAdapter):
                     ingestion_time = datetime.now(timezone.utc)
                     records = []
                     for r in rows:
+                        conf_score = float(r[8]) if r[8] is not None else 0.80
                         prov = SourceProvenance(
                             source_name="OSM_POSTGIS_REGISTRY",
-                            source_record_id=r[10],
+                            source_record_id=str(r[10]),
                             source_version="OSM-STAGING-V1",
                             acquisition_time=datetime(2026, 1, 1, tzinfo=timezone.utc),
                             ingestion_time=ingestion_time,
                             raw_reference="POSTGIS_STAGING",
-                            data_quality_score=0.95 if r[8] == "HIGH" else (0.80 if r[8] == "MEDIUM" else 0.60)
+                            data_quality_score=conf_score
                         )
                         records.append(
                             NormalizedFacilityRecord(
                                 source="OSM",
-                                source_id=r[10],
+                                source_id=str(r[10]),
                                 name=r[1] or f"OSM Facility ({r[10]})",
-                                facility_type=r[2],
+                                facility_type=r[2] or "OTHER",
                                 operator=r[3],
                                 state=r[4] or "National / Unspecified",
                                 district=r[5],
                                 latitude=r[6],
                                 longitude=r[7],
-                                confidence_score=0.95 if r[8] == "HIGH" else (0.80 if r[8] == "MEDIUM" else 0.60),
+                                confidence_score=conf_score,
                                 operating_status="OPERATIONAL",
                                 provenance=prov,
                                 raw_tags=r[11] if isinstance(r[11], dict) else {}

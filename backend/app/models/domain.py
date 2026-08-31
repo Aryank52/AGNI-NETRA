@@ -925,3 +925,96 @@ class MissionTask(Base):
     metadata_info = Column(JSON, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+
+# ==========================================
+# PHASE 2A: NATIONAL ADMINISTRATIVE GEOGRAPHY
+# ==========================================
+
+class AdminBoundary(Base):
+    __tablename__ = "admin_boundaries"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    admin_level = Column(Integer, nullable=False, index=True)  # 1: State/UT, 2: District, 3: Sub-District/Tehsil
+    admin_level_name = Column(String(50), nullable=False)      # STATE_UT, DISTRICT, SUBDISTRICT
+    admin_code = Column(String(100), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    normalized_name = Column(String(255), nullable=False, index=True)
+    parent_code = Column(String(100), nullable=True)
+    parent_name = Column(String(255), nullable=True)
+    state_code = Column(String(100), nullable=True)
+    state_name = Column(String(255), nullable=True, index=True)
+    district_code = Column(String(100), nullable=True)
+    district_name = Column(String(255), nullable=True, index=True)
+    subdistrict_code = Column(String(100), nullable=True)
+    geom = Column(Geometry(geometry_type="GEOMETRY", srid=4326), nullable=False)
+
+    source = Column(String(100), nullable=False, default="geoBoundaries / Local Government Directory")
+    source_document = Column(String(255), nullable=False)
+    source_url = Column(Text, nullable=True)
+    reference_date = Column(DateTime, nullable=True)
+    source_version = Column(String(50), default="2024")
+    crs = Column(String(50), default="EPSG:4326")
+    srid = Column(Integer, default=4326)
+    is_authoritative = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class FacilityAdministrativeContext(Base):
+    __tablename__ = "facility_administrative_context"
+
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="CASCADE"), primary_key=True)
+    original_state = Column(String(255), nullable=True)
+    original_district = Column(String(255), nullable=True)
+    original_city = Column(String(255), nullable=True)
+    derived_state = Column(String(255), nullable=True)
+    derived_district = Column(String(255), nullable=True)
+    derived_subdistrict = Column(String(255), nullable=True)
+    state_id = Column(String(36), nullable=True, index=True)
+    district_id = Column(String(36), nullable=True, index=True)
+    subdistrict_id = Column(String(36), nullable=True, index=True)
+    has_state_conflict = Column(Boolean, default=False)
+    has_district_conflict = Column(Boolean, default=False)
+    spatial_match_method = Column(String(100), default="POSTGIS_SPATIAL_JOIN")
+    administrative_source = Column(String(100), default="geoBoundaries / Local Government Directory")
+    administrative_confidence = Column(String(20), default="HIGH")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ObservationAdministrativeContext(Base):
+    __tablename__ = "observation_administrative_context"
+
+    detection_id = Column(String(50), primary_key=True)
+    state_id = Column(String(36), nullable=True, index=True)
+    state_name = Column(String(255), nullable=True, index=True)
+    district_id = Column(String(36), nullable=True, index=True)
+    district_name = Column(String(255), nullable=True, index=True)
+    subdistrict_id = Column(String(36), nullable=True, index=True)
+    subdistrict_name = Column(String(255), nullable=True)
+    spatial_match_method = Column(String(100), default="POSTGIS_SPATIAL_JOIN")
+    boundary_source = Column(String(100), default="geoBoundaries / Local Government Directory")
+    administrative_confidence = Column(String(20), default="HIGH")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PariveshAdministrativeContext(Base):
+    __tablename__ = "parivesh_administrative_context"
+
+    proposal_id = Column(String(100), primary_key=True)
+    original_state = Column(String(255), nullable=True)
+    original_district = Column(String(255), nullable=True)
+    derived_state = Column(String(255), nullable=True)
+    derived_district = Column(String(255), nullable=True)
+    derived_subdistrict = Column(String(255), nullable=True)
+    state_id = Column(String(36), nullable=True)
+    district_id = Column(String(36), nullable=True)
+    subdistrict_id = Column(String(36), nullable=True)
+    has_state_conflict = Column(Boolean, default=False)
+    has_district_conflict = Column(Boolean, default=False)
+    administrative_method = Column(String(100), default="POSTGIS_SPATIAL_JOIN")
+    administrative_confidence = Column(String(20), default="HIGH")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+

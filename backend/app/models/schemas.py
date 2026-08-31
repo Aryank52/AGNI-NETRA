@@ -798,3 +798,118 @@ class MissionTaskOut(BaseModel):
         from_attributes = True
 
 
+# ------------------------------------------------------------------------------
+# Phase 2A: National Administrative Geography Schemas
+# ------------------------------------------------------------------------------
+
+class AdminBoundaryOut(BaseModel):
+    id: Union[str, UUID]
+    admin_level: int
+    admin_level_name: str
+    admin_code: str
+    name: str
+    normalized_name: str
+    parent_code: Optional[str] = None
+    parent_name: Optional[str] = None
+    state_code: Optional[str] = None
+    state_name: Optional[str] = None
+    district_code: Optional[str] = None
+    district_name: Optional[str] = None
+    subdistrict_code: Optional[str] = None
+    source: str
+    source_document: str
+    source_version: Optional[str] = "2024"
+    is_authoritative: bool = True
+
+    class Config:
+        from_attributes = True
+
+
+class StateSummaryOut(BaseModel):
+    state_code: Optional[str] = None
+    state_name: str
+    district_count: int = 0
+    subdistrict_count: int = 0
+    facility_count: int = 0
+    thermal_observation_count: int = 0
+
+
+class DistrictSummaryOut(BaseModel):
+    district_code: Optional[str] = None
+    district_name: str
+    state_name: str
+    subdistrict_count: int = 0
+    facility_count: int = 0
+    thermal_observation_count: int = 0
+
+
+class FacilityAdministrativeContextOut(BaseModel):
+    facility_id: str
+    original_state: Optional[str] = None
+    original_district: Optional[str] = None
+    original_city: Optional[str] = None
+    derived_state: Optional[str] = None
+    derived_district: Optional[str] = None
+    derived_subdistrict: Optional[str] = None
+    state_id: Optional[Union[str, UUID]] = None
+    district_id: Optional[Union[str, UUID]] = None
+    subdistrict_id: Optional[Union[str, UUID]] = None
+    has_state_conflict: bool = False
+    has_district_conflict: bool = False
+    spatial_match_method: str = "POSTGIS_SPATIAL_JOIN"
+    administrative_source: str = "geoBoundaries / Local Government Directory"
+    administrative_confidence: str = "HIGH"
+
+    class Config:
+        from_attributes = True
+
+
+class ObservationAdministrativeContextOut(BaseModel):
+    detection_id: str
+    state_id: Optional[Union[str, UUID]] = None
+    state_name: Optional[str] = None
+    district_id: Optional[Union[str, UUID]] = None
+    district_name: Optional[str] = None
+    subdistrict_id: Optional[Union[str, UUID]] = None
+    subdistrict_name: Optional[str] = None
+    spatial_match_method: str = "POSTGIS_SPATIAL_JOIN"
+    boundary_source: str = "geoBoundaries / Local Government Directory"
+    administrative_confidence: str = "HIGH"
+
+    class Config:
+        from_attributes = True
+
+
+class PariveshAdministrativeContextOut(BaseModel):
+    proposal_id: str
+    original_state: Optional[str] = None
+    original_district: Optional[str] = None
+    derived_state: Optional[str] = None
+    derived_district: Optional[str] = None
+    derived_subdistrict: Optional[str] = None
+    state_id: Optional[Union[str, UUID]] = None
+    district_id: Optional[Union[str, UUID]] = None
+    subdistrict_id: Optional[Union[str, UUID]] = None
+    has_state_conflict: bool = False
+    has_district_conflict: bool = False
+    administrative_method: str = "POSTGIS_SPATIAL_JOIN"
+    administrative_confidence: str = "HIGH"
+
+    class Config:
+        from_attributes = True
+
+
+class AdministrativeReverseLookupOut(BaseModel):
+    latitude: float
+    longitude: float
+    state_name: Optional[str] = None
+    district_name: Optional[str] = None
+    subdistrict_name: Optional[str] = None
+    state_code: Optional[str] = None
+    district_code: Optional[str] = None
+    subdistrict_code: Optional[str] = None
+    boundary_source: str = "geoBoundaries / Local Government Directory"
+    match_method: str = "POSTGIS_SPATIAL_JOIN"
+
+
+

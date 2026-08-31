@@ -95,6 +95,10 @@ def calculate_facility_baseline(
             "facility_name": facility.name,
             "status": "NO_HISTORICAL_EVENTS",
             "mean_frp": 0.0,
+            "median_frp": 0.0,
+            "variance_frp": 0.0,
+            "max_historical_frp": 0.0,
+            "frp_distribution": {"p25": 0.0, "p50": 0.0, "p75": 0.0, "p90": 0.0, "p99": 0.0},
             "status_band": "NORMAL"
         }
 
