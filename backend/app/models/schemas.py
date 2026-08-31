@@ -1,6 +1,7 @@
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from datetime import datetime, date
+from typing import List, Optional, Dict, Any, Union
+from uuid import UUID
+from pydantic import BaseModel, Field, EmailStr
 
 
 # ------------------------------------------------------------------------------
@@ -196,6 +197,89 @@ class FacilityBaselineOut(BaseModel):
         from_attributes = True
 
 
+class MiningThermalAssociationOut(BaseModel):
+    id: Union[UUID, str]
+    facility_id: str
+    distance_band: str
+    detection_count: int = 0
+    first_seen: Optional[datetime] = None
+    last_seen: Optional[datetime] = None
+    active_days_count: int = 0
+    mean_frp: Optional[float] = None
+    median_frp: Optional[float] = None
+    p90_frp: Optional[float] = None
+    p99_frp: Optional[float] = None
+    max_frp: Optional[float] = None
+    mean_confidence: Optional[float] = None
+    day_detection_count: int = 0
+    night_detection_count: int = 0
+    recurrence_rate: Optional[float] = None
+    persistence_days: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class FacilityMiningEvidenceOut(BaseModel):
+    facility_id: str
+    facility_name: str
+    facility_type: str
+    osm_object_id: Optional[str] = None
+    osm_object_type: Optional[str] = None
+    operator: Optional[str] = None
+    mineral_commodity: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    administrative_source: Optional[str] = None
+    latitude: float
+    longitude: float
+
+    ibm_lease_context_present: bool = False
+    ibm_district_lease_count: Optional[int] = None
+    ibm_district_lease_area_ha: Optional[float] = None
+    ibm_potential_tier: Optional[str] = None
+    ibm_district_minerals: List[Dict[str, Any]] = []
+
+    nmi_resource_context_present: bool = False
+    nmi_commodity_reserves: Optional[float] = None
+    nmi_commodity_resources: Optional[float] = None
+    nmi_commodity_unit: Optional[str] = None
+
+    firms_associated_500m: int = 0
+    firms_associated_1km: int = 0
+    firms_associated_2km: int = 0
+    first_thermal_seen: Optional[datetime] = None
+    last_thermal_seen: Optional[datetime] = None
+    active_days_count: int = 0
+    mean_frp: Optional[float] = None
+    median_frp: Optional[float] = None
+    p90_frp: Optional[float] = None
+    p99_frp: Optional[float] = None
+    max_frp: Optional[float] = None
+
+    mining_context_present: bool = True
+    mining_geometry_present: bool = True
+    thermal_activity_present: bool = False
+    thermal_persistence_category: str = "NO_THERMAL_ACTIVITY"
+    confidence_score: float = 0.5
+    scientific_attribution: str
+    evidence_summary: Dict[str, Any] = {}
+    associations: List[MiningThermalAssociationOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class MiningContextSummaryOut(BaseModel):
+    state: Optional[str] = None
+    district: Optional[str] = None
+    potential_tier: Optional[str] = None
+    total_leases: Optional[int] = None
+    total_area_ha: Optional[float] = None
+    top_minerals: List[Dict[str, Any]] = []
+    facility_count: int = 0
+
+
 class IndustrialFacilityOut(BaseModel):
     id: str
     name: str
@@ -206,7 +290,7 @@ class IndustrialFacilityOut(BaseModel):
     district: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    confidence_score: float = 1.0
+    confidence_score: Optional[float] = 1.0
     operating_hours: str = "24x7"
     contact_info: Dict[str, Any] = {}
     
@@ -239,24 +323,132 @@ class IndustrialFacilityOut(BaseModel):
     source_url: Optional[str] = None
     source_date: Optional[str] = None
     source_file: Optional[str] = None
-    verification_status: Optional[str] = None
-    confidence: Optional[str] = None
-    last_updated: Optional[datetime] = None
-
-    # CEA Power Station & FIRMS Linking Attributes
-    prime_mover: Optional[str] = None
     unit_count: Optional[int] = None
     commissioning_year_min: Optional[int] = None
     commissioning_year_max: Optional[int] = None
     cea_project_name: Optional[str] = None
     cea_organisation: Optional[str] = None
+    prime_mover: Optional[str] = None
     firms_detections_500m: Optional[int] = 0
     firms_detections_1km: Optional[int] = 0
     firms_detections_2km: Optional[int] = 0
     thermal_activity_status: Optional[str] = None
 
+    # PARIVESH Environmental Clearance Attributes
+    environmental_clearance_present: Optional[bool] = False
+    ec_proposal_id: Optional[str] = None
+    ec_clearance_type: Optional[str] = None
+    ec_clearance_status: Optional[str] = None
+    ec_category: Optional[str] = None
+    ec_decision_date: Optional[str] = None
+    forest_related_flag: Optional[bool] = False
+    wildlife_related_flag: Optional[bool] = False
+    crz_related_flag: Optional[bool] = False
+
     baselines: List[HistoricalBaselineOut] = []
     facility_baseline: Optional[FacilityBaselineOut] = None
+    mining_evidence: Optional[FacilityMiningEvidenceOut] = None
+
+    class Config:
+        from_attributes = True
+
+
+class IbmMiningLeaseContextOut(BaseModel):
+    id: Union[UUID, str]
+    record_id: str
+    state: Optional[str] = None
+    district: Optional[str] = None
+    mineral: Optional[str] = None
+    lease_count: Optional[int] = None
+    lease_area_ha: Optional[float] = None
+    sector: Optional[str] = None
+    potential_category: Optional[str] = None
+    reference_year: int = 2024
+    reference_date: Optional[Any] = None
+    source_document: str
+    table_number: str
+    page_number: Optional[int] = None
+    provisional_flag: bool = True
+    source: str = "IBM"
+    aggregation_level: str = "DISTRICT_MINERAL"
+    raw_metadata: Dict[str, Any] = {}
+
+class IbmMineralResourceOut(BaseModel):
+    id: Union[UUID, str]
+    record_id: str
+    sl_no: Optional[int] = None
+    commodity: Optional[str] = None
+    mineral: str
+    unit: Optional[str] = None
+    reserves: Optional[float] = None
+    remaining_resources: Optional[float] = None
+    total_resources: Optional[float] = None
+    not_estimated: bool = False
+    reference_year: int = 2020
+    reference_date: Optional[Any] = None
+    source: str = "IBM"
+    source_document: str
+    page_number: Optional[int] = None
+    table_number: str = "Table 6"
+    provisional_flag: bool = True
+    class Config:
+        from_attributes = True
+
+
+class IbmAuctionedBlockOut(BaseModel):
+    id: Union[UUID, str]
+    source_doc_id: str
+    sl_no: int
+    block_name: str
+    state: str
+    district: Optional[str] = None
+    mineral: str
+    preferred_bidder: Optional[str] = None
+    auction_financial_year: str = "2024-25"
+    matched_facility_id: Optional[str] = None
+    match_confidence: str = "UNMATCHED"
+    match_score: Optional[float] = None
+    match_method: Optional[str] = None
+    firms_count_500m: int = 0
+    firms_count_1km: int = 0
+    firms_count_2km: int = 0
+    source: str = "IBM"
+    source_document: str
+    page_number: Optional[int] = None
+    table_number: str = "Table 15"
+    is_provisional: bool = True
+    raw_metadata: Dict[str, Any] = {}
+
+    class Config:
+        from_attributes = True
+
+
+class PariveshProjectOut(BaseModel):
+    id: str
+    proposal_id: str
+    project_name: str
+    project_type: Optional[str] = None
+    proponent: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    category: Optional[str] = None
+    sector: Optional[str] = None
+    clearance_type: Optional[str] = None
+    clearance_status: Optional[str] = None
+    proposal_date: Optional[str] = None
+    decision_date: Optional[str] = None
+    forest_related_flag: bool = False
+    wildlife_related_flag: bool = False
+    crz_related_flag: bool = False
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    source_url: Optional[str] = None
+    source_file: Optional[str] = None
+    source_date: Optional[str] = None
+    match_status: str = "UNMATCHED"
+    matched_facility_id: Optional[str] = None
+    match_confidence: Optional[str] = None
+    match_score: Optional[float] = None
 
     class Config:
         from_attributes = True

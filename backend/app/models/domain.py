@@ -4,6 +4,7 @@ from sqlalchemy import (
     Column, String, Float, Integer, BigInteger, Boolean, DateTime, ForeignKey, Text, JSON, Enum
 )
 from sqlalchemy.orm import relationship
+from geoalchemy2 import Geometry
 from backend.app.core.database import Base
 
 
@@ -137,9 +138,21 @@ class IndustrialFacility(Base):
     firms_detections_2km = Column(Integer, default=0)
     thermal_activity_status = Column(String(50), nullable=True)
 
+    # PARIVESH Environmental Clearance Attributes
+    environmental_clearance_present = Column(Boolean, default=False)
+    ec_proposal_id = Column(String(100), nullable=True)
+    ec_clearance_type = Column(String(100), nullable=True)
+    ec_clearance_status = Column(String(100), nullable=True)
+    ec_category = Column(String(50), nullable=True)
+    ec_decision_date = Column(String(50), nullable=True)
+    forest_related_flag = Column(Boolean, default=False)
+    wildlife_related_flag = Column(Boolean, default=False)
+    crz_related_flag = Column(Boolean, default=False)
+
     events = relationship("ThermalEvent", back_populates="facility")
     baselines = relationship("HistoricalBaseline", back_populates="facility")
     facility_baseline = relationship("FacilityBaseline", back_populates="facility", uselist=False)
+    mining_evidence = relationship("FacilityMiningEvidence", foreign_keys="FacilityMiningEvidence.facility_id", uselist=False)
 
 
 class OSMStagingFacility(Base):
@@ -200,6 +213,288 @@ class CEAPowerStationStaging(Base):
     year_of_commissioning = Column(Integer, nullable=True)
     raw_row_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PariveshProjectStaging(Base):
+    """
+    Dedicated staging table for official MoEFCC PARIVESH Environmental Clearance projects.
+    """
+    __tablename__ = "parivesh_projects_staging"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    proposal_id = Column(String(100), unique=True, nullable=False, index=True)
+    project_name = Column(String(500), nullable=False, index=True)
+    project_type = Column(String(100), nullable=True)
+    proponent = Column(String(300), nullable=True, index=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    category = Column(String(50), nullable=True)
+    sector = Column(String(100), nullable=True)
+    clearance_type = Column(String(100), nullable=True)
+    clearance_status = Column(String(50), nullable=True, index=True)
+    proposal_date = Column(DateTime, nullable=True)
+    decision_date = Column(DateTime, nullable=True)
+    forest_related_flag = Column(Boolean, default=False)
+    wildlife_related_flag = Column(Boolean, default=False)
+    crz_related_flag = Column(Boolean, default=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    source_url = Column(String(500), nullable=True)
+    source_file = Column(String(255), nullable=True)
+    source_date = Column(DateTime, nullable=True)
+    raw_metadata = Column(JSON, default=dict)
+    match_status = Column(String(50), nullable=True, index=True)
+    match_confidence = Column(String(50), nullable=True)
+    match_score = Column(Float, nullable=True)
+    matched_facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class IbmMiningLeaseContextStaging(Base):
+    """
+    Staging table for official IBM Mining Lease Bulletin aggregate statistics.
+    """
+    __tablename__ = "ibm_mining_lease_context_staging"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    record_id = Column(String(128), unique=True, nullable=False, index=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    mineral = Column(String(100), nullable=True, index=True)
+    lease_count = Column(Integer, nullable=True)
+    lease_area_ha = Column(Float, nullable=True)
+    sector = Column(String(50), nullable=True)
+    potential_category = Column(String(50), nullable=True)
+    reference_year = Column(Integer, nullable=False, default=2024)
+    reference_date = Column(DateTime, nullable=False)
+    source_document = Column(String(255), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    table_number = Column(String(50), nullable=False, index=True)
+    provisional_flag = Column(Boolean, nullable=False, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class IbmMiningLeaseContext(Base):
+    """
+    Canonical mining lease context layer derived from official IBM publications.
+    """
+    __tablename__ = "ibm_mining_lease_context"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    record_id = Column(String(128), unique=True, nullable=False, index=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    mineral = Column(String(100), nullable=True, index=True)
+    lease_count = Column(Integer, nullable=True)
+    lease_area_ha = Column(Float, nullable=True)
+    sector = Column(String(50), nullable=True)
+    potential_category = Column(String(50), nullable=True, index=True)
+    reference_year = Column(Integer, nullable=False, default=2024)
+    reference_date = Column(DateTime, nullable=False)
+    source_document = Column(String(255), nullable=False)
+    table_number = Column(String(50), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    provisional_flag = Column(Boolean, nullable=False, default=True)
+    source = Column(String(50), nullable=False, default="IBM")
+    aggregation_level = Column(String(50), nullable=False, default="DISTRICT_MINERAL", index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+class IbmNmiStaging(Base):
+    """
+    Staging table for official IBM National Mineral Inventory (NMI) resource statistics.
+    """
+    __tablename__ = "ibm_nmi_staging"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    record_id = Column(String(128), unique=True, nullable=False, index=True)
+    sl_no = Column(Integer, nullable=True)
+    commodity = Column(String(255), nullable=True, index=True)
+    mineral = Column(String(255), nullable=False, index=True)
+    unit = Column(String(100), nullable=True)
+    reserves = Column(Float, nullable=True)
+    remaining_resources = Column(Float, nullable=True)
+    total_resources = Column(Float, nullable=True)
+    not_estimated = Column(Boolean, nullable=False, default=False)
+    reference_year = Column(Integer, nullable=False, default=2020)
+    reference_date = Column(DateTime, nullable=False)
+    source_document = Column(String(255), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    table_number = Column(String(50), nullable=False, default="Table 6")
+    provisional_flag = Column(Boolean, nullable=False, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class IbmMineralResource(Base):
+    """
+    Canonical mineral resource context layer from IBM National Mineral Inventory (NMI).
+    """
+    __tablename__ = "ibm_mineral_resources"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    record_id = Column(String(128), unique=True, nullable=False, index=True)
+    sl_no = Column(Integer, nullable=True)
+    commodity = Column(String(255), nullable=True, index=True)
+    mineral = Column(String(255), nullable=False, index=True)
+    unit = Column(String(100), nullable=True)
+    reserves = Column(Float, nullable=True)
+    remaining_resources = Column(Float, nullable=True)
+    total_resources = Column(Float, nullable=True)
+    not_estimated = Column(Boolean, nullable=False, default=False)
+    reference_year = Column(Integer, nullable=False, default=2020, index=True)
+    reference_date = Column(DateTime, nullable=False)
+    source = Column(String(50), nullable=False, default="IBM")
+    source_document = Column(String(255), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    table_number = Column(String(50), nullable=False, default="Table 6")
+    provisional_flag = Column(Boolean, nullable=False, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+class IbmAuctionedBlockStaging(Base):
+    """
+    Staging table for IBM Bulletin 2024 Table 15 Successful Mineral Block Auctions 2024-25.
+    """
+    __tablename__ = "ibm_auctioned_blocks_staging"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    sl_no = Column(Integer, nullable=False)
+    state = Column(String(100), nullable=True)
+    block_name = Column(String(255), nullable=False)
+    mineral = Column(String(255), nullable=True)
+    preferred_bidder = Column(String(255), nullable=True)
+    auction_financial_year = Column(String(50), default="2024-25")
+    source_document = Column(String(255), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    table_number = Column(String(50), default="Table 15")
+    provisional_status = Column(Boolean, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class IbmAuctionedBlock(Base):
+    """
+    Canonical table for IBM Table 15 Individually Named Auctioned Mineral Blocks with entity resolution provenance.
+    """
+    __tablename__ = "ibm_auctioned_blocks"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    source_doc_id = Column(String(100), unique=True, nullable=False)
+    sl_no = Column(Integer, nullable=False)
+    block_name = Column(String(255), nullable=False)
+    state = Column(String(100), nullable=False, index=True)
+    district = Column(String(100), nullable=True)
+    mineral = Column(String(255), nullable=False, index=True)
+    preferred_bidder = Column(String(255), nullable=True)
+    auction_financial_year = Column(String(50), nullable=False, default="2024-25")
+
+    matched_facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="SET NULL"), nullable=True)
+    match_confidence = Column(String(20), nullable=False, default="UNMATCHED", index=True)
+    match_score = Column(Float, nullable=True)
+    match_method = Column(String(100), nullable=True)
+    geom = Column(Geometry("GEOMETRY", srid=4326), nullable=True)
+
+    firms_count_500m = Column(Integer, default=0)
+    firms_count_1km = Column(Integer, default=0)
+    firms_count_2km = Column(Integer, default=0)
+
+    source = Column(String(50), nullable=False, default="IBM")
+    source_document = Column(String(255), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    table_number = Column(String(50), nullable=False, default="Table 15")
+    is_provisional = Column(Boolean, nullable=False, default=True)
+    raw_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+class FacilityMiningEvidence(Base):
+    """
+    Fused mining intelligence evidence linking OSM geometry, IBM lease/NMI context, and FIRMS thermal telemetry.
+    """
+    __tablename__ = "facility_mining_evidence"
+
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="CASCADE"), primary_key=True)
+    facility_name = Column(String(255), nullable=False)
+    facility_type = Column(String(50), nullable=False)
+    osm_object_id = Column(String(100), nullable=True)
+    osm_object_type = Column(String(50), nullable=True)
+    operator = Column(String(255), nullable=True)
+    mineral_commodity = Column(String(255), nullable=True, index=True)
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    administrative_source = Column(String(100), nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+
+    ibm_lease_context_present = Column(Boolean, nullable=False, default=False)
+    ibm_district_lease_count = Column(Integer, nullable=True)
+    ibm_district_lease_area_ha = Column(Float, nullable=True)
+    ibm_potential_tier = Column(String(50), nullable=True, index=True)
+    ibm_district_minerals = Column(JSON, default=list)
+
+    nmi_resource_context_present = Column(Boolean, nullable=False, default=False)
+    nmi_commodity_reserves = Column(Float, nullable=True)
+    nmi_commodity_resources = Column(Float, nullable=True)
+    nmi_commodity_unit = Column(String(100), nullable=True)
+
+    firms_associated_500m = Column(Integer, nullable=False, default=0)
+    firms_associated_1km = Column(Integer, nullable=False, default=0)
+    firms_associated_2km = Column(Integer, nullable=False, default=0)
+    first_thermal_seen = Column(DateTime, nullable=True)
+    last_thermal_seen = Column(DateTime, nullable=True)
+    active_days_count = Column(Integer, nullable=False, default=0)
+    mean_frp = Column(Float, nullable=True)
+    median_frp = Column(Float, nullable=True)
+    p90_frp = Column(Float, nullable=True)
+    p99_frp = Column(Float, nullable=True)
+    max_frp = Column(Float, nullable=True)
+
+    mining_context_present = Column(Boolean, nullable=False, default=True)
+    mining_geometry_present = Column(Boolean, nullable=False, default=True)
+    thermal_activity_present = Column(Boolean, nullable=False, default=False)
+    thermal_persistence_category = Column(String(50), nullable=False, default="NO_THERMAL_ACTIVITY", index=True)
+    confidence_score = Column(Float, nullable=False, default=0.5)
+    scientific_attribution = Column(Text, nullable=False)
+    evidence_summary = Column(JSON, default=dict)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    associations = relationship("MiningThermalAssociation", back_populates="evidence", cascade="all, delete-orphan")
+
+
+class MiningThermalAssociation(Base):
+    """
+    Detailed multi-distance thermal telemetry association band (500m, 1km, 2km).
+    """
+    __tablename__ = "mining_thermal_associations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    facility_id = Column(String(36), ForeignKey("facility_mining_evidence.facility_id", ondelete="CASCADE"), nullable=False, index=True)
+    distance_band = Column(String(20), nullable=False, index=True)
+    detection_count = Column(Integer, nullable=False, default=0)
+    first_seen = Column(DateTime, nullable=True)
+    last_seen = Column(DateTime, nullable=True)
+    active_days_count = Column(Integer, nullable=False, default=0)
+    mean_frp = Column(Float, nullable=True)
+    median_frp = Column(Float, nullable=True)
+    p90_frp = Column(Float, nullable=True)
+    p99_frp = Column(Float, nullable=True)
+    max_frp = Column(Float, nullable=True)
+    mean_confidence = Column(Float, nullable=True)
+    day_detection_count = Column(Integer, nullable=False, default=0)
+    night_detection_count = Column(Integer, nullable=False, default=0)
+    recurrence_rate = Column(Float, nullable=True)
+    persistence_days = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    evidence = relationship("FacilityMiningEvidence", back_populates="associations")
 
 
 class CandidateFacility(Base):
