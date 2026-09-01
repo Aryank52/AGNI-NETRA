@@ -1,0 +1,76 @@
+{
+  "phase": "PHASE_12",
+  "phase_name": "Command Center & Frontend Operational Integration",
+  "timestamp_utc": "2026-09-01T22:10:01.957326+00:00",
+  "status": "PHASE_12_COMPLETE",
+  "frontend_build": {
+    "nextjs_version": "15.5.24",
+    "routes_compiled": 28,
+    "status": "COMPILED_CLEAN"
+  },
+  "command_center_telemetry": {
+    "status": "OPERATIONAL",
+    "system_timestamp": "2026-09-01T22:08:35.636716+00:00",
+    "kpis": {
+      "total_live_events": 142,
+      "active_events": 110,
+      "total_alerts": 30,
+      "active_alerts": 24,
+      "max_frp_mw": 395.0,
+      "avg_frp_mw": 135.0,
+      "total_detections_ingested": 8221651,
+      "stream_freshness_timestamp": "2026-09-02T03:36:37.242032"
+    },
+    "alert_queues": {
+      "tier_1_auto_dispatch_candidate": 10,
+      "tier_2_analyst_review": 9,
+      "tier_3_uncertainty": 4
+    },
+    "lifecycle_breakdown": {
+      "NEW": 15,
+      "ACKNOWLEDGED": 4,
+      "UNDER_INVESTIGATION": 0,
+      "VERIFIED": 0,
+      "ESCALATED": 2,
+      "DISMISSED": 2,
+      "CLOSED": 4
+    },
+    "risk_breakdown": {
+      "CRITICAL": 25,
+      "HIGH": 3,
+      "MODERATE": 54,
+      "LOW": 49
+    },
+    "model_metadata": {
+      "champion_version": "xgb-v3.0-real-candidate",
+      "algorithm": "XGBClassifier + Balanced Platt Scaling",
+      "registry_status": "CANDIDATE",
+      "is_active": false,
+      "accuracy_score": 0.6988636363636364,
+      "f1_score": 0.6445619648049328
+    },
+    "safety_invariants": {
+      "is_operational_dispatch": false,
+      "live_dispatches_emitted": 0,
+      "dispatch_gate_status": "GATED_SAFE",
+      "database_immutability_status": "VERIFIED_SEALED",
+      "provenance_standard": "REAL_FIRMS_VIIRS_AUTHENTIC"
+    }
+  },
+  "sample_dossier": {
+    "alert_id": "a2ddefb5-ce9d-426e-91e4-d6588063306a",
+    "event_code": "EVT-20260901-C65DA5",
+    "predicted_class": "Agricultural Burning",
+    "confidence": 0.5879,
+    "risk_score": 40.8,
+    "routing_tier": "TIER_2_ANALYST_REVIEW_QUEUE",
+    "audit_records": 1
+  },
+  "safety_invariants": {
+    "historical_firms_rows_sealed": 8221554,
+    "candidate_models_inactive": true,
+    "is_operational_dispatch_enforced": false,
+    "live_dispatches_emitted": 0,
+    "provenance_standard": "REAL_FIRMS_VIIRS_AUTHENTIC"
+  }
+}

@@ -1,8 +1,9 @@
 import os
-from typing import List, Union
+import re
+from typing import List, Dict, Any
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 
 # Explicitly load .env from project root
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -15,21 +16,25 @@ else:
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AGNI-NETRA"
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    ENVIRONMENT: str = "production"
+    DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "agni_netra_secret_key_change_in_production_2026_super_secure_key_12345"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # Database: Primary = PostgreSQL + PostGIS; Fallback = SQLite (TEST/DEMO)
+    # Production PostgreSQL + PostGIS Connection Pooling
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
+    DB_POOL_SIZE: int = 15
+    DB_MAX_OVERFLOW: int = 25
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
     
-    # Redis & Async
+    # Redis & Celery Async Workers
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
     
-    # MinIO / S3
+    # Object Storage (MinIO / AWS S3)
     S3_ENDPOINT: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
@@ -38,13 +43,22 @@ class Settings(BaseSettings):
     S3_BUCKET_IMAGERY: str = "agni-netra-imagery"
     S3_BUCKET_REPORTS: str = "agni-netra-reports"
     
-    # Remote Sensing APIs
-    FIRMS_MAP_KEY: str = ""
+    # Remote Sensing & Satellite Ingestion APIs
+    FIRMS_MAP_KEY: str = os.getenv("FIRMS_MAP_KEY", "")
     FIRMS_API_URL: str = "https://firms.modaps.eosdis.nasa.gov/api/country/csv"
     
-    # Machine Learning
+    # Machine Learning Governance & Models
     MODEL_DIR: str = os.path.join(ROOT_DIR, "ml", "models")
-    DEFAULT_MODEL_VERSION: str = "v1.0.0"
+    DEFAULT_MODEL_VERSION: str = "xgb-v3.0-real-candidate"
+    
+    # Security, Rate Limiting & Tracing
+    RATE_LIMIT_PER_MINUTE: int = 120
+    CORRELATION_ID_HEADER: str = "X-Correlation-ID"
+    
+    # Phase 13 Controlled Dispatch Safety Gate
+    # Live automated dispatches remain strictly DISABLED throughout Phase 13
+    ENABLE_OPERATIONAL_DISPATCH_GATE: bool = False
+    IS_OPERATIONAL_DISPATCH_DEFAULT: bool = False
     
     # Notifications (Optional Configurable Services)
     EMAIL_ENABLED: bool = False
@@ -58,7 +72,7 @@ class Settings(BaseSettings):
     SMS_PROVIDER: str = "CONSOLE"
     SMS_API_KEY: str = ""
 
-    # CORS
+    # CORS Allowed Origins
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -72,6 +86,26 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow"
     )
+
+    def get_sanitized_dict(self) -> Dict[str, Any]:
+        """
+        Returns production-safe configuration parameters with all passwords,
+        keys, and connection credentials masked to prevent leakage in logs/APIs.
+        """
+        raw = self.model_dump()
+        sanitized = {}
+        sensitive_keys = {"SECRET_KEY", "DATABASE_URL", "S3_ACCESS_KEY", "S3_SECRET_KEY",
+                          "FIRMS_MAP_KEY", "SMTP_PASSWORD", "SMS_API_KEY"}
+
+        for k, v in raw.items():
+            if k in sensitive_keys and v:
+                if k == "DATABASE_URL":
+                    sanitized[k] = re.sub(r":([^@/]+)@", r":****@", str(v))
+                else:
+                    sanitized[k] = f"{str(v)[:4]}****" if len(str(v)) > 8 else "****"
+            else:
+                sanitized[k] = v
+        return sanitized
 
 
 settings = Settings()

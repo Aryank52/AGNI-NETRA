@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from typing import Dict, Any, Tuple, Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -12,7 +13,6 @@ def sanitize_db_url(url: str) -> str:
     """Removes sensitive passwords from connection strings for safe logging and diagnostics."""
     if not url:
         return ""
-    # Strip any accidental repeated environment variable assignment prefixes
     cleaned = url
     while cleaned.startswith("DATABASE_URL="):
         cleaned = cleaned[len("DATABASE_URL="):].strip()
@@ -33,7 +33,6 @@ def normalize_db_url(url: str) -> str:
 raw_db_url = normalize_db_url(settings.DATABASE_URL or "")
 
 if not raw_db_url:
-    # Explicit fallback only when DATABASE_URL is completely unset
     DATABASE_URL = "sqlite:///./agni_netra.db"
     DATABASE_MODE = "SQLITE_TEST"
 elif raw_db_url.startswith("postgresql://") or raw_db_url.startswith("postgres://") or raw_db_url.startswith("postgresql+"):
@@ -43,7 +42,6 @@ elif raw_db_url.startswith("sqlite://"):
     DATABASE_URL = raw_db_url
     DATABASE_MODE = "SQLITE_TEST"
 else:
-    # Any other configured URL
     DATABASE_URL = raw_db_url
     DATABASE_MODE = "POSTGRESQL" if "postgres" in raw_db_url else "SQLITE_TEST"
 
@@ -51,7 +49,7 @@ IS_POSTGRESQL = (DATABASE_MODE == "POSTGRESQL")
 IS_SQLITE_TEST = (DATABASE_MODE == "SQLITE_TEST")
 
 
-# 3. Configure Engine with Strict Operational Parameters
+# 3. Configure Engine with Strict Production Operational Parameters
 connect_args = {}
 engine_kwargs: Dict[str, Any] = {"pool_pre_ping": True}
 
@@ -59,10 +57,11 @@ if IS_SQLITE_TEST:
     connect_args["check_same_thread"] = False
     engine_kwargs["connect_args"] = connect_args
 else:
-    # Production PostgreSQL + PostGIS connection pooling
-    engine_kwargs["pool_size"] = 10
-    engine_kwargs["max_overflow"] = 20
-    engine_kwargs["pool_recycle"] = 1800
+    # Production PostgreSQL + PostGIS Connection Pool
+    engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
+    engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+    engine_kwargs["pool_timeout"] = settings.DB_POOL_TIMEOUT
+    engine_kwargs["pool_recycle"] = settings.DB_POOL_RECYCLE
 
 
 try:
@@ -80,11 +79,38 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# 4. Diagnostics & PostGIS Verification Methods
+# 4. Diagnostics & Connection Pool Reporting
 
 def get_database_mode() -> str:
     """Returns the authoritative active database mode: POSTGRESQL or SQLITE_TEST."""
     return DATABASE_MODE
+
+
+def get_connection_pool_stats() -> Dict[str, Any]:
+    """
+    Returns real-time connection pool telemetry for production monitoring.
+    """
+    if IS_SQLITE_TEST:
+        return {
+            "engine": "SQLite",
+            "mode": "SQLITE_TEST",
+            "pool_size": 1,
+            "checked_in": 1,
+            "checked_out": 0,
+            "overflow": 0
+        }
+    
+    pool = engine.pool
+    return {
+        "engine": "PostgreSQL",
+        "mode": "POSTGRESQL",
+        "pool_size": pool.size(),
+        "checked_in_connections": pool.checkedin(),
+        "checked_out_connections": pool.checkedout(),
+        "overflow_connections": pool.overflow(),
+        "pool_timeout_seconds": settings.DB_POOL_TIMEOUT,
+        "pool_recycle_seconds": settings.DB_POOL_RECYCLE
+    }
 
 
 def check_postgis_available(db_session: Optional[Session] = None) -> Tuple[bool, Optional[str]]:
@@ -116,7 +142,6 @@ def get_database_diagnostics() -> Dict[str, Any]:
     """
     sanitized = sanitize_db_url(DATABASE_URL)
     is_configured = bool(settings.DATABASE_URL)
-
     db_name = "agni_netra.db" if IS_SQLITE_TEST else DATABASE_URL.split("/")[-1].split("?")[0]
     
     diag: Dict[str, Any] = {
@@ -129,14 +154,18 @@ def get_database_diagnostics() -> Dict[str, Any]:
         "postgis_available": False,
         "postgis_version": None,
         "database_version": None,
-        "connection_error": None
+        "connection_error": None,
+        "pool_stats": get_connection_pool_stats()
     }
 
     try:
         with SessionLocal() as session:
+            t0 = time.perf_counter()
             version_row = session.execute(text("SELECT version();" if IS_POSTGRESQL else "SELECT sqlite_version();")).scalar()
+            latency_ms = round((time.perf_counter() - t0) * 1000, 2)
             diag["database_version"] = str(version_row)
             diag["status"] = "CONNECTED"
+            diag["ping_latency_ms"] = latency_ms
 
             if IS_POSTGRESQL:
                 has_postgis, postgis_ver = check_postgis_available(session)

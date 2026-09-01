@@ -17,19 +17,22 @@ export default function AnalyticsPage() {
   const [classDist, setClassDist] = useState<any[]>([]);
   const [riskDist, setRiskDist] = useState<any[]>([]);
   const [stateSummary, setStateSummary] = useState<any[]>([]);
+  const [operationalTrends, setOperationalTrends] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
-        const [cData, rData, sData] = await Promise.all([
+        const [cData, rData, sData, oData] = await Promise.all([
           fetchApi<any[]>("/analytics/class-distribution"),
           fetchApi<any[]>("/analytics/risk-distribution"),
           fetchApi<any[]>("/analytics/state-summary"),
+          fetchApi<any>("/analytics/operational-trends").catch(() => null),
         ]);
-        setClassDist(cData);
-        setRiskDist(rData);
-        setStateSummary(sData);
+        setClassDist(cData || []);
+        setRiskDist(rData || []);
+        setStateSummary(sData || []);
+        setOperationalTrends(oData);
       } catch (err) {
         console.warn("Using sample chart data fallback:", err);
         setClassDist([

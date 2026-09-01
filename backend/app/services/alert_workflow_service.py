@@ -17,6 +17,7 @@ Features:
 
 import os
 import sys
+import json
 import uuid
 import time
 from datetime import datetime, timezone, timedelta
@@ -252,6 +253,7 @@ class AlertWorkflowService:
                 "is_duplicate_suppressed": True,
                 "alert_id": existing_alert.id,
                 "event_id": event_id,
+                "alert_level": alert_level,
                 "routing_tier": routing_tier,
                 "priority_score": priority,
                 "lifecycle_state": existing_alert.status,
@@ -350,11 +352,22 @@ class AlertWorkflowService:
         if not is_valid:
             raise ValueError(err)
 
+        # Resolve valid user ID for foreign key constraint
+        from backend.app.models.domain import User
+        valid_user = db.query(User).filter(User.id == analyst_id).first() if analyst_id else None
+        if not valid_user:
+            default_user = db.query(User).filter(User.role.in_(["ANALYST", "ADMIN"])).first()
+            resolved_analyst_id = default_user.id if default_user else None
+            resolved_analyst_name = default_user.full_name if default_user else (analyst_name or "Thermal Analyst")
+        else:
+            resolved_analyst_id = valid_user.id
+            resolved_analyst_name = valid_user.full_name or analyst_name
+
         # Update Alert State
         alert.status = target_state
         alert.updated_at = datetime.now(timezone.utc)
-        if analyst_id:
-            alert.acknowledged_by = analyst_id
+        if resolved_analyst_id:
+            alert.acknowledged_by = resolved_analyst_id
 
         # Aggregate current evidence snapshot
         dossier = self.get_alert_investigation_dossier(db, alert_id)
@@ -365,7 +378,7 @@ class AlertWorkflowService:
             ver_obj = VerificationRecord(
                 id=ver_id,
                 event_id=alert.event_id,
-                analyst_id=analyst_id or str(uuid.uuid4()),
+                analyst_id=resolved_analyst_id or str(uuid.uuid4()),
                 original_prediction=dossier.get("ml_inference", {}).get("predicted_class", "Unknown"),
                 verified_label=ground_truth_class,
                 verification_action=verification_outcome or "CONFIRM",
@@ -383,8 +396,8 @@ class AlertWorkflowService:
             action=action,
             prev_state=prev_state,
             new_state=target_state,
-            analyst_id=analyst_id,
-            analyst_name=analyst_name,
+            analyst_id=resolved_analyst_id,
+            analyst_name=resolved_analyst_name,
             notes=notes,
             verification_outcome=verification_outcome or ground_truth_class,
             evidence_snapshot=dossier.get("evidence_sources", {})
@@ -458,6 +471,12 @@ class AlertWorkflowService:
         event_id = alert_row[1]
         event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
         detections = db.query(ThermalDetection).filter(ThermalDetection.event_id == event_id).all()
+        if not detections and event:
+            detections = db.query(ThermalDetection).filter(
+                ThermalDetection.latitude.between(event.latitude - 0.05, event.latitude + 0.05),
+                ThermalDetection.longitude.between(event.longitude - 0.05, event.longitude + 0.05)
+            ).order_by(ThermalDetection.acq_timestamp.desc()).limit(20).all()
+
         pred = db.query(ModelPrediction).filter(ModelPrediction.event_id == event_id).first()
         risk = db.query(RiskScore).filter(RiskScore.event_id == event_id).first()
         feat = db.query(EventFeature).filter(EventFeature.event_id == event_id).first()
@@ -587,8 +606,24 @@ class AlertWorkflowService:
         offset: int = 0
     ) -> Dict[str, Any]:
         """
-        Lists and filters operational alerts with priority queue ordering.
+        Queries operational alerts with multi-tier routing and lifecycle state filters.
         """
+        # Sanitize against FastAPI Query defaults if called programmatically
+        if tier is not None and not isinstance(tier, str):
+            tier = getattr(tier, "default", None)
+        if status is not None and not isinstance(status, str):
+            status = getattr(status, "default", None)
+        if min_risk is not None and not isinstance(min_risk, (int, float)):
+            min_risk = getattr(min_risk, "default", None)
+        if state is not None and not isinstance(state, str):
+            state = getattr(state, "default", None)
+        if sort_by is not None and not isinstance(sort_by, str):
+            sort_by = getattr(sort_by, "default", "priority")
+        if limit is not None and not isinstance(limit, int):
+            limit = getattr(limit, "default", 50)
+        if offset is not None and not isinstance(offset, int):
+            offset = getattr(offset, "default", 0)
+
         query_str = """
             SELECT a.id, a.event_id, a.alert_level, a.alert_type, a.title, a.status,
                    a.routing_tier, a.priority_score, a.predicted_class, a.confidence,

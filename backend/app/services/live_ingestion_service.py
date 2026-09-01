@@ -172,6 +172,7 @@ class LiveThermalIngestionService:
 
             # Accepted new observation
             detection_id = str(uuid.uuid4())
+            item["id"] = detection_id
             detection_obj = ThermalDetection(
                 id=detection_id,
                 source=source_name,
@@ -424,12 +425,20 @@ class LiveThermalIngestionService:
                 db.add(feat_obj)
                 db.add(pred_obj)
                 db.add(risk_obj)
+                db.flush()
 
                 # Link detection records
                 for d in c_dets:
                     d_id = d.get("id")
                     if d_id:
                         db.execute(text("UPDATE thermal_detections SET event_id = :evt_id WHERE id = :det_id;"), {"evt_id": event_id, "det_id": d_id})
+                    else:
+                        db.execute(text("""
+                            UPDATE thermal_detections 
+                            SET event_id = :evt_id 
+                            WHERE latitude BETWEEN :lat - 0.0001 AND :lat + 0.0001 
+                              AND longitude BETWEEN :lon - 0.0001 AND :lon + 0.0001;
+                        """), {"evt_id": event_id, "lat": float(d["latitude"]), "lon": float(d["longitude"])})
 
                 db.flush()
 
