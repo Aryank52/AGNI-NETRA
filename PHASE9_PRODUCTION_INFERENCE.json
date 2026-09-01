@@ -1,0 +1,97 @@
+{
+  "phase": "PHASE_9",
+  "status": "PHASE_9_COMPLETE",
+  "execution_timestamp": "2026-09-01T20:40:10.872512+00:00",
+  "production_inference_service": {
+    "model_version": "xgb-v3.0-real-candidate",
+    "calibrator_version": "balanced-platt-v3.0",
+    "dataset_version": "v3.2-real-final",
+    "service_status": "OPERATIONAL",
+    "model_registry_status": "CANDIDATE_DEPLOYED_IN_CONTROLLED_MODE",
+    "is_active": false,
+    "live_dispatches_emitted": 0
+  },
+  "performance_profiling": {
+    "evaluated_samples": 414,
+    "mean_latency_ms": 7.251932367149759,
+    "p95_latency_ms": 9.513499999999999,
+    "p99_latency_ms": 10.0687
+  },
+  "tri_tier_distribution": {
+    "TIER_1_AUTO_DISPATCH_CANDIDATE": 109,
+    "TIER_2_ANALYST_REVIEW_QUEUE": 235,
+    "TIER_3_UNCERTAINTY_QUEUE": 70
+  },
+  "risk_tier_distribution": {
+    "CRITICAL": 0,
+    "HIGH": 15,
+    "MEDIUM": 38,
+    "LOW": 361
+  },
+  "scenarios_evaluated": [
+    {
+      "scenario": "Scenario A: Jamnagar Refinery Flare Stack (Continuous Industrial)",
+      "predicted_class": "Gas Flare",
+      "confidence": 0.4912,
+      "confidence_margin": 0.1582,
+      "routing_tier": "TIER_2_ANALYST_REVIEW_QUEUE",
+      "risk_tier": "HIGH",
+      "risk_score": 50.9,
+      "latency_ms": 80.08,
+      "explanation": "Classified as 'Gas Flare' with 49.1% calibrated confidence (Tier: TIER_2_ANALYST_REVIEW_QUEUE, Risk: HIGH), driven by persistence_score, dist_to_facility_m.",
+      "is_operational_dispatch": false
+    },
+    {
+      "scenario": "Scenario B: Punjab Stubble Burning (Seasonal Agricultural)",
+      "predicted_class": "Agricultural Burning",
+      "confidence": 0.4073,
+      "confidence_margin": 0.1953,
+      "routing_tier": "TIER_3_UNCERTAINTY_QUEUE",
+      "risk_tier": "LOW",
+      "risk_score": 15.3,
+      "latency_ms": 6.99,
+      "explanation": "Classified as 'Agricultural Burning' with 40.7% calibrated confidence (Tier: TIER_3_UNCERTAINTY_QUEUE, Risk: LOW), driven by dist_to_agriculture_m, dist_to_water_m, dist_to_facility_m.",
+      "is_operational_dispatch": false
+    },
+    {
+      "scenario": "Scenario C: Similipal Forest Canopy Wildfire",
+      "predicted_class": "Forest Fire",
+      "confidence": 0.4876,
+      "confidence_margin": 0.3019,
+      "routing_tier": "TIER_2_ANALYST_REVIEW_QUEUE",
+      "risk_tier": "MEDIUM",
+      "risk_score": 40.6,
+      "latency_ms": 6.24,
+      "explanation": "Classified as 'Forest Fire' with 48.8% calibrated confidence (Tier: TIER_2_ANALYST_REVIEW_QUEUE, Risk: MEDIUM), driven by dist_to_facility_m, dist_to_mine_m, bright_avg.",
+      "is_operational_dispatch": false
+    },
+    {
+      "scenario": "Scenario D: Jharia Coal Belt Open-Cast Mine",
+      "predicted_class": "Agricultural Burning",
+      "confidence": 0.8396,
+      "confidence_margin": 0.7757,
+      "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+      "risk_tier": "LOW",
+      "risk_score": 23.4,
+      "latency_ms": 6.02,
+      "explanation": "Classified as 'Agricultural Burning' with 84.0% calibrated confidence (Tier: TIER_1_AUTO_DISPATCH_CANDIDATE, Risk: LOW), driven by dist_to_agriculture_m, landcover_code, dist_to_water_m.",
+      "is_operational_dispatch": false
+    },
+    {
+      "scenario": "Scenario E: Ambiguous Boundary Event (Low Margin)",
+      "predicted_class": "Agricultural Burning",
+      "confidence": 0.9082,
+      "confidence_margin": 0.8711,
+      "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+      "risk_tier": "LOW",
+      "risk_score": 17.7,
+      "latency_ms": 6.0,
+      "explanation": "Classified as 'Agricultural Burning' with 90.8% calibrated confidence (Tier: TIER_1_AUTO_DISPATCH_CANDIDATE, Risk: LOW), driven by dist_to_agriculture_m, landcover_code, dist_to_water_m.",
+      "is_operational_dispatch": false
+    }
+  ],
+  "database_audit": {
+    "audit_logs_persisted": 838,
+    "operational_dispatches": 0
+  }
+}

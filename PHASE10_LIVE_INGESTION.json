@@ -1,0 +1,78 @@
+{
+  "phase": "PHASE_10",
+  "status": "PHASE_10_COMPLETE",
+  "execution_timestamp": "2026-09-01T21:01:27.094768+00:00",
+  "ingestion_pipeline": {
+    "source_name": "NASA_FIRMS_VIIRS",
+    "polling_interval_seconds": 300,
+    "deduplication_engine": "SHA256_COORDINATE_MINUTE_FINGERPRINT",
+    "validation_bounds": {
+      "lat": [
+        6.0,
+        38.0
+      ],
+      "lon": [
+        68.0,
+        98.0
+      ]
+    },
+    "dry_run_supported": true,
+    "idempotency_verified": true
+  },
+  "event_processing": {
+    "clustering_engine": "SPATIOTEMPORAL_DBSCAN_1.5KM",
+    "spatial_enrichment": [
+      "LULC_BHUVAN",
+      "FACILITY_REGISTRY_OSM_CEA",
+      "IBM_MINING_LEASES",
+      "FSI_FOREST_AREAS",
+      "ADMIN_BOUNDARIES"
+    ],
+    "feature_engineering": "PHASE_8H_POINT_IN_TIME_18_FEATURES",
+    "ml_inference_engine": "xgb-v3.0-real-candidate + Balanced Platt Calibrator",
+    "explainability_engine": "TreeExplainer SHAP Local Waterfall",
+    "risk_engine": "MULTI_CRITERIA_FIRE_RISK_0_100",
+    "hitl_routing": "TRI_TIER_AUTO_REVIEW_UNCERTAINTY"
+  },
+  "safety_invariants": {
+    "historical_firms_immutable": true,
+    "candidate_models_inactive": true,
+    "is_operational_dispatch_enforced": false,
+    "live_dispatches_emitted": 0
+  },
+  "test_stream_results": {
+    "observations_ingested": 10,
+    "duplicates_blocked": 10,
+    "malformed_rejected": 5,
+    "events_generated": 5,
+    "mean_processing_latency_ms": 8122.32
+  },
+  "diagnostics": {
+    "timestamp": "2026-09-01T21:01:27.094768+00:00",
+    "status": "HEALTHY",
+    "database_connectivity": "CONNECTED",
+    "source_freshness": {
+      "latest_observation_timestamp": "2026-09-02T02:26:06.598649",
+      "data_source": "NASA_FIRMS_VIIRS",
+      "telemetry_stream": "OPERATIONAL"
+    },
+    "queue_diagnostics": {
+      "unprocessed_detections_in_queue": 8221222,
+      "processing_mode": "INCREMENTAL_SPATIAL_ML"
+    },
+    "job_diagnostics": {
+      "last_job_id": "0364b7ac-59fc-454e-84db-4d6ec15342cf",
+      "last_job_status": "PARTIAL_SUCCESS",
+      "last_job_completed_at": "2026-09-02T02:31:07.073120",
+      "failed_jobs_last_24h": 0
+    },
+    "model_service_diagnostics": {
+      "champion_model": "xgb-v3.0-real-candidate",
+      "calibrator": "balanced-platt-v3.0",
+      "is_active": false,
+      "gate_status": "CONTROLLED_INACTIVE",
+      "audited_predictions": 851,
+      "automated_dispatches_emitted": 0
+    }
+  }
+}

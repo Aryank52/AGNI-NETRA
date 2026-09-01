@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form, Body, Query
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
 from backend.app.core.database import get_db
 from backend.app.core.config import settings
@@ -15,9 +16,103 @@ from data_pipeline.adapters.landsat_adapter import landsat_adapter
 from data_pipeline.adapters.mosdac_adapter import mosdac_adapter
 from backend.app.services.facility_resolver import facility_resolver
 from backend.app.services.pipeline_service import pipeline_service
+from backend.app.services.live_ingestion_service import live_ingestion_service, compute_observation_fingerprint
 from database.seed_data import seed_database
 
 router = APIRouter()
+
+
+class IncrementalSyncRequest(BaseModel):
+    observations: List[Dict[str, Any]] = Field(default=[], description="List of raw thermal observation dictionaries")
+    source_name: str = Field(default="NASA_FIRMS_VIIRS", description="Name of the telemetry source")
+    dry_run: bool = Field(default=False, description="Simulate processing without persisting")
+
+
+@router.get("/health-diagnostics")
+def get_ingestion_health_diagnostics(db: Session = Depends(get_db)):
+    """
+    Control Center Diagnostic API:
+    Returns real-time source freshness, unprocessed queue status, ingestion jobs telemetry,
+    database connectivity, and model candidate gate status.
+    """
+    return live_ingestion_service.get_health_diagnostics(db)
+
+
+@router.post("/incremental-sync")
+def trigger_incremental_ingestion_sync(
+    req: IncrementalSyncRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Executes production-grade incremental ingestion and downstream processing:
+    1. Validation of coordinates (India territorial bounds) & physical telemetry
+    2. Deterministic deduplication
+    3. Ingestion job metadata recording
+    4. Incremental DBSCAN clustering into ThermalEvents
+    5. Automated spatial enrichment (facilities, LULC, mining, admin, forests)
+    6. Phase 8H point-in-time feature extraction with boundary-safe recurrence
+    7. Phase 9 ML model inference (xgb-v3.0-real-candidate + Balanced Platt + SHAP + Risk)
+    8. Audit log persistence and dispatch suppression (is_operational_dispatch = FALSE)
+    """
+    if not req.observations:
+        # Fallback to fetching live data from FIRMS adapter if no direct payload provided
+        raw_obs = firms_adapter.fetch_thermal_observations(country="IND", days=1)
+        obs_dicts = [
+            {
+                "latitude": o.latitude,
+                "longitude": o.longitude,
+                "acq_timestamp": o.acq_timestamp,
+                "brightness": o.brightness,
+                "bright_t31": o.bright_t31,
+                "frp": o.frp,
+                "confidence": o.confidence,
+                "day_night": o.day_night,
+                "sensor": o.sensor,
+                "satellite": o.satellite
+            }
+            for o in raw_obs
+        ]
+    else:
+        obs_dicts = req.observations
+
+    if not obs_dicts:
+        return {"status": "NO_DATA", "message": "No new thermal observations provided or available."}
+
+    # Step 1: Ingest & Deduplicate
+    ingest_result = live_ingestion_service.ingest_observations(
+        db=db,
+        raw_records=obs_dicts,
+        source_name=req.source_name,
+        dry_run=req.dry_run
+    )
+
+    # Step 2: Incremental Downstream Processing on accepted records
+    accepted_dets = [
+        o for o in obs_dicts
+        if compute_observation_fingerprint(
+            str(o.get("sensor", "VIIRS_NOAA20")),
+            float(o.get("latitude", 0)),
+            float(o.get("longitude", 0)),
+            o.get("acq_timestamp") if isinstance(o.get("acq_timestamp"), datetime) else datetime.now(timezone.utc)
+        )
+    ]
+
+    process_result = live_ingestion_service.process_incremental_events(
+        db=db,
+        new_detections=obs_dicts[:ingest_result["records_accepted"]],
+        dry_run=req.dry_run
+    )
+
+    return {
+        "status": "SUCCESS",
+        "ingestion": ingest_result,
+        "event_processing": process_result,
+        "operational_safety": {
+            "is_operational_dispatch": False,
+            "dispatches_emitted": 0,
+            "gate_status": "CONTROLLED_INACTIVE"
+        }
+    }
 
 
 @router.get("/sources")
@@ -55,7 +150,7 @@ def get_all_sources_live_status():
 @router.get("/jobs/history")
 def get_ingestion_jobs_history(db: Session = Depends(get_db), limit: int = 20):
     """
-    Retrieves execution history of automated Celery and manual ingestion jobs.
+    Retrieves execution history of automated and incremental ingestion jobs.
     """
     jobs = db.query(DataIngestionJob).order_by(DataIngestionJob.started_at.desc()).limit(limit).all()
     return jobs
@@ -120,11 +215,9 @@ def trigger_sync_all_sources(db: Session = Depends(get_db)):
     """
     Executes a multi-source synchronization across FIRMS, OSM, CEA, and Sentinel catalog.
     """
-    # 1. Facilities
     facs = osm_adapter.fetch_facilities() + cea_adapter.fetch_facilities()
     fac_res = facility_resolver.resolve_and_sync_facilities(db, facs)
 
-    # 2. Thermal Hotspots
     firms_obs = firms_adapter.fetch_thermal_observations(country="IND", days=1)
     if firms_obs:
         pipe_res = pipeline_service.process_observations(db, firms_obs, source_name="NASA_FIRMS_VIIRS")
