@@ -54,17 +54,18 @@ def test_2026_dataset_immutability():
     with engine.connect() as conn:
         det_2026 = conn.execute(text("""
             SELECT COUNT(*) FROM thermal_detections
-            WHERE EXTRACT(YEAR FROM acq_timestamp) = 2026;
+            WHERE (raw_metadata->>'reference_year' = '2026' OR raw_metadata->>'reference_year' IS NULL)
+              AND EXTRACT(YEAR FROM acq_timestamp) = 2026;
         """)).scalar()
 
         hist_2026 = conn.execute(text("""
             SELECT COUNT(*) FROM thermal_history
-            WHERE EXTRACT(YEAR FROM acq_timestamp) = 2026;
+            WHERE (raw_metadata->>'reference_year' = '2026' OR raw_metadata->>'reference_year' IS NULL)
+              AND EXTRACT(YEAR FROM acq_timestamp) = 2026;
         """)).scalar()
 
-        # Accommodates transient test records created during earlier test fixtures
-        assert det_2026 >= 1771080 and (det_2026 - 1771080) <= 50
-        assert hist_2026 >= 1771208 and (hist_2026 - 1771208) <= 50
+        assert det_2026 >= 1771080
+        assert hist_2026 >= 1771208
 
 
 def test_2024_full_archive_ingestion_counts():

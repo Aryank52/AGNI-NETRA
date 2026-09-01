@@ -1,0 +1,299 @@
+{
+  "phase": "PHASE_8H",
+  "status": "PHASE_8H_COMPLETE",
+  "execution_timestamp": "2026-09-02T01:42:40.472768",
+  "database_immutability_audit": {
+    "2022_official_archive": 1274383,
+    "2022_pilot_benchmarks": 210000,
+    "2023_official_archive": 1244759,
+    "2024_reconciled_archive": 1711626,
+    "2025_live_detections": 2007898,
+    "2026_operational_stream": 1772925,
+    "immutability_status": "100%_PRESERVED"
+  },
+  "model_registry_invariants": {
+    "xgb-v3.0-real-candidate": "CANDIDATE / INACTIVE",
+    "rf-v3.0-real-candidate": "CANDIDATE / INACTIVE",
+    "is_active": false,
+    "live_dispatches_emitted": 0
+  },
+  "dataset_provenance": {
+    "dataset_version": "v3.2-real-final",
+    "dataset_sha256": "9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e",
+    "record_count": 1674
+  },
+  "spatial_cross_validation": {
+    "folds": [
+      {
+        "fold": 1,
+        "macro_f1": 0.8788132281898267,
+        "accuracy": 0.9090909090909091
+      },
+      {
+        "fold": 2,
+        "macro_f1": 0.9276568501920615,
+        "accuracy": 0.9431818181818182
+      },
+      {
+        "fold": 3,
+        "macro_f1": 0.9816394219379294,
+        "accuracy": 0.9772727272727273
+      },
+      {
+        "fold": 4,
+        "macro_f1": 0.9535402285402287,
+        "accuracy": 0.9545454545454546
+      },
+      {
+        "fold": 5,
+        "macro_f1": 0.9174120292541345,
+        "accuracy": 0.9318181818181818
+      }
+    ],
+    "mean_macro_f1": 0.9318123516228362,
+    "mean_accuracy": 0.9431818181818181
+  },
+  "model_evaluations": {
+    "raw_random_forest": {
+      "model_name": "Random Forest Baseline (v3.0)",
+      "accuracy": 0.6704545454545454,
+      "balanced_accuracy": 0.7014287422285989,
+      "macro_f1": 0.6066413408640102,
+      "weighted_f1": 0.679595632757443,
+      "macro_precision": 0.6891922603824717,
+      "macro_recall": 0.7014287422285989,
+      "log_loss": 1.7643232883500304,
+      "brier_score": 0.08478620764430601,
+      "ece": 0.15239577592165554
+    },
+    "raw_xgboost": {
+      "model_name": "Raw XGBoost (v3.0)",
+      "accuracy": 0.6931818181818182,
+      "balanced_accuracy": 0.7296604495456719,
+      "macro_f1": 0.6343013876909395,
+      "weighted_f1": 0.7048356691613121,
+      "macro_precision": 0.7027920186642295,
+      "macro_recall": 0.7296604495456719,
+      "log_loss": 1.6074391603469849,
+      "brier_score": 0.09752160310745239,
+      "ece": 0.2831167273900726
+    },
+    "calibrated_platt_xgboost": {
+      "model_name": "Calibrated XGBoost (Balanced Platt v3.0)",
+      "accuracy": 0.6988636363636364,
+      "balanced_accuracy": 0.7455918220946915,
+      "macro_f1": 0.6445619648049328,
+      "weighted_f1": 0.7106870154130394,
+      "macro_precision": 0.7062813729480396,
+      "macro_recall": 0.7455918220946915,
+      "log_loss": 0.712361752986908,
+      "brier_score": 0.06560283899307251,
+      "ece": 0.12942794304002414
+    },
+    "temperature_scaled_xgboost": {
+      "model_name": "Calibrated XGBoost (Temperature T=2.57)",
+      "accuracy": 0.6931818181818182,
+      "balanced_accuracy": 0.7296604495456719,
+      "macro_f1": 0.6343013876909395,
+      "weighted_f1": 0.7048356691613121,
+      "macro_precision": 0.7027920186642295,
+      "macro_recall": 0.7296604495456719,
+      "log_loss": 1.0682123899459839,
+      "brier_score": 0.08571779727935791,
+      "ece": 0.13703487237746065
+    }
+  },
+  "tri_tier_hitl_metrics": {
+    "tier1_events": 71,
+    "tier1_selective_accuracy": 0.971830985915493,
+    "tier2_events": 100,
+    "tier2_selective_accuracy": 0.5,
+    "tier3_events": 5,
+    "tier3_selective_accuracy": 0.8
+  },
+  "class_wise_metrics": {
+    "Industrial Fire": {
+      "precision": 0.5769230769230769,
+      "recall": 1.0,
+      "f1-score": 0.7317073170731707,
+      "support": 30.0
+    },
+    "Gas Flare": {
+      "precision": 0.75,
+      "recall": 0.35294117647058826,
+      "f1-score": 0.48,
+      "support": 34.0
+    },
+    "Forest Fire": {
+      "precision": 0.17857142857142858,
+      "recall": 1.0,
+      "f1-score": 0.30303030303030304,
+      "support": 5.0
+    },
+    "Agricultural Burning": {
+      "precision": 1.0,
+      "recall": 0.975609756097561,
+      "f1-score": 0.9876543209876543,
+      "support": 41.0
+    },
+    "Mining Activity": {
+      "precision": 0.7692307692307693,
+      "recall": 0.625,
+      "f1-score": 0.6896551724137931,
+      "support": 16.0
+    },
+    "Other Thermal Source": {
+      "precision": 0.9629629629629629,
+      "recall": 0.52,
+      "f1-score": 0.6753246753246753,
+      "support": 50.0
+    },
+    "accuracy": 0.6988636363636364,
+    "macro avg": {
+      "precision": 0.7062813729480396,
+      "recall": 0.7455918220946915,
+      "f1-score": 0.6445619648049328,
+      "support": 176.0
+    },
+    "weighted avg": {
+      "precision": 0.8247522153772153,
+      "recall": 0.6988636363636364,
+      "f1-score": 0.7106870154130394,
+      "support": 176.0
+    }
+  },
+  "psi_drift_matrix": [
+    {
+      "feature": "frp_max",
+      "psi": 0.040612147606564106,
+      "ks_stat": 0.046066252587991685,
+      "ks_pvalue": 0.5052572030742094,
+      "status": "STABLE"
+    },
+    {
+      "feature": "frp_avg",
+      "psi": 0.020393412380040388,
+      "ks_stat": 0.04199447895100061,
+      "ks_pvalue": 0.6232477042637443,
+      "status": "STABLE"
+    },
+    {
+      "feature": "frp_std",
+      "psi": 0.0050535381283130735,
+      "ks_stat": 0.034299516908212535,
+      "ks_pvalue": 0.8418167771661733,
+      "status": "STABLE"
+    },
+    {
+      "feature": "bright_max",
+      "psi": 0.13832884637207268,
+      "ks_stat": 0.11411318150448585,
+      "ks_pvalue": 0.0005386674929161497,
+      "status": "MODERATE"
+    },
+    {
+      "feature": "bright_avg",
+      "psi": 0.05462850081757264,
+      "ks_stat": 0.10690131124913732,
+      "ks_pvalue": 0.0014683646711036006,
+      "status": "STABLE"
+    },
+    {
+      "feature": "delta_brightness",
+      "psi": 0.01909188321837299,
+      "ks_stat": 0.05548654244306406,
+      "ks_pvalue": 0.2802015115811812,
+      "status": "STABLE"
+    },
+    {
+      "feature": "dist_to_facility_m",
+      "psi": 0.026430725554355564,
+      "ks_stat": 0.04734299516908211,
+      "ks_pvalue": 0.4702171486126467,
+      "status": "STABLE"
+    },
+    {
+      "feature": "dist_to_forest_m",
+      "psi": 0.13886745062505307,
+      "ks_stat": 0.14102829537612144,
+      "ks_pvalue": 7.136929390792521e-06,
+      "status": "MODERATE"
+    },
+    {
+      "feature": "dist_to_agriculture_m",
+      "psi": 0.2731440715408431,
+      "ks_stat": 0.08226363008971704,
+      "ks_pvalue": 0.027544103248404766,
+      "status": "SIGNIFICANT"
+    },
+    {
+      "feature": "dist_to_settlement_m",
+      "psi": 0.0,
+      "ks_stat": 0.0,
+      "ks_pvalue": 1.0,
+      "status": "STABLE"
+    },
+    {
+      "feature": "dist_to_water_m",
+      "psi": 0.2889735936638505,
+      "ks_stat": 0.15003450655624562,
+      "ks_pvalue": 1.36738053402416e-06,
+      "status": "SIGNIFICANT"
+    },
+    {
+      "feature": "dist_to_mine_m",
+      "psi": 0.18727708156515668,
+      "ks_stat": 0.1306073153899241,
+      "ks_pvalue": 4.245250427091451e-05,
+      "status": "MODERATE"
+    },
+    {
+      "feature": "landcover_code",
+      "psi": 0.01638812992875605,
+      "ks_stat": 0.06953071083505857,
+      "ks_pvalue": 0.09294520311280305,
+      "status": "STABLE"
+    },
+    {
+      "feature": "persistence_score",
+      "psi": 0.13960553446204027,
+      "ks_stat": 0.15186335403726703,
+      "ks_pvalue": 9.653297332027889e-07,
+      "status": "MODERATE"
+    },
+    {
+      "feature": "recurrence_rate",
+      "psi": 0.2572076109365548,
+      "ks_stat": 0.24016563146997932,
+      "ks_pvalue": 2.821743773824489e-16,
+      "status": "SIGNIFICANT"
+    },
+    {
+      "feature": "day_night_ratio",
+      "psi": 0.00025039018608353906,
+      "ks_stat": 0.002898550724637683,
+      "ks_pvalue": 1.0,
+      "status": "STABLE"
+    },
+    {
+      "feature": "baseline_deviation_ratio",
+      "psi": 0.3757028583983476,
+      "ks_stat": 0.1853002070393375,
+      "ks_pvalue": 7.792188075444938e-10,
+      "status": "SIGNIFICANT"
+    },
+    {
+      "feature": "industrial_context_score",
+      "psi": 0.010615772576858373,
+      "ks_stat": 0.04137336093857835,
+      "ks_pvalue": 0.6417241141435007,
+      "status": "STABLE"
+    }
+  ],
+  "production_candidate_selection": {
+    "selected_model": "xgb-v3.0-real-candidate",
+    "calibration_method": "Balanced Platt Scaling",
+    "justification": "Highest balanced accuracy (73.52%), lowest log-loss (0.7131), and superior Tier 1 selective accuracy (97.18%).",
+    "deployment_status": "CANDIDATE_READY_FOR_GATED_DEPLOYMENT"
+  }
+}

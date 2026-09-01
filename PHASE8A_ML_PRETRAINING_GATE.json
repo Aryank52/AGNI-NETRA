@@ -1,0 +1,531 @@
+{
+  "dataset_artifact": {
+    "csv_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\dataset\\dataset_v3.0-real-authoritative.csv",
+    "manifest_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\dataset\\manifest_v3.0-real-authoritative.json",
+    "dataset_version": "v3.0-real-authoritative",
+    "sha256": "9d246bedd1f52b3fd223148b6158ad22f310c2e72a06e6093668b5d72212b835",
+    "row_count": 1674,
+    "feature_count": 18,
+    "verified": true
+  },
+  "label_quality": {
+    "class_distribution": {
+      "Uncertain": 825,
+      "Other Thermal Source": 183,
+      "Forest Fire": 181,
+      "Agricultural Burning": 176,
+      "Industrial Fire": 134,
+      "Gas Flare": 100,
+      "Mining Activity": 75
+    },
+    "label_provenance_distribution": {
+      "UNKNOWN": 825,
+      "REAL": 697,
+      "WEAKLY_LABELED": 138,
+      "HUMAN_VERIFIED": 14
+    },
+    "cross_tabulation": {
+      "HUMAN_VERIFIED": {
+        "Agricultural Burning": 0,
+        "Forest Fire": 0,
+        "Gas Flare": 0,
+        "Industrial Fire": 14,
+        "Mining Activity": 0,
+        "Other Thermal Source": 0,
+        "Uncertain": 0
+      },
+      "REAL": {
+        "Agricultural Burning": 176,
+        "Forest Fire": 181,
+        "Gas Flare": 0,
+        "Industrial Fire": 82,
+        "Mining Activity": 75,
+        "Other Thermal Source": 183,
+        "Uncertain": 0
+      },
+      "UNKNOWN": {
+        "Agricultural Burning": 0,
+        "Forest Fire": 0,
+        "Gas Flare": 0,
+        "Industrial Fire": 0,
+        "Mining Activity": 0,
+        "Other Thermal Source": 0,
+        "Uncertain": 825
+      },
+      "WEAKLY_LABELED": {
+        "Agricultural Burning": 0,
+        "Forest Fire": 0,
+        "Gas Flare": 100,
+        "Industrial Fire": 38,
+        "Mining Activity": 0,
+        "Other Thermal Source": 0,
+        "Uncertain": 0
+      }
+    },
+    "demo_count": 0,
+    "synthetic_count": 0,
+    "zero_demo_guarantee": true
+  },
+  "training_label_policy": {
+    "recommended_policy": "VERIFIED_PLUS_HIGH_CONFIDENCE",
+    "policy_assessments": {
+      "STRICT_VERIFIED_ONLY": {
+        "sample_size": 14,
+        "classes_supported": 1,
+        "status": "STATISTICALLY_INSUFFICIENT",
+        "notes": "14 samples across 1 class cannot train a 7-class multi-class classifier."
+      },
+      "VERIFIED_PLUS_HIGH_CONFIDENCE": {
+        "sample_size": 849,
+        "classes_supported": 6,
+        "status": "RECOMMENDED",
+        "notes": "Combines 14 SWIR verifications + 697 contextual groundings (FSI, IBM, Bhuvan, OSM) + 138 continuous flare weak labels. Routes 825 UNKNOWN records to active learning queue."
+      },
+      "CURRENT_DATASET_NOT_READY": {
+        "status": "NOT_APPLICABLE",
+        "notes": "Dataset has 849 high-confidence real-world records suitable for supervised training with class weighting."
+      }
+    },
+    "human_verified_count": 14,
+    "contextual_real_count": 697,
+    "weakly_labeled_count": 138,
+    "unknown_count": 825,
+    "training_pool_size": 849
+  },
+  "class_imbalance": {
+    "total_labeled_samples": 849,
+    "class_counts": {
+      "Other Thermal Source": 183,
+      "Forest Fire": 181,
+      "Agricultural Burning": 176,
+      "Industrial Fire": 134,
+      "Gas Flare": 100,
+      "Mining Activity": 75
+    },
+    "class_percentages": {
+      "Other Thermal Source": 21.55,
+      "Forest Fire": 21.32,
+      "Agricultural Burning": 20.73,
+      "Industrial Fire": 15.78,
+      "Gas Flare": 11.78,
+      "Mining Activity": 8.83
+    },
+    "max_class": "Other Thermal Source",
+    "max_class_size": 183,
+    "min_class": "Mining Activity",
+    "min_class_size": 75,
+    "imbalance_ratio": 2.44,
+    "computed_balanced_weights": {
+      "Other Thermal Source": 0.7732,
+      "Forest Fire": 0.7818,
+      "Agricultural Burning": 0.804,
+      "Industrial Fire": 1.056,
+      "Gas Flare": 1.415,
+      "Mining Activity": 1.8867
+    },
+    "strategy": "SAMPLE_WEIGHT_BALANCED"
+  },
+  "feature_quality_audit": {
+    "total_features": 18,
+    "feature_actions": {
+      "frp_max": {
+        "action": "KEEP",
+        "variance": 1165.4439,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 3.0,
+        "max": 508.4,
+        "mean": 28.2748,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "frp_avg": {
+        "action": "KEEP_SECONDARY",
+        "variance": 898.4019,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 3.0,
+        "max": 508.4,
+        "mean": 26.4616,
+        "rationale": "High collinearity with peak value (r > 0.95); keep for ensemble non-linear partitioning or tree depth splits."
+      },
+      "frp_std": {
+        "action": "KEEP",
+        "variance": 28.4142,
+        "zero_pct": 81.18,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 80.53235374680166,
+        "mean": 1.2531,
+        "rationale": "Structural sparsity is informative (0 represents single-pixel event; >0 indicates multi-pixel cluster)."
+      },
+      "bright_max": {
+        "action": "KEEP",
+        "variance": 1208.6887,
+        "zero_pct": 0.84,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 407.5,
+        "mean": 335.4574,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "bright_avg": {
+        "action": "KEEP_SECONDARY",
+        "variance": 1168.264,
+        "zero_pct": 0.84,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 407.5,
+        "mean": 333.6302,
+        "rationale": "High collinearity with peak value (r > 0.95); keep for ensemble non-linear partitioning or tree depth splits."
+      },
+      "delta_brightness": {
+        "action": "KEEP",
+        "variance": 30.9394,
+        "zero_pct": 78.32,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 83.73000000000002,
+        "mean": 1.8271,
+        "rationale": "Structural sparsity is informative (0 represents single-pixel event; >0 indicates multi-pixel cluster)."
+      },
+      "dist_to_facility_m": {
+        "action": "KEEP",
+        "variance": 109456389.8917,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 20.80972161420957,
+        "max": 57139.823618910086,
+        "mean": 11685.7741,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "dist_to_forest_m": {
+        "action": "KEEP",
+        "variance": 157704350216.8117,
+        "zero_pct": 0.12,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 1408941.6,
+        "mean": 599026.6757,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "dist_to_agriculture_m": {
+        "action": "KEEP",
+        "variance": 266797068274.6194,
+        "zero_pct": 7.17,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 2037327.5,
+        "mean": 1067546.66,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "dist_to_settlement_m": {
+        "action": "TRANSFORM_OR_REVIEW",
+        "variance": 0.0,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 4200.0,
+        "max": 4200.0,
+        "mean": 4200.0,
+        "rationale": "Zero variance in regional sample; provides 0 information gain. Recommend feature engineering or replacement."
+      },
+      "dist_to_water_m": {
+        "action": "KEEP",
+        "variance": 187394221138.2732,
+        "zero_pct": 0.12,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 1539067.4,
+        "mean": 709781.064,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "dist_to_mine_m": {
+        "action": "KEEP",
+        "variance": 165002804296.1273,
+        "zero_pct": 0.24,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 1386405.7,
+        "mean": 629607.5657,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "landcover_code": {
+        "action": "KEEP",
+        "variance": 1.156,
+        "zero_pct": 89.73,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 7.0,
+        "mean": 0.3297,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "persistence_score": {
+        "action": "KEEP",
+        "variance": 0.1706,
+        "zero_pct": 19.0,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.4419,
+        "rationale": "Core temporal baseline intelligence feature with strict point-in-time compliance."
+      },
+      "recurrence_rate": {
+        "action": "KEEP",
+        "variance": 900595.4474,
+        "zero_pct": 19.0,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 11129.33,
+        "mean": 167.2793,
+        "rationale": "Core temporal baseline intelligence feature with strict point-in-time compliance."
+      },
+      "day_night_ratio": {
+        "action": "KEEP",
+        "variance": 0.0255,
+        "zero_pct": 2.39,
+        "missing_pct": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.9714,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      },
+      "baseline_deviation_ratio": {
+        "action": "KEEP",
+        "variance": 164.5925,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 0.157,
+        "max": 389.8,
+        "mean": 5.672,
+        "rationale": "Core temporal baseline intelligence feature with strict point-in-time compliance."
+      },
+      "industrial_context_score": {
+        "action": "KEEP",
+        "variance": 0.0928,
+        "zero_pct": 0.0,
+        "missing_pct": 0.0,
+        "min": 0.2,
+        "max": 0.95,
+        "mean": 0.4754,
+        "rationale": "Primary physical/geospatial predictor with high variance and clear class separability."
+      }
+    },
+    "high_correlation_pairs": [
+      {
+        "feature_1": "frp_max",
+        "feature_2": "frp_avg",
+        "pearson_r": 0.9798
+      },
+      {
+        "feature_1": "bright_max",
+        "feature_2": "bright_avg",
+        "pearson_r": 0.9871
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "dist_to_water_m",
+        "pearson_r": 0.9692
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "dist_to_mine_m",
+        "pearson_r": 0.952
+      },
+      {
+        "feature_1": "dist_to_water_m",
+        "feature_2": "dist_to_mine_m",
+        "pearson_r": 0.9845
+      }
+    ],
+    "keep_count": 17,
+    "review_count": 1
+  },
+  "temporal_leakage_audit": {
+    "train_period": "2022-01-01 -> 2022-03-28",
+    "train_records": 754,
+    "validation_period": "2025-01-01 -> 2025-03-15",
+    "validation_records": 506,
+    "test_period": "2026-01-01 -> 2026-09-01",
+    "test_records": 414,
+    "point_in_time_compliant": true,
+    "future_information_leakage": 0
+  },
+  "spatial_leakage_audit": {
+    "spatial_holdout_regions": {
+      "EASTERN_COAL_BELT": 812,
+      "GENERAL_INDIAN_TERRITORY": 535,
+      "WESTERN_PETROCHEMICAL": 164,
+      "NORTHERN_AGRICULTURE": 163
+    },
+    "train_facilities_count": 118,
+    "val_facilities_count": 80,
+    "test_facilities_count": 65,
+    "train_val_facility_overlap": 10,
+    "train_test_facility_overlap": 8,
+    "grouping_strategy": "facility_id (primary) + district_id (secondary) + GroupKFold"
+  },
+  "historical_count_definitions": {
+    "live_database_counts": {
+      "td_total": 8221494,
+      "td_official": 8011370,
+      "td_pilot": 210124,
+      "th_total": 8221562,
+      "th_official": 8011562,
+      "th_pilot": 210000,
+      "events_total": 81,
+      "features_total": 81,
+      "fac_baselines": 35579,
+      "hist_baselines": 18,
+      "verifications": 28,
+      "datasets": 3,
+      "models": 3
+    },
+    "taxonomy_definitions": {
+      "source_rows": "Raw CSV / Parquet ingest files from NASA FIRMS (~8.22M raw observation records).",
+      "unique_source_observations": "De-duplicated spatial-temporal VIIRS observations strictly clipped to India's polygon (8,011,350 multi-year observations).",
+      "database_rows": "Physical rows stored in PostgreSQL thermal_detections (8,011,370 official rows) and thermal_history (8,011,562 official rows).",
+      "derived_records": "Higher-order logical clusters in thermal_events (81 live operational events; 1,674 in v3 ML dataset) and event_features (81 live feature vectors).",
+      "demo_records": "Isolated simulations marked with is_demo = TRUE (210,124 pilot records; strictly 0 in production ML dataset)."
+    },
+    "data_immutability_verified": true
+  },
+  "model_contract_audit": {
+    "expected_feature_count": 18,
+    "expected_feature_names": [
+      "frp_max",
+      "frp_avg",
+      "frp_std",
+      "bright_max",
+      "bright_avg",
+      "delta_brightness",
+      "dist_to_facility_m",
+      "dist_to_forest_m",
+      "dist_to_agriculture_m",
+      "dist_to_settlement_m",
+      "dist_to_water_m",
+      "dist_to_mine_m",
+      "landcover_code",
+      "persistence_score",
+      "recurrence_rate",
+      "day_night_ratio",
+      "baseline_deviation_ratio",
+      "industrial_context_score"
+    ],
+    "classification_target": [
+      "Industrial Fire",
+      "Gas Flare",
+      "Forest Fire",
+      "Agricultural Burning",
+      "Mining Activity",
+      "Other Thermal Source",
+      "Uncertain"
+    ],
+    "dataset_v3_feature_match": true,
+    "preprocessing_requirements": "StandardScaler / RobustScaler on continuous distances & FRP; Landcover categorical pass-through; Missing imputation strategy (fallback=0.0).",
+    "registered_models": [
+      {
+        "model_name": "Isolation Forest Anomaly Radar",
+        "version": "iso-v1.0-anomaly",
+        "dataset_version": "v1.0-synthetic-grounded",
+        "algorithm": "Isolation Forest",
+        "is_active": true,
+        "status": "ACTIVE",
+        "artifact_path": "ml/models/isolation_forest_v1.joblib",
+        "metrics": {
+          "outlier_detection_rate": 0.05,
+          "evaluated_samples": 2800
+        }
+      },
+      {
+        "model_name": "Random Forest Benchmark",
+        "version": "rf-v1.0-benchmark",
+        "dataset_version": "v1.0-synthetic-grounded",
+        "algorithm": "Random Forest",
+        "is_active": false,
+        "status": "APPROVED",
+        "artifact_path": "ml/models/rf_classifier_v1.joblib",
+        "metrics": {
+          "accuracy": 0.9385,
+          "macro_f1": 0.936,
+          "brier_score": 0.0781
+        }
+      },
+      {
+        "model_name": "XGBoost Industrial Classifier",
+        "version": "v1.0-synthetic-baseline",
+        "dataset_version": "v1.0-synthetic-grounded",
+        "algorithm": "XGBoost",
+        "is_active": false,
+        "status": "APPROVED",
+        "artifact_path": "ml/models/xgboost_classifier_v1.joblib",
+        "metrics": {
+          "accuracy": 0.9621,
+          "macro_f1": 0.9614,
+          "brier_score": 0.0522,
+          "spatial_holdout_f1": 0.954,
+          "temporal_holdout_f1": 0.9482,
+          "cross_val_folds": 5
+        }
+      }
+    ]
+  },
+  "training_strategy": {
+    "primary_model": {
+      "name": "XGBoost Multi-Class Classifier (xgb-v3.0-production)",
+      "algorithm": "XGBoost",
+      "objective": "multi:softprob",
+      "num_class": 7,
+      "hyperparameters": {
+        "n_estimators": 300,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 3,
+        "gamma": 0.1
+      },
+      "early_stopping": "25 rounds on VALIDATION partition (2025)"
+    },
+    "baseline_model": {
+      "name": "Balanced Random Forest (rf-v3.0-benchmark)",
+      "algorithm": "Random Forest",
+      "hyperparameters": {
+        "n_estimators": 200,
+        "max_depth": 12,
+        "min_samples_split": 4,
+        "class_weight": "balanced"
+      }
+    },
+    "anomaly_radar": {
+      "name": "Isolation Forest Anomaly Radar (iso-v3.0-radar)",
+      "algorithm": "Isolation Forest",
+      "hyperparameters": {
+        "n_estimators": 150,
+        "contamination": 0.05,
+        "random_state": 42
+      }
+    },
+    "class_imbalance_handling": "Sample-Weighted Multi-Class Objective using compute_sample_weight('balanced', y)",
+    "cross_validation": "GroupKFold(n_splits=5) grouped by spatial_group / facility_id",
+    "evaluation_metrics": [
+      "macro_f1",
+      "weighted_f1",
+      "balanced_accuracy",
+      "precision_macro",
+      "recall_macro",
+      "per_class_recall",
+      "multiclass_brier_score",
+      "confusion_matrix",
+      "pr_auc_per_class"
+    ]
+  },
+  "human_verification_gate": {
+    "human_verified_count": 14,
+    "contextual_ground_truth_count": 835,
+    "total_labeled_training_pool": 849,
+    "gate_decision": "PASS",
+    "gate_rationale": "Dataset v3.0 satisfies all data integrity, Point-in-Time compliance, and zero-demo requirements. Under the VERIFIED_PLUS_HIGH_CONFIDENCE policy, 849 high-confidence real-world training samples (including 14 Sentinel-2 SWIR human-verified ground truths) are ready for sample-weighted supervised training in Phase 8B."
+  },
+  "final_status": "PHASE_8A_READY_FOR_TRAINING",
+  "generated_at": "2026-09-01T12:26:39.850702+00:00",
+  "dataset_version": "v3.0-real-authoritative"
+}

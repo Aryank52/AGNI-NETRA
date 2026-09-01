@@ -1,0 +1,752 @@
+{
+  "phase": "PHASE_6C",
+  "validation_timestamp": "2026-09-01T07:42:40.719311+00:00",
+  "database": "agni_netra",
+  "engine": "PostgreSQL 16.15 / PostGIS 3.4.2",
+  "status": "PHASE_6C_COMPLETE",
+  "live_counts": {
+    "thermal_detections": 8221474,
+    "thermal_history": 8221562,
+    "thermal_events": 73,
+    "event_features": 73,
+    "facility_baselines": 35579,
+    "historical_baselines": 18,
+    "model_predictions": 73,
+    "risk_scores": 73,
+    "alerts": 7,
+    "ml_model_registry": 3,
+    "dataset_registry": 2,
+    "verification_records": 24,
+    "industrial_facilities": 35675,
+    "mining_thermal_associations": 98793,
+    "facility_mining_evidence": 203
+  },
+  "year_counts": {
+    "2022_official": 1274383,
+    "2022_pilot_isolated": 210000,
+    "2023_official": 1244759,
+    "2024_authoritative": 1711626,
+    "2025_authoritative": 2007898,
+    "2026_baseline": 1772684,
+    "total_official_multi_year": 8011350
+  },
+  "count_definitions": {
+    "source_raw_csv_rows": {
+      "definition": "Raw lines in upstream NASA FIRMS archive ZIP/CSV distributions before territorial filtering.",
+      "examples": "2025 raw source = 2,015,957 rows; 2024 raw source = 1,719,538 rows."
+    },
+    "unique_source_observations": {
+      "definition": "Observations falling strictly inside the sovereign Indian territorial boundary polygon (Survey of India / Bharat Boundary) and deduplicated against overlapping satellite overpasses.",
+      "examples": "2025 inside India = 2,008,112 observations (delta = 7,845 excluded non-Indian ocean/cross-border points)."
+    },
+    "database_table_rows": {
+      "definition": "Authoritative database records stored in PostgreSQL tables (thermal_detections and thermal_history) after deterministic sub-second spatial-temporal deduplication.",
+      "examples": "2025 database rows = 2,007,898 unique records (suppression of 214 duplicate instrument pings)."
+    },
+    "demo_pilot_rows": {
+      "definition": "Isolated testbed records (is_demo = TRUE) strictly partitioned from production and analytics.",
+      "examples": "2022 pilot = 210,000 isolated records."
+    },
+    "derived_intelligence_records": {
+      "definition": "Engineered analytical tables computed from multi-year telemetry.",
+      "examples": "facility_baselines (35,579), mining_thermal_associations (98,793), event_features (73)."
+    }
+  },
+  "contamination_audit": {
+    "demo_in_facility_baselines": 0,
+    "demo_in_historical_baselines": 0,
+    "demo_in_event_features": 15,
+    "demo_eligible_in_dataset_registry": 0,
+    "pilot_contamination_status": "ZERO_CONTAMINATION_IN_BASELINES",
+    "demo_event_features_count": 15,
+    "notes": "Historical and facility baselines have 0 demo contamination. Exactly 15 legacy test events in thermal_events are marked is_demo=true and should be filtered out before creating dataset_v3."
+  },
+  "feature_validation": [
+    {
+      "feature": "frp_max",
+      "unit": "Megawatts (MW)",
+      "valid_range": "[0.0, 15000.0]",
+      "observed_min": 39.1,
+      "observed_max": 285.0,
+      "observed_mean": 148.69,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "frp_avg",
+      "unit": "Megawatts (MW)",
+      "valid_range": "[0.0, 10000.0]",
+      "observed_min": 28.4,
+      "observed_max": 249.38,
+      "observed_mean": 135.37,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "frp_std",
+      "unit": "Megawatts (MW)",
+      "valid_range": "[0.0, 5000.0]",
+      "observed_min": 0.0,
+      "observed_max": 52.69,
+      "observed_mean": 3.08,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "bright_max",
+      "unit": "Kelvin (K)",
+      "valid_range": "[200.0, 550.0]",
+      "observed_min": 336.0,
+      "observed_max": 403.86,
+      "observed_mean": 344.22,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "bright_avg",
+      "unit": "Kelvin (K)",
+      "valid_range": "[200.0, 550.0]",
+      "observed_min": 320.0,
+      "observed_max": 384.63,
+      "observed_mean": 328.77,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "delta_brightness",
+      "unit": "Kelvin (K)",
+      "valid_range": "[0.0, 250.0]",
+      "observed_min": 0.0,
+      "observed_max": 19.23,
+      "observed_mean": 15.44,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_facility_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 0.0,
+      "observed_max": 964136.6,
+      "observed_mean": 46032.46,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_forest_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 0.0,
+      "observed_max": 1128614.5,
+      "observed_mean": 192768.37,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_agriculture_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 5000.0,
+      "observed_max": 1305299.3,
+      "observed_mean": 79377.15,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_settlement_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 4200.0,
+      "observed_max": 12000.0,
+      "observed_mean": 11572.6,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_water_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 15000.0,
+      "observed_max": 1335938.1,
+      "observed_mean": 74574.94,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "dist_to_mine_m",
+      "unit": "Meters (m)",
+      "valid_range": "[0.0, 2000000.0]",
+      "observed_min": 299611.2,
+      "observed_max": 1302902.4,
+      "observed_mean": 1002849.98,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "landcover_code",
+      "unit": "Categorical Integer [0..7]",
+      "valid_range": "[0, 7]",
+      "observed_min": 1.0,
+      "observed_max": 4.0,
+      "observed_mean": 1.23,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "persistence_score",
+      "unit": "Score [0.0..10.0]",
+      "valid_range": "[0.0, 10.0]",
+      "observed_min": 1.73,
+      "observed_max": 8.23,
+      "observed_mean": 3.32,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "POTENTIAL_LEAKAGE"
+    },
+    {
+      "feature": "recurrence_rate",
+      "unit": "Rate [0.0..10.0]",
+      "valid_range": "[0.0, 10.0]",
+      "observed_min": 0.03,
+      "observed_max": 6.0,
+      "observed_mean": 0.26,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "POTENTIAL_LEAKAGE"
+    },
+    {
+      "feature": "day_night_ratio",
+      "unit": "Ratio [0.0..50.0]",
+      "valid_range": "[0.0, 50.0]",
+      "observed_min": 0.85,
+      "observed_max": 6.0,
+      "observed_mean": 0.94,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    },
+    {
+      "feature": "baseline_deviation_ratio",
+      "unit": "Ratio [0.0..100.0]",
+      "valid_range": "[0.0, 100.0]",
+      "observed_min": 1.0,
+      "observed_max": 34.94,
+      "observed_mean": 7.88,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "POTENTIAL_LEAKAGE"
+    },
+    {
+      "feature": "industrial_context_score",
+      "unit": "Score [0.0..1.0]",
+      "valid_range": "[0.0, 1.0]",
+      "observed_min": 0.2,
+      "observed_max": 0.95,
+      "observed_mean": 0.88,
+      "null_count": 0,
+      "range_valid": true,
+      "leakage_classification": "SAFE"
+    }
+  ],
+  "temporal_leakage": {
+    "safe_features": [
+      "frp_max",
+      "frp_avg",
+      "frp_std",
+      "bright_max",
+      "bright_avg",
+      "delta_brightness",
+      "dist_to_facility_m",
+      "dist_to_forest_m",
+      "dist_to_agriculture_m",
+      "dist_to_settlement_m",
+      "dist_to_water_m",
+      "dist_to_mine_m",
+      "landcover_code",
+      "day_night_ratio",
+      "industrial_context_score"
+    ],
+    "potential_leakage_features": [
+      "persistence_score",
+      "recurrence_rate",
+      "baseline_deviation_ratio"
+    ],
+    "leakage_mechanism": "If multi-year baselines are computed over the full span (2022-2026) including the event date, the baseline includes future telemetry relative to historical events (e.g. evaluating a 2023 event against a baseline calculated using 2024-2026 data introduces lookahead bias).",
+    "enforced_remedy": "Point-in-Time Expanding Window Protocol: For any training event at timestamp T, all recurrence rates, persistence metrics, and facility baseline FRP percentiles MUST be computed strictly on observations prior to T (t < T). In chronological training, 2022-2024 training events use baselines computed strictly on preceding observations.",
+    "status": "REMEDY_DOCUMENTED_FOR_DATASET_V3"
+  },
+  "spatial_leakage": {
+    "spatial_leakage_risk": "Observations occurring at the exact same industrial facility, coal mine, or industrial estate across different days exhibit intense spatial autocorrelation. Random point-wise train/test splits would leak facility identity and spatial context between train and test sets, artificially inflating accuracy.",
+    "recommended_spatial_split_strategy": "FACILITY_AND_DISTRICT_GROUP_SPLIT",
+    "spatial_grouping_columns": [
+      "facility_id",
+      "district_id",
+      "state"
+    ],
+    "geographic_holdout_clusters": [
+      {
+        "region": "Eastern Coal Belt",
+        "districts": [
+          "Angul",
+          "Jharsuguda",
+          "Korba",
+          "Dhanbad",
+          "Bokaro"
+        ]
+      },
+      {
+        "region": "Western Petrochemical Hub",
+        "districts": [
+          "Jamnagar",
+          "Bharuch",
+          "Surat"
+        ]
+      },
+      {
+        "region": "Northern Agricultural Corridor",
+        "districts": [
+          "Bathinda",
+          "Sangrur",
+          "Ludhiana",
+          "Karnal"
+        ]
+      },
+      {
+        "region": "Southern Mineral Belt",
+        "districts": [
+          "Bellary",
+          "Cuddalore",
+          "Visakhapatnam"
+        ]
+      }
+    ],
+    "protocol": "GroupKFold by spatial cluster ensures 0 facility overlap between training and validation folds."
+  },
+  "temporal_split_design": {
+    "protocol_name": "CHRONOLOGICAL_MULTI_YEAR_PARTITION",
+    "splits": {
+      "training_period": {
+        "years": [
+          2022,
+          2023,
+          2024
+        ],
+        "time_span": "2022-01-01 to 2024-12-31",
+        "observations": 4230768,
+        "purpose": "Multi-year baseline parameter estimation, feature extraction, and model training."
+      },
+      "validation_period": {
+        "years": [
+          2025
+        ],
+        "time_span": "2025-01-01 to 2025-12-31",
+        "observations": 2007898,
+        "purpose": "Hyperparameter tuning, threshold calibration, and Brier score probability calibration."
+      },
+      "test_holdout_period": {
+        "years": [
+          2026
+        ],
+        "time_span": "2026-01-01 to 2026-12-31",
+        "observations": 1772684,
+        "purpose": "True out-of-time production holdout evaluation. Strictly untouched during training/tuning."
+      }
+    },
+    "guarantee": "No random temporal shuffling. Evaluation mirrors real-world deployment where models predict future unobserved days."
+  },
+  "label_audit": {
+    "label_taxonomy": {
+      "REAL": "NASA FIRMS spatial observations matched with verified physical infrastructure (CPCB, CEA, OSM, IBM).",
+      "HUMAN_VERIFIED": "Analyst confirmed events via Sentinel-2 SWIR / ground evidence (24 records).",
+      "WEAKLY_LABELED": "Heuristic proxy labels based on PostGIS spatial intersection (<100m from refinery flare = Gas Flare).",
+      "SYNTHETIC": "Physics-simulator calibrated baseline events for zero-shot cold start (2,800 records).",
+      "DEMO": "Isolated demo records (strictly excluded from training)."
+    },
+    "target_variable_formulations": {
+      "primary_multiclass_target": {
+        "name": "physical_source_class",
+        "classes": [
+          "Industrial Fire",
+          "Gas Flare",
+          "Forest Fire",
+          "Agricultural Burning",
+          "Mining Activity",
+          "Other Thermal Source",
+          "Uncertain"
+        ],
+        "description": "7-class physical thermal classification."
+      },
+      "secondary_binary_target": {
+        "name": "industrial_risk_anomaly",
+        "classes": [
+          "ROUTINE_CONTROLLED_EMISSION",
+          "HIGH_RISK_INDUSTRIAL_ANOMALY"
+        ],
+        "description": "Binary alert trigger for operational monitoring and regulatory triage."
+      }
+    },
+    "current_verification_distribution": {
+      "Industrial Fire": 24
+    },
+    "current_prediction_distribution": {
+      "Gas Flare": 34,
+      "Uncertain": 19,
+      "Industrial Fire": 14,
+      "Other Thermal Source": 6
+    }
+  },
+  "evidence_layers": [
+    {
+      "source": "NASA FIRMS (VIIRS/MODIS)",
+      "type": "REAL",
+      "records": "8.22M Detections",
+      "coverage": "Pan-India",
+      "latency": "<30s",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "OSM Industrial Facilities",
+      "type": "REAL",
+      "records": "35,674 Facilities",
+      "coverage": "National",
+      "latency": "Precomputed Spatial Index",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "CEA Power Station Registry",
+      "type": "REAL",
+      "records": "323 Power Plants",
+      "coverage": "National Grid",
+      "latency": "Precomputed Spatial Index",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "IBM Mining Registry & Leases",
+      "type": "REAL",
+      "records": "4,983 Leases / 98,793 Assocs",
+      "coverage": "Major Mineral States",
+      "latency": "Precomputed Spatial Index",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "PARIVESH EC Registry",
+      "type": "REAL",
+      "records": "3,224 Clearances",
+      "coverage": "National Portals",
+      "latency": "Precomputed Spatial Index",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "Survey of India Administrative Geography",
+      "type": "REAL",
+      "records": "7,595 Boundary Polygons",
+      "coverage": "100% Territorial Coverage",
+      "latency": "Spatial Containment <5ms",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "ISRO Bhuvan LULC (50m)",
+      "type": "REAL",
+      "records": "National Raster Grid",
+      "coverage": "Continental India",
+      "latency": "Raster Lookup <10ms",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "ESA WorldCover (10m Fallback)",
+      "type": "REAL",
+      "records": "10m Global Raster Tiles",
+      "coverage": "National Territory",
+      "latency": "Complementary Fallback",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "FSI ISFR Forest Cover",
+      "type": "REAL",
+      "records": "755 Districts ISFR Stats",
+      "coverage": "All Districts",
+      "latency": "Spatial Join",
+      "missingness": "0.0%"
+    },
+    {
+      "source": "WII Protected Areas Database",
+      "type": "REAL",
+      "records": "1,014 Protected Areas",
+      "coverage": "National Parks & Sanctuaries",
+      "latency": "Spatial Buffer Join",
+      "missingness": "0.0%"
+    }
+  ],
+  "correlation_analysis": {
+    "total_numeric_features": 18,
+    "high_correlation_pairs": [
+      {
+        "feature_1": "frp_max",
+        "feature_2": "frp_avg",
+        "pearson_r": 0.966,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "frp_std",
+        "feature_2": "bright_max",
+        "pearson_r": 0.829,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "frp_std",
+        "feature_2": "bright_avg",
+        "pearson_r": 0.79,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "bright_max",
+        "feature_2": "bright_avg",
+        "pearson_r": 0.978,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_facility_m",
+        "feature_2": "landcover_code",
+        "pearson_r": 0.8,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_facility_m",
+        "feature_2": "industrial_context_score",
+        "pearson_r": -0.735,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "dist_to_settlement_m",
+        "pearson_r": -0.775,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "dist_to_water_m",
+        "pearson_r": 0.896,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "recurrence_rate",
+        "pearson_r": 0.721,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_forest_m",
+        "feature_2": "delta_brightness",
+        "pearson_r": -0.751,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_agriculture_m",
+        "feature_2": "dist_to_settlement_m",
+        "pearson_r": -0.987,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_agriculture_m",
+        "feature_2": "dist_to_water_m",
+        "pearson_r": 0.865,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_agriculture_m",
+        "feature_2": "delta_brightness",
+        "pearson_r": -0.966,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_settlement_m",
+        "feature_2": "dist_to_water_m",
+        "pearson_r": -0.934,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_settlement_m",
+        "feature_2": "recurrence_rate",
+        "pearson_r": -0.734,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_settlement_m",
+        "feature_2": "delta_brightness",
+        "pearson_r": 0.979,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_water_m",
+        "feature_2": "recurrence_rate",
+        "pearson_r": 0.784,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "dist_to_water_m",
+        "feature_2": "delta_brightness",
+        "pearson_r": -0.914,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "landcover_code",
+        "feature_2": "industrial_context_score",
+        "pearson_r": -0.93,
+        "interpretation": "Strong colinearity detected"
+      },
+      {
+        "feature_1": "recurrence_rate",
+        "feature_2": "day_night_ratio",
+        "pearson_r": 0.968,
+        "interpretation": "Strong colinearity detected"
+      }
+    ],
+    "near_constant_features": [],
+    "sparse_features": [
+      "frp_std"
+    ]
+  },
+  "class_balance": {
+    "synthetic_grounded_distribution": {
+      "Industrial Fire": 400,
+      "Gas Flare": 400,
+      "Forest Fire": 400,
+      "Agricultural Burning": 400,
+      "Mining Activity": 400,
+      "Other Thermal Source": 400,
+      "Uncertain": 400
+    },
+    "human_verified_distribution": {
+      "Industrial Fire": 24
+    },
+    "real_world_expected_imbalance": {
+      "Agricultural Burning": "HIGH (Seasonal peaks in Nov/May, >60% of rural hotspots)",
+      "Forest Fire": "SEASONAL (Mar-May peaks in central/northeastern belts, ~20%)",
+      "Industrial Fire / Hazard": "RARE (<1% of total hotspots, high consequence)",
+      "Gas Flare": "HIGHLY_PERSISTENT (~5% of hotspots, concentrated in petrochemical belts)",
+      "Mining Activity": "PERSISTENT (~10% of hotspots in eastern coal belts)"
+    },
+    "imbalance_handling_strategy": "Cost-sensitive focal loss & stratified facility grouping. DO NOT arbitrarily undersample rare industrial fires."
+  },
+  "dataset_schema_spec": {
+    "dataset_name": "AGNI-NETRA Multi-Year Authoritative Telemetry Dataset",
+    "dataset_version": "v3.0-authoritative-multiyear",
+    "target_tables": [
+      "thermal_detections",
+      "event_features",
+      "facility_baselines"
+    ],
+    "schema_columns": [
+      {
+        "column": "sample_id",
+        "type": "UUID",
+        "description": "Deterministic unique sample identifier."
+      },
+      {
+        "column": "event_id",
+        "type": "UUID",
+        "description": "Foreign key to thermal_events / detection cluster."
+      },
+      {
+        "column": "acquisition_timestamp",
+        "type": "TIMESTAMPTZ",
+        "description": "UTC timestamp of satellite observation."
+      },
+      {
+        "column": "facility_id",
+        "type": "UUID / NULL",
+        "description": "Nearest industrial facility entity ID."
+      },
+      {
+        "column": "spatial_group_id",
+        "type": "VARCHAR(100)",
+        "description": "District or 0.25 deg grid cell for leakage-free GroupKFold."
+      },
+      {
+        "column": "state",
+        "type": "VARCHAR(100)",
+        "description": "Indian State / UT boundary."
+      },
+      {
+        "column": "target_label",
+        "type": "VARCHAR(50)",
+        "description": "Physical classification (7 classes)."
+      },
+      {
+        "column": "binary_risk_label",
+        "type": "INTEGER",
+        "description": "0 = Controlled/Routine, 1 = High-Risk Anomaly."
+      },
+      {
+        "column": "features",
+        "type": "FLOAT[18]",
+        "description": "Standardized 18-dimensional feature vector."
+      },
+      {
+        "column": "feature_calculation_window",
+        "type": "VARCHAR(50)",
+        "description": "Strict point-in-time calculation horizon (t < t_event)."
+      },
+      {
+        "column": "label_provenance",
+        "type": "VARCHAR(50)",
+        "description": "REAL, HUMAN_VERIFIED, WEAKLY_LABELED, SYNTHETIC."
+      },
+      {
+        "column": "dataset_split",
+        "type": "VARCHAR(20)",
+        "description": "TRAIN (2022-2024), VAL (2025), TEST (2026)."
+      }
+    ]
+  },
+  "model_contracts": [
+    {
+      "model_name": "Random Forest Benchmark",
+      "version": "rf-v1.0-benchmark",
+      "dataset_version": "v1.0-synthetic-grounded",
+      "algorithm": "Random Forest",
+      "status": "APPROVED",
+      "is_active": false,
+      "artifact_path": "ml/models/rf_classifier_v1.joblib",
+      "expected_input_dimensions": 18,
+      "readiness_verdict": "BENCHMARK_CALIBRATION_MODEL"
+    },
+    {
+      "model_name": "Isolation Forest Anomaly Radar",
+      "version": "iso-v1.0-anomaly",
+      "dataset_version": "v1.0-synthetic-grounded",
+      "algorithm": "Isolation Forest",
+      "status": "ACTIVE",
+      "is_active": true,
+      "artifact_path": "ml/models/isolation_forest_v1.joblib",
+      "expected_input_dimensions": 18,
+      "readiness_verdict": "BENCHMARK_CALIBRATION_MODEL"
+    },
+    {
+      "model_name": "XGBoost Industrial Classifier",
+      "version": "v1.0-synthetic-baseline",
+      "dataset_version": "v1.0-synthetic-grounded",
+      "algorithm": "XGBoost",
+      "status": "APPROVED",
+      "is_active": false,
+      "artifact_path": "ml/models/xgboost_classifier_v1.joblib",
+      "expected_input_dimensions": 18,
+      "readiness_verdict": "BENCHMARK_CALIBRATION_MODEL"
+    }
+  ],
+  "reproducibility_hash_sha256": "9a73ac9ca55aedb50423e679df27b3eb5a958cabf15c49c1e831cc22c99672ab",
+  "execution_time_seconds": 39.72
+}

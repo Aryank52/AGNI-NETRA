@@ -1,0 +1,38 @@
+{
+  "candidate_model": "xgb-v2.0-real-candidate",
+  "calibration_method": "Balanced Platt Scaling (Multinomial Logistic on Val Probabilities)",
+  "calibrated_at": "2026-09-01T16:58:37.942728+00:00",
+  "temperature_scaling_optimal_T": 1.6489,
+  "val_log_loss_raw": 0.9964,
+  "val_log_loss_calibrated": 0.6318,
+  "test_log_loss_raw": 1.2149,
+  "test_log_loss_calibrated": 0.9001,
+  "test_brier_raw": 0.0868,
+  "test_brier_calibrated": 0.0682,
+  "test_ece_raw": 0.2345,
+  "test_ece_calibrated": 0.1045,
+  "hitl_policy": {
+    "tier_1_automated": {
+      "policy_rule": "P_top1 >= 0.65 AND delta_top2 >= 0.20",
+      "routing": "Direct Automated Alert Dispatch",
+      "sample_count": 78,
+      "percentage": 44.32,
+      "selective_accuracy": 0.9487,
+      "selective_macro_f1": 0.8549
+    },
+    "tier_2_analyst_review": {
+      "policy_rule": "(0.45 <= P_top1 < 0.65) OR (0.08 <= delta_top2 < 0.20)",
+      "routing": "Operational Duty Officer Verification Queue",
+      "sample_count": 85,
+      "percentage": 48.3,
+      "model_raw_accuracy": 0.5294
+    },
+    "tier_3_active_learning": {
+      "policy_rule": "P_top1 < 0.45 OR delta_top2 < 0.08",
+      "routing": "High-Uncertainty / Active Learning Investigation Radar",
+      "sample_count": 13,
+      "percentage": 7.39,
+      "model_raw_accuracy": 0.0769
+    }
+  }
+}

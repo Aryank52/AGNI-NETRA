@@ -1,0 +1,28 @@
+{
+  "dataset_name": "AGNI-NETRA Multi-Year Real Telemetry Dataset V3.2 Final",
+  "dataset_version": "v3.2-real-final",
+  "provenance_hash": "9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e",
+  "base_version": "v3.1-real-remediated",
+  "record_count": 1674,
+  "created_at": "2026-09-02T01:42:33.214047",
+  "remediation_details": {
+    "persistence_score": "Fixed 30-day sliding window [t - 30d, t), scaled /30.0",
+    "recurrence_rate": "Catalog-boundary-safe annualized log recurrence: log1p(count_365d * 365 / avail_days)",
+    "baseline_deviation_ratio": "Fixed 365-day sliding window prior average FRP baseline",
+    "point_in_time_anti_leakage": "100% ENFORCED (t_obs < t)"
+  },
+  "split_distribution": {
+    "TRAIN": 754,
+    "VALIDATION": 506,
+    "TEST": 414
+  },
+  "class_distribution": {
+    "Uncertain": 825,
+    "Other Thermal Source": 183,
+    "Forest Fire": 181,
+    "Agricultural Burning": 176,
+    "Industrial Fire": 134,
+    "Gas Flare": 100,
+    "Mining Activity": 75
+  }
+}

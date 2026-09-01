@@ -1,0 +1,259 @@
+{
+  "phase": "PHASE_8D",
+  "status": "PHASE_8D_COMPLETE",
+  "validation_decision": "SHADOW_MODE_DEGRADED",
+  "champion_model": {
+    "model_name": "xgb-v2.0-real-candidate",
+    "model_version": "2.0.0-shadow",
+    "model_hash": "55c2b5df638fe1bd9c6b98b09cd1c40d16fa5b234cbad26738b2b64de1b8a503",
+    "calibrator_hash": "fbd7c9d52e4095d189e87cee70ad9f5e3424646a4755455b05b9ebc955bceb16",
+    "calibration_method": "Balanced Multinomial Logistic Platt Scaling",
+    "registry_status": "CANDIDATE",
+    "is_active": false
+  },
+  "stream_statistics": {
+    "total_shadow_events": 414,
+    "ground_truth_verified_events": 176,
+    "operational_unverified_events": 238,
+    "tier1_automated_count": 138,
+    "tier1_percentage": 33.33,
+    "tier2_analyst_count": 149,
+    "tier2_percentage": 35.99,
+    "tier3_uncertainty_count": 127,
+    "tier3_percentage": 30.68
+  },
+  "verified_metrics": {
+    "accuracy": 0.6818181818181818,
+    "balanced_accuracy": 0.710916626813327,
+    "macro_f1": 0.6351698246775003,
+    "weighted_f1": 0.7064486991392228,
+    "multiclass_log_loss": 0.9001176357269287,
+    "multiclass_brier_score": 0.06818825751543045,
+    "tier1_selective_accuracy": 0.9487179487179487,
+    "tier2_selective_accuracy": 0.5294117647058824,
+    "tier3_selective_accuracy": 0.07692307692307693,
+    "per_class": {
+      "Industrial Fire": {
+        "support": 30,
+        "true_positives": 16,
+        "false_positives": 7,
+        "false_negatives": 14,
+        "precision": 0.6956521739130435,
+        "recall": 0.5333333333333333,
+        "f1_score": 0.6037735849056605
+      },
+      "Gas Flare": {
+        "support": 34,
+        "true_positives": 27,
+        "false_positives": 23,
+        "false_negatives": 7,
+        "precision": 0.54,
+        "recall": 0.7941176470588235,
+        "f1_score": 0.6428571428571429
+      },
+      "Forest Fire": {
+        "support": 5,
+        "true_positives": 5,
+        "false_positives": 21,
+        "false_negatives": 0,
+        "precision": 0.19230769230769232,
+        "recall": 1.0,
+        "f1_score": 0.32258064516129037
+      },
+      "Agricultural Burning": {
+        "support": 41,
+        "true_positives": 36,
+        "false_positives": 0,
+        "false_negatives": 5,
+        "precision": 1.0,
+        "recall": 0.8780487804878049,
+        "f1_score": 0.9350649350649352
+      },
+      "Mining Activity": {
+        "support": 16,
+        "true_positives": 8,
+        "false_positives": 2,
+        "false_negatives": 8,
+        "precision": 0.8,
+        "recall": 0.5,
+        "f1_score": 0.6153846153846154
+      },
+      "Other Thermal Source": {
+        "support": 50,
+        "true_positives": 28,
+        "false_positives": 3,
+        "false_negatives": 22,
+        "precision": 0.9032258064516129,
+        "recall": 0.56,
+        "f1_score": 0.691358024691358
+      }
+    }
+  },
+  "drift_monitoring": {
+    "overall_status": "DATA_DRIFT",
+    "feature_metrics": {
+      "frp_max": {
+        "ks_statistic": 0.046066252587991685,
+        "ks_pvalue": 0.5052572030742094,
+        "wasserstein_distance": 8.476080400276057,
+        "psi": 0.040612147606564106,
+        "drift_flag": false
+      },
+      "frp_avg": {
+        "ks_statistic": 0.04199447895100061,
+        "ks_pvalue": 0.6232477042637443,
+        "wasserstein_distance": 7.322297446514844,
+        "psi": 0.020393412380040388,
+        "drift_flag": false
+      },
+      "frp_std": {
+        "ks_statistic": 0.034299516908212535,
+        "ks_pvalue": 0.8418167771661733,
+        "wasserstein_distance": 0.38469059077983536,
+        "psi": 0.0050535381283130735,
+        "drift_flag": false
+      },
+      "bright_max": {
+        "ks_statistic": 0.11411318150448585,
+        "ks_pvalue": 0.0005386674929161497,
+        "wasserstein_distance": 14.909835748792267,
+        "psi": 0.13832884637207268,
+        "drift_flag": false
+      },
+      "bright_avg": {
+        "ks_statistic": 0.10690131124913732,
+        "ks_pvalue": 0.0014683646711036006,
+        "wasserstein_distance": 14.234457902001378,
+        "psi": 0.05462850081757264,
+        "drift_flag": false
+      },
+      "delta_brightness": {
+        "ks_statistic": 0.05548654244306406,
+        "ks_pvalue": 0.2802015115811812,
+        "wasserstein_distance": 0.7299051069703232,
+        "psi": 0.01909188321837299,
+        "drift_flag": false
+      },
+      "dist_to_facility_m": {
+        "ks_statistic": 0.04734299516908211,
+        "ks_pvalue": 0.4702171486126467,
+        "wasserstein_distance": 587.6066556456738,
+        "psi": 0.026430725554355564,
+        "drift_flag": false
+      },
+      "dist_to_forest_m": {
+        "ks_statistic": 0.14102829537612144,
+        "ks_pvalue": 7.136929390792521e-06,
+        "wasserstein_distance": 70147.89661490683,
+        "psi": 0.13886745062505307,
+        "drift_flag": false
+      },
+      "dist_to_agriculture_m": {
+        "ks_statistic": 0.08226363008971704,
+        "ks_pvalue": 0.027544103248404766,
+        "wasserstein_distance": 73835.89718771564,
+        "psi": 0.2731440715408431,
+        "drift_flag": true
+      },
+      "dist_to_settlement_m": {
+        "ks_statistic": 0.0,
+        "ks_pvalue": 1.0,
+        "wasserstein_distance": 0.0,
+        "psi": 0.0,
+        "drift_flag": false
+      },
+      "dist_to_water_m": {
+        "ks_statistic": 0.15003450655624562,
+        "ks_pvalue": 1.36738053402416e-06,
+        "wasserstein_distance": 94066.64497929606,
+        "psi": 0.2889735936638505,
+        "drift_flag": true
+      },
+      "dist_to_mine_m": {
+        "ks_statistic": 0.1306073153899241,
+        "ks_pvalue": 4.245250427091451e-05,
+        "wasserstein_distance": 86870.80222222222,
+        "psi": 0.18727708156515668,
+        "drift_flag": false
+      },
+      "landcover_code": {
+        "ks_statistic": 0.06953071083505857,
+        "ks_pvalue": 0.09294520311280305,
+        "wasserstein_distance": 0.25196687370600424,
+        "psi": 0.01638812992875605,
+        "drift_flag": false
+      },
+      "persistence_score": {
+        "ks_statistic": 0.548895790200138,
+        "ks_pvalue": 2.983393815501225e-87,
+        "wasserstein_distance": 0.4243691476880607,
+        "psi": 2.253170442893293,
+        "drift_flag": true
+      },
+      "recurrence_rate": {
+        "ks_statistic": 0.34858523119392687,
+        "ks_pvalue": 3.560198814516397e-34,
+        "wasserstein_distance": 254.20184265010386,
+        "psi": 0.7684322331192511,
+        "drift_flag": true
+      },
+      "day_night_ratio": {
+        "ks_statistic": 0.002898550724637683,
+        "ks_pvalue": 1.0,
+        "wasserstein_distance": 0.0011202864044168395,
+        "psi": 0.00025039018608353906,
+        "drift_flag": false
+      },
+      "baseline_deviation_ratio": {
+        "ks_statistic": 0.17636300897170462,
+        "ks_pvalue": 6.019396735501172e-09,
+        "wasserstein_distance": 1.7808243616287083,
+        "psi": 0.32280131053419203,
+        "drift_flag": true
+      },
+      "industrial_context_score": {
+        "ks_statistic": 0.04137336093857835,
+        "ks_pvalue": 0.6417241141435007,
+        "wasserstein_distance": 0.02166666666666667,
+        "psi": 0.010615772576858373,
+        "drift_flag": false
+      }
+    }
+  },
+  "geographic_stability": {
+    "region_EASTERN_COAL_BELT": {
+      "sample_count": 78,
+      "accuracy": 0.5897435897435898,
+      "macro_f1": 0.5959014602181874,
+      "status": "STABLE"
+    },
+    "region_GENERAL_INDIAN_TERRITORY": {
+      "sample_count": 61,
+      "accuracy": 0.8852459016393442,
+      "macro_f1": 0.8517210144927536,
+      "status": "STABLE"
+    },
+    "region_NORTHERN_AGRICULTURE": {
+      "sample_count": 12,
+      "accuracy": 0.75,
+      "macro_f1": 0.6974789915966386,
+      "status": "STABLE"
+    },
+    "region_WESTERN_PETROCHEMICAL": {
+      "sample_count": 25,
+      "accuracy": 0.44,
+      "macro_f1": 0.5722222222222223,
+      "status": "STABLE"
+    }
+  },
+  "database_audit": {
+    "shadow_predictions_count": 414,
+    "firms_2022_immutable": true,
+    "firms_2023_immutable": true,
+    "firms_2024_immutable": true,
+    "firms_2025_immutable": true,
+    "firms_2026_immutable": true
+  },
+  "timestamp": "2026-09-01T18:10:09.616894Z",
+  "execution_time_seconds": 57.6
+}

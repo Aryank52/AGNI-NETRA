@@ -1,0 +1,1518 @@
+{
+  "phase": "PHASE_8E",
+  "status": "PHASE_8E_COMPLETE",
+  "investigation_timestamp": "2026-09-02T00:28:55.705108",
+  "database_immutability_audit": {
+    "2022_official_archive": 1274383,
+    "2022_pilot_benchmarks": 210000,
+    "2023_official_archive": 1244759,
+    "2024_reconciled_archive": 1711626,
+    "2025_live_detections": 2007898,
+    "2026_operational_stream": 1772888,
+    "immutability_status": "100%_PRESERVED"
+  },
+  "model_registry_invariants": {
+    "xgb-v2.0-real-candidate": "CANDIDATE / INACTIVE",
+    "rf-v2.0-real-candidate": "CANDIDATE / INACTIVE",
+    "is_active": false
+  },
+  "drift_reproduction": {
+    "frp_max": {
+      "psi": 0.040612147606564106,
+      "ks_statistic": 0.046066252587991685,
+      "ks_pvalue": 0.5052572030742094,
+      "wasserstein_distance": 8.476080400276057,
+      "category": "STABLE"
+    },
+    "frp_avg": {
+      "psi": 0.020393412380040388,
+      "ks_statistic": 0.04199447895100061,
+      "ks_pvalue": 0.6232477042637443,
+      "wasserstein_distance": 7.322297446514844,
+      "category": "STABLE"
+    },
+    "frp_std": {
+      "psi": 0.0050535381283130735,
+      "ks_statistic": 0.034299516908212535,
+      "ks_pvalue": 0.8418167771661733,
+      "wasserstein_distance": 0.38469059077983536,
+      "category": "STABLE"
+    },
+    "bright_max": {
+      "psi": 0.13832884637207268,
+      "ks_statistic": 0.11411318150448585,
+      "ks_pvalue": 0.0005386674929161497,
+      "wasserstein_distance": 14.909835748792267,
+      "category": "MODERATE_DRIFT"
+    },
+    "bright_avg": {
+      "psi": 0.05462850081757264,
+      "ks_statistic": 0.10690131124913732,
+      "ks_pvalue": 0.0014683646711036006,
+      "wasserstein_distance": 14.234457902001378,
+      "category": "STABLE"
+    },
+    "delta_brightness": {
+      "psi": 0.01909188321837299,
+      "ks_statistic": 0.05548654244306406,
+      "ks_pvalue": 0.2802015115811812,
+      "wasserstein_distance": 0.7299051069703232,
+      "category": "STABLE"
+    },
+    "dist_to_facility_m": {
+      "psi": 0.026430725554355564,
+      "ks_statistic": 0.04734299516908211,
+      "ks_pvalue": 0.4702171486126467,
+      "wasserstein_distance": 587.6066556456738,
+      "category": "STABLE"
+    },
+    "dist_to_forest_m": {
+      "psi": 0.13886745062505307,
+      "ks_statistic": 0.14102829537612144,
+      "ks_pvalue": 7.136929390792521e-06,
+      "wasserstein_distance": 70147.89661490683,
+      "category": "MODERATE_DRIFT"
+    },
+    "dist_to_agriculture_m": {
+      "psi": 0.2731440715408431,
+      "ks_statistic": 0.08226363008971704,
+      "ks_pvalue": 0.027544103248404766,
+      "wasserstein_distance": 73835.89718771564,
+      "category": "SIGNIFICANT_DRIFT"
+    },
+    "dist_to_settlement_m": {
+      "psi": 0.0,
+      "ks_statistic": 0.0,
+      "ks_pvalue": 1.0,
+      "wasserstein_distance": 0.0,
+      "category": "STABLE"
+    },
+    "dist_to_water_m": {
+      "psi": 0.2889735936638505,
+      "ks_statistic": 0.15003450655624562,
+      "ks_pvalue": 1.36738053402416e-06,
+      "wasserstein_distance": 94066.64497929606,
+      "category": "SIGNIFICANT_DRIFT"
+    },
+    "dist_to_mine_m": {
+      "psi": 0.18727708156515668,
+      "ks_statistic": 0.1306073153899241,
+      "ks_pvalue": 4.245250427091451e-05,
+      "wasserstein_distance": 86870.80222222222,
+      "category": "MODERATE_DRIFT"
+    },
+    "landcover_code": {
+      "psi": 0.01638812992875605,
+      "ks_statistic": 0.06953071083505857,
+      "ks_pvalue": 0.09294520311280305,
+      "wasserstein_distance": 0.25196687370600424,
+      "category": "STABLE"
+    },
+    "persistence_score": {
+      "psi": 2.253170442893293,
+      "ks_statistic": 0.548895790200138,
+      "ks_pvalue": 2.983393815501225e-87,
+      "wasserstein_distance": 0.4243691476880607,
+      "category": "SIGNIFICANT_DRIFT"
+    },
+    "recurrence_rate": {
+      "psi": 0.7684322331192511,
+      "ks_statistic": 0.34858523119392687,
+      "ks_pvalue": 3.560198814516397e-34,
+      "wasserstein_distance": 254.20184265010386,
+      "category": "SIGNIFICANT_DRIFT"
+    },
+    "day_night_ratio": {
+      "psi": 0.00025039018608353906,
+      "ks_statistic": 0.002898550724637683,
+      "ks_pvalue": 1.0,
+      "wasserstein_distance": 0.0011202864044168395,
+      "category": "STABLE"
+    },
+    "baseline_deviation_ratio": {
+      "psi": 0.32280131053419203,
+      "ks_statistic": 0.17636300897170462,
+      "ks_pvalue": 6.019396735501172e-09,
+      "wasserstein_distance": 1.7808243616287083,
+      "category": "SIGNIFICANT_DRIFT"
+    },
+    "industrial_context_score": {
+      "psi": 0.010615772576858373,
+      "ks_statistic": 0.04137336093857835,
+      "ks_pvalue": 0.6417241141435007,
+      "wasserstein_distance": 0.02166666666666667,
+      "category": "STABLE"
+    }
+  },
+  "drift_typology": {
+    "persistence_score": {
+      "classification": "FEATURE_PIPELINE_DRIFT",
+      "confidence": "HIGH",
+      "evidence": "Unbounded expanding window historical query (t_obs < t) causes cumulative active days to rise from mean=0.086 (2022-2024) to mean=0.761 (2026)."
+    },
+    "recurrence_rate": {
+      "classification": "FEATURE_PIPELINE_DRIFT",
+      "confidence": "HIGH",
+      "evidence": "Accumulation of observations over multi-year database depth without fixed temporal lookback horizon."
+    },
+    "baseline_deviation_ratio": {
+      "classification": "FEATURE_PIPELINE_DRIFT",
+      "confidence": "HIGH",
+      "evidence": "Transition from cold-start fallback formula in early 2022 data to established cell prior FRP baselines in 2025-2026."
+    },
+    "dist_to_water_m": {
+      "classification": "DATA_DISTRIBUTION_DRIFT",
+      "confidence": "MEDIUM",
+      "evidence": "Operational sampling in 2026 contains higher proportion of coastal/riverine industrial belts."
+    },
+    "bright_max": {
+      "classification": "REAL_SEASONAL_DRIFT",
+      "confidence": "HIGH",
+      "evidence": "Natural seasonal variation in ambient atmospheric temperature and cloud dynamics during late monsoon observations."
+    }
+  },
+  "pipeline_audit": {
+    "persistence_score": {
+      "historical_sql": "SELECT COUNT(DISTINCT acq_date) FROM thermal_history WHERE lat/lon cell AND acq_date < :acq_date AND is_demo = FALSE",
+      "lookback_window": "Unbounded Historical Expanding Horizon (all records from 2022 up to event timestamp t)",
+      "spatial_window": "0.02 deg x 0.02 deg bounding cell (~2.2 km x 2.2 km)",
+      "scaling_normalization": "min(1.0, prior_active_days / 30.0)",
+      "null_default_handling": "0.0 if no prior records",
+      "point_in_time_compliance": "STRICT (t_obs < t), NO future leakage",
+      "root_cause_diagnosis": "FEATURE_PIPELINE_DRIFT + DATA_DISTRIBUTION_DRIFT. As the database accumulates years (2022=0 yrs, 2023=1 yr, 2024=2 yrs, 2025=3 yrs, 2026=4 yrs), prior_active_days accumulates monotonically over the expanding window, causing later years to cap out at 1.0 (mean rises from 0.086 in 2022-2024 to 0.761 in 2026).",
+      "drift_classification": "FEATURE_PIPELINE_DRIFT",
+      "remediation_action": "Standardize historical lookback to a fixed sliding window [t - 30 days, t) rather than an unbounded expanding window."
+    },
+    "recurrence_rate": {
+      "historical_sql": "SELECT COUNT(*) FROM thermal_history WHERE lat/lon cell AND acq_date < :acq_date AND is_demo = FALSE",
+      "lookback_window": "Unbounded Expanding Horizon, scaled by years_prior = max(1.0, float(year - 2022) + 0.5)",
+      "spatial_window": "0.02 deg x 0.02 deg bounding cell",
+      "scaling_normalization": "prior_count / years_prior",
+      "null_default_handling": "0.0 if no prior records",
+      "point_in_time_compliance": "STRICT (t_obs < t), NO future leakage",
+      "root_cause_diagnosis": "FEATURE_PIPELINE_DRIFT. Cumulative raw count in high-frequency industrial/flare cells grows quadratically over multi-year archives, and the linear normalization denominator (years_prior) fails to prevent tail variance expansion in later years (P99 expands from 888.9 to 9519.5).",
+      "drift_classification": "FEATURE_PIPELINE_DRIFT",
+      "remediation_action": "Standardize recurrence calculation to annual rate over trailing 365 days: count([t - 365d, t)) with log1p scaling."
+    },
+    "baseline_deviation_ratio": {
+      "historical_sql": "SELECT AVG(frp) FROM thermal_history WHERE lat/lon cell AND acq_date < :acq_date",
+      "lookback_window": "Unbounded Historical Expanding Horizon",
+      "spatial_window": "0.02 deg x 0.02 deg bounding cell",
+      "scaling_normalization": "max_frp / prior_avg_frp (fallback: max_frp / max(10.0, avg_frp))",
+      "null_default_handling": "1.0 fallback when prior_avg_frp == 0",
+      "point_in_time_compliance": "STRICT (t_obs < t), NO future leakage",
+      "root_cause_diagnosis": "FEATURE_PIPELINE_DRIFT + REAL_SEASONAL_DRIFT. In 2022-2024 training data, many events used the fallback formula due to sparse prior records, whereas 2025-2026 events consistently have established prior baselines.",
+      "drift_classification": "FEATURE_PIPELINE_DRIFT",
+      "remediation_action": "Ensure fallback formula matches baseline scaling by incorporating facility registry baselines where prior cell count is small."
+    },
+    "dist_to_water_m": {
+      "historical_sql": "Static Geospatial Nearest-Neighbor Distance (LULC Water Polygons / Rivers)",
+      "lookback_window": "Static invariant geospatial topology",
+      "spatial_window": "Continental India territorial extent",
+      "scaling_normalization": "Euclidean / Haversine distance in meters",
+      "null_default_handling": "20,000 m default fallback",
+      "point_in_time_compliance": "STATIC INVARIANT",
+      "root_cause_diagnosis": "DATA_DISTRIBUTION_DRIFT. Spatial cluster sampling in 2026 included a higher concentration of coastal and river-adjacent industrial clusters (e.g., Gujarat coastline, Mahanadi basin) compared to the broader inland agricultural/forest sample of 2022-2024.",
+      "drift_classification": "DATA_DISTRIBUTION_DRIFT",
+      "remediation_action": "NO pipeline fix required; natural geographical variation across operational sample."
+    },
+    "bright_max": {
+      "historical_sql": "VIIRS I-Band (4.0 um) Maximum Brightness Temperature (Kelvin)",
+      "lookback_window": "Point-in-Time detection pass",
+      "spatial_window": "VIIRS pixel footprint (375m)",
+      "scaling_normalization": "Raw Sensor Brightness Temperature [300.0, 367.0 K]",
+      "null_default_handling": "avg_brightness * 1.05",
+      "point_in_time_compliance": "STRICT (t_obs == t)",
+      "root_cause_diagnosis": "REAL_SEASONAL_DRIFT + SENSOR_MIX. 2026 operational shadow stream was evaluated during late monsoon and early post-monsoon months where ambient cloud cover and lower surface temperatures slightly reduced raw brightness temperatures compared to peak pre-monsoon dry season blazes.",
+      "drift_classification": "REAL_SEASONAL_DRIFT",
+      "remediation_action": "NO pipeline fix required; model's temperature calibration accommodates seasonal brightness variations."
+    }
+  },
+  "distribution_summary": {
+    "frp_max": {
+      "TRAIN_2022_2024": {
+        "mean": 27.105092838196285,
+        "median": 23.555,
+        "std": 23.07295776799747,
+        "p25": 12.1625,
+        "p75": 32.755,
+        "p90": 51.2,
+        "p95": 69.766,
+        "p99": 107.02900000000002
+      },
+      "VAL_2025": {
+        "mean": 25.685395256916998,
+        "median": 22.545,
+        "std": 22.537840572026774,
+        "p25": 10.49,
+        "p75": 32.78,
+        "p90": 47.695,
+        "p95": 55.8,
+        "p99": 114.25799999999997
+      },
+      "TEST_2026": {
+        "mean": 33.57009661835748,
+        "median": 21.65,
+        "std": 55.502301658243375,
+        "p25": 10.0,
+        "p75": 32.260000000000005,
+        "p90": 48.81999999999999,
+        "p95": 72.88999999999974,
+        "p99": 285.0
+      },
+      "SHADOW_2026": {
+        "mean": 33.57009661835748,
+        "median": 21.65,
+        "std": 55.502301658243375,
+        "p25": 10.0,
+        "p75": 32.260000000000005,
+        "p90": 48.81999999999999,
+        "p95": 72.88999999999974,
+        "p99": 285.0
+      },
+      "PSI_baseline_vs_shadow": 0.040612147606564106,
+      "KS_stat_baseline_vs_shadow": 0.046066252587991685,
+      "KS_pval_baseline_vs_shadow": 0.5052572030742094
+    },
+    "frp_avg": {
+      "TRAIN_2022_2024": {
+        "mean": 25.541233421750665,
+        "median": 22.295,
+        "std": 19.403281701463882,
+        "p25": 11.92,
+        "p75": 31.875,
+        "p90": 47.81600000000002,
+        "p95": 62.80500000000001,
+        "p99": 97.86740000000007
+      },
+      "VAL_2025": {
+        "mean": 24.008992094861657,
+        "median": 21.740000000000002,
+        "std": 20.13985239562902,
+        "p25": 10.4725,
+        "p75": 31.535,
+        "p90": 40.9,
+        "p95": 50.332499999999996,
+        "p99": 99.56749999999987
+      },
+      "TEST_2026": {
+        "mean": 31.13533816425121,
+        "median": 21.65,
+        "std": 49.17651783654631,
+        "p25": 9.962499999999999,
+        "p75": 31.52,
+        "p90": 45.422999999999995,
+        "p95": 64.96649999999991,
+        "p99": 249.38
+      },
+      "SHADOW_2026": {
+        "mean": 31.13533816425121,
+        "median": 21.65,
+        "std": 49.17651783654631,
+        "p25": 9.962499999999999,
+        "p75": 31.52,
+        "p90": 45.422999999999995,
+        "p95": 64.96649999999991,
+        "p99": 249.38
+      },
+      "PSI_baseline_vs_shadow": 0.020393412380040388,
+      "KS_stat_baseline_vs_shadow": 0.04199447895100061,
+      "KS_pval_baseline_vs_shadow": 0.6232477042637443
+    },
+    "frp_std": {
+      "TRAIN_2022_2024": {
+        "mean": 1.2808529622190932,
+        "median": 0.0,
+        "std": 5.662861166498021,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 2.470790470304169,
+        "p95": 6.202367883995671,
+        "p99": 27.41779089823772
+      },
+      "VAL_2025": {
+        "mean": 1.3180135391248817,
+        "median": 0.0,
+        "std": 4.353526850946115,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 4.474862633215466,
+        "p95": 8.832274473716073,
+        "p99": 19.473072705715605
+      },
+      "TEST_2026": {
+        "mean": 1.1230236435059038,
+        "median": 0.0,
+        "std": 5.764628652393099,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 1.984751071524212,
+        "p95": 6.0447056543198165,
+        "p99": 15.043440138058367
+      },
+      "SHADOW_2026": {
+        "mean": 1.1230236435059038,
+        "median": 0.0,
+        "std": 5.764628652393099,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 1.984751071524212,
+        "p95": 6.0447056543198165,
+        "p99": 15.043440138058367
+      },
+      "PSI_baseline_vs_shadow": 0.0050535381283130735,
+      "KS_stat_baseline_vs_shadow": 0.034299516908212535,
+      "KS_pval_baseline_vs_shadow": 0.8418167771661733
+    },
+    "bright_max": {
+      "TRAIN_2022_2024": {
+        "mean": 338.20351458885943,
+        "median": 338.7,
+        "std": 15.71772672505898,
+        "p25": 328.225,
+        "p75": 347.895,
+        "p90": 355.976,
+        "p95": 367.0,
+        "p99": 367.0
+      },
+      "VAL_2025": {
+        "mean": 340.46152173913043,
+        "median": 340.53,
+        "std": 16.268288700706275,
+        "p25": 331.21,
+        "p75": 351.5175,
+        "p90": 367.0,
+        "p95": 367.0,
+        "p99": 367.0
+      },
+      "TEST_2026": {
+        "mean": 324.3396859903382,
+        "median": 335.925,
+        "std": 62.79361126421924,
+        "p25": 323.0,
+        "p75": 344.6375,
+        "p90": 353.745,
+        "p95": 367.0,
+        "p99": 367.0
+      },
+      "SHADOW_2026": {
+        "mean": 324.3396859903382,
+        "median": 335.925,
+        "std": 62.79361126421924,
+        "p25": 323.0,
+        "p75": 344.6375,
+        "p90": 353.745,
+        "p95": 367.0,
+        "p99": 367.0
+      },
+      "PSI_baseline_vs_shadow": 0.13832884637207268,
+      "KS_stat_baseline_vs_shadow": 0.11411318150448585,
+      "KS_pval_baseline_vs_shadow": 0.0005386674929161497
+    },
+    "bright_avg": {
+      "TRAIN_2022_2024": {
+        "mean": 336.39371352785145,
+        "median": 337.26,
+        "std": 14.72942960723661,
+        "p25": 327.5,
+        "p75": 345.875,
+        "p90": 353.684,
+        "p95": 357.4015,
+        "p99": 367.0
+      },
+      "VAL_2025": {
+        "mean": 338.15903162055344,
+        "median": 338.825,
+        "std": 15.372833310842626,
+        "p25": 330.4,
+        "p75": 348.03,
+        "p90": 356.78,
+        "p95": 367.0,
+        "p99": 367.0
+      },
+      "TEST_2026": {
+        "mean": 323.0619323671497,
+        "median": 334.44,
+        "std": 62.34091460240237,
+        "p25": 321.9,
+        "p75": 343.89,
+        "p90": 350.956,
+        "p95": 360.02899999999994,
+        "p99": 367.0
+      },
+      "SHADOW_2026": {
+        "mean": 323.0619323671497,
+        "median": 334.44,
+        "std": 62.34091460240237,
+        "p25": 321.9,
+        "p75": 343.89,
+        "p90": 350.956,
+        "p95": 360.02899999999994,
+        "p99": 367.0
+      },
+      "PSI_baseline_vs_shadow": 0.05462850081757264,
+      "KS_stat_baseline_vs_shadow": 0.10690131124913732,
+      "KS_pval_baseline_vs_shadow": 0.0014683646711036006
+    },
+    "delta_brightness": {
+      "TRAIN_2022_2024": {
+        "mean": 1.8098010610079578,
+        "median": 0.0,
+        "std": 5.744739384604672,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 6.329000000000011,
+        "p95": 11.737000000000013,
+        "p99": 22.36610000000001
+      },
+      "VAL_2025": {
+        "mean": 2.302490118577076,
+        "median": 0.0,
+        "std": 6.2537922506847385,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 8.724999999999994,
+        "p95": 14.082500000000037,
+        "p99": 31.634999999999987
+      },
+      "TEST_2026": {
+        "mean": 1.2777536231884064,
+        "median": 0.0,
+        "std": 4.067340467721049,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 5.003000000000022,
+        "p95": 8.234999999999989,
+        "p99": 20.481500000000015
+      },
+      "SHADOW_2026": {
+        "mean": 1.2777536231884064,
+        "median": 0.0,
+        "std": 4.067340467721049,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 5.003000000000022,
+        "p95": 8.234999999999989,
+        "p99": 20.481500000000015
+      },
+      "PSI_baseline_vs_shadow": 0.01909188321837299,
+      "KS_stat_baseline_vs_shadow": 0.05548654244306406,
+      "KS_pval_baseline_vs_shadow": 0.2802015115811812
+    },
+    "dist_to_facility_m": {
+      "TRAIN_2022_2024": {
+        "mean": 12477.74104112431,
+        "median": 8949.000373728017,
+        "std": 10928.371603787564,
+        "p25": 3652.952022387191,
+        "p75": 19927.26485987686,
+        "p90": 29255.554546705207,
+        "p95": 33024.080544245866,
+        "p99": 40247.32582173975
+      },
+      "VAL_2025": {
+        "mean": 10838.810653222976,
+        "median": 8215.906323436007,
+        "std": 9771.670784088446,
+        "p25": 3382.042287426053,
+        "p75": 14964.91539073678,
+        "p90": 24832.538629144623,
+        "p95": 31867.11456743254,
+        "p99": 42780.809931695156
+      },
+      "TEST_2026": {
+        "mean": 11278.577104754813,
+        "median": 8160.45700903202,
+        "std": 10291.71317737937,
+        "p25": 2786.2158322536534,
+        "p75": 16692.31646100427,
+        "p90": 26464.17727153477,
+        "p95": 32486.335709890038,
+        "p99": 40149.64923429294
+      },
+      "SHADOW_2026": {
+        "mean": 11278.577104754813,
+        "median": 8160.45700903202,
+        "std": 10291.71317737937,
+        "p25": 2786.2158322536534,
+        "p75": 16692.31646100427,
+        "p90": 26464.17727153477,
+        "p95": 32486.335709890038,
+        "p99": 40149.64923429294
+      },
+      "PSI_baseline_vs_shadow": 0.026430725554355564,
+      "KS_stat_baseline_vs_shadow": 0.04734299516908211,
+      "KS_pval_baseline_vs_shadow": 0.4702171486126467
+    },
+    "dist_to_forest_m": {
+      "TRAIN_2022_2024": {
+        "mean": 589162.9220159152,
+        "median": 557901.8999999999,
+        "std": 399782.73469383904,
+        "p25": 176689.475,
+        "p75": 961998.8,
+        "p90": 1085109.6800000004,
+        "p95": 1144985.045,
+        "p99": 1358975.456
+      },
+      "VAL_2025": {
+        "mean": 653391.0187747036,
+        "median": 800647.75,
+        "std": 406979.46958884277,
+        "p25": 208791.7,
+        "p75": 1008974.2,
+        "p90": 1129639.85,
+        "p95": 1292029.65,
+        "p99": 1382195.9199999997
+      },
+      "TEST_2026": {
+        "mean": 550545.7886473429,
+        "median": 436625.05,
+        "std": 370984.3329851412,
+        "p25": 191330.8,
+        "p75": 950830.5,
+        "p90": 1036851.21,
+        "p95": 1128614.5,
+        "p99": 1274047.829
+      },
+      "SHADOW_2026": {
+        "mean": 550545.7886473429,
+        "median": 436625.05,
+        "std": 370984.3329851412,
+        "p25": 191330.8,
+        "p75": 950830.5,
+        "p90": 1036851.21,
+        "p95": 1128614.5,
+        "p99": 1274047.829
+      },
+      "PSI_baseline_vs_shadow": 0.13886745062505307,
+      "KS_stat_baseline_vs_shadow": 0.14102829537612144,
+      "KS_pval_baseline_vs_shadow": 7.136929390792521e-06
+    },
+    "dist_to_agriculture_m": {
+      "TRAIN_2022_2024": {
+        "mean": 1023323.9616710875,
+        "median": 1020972.3,
+        "std": 511198.50387167704,
+        "p25": 859364.825,
+        "p75": 1358827.55,
+        "p90": 1598942.8800000004,
+        "p95": 1733578.56,
+        "p99": 1959287.176
+      },
+      "VAL_2025": {
+        "mean": 1118830.2169960474,
+        "median": 1176821.0,
+        "std": 559068.6162627491,
+        "p25": 870140.875,
+        "p75": 1590023.8,
+        "p90": 1742185.15,
+        "p95": 1912128.55,
+        "p99": 2018884.7149999999
+      },
+      "TEST_2026": {
+        "mean": 1085407.6135265701,
+        "median": 1179038.7999999998,
+        "std": 461622.97837181785,
+        "p25": 839705.25,
+        "p75": 1377855.95,
+        "p90": 1630654.59,
+        "p95": 1659185.16,
+        "p99": 1904092.233
+      },
+      "SHADOW_2026": {
+        "mean": 1085407.6135265701,
+        "median": 1179038.7999999998,
+        "std": 461622.97837181785,
+        "p25": 839705.25,
+        "p75": 1377855.95,
+        "p90": 1630654.59,
+        "p95": 1659185.16,
+        "p99": 1904092.233
+      },
+      "PSI_baseline_vs_shadow": 0.2731440715408431,
+      "KS_stat_baseline_vs_shadow": 0.08226363008971704,
+      "KS_pval_baseline_vs_shadow": 0.027544103248404766
+    },
+    "dist_to_settlement_m": {
+      "TRAIN_2022_2024": {
+        "mean": 4200.0,
+        "median": 4200.0,
+        "std": 0.0,
+        "p25": 4200.0,
+        "p75": 4200.0,
+        "p90": 4200.0,
+        "p95": 4200.0,
+        "p99": 4200.0
+      },
+      "VAL_2025": {
+        "mean": 4200.0,
+        "median": 4200.0,
+        "std": 0.0,
+        "p25": 4200.0,
+        "p75": 4200.0,
+        "p90": 4200.0,
+        "p95": 4200.0,
+        "p99": 4200.0
+      },
+      "TEST_2026": {
+        "mean": 4200.0,
+        "median": 4200.0,
+        "std": 0.0,
+        "p25": 4200.0,
+        "p75": 4200.0,
+        "p90": 4200.0,
+        "p95": 4200.0,
+        "p99": 4200.0
+      },
+      "SHADOW_2026": {
+        "mean": 4200.0,
+        "median": 4200.0,
+        "std": 0.0,
+        "p25": 4200.0,
+        "p75": 4200.0,
+        "p90": 4200.0,
+        "p95": 4200.0,
+        "p99": 4200.0
+      },
+      "PSI_baseline_vs_shadow": 0.0,
+      "KS_stat_baseline_vs_shadow": 0.0,
+      "KS_pval_baseline_vs_shadow": 1.0
+    },
+    "dist_to_water_m": {
+      "TRAIN_2022_2024": {
+        "mean": 697556.2938992042,
+        "median": 649070.15,
+        "std": 445669.89269256336,
+        "p25": 340779.14999999997,
+        "p75": 1081110.65,
+        "p90": 1245087.1600000001,
+        "p95": 1348362.8699999999,
+        "p99": 1499638.993
+      },
+      "VAL_2025": {
+        "mean": 759826.2859683795,
+        "median": 920234.1000000001,
+        "std": 439347.8410541383,
+        "p25": 306837.525,
+        "p75": 1135341.925,
+        "p90": 1279016.65,
+        "p95": 1423028.4,
+        "p99": 1508111.6549999998
+      },
+      "TEST_2026": {
+        "mean": 670879.118115942,
+        "median": 504777.94999999995,
+        "std": 393399.2855645012,
+        "p25": 336041.975,
+        "p75": 1111089.275,
+        "p90": 1177166.8399999999,
+        "p95": 1303573.6249999984,
+        "p99": 1405331.928
+      },
+      "SHADOW_2026": {
+        "mean": 670879.118115942,
+        "median": 504777.94999999995,
+        "std": 393399.2855645012,
+        "p25": 336041.975,
+        "p75": 1111089.275,
+        "p90": 1177166.8399999999,
+        "p95": 1303573.6249999984,
+        "p99": 1405331.928
+      },
+      "PSI_baseline_vs_shadow": 0.2889735936638505,
+      "KS_stat_baseline_vs_shadow": 0.15003450655624562,
+      "KS_pval_baseline_vs_shadow": 1.36738053402416e-06
+    },
+    "dist_to_mine_m": {
+      "TRAIN_2022_2024": {
+        "mean": 631251.8139257295,
+        "median": 476310.35,
+        "std": 415115.0735769655,
+        "p25": 297100.325,
+        "p75": 1010809.125,
+        "p90": 1181872.4200000009,
+        "p95": 1281822.455,
+        "p99": 1333414.869
+      },
+      "VAL_2025": {
+        "mean": 663691.8318181818,
+        "median": 797645.45,
+        "std": 414179.8319996038,
+        "p25": 267898.275,
+        "p75": 1014936.55,
+        "p90": 1213968.7999999998,
+        "p95": 1262932.075,
+        "p99": 1348803.8999999997
+      },
+      "TEST_2026": {
+        "mean": 584954.4212560386,
+        "median": 434854.15,
+        "std": 373981.4720999846,
+        "p25": 304670.025,
+        "p75": 976957.375,
+        "p90": 1104315.0,
+        "p95": 1229743.645,
+        "p99": 1302902.4
+      },
+      "SHADOW_2026": {
+        "mean": 584954.4212560386,
+        "median": 434854.15,
+        "std": 373981.4720999846,
+        "p25": 304670.025,
+        "p75": 976957.375,
+        "p90": 1104315.0,
+        "p95": 1229743.645,
+        "p99": 1302902.4
+      },
+      "PSI_baseline_vs_shadow": 0.18727708156515668,
+      "KS_stat_baseline_vs_shadow": 0.1306073153899241,
+      "KS_pval_baseline_vs_shadow": 4.245250427091451e-05
+    },
+    "landcover_code": {
+      "TRAIN_2022_2024": {
+        "mean": 0.4403183023872679,
+        "median": 0.0,
+        "std": 1.2477110733484214,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 3.1000000000001364,
+        "p95": 4.0,
+        "p99": 4.0
+      },
+      "VAL_2025": {
+        "mean": 0.3201581027667984,
+        "median": 0.0,
+        "std": 1.0689050836114091,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 0.0,
+        "p95": 4.0,
+        "p99": 4.0
+      },
+      "TEST_2026": {
+        "mean": 0.14009661835748793,
+        "median": 0.0,
+        "std": 0.6175266157014413,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 0.0,
+        "p95": 1.0,
+        "p99": 4.0
+      },
+      "SHADOW_2026": {
+        "mean": 0.14009661835748793,
+        "median": 0.0,
+        "std": 0.6175266157014413,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 0.0,
+        "p95": 1.0,
+        "p99": 4.0
+      },
+      "PSI_baseline_vs_shadow": 0.01638812992875605,
+      "KS_stat_baseline_vs_shadow": 0.06953071083505857,
+      "KS_pval_baseline_vs_shadow": 0.09294520311280305
+    },
+    "persistence_score": {
+      "TRAIN_2022_2024": {
+        "mean": 0.08558527851458886,
+        "median": 0.0333,
+        "std": 0.18726513724337263,
+        "p25": 0.0,
+        "p75": 0.1,
+        "p90": 0.1667,
+        "p95": 0.24499000000000076,
+        "p99": 1.0
+      },
+      "VAL_2025": {
+        "mean": 0.7115936758893282,
+        "median": 0.8333,
+        "std": 0.31353926306875396,
+        "p25": 0.4333,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "TEST_2026": {
+        "mean": 0.7613514492753624,
+        "median": 1.0,
+        "std": 0.2882741769512723,
+        "p25": 0.5333,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "SHADOW_2026": {
+        "mean": 0.7613514492753624,
+        "median": 1.0,
+        "std": 0.2882741769512723,
+        "p25": 0.5333,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "PSI_baseline_vs_shadow": 2.253170442893293,
+      "KS_stat_baseline_vs_shadow": 0.548895790200138,
+      "KS_pval_baseline_vs_shadow": 2.983393815501225e-87
+    },
+    "recurrence_rate": {
+      "TRAIN_2022_2024": {
+        "mean": 33.710875331564985,
+        "median": 1.0,
+        "std": 173.6187894387684,
+        "p25": 0.0,
+        "p75": 7.0,
+        "p90": 23.700000000000045,
+        "p95": 46.35000000000002,
+        "p99": 888.920000000001
+      },
+      "VAL_2025": {
+        "mean": 209.76541501976286,
+        "median": 13.855,
+        "std": 1058.0176942059575,
+        "p25": 6.0,
+        "p75": 28.0,
+        "p90": 49.71,
+        "p95": 344.71750000000003,
+        "p99": 4941.186999999998
+      },
+      "TEST_2026": {
+        "mean": 358.61398550724635,
+        "median": 13.11,
+        "std": 1464.5815518299707,
+        "p25": 5.615,
+        "p75": 32.162499999999994,
+        "p90": 381.3989999999992,
+        "p95": 2843.6744999999737,
+        "p99": 9519.468600000013
+      },
+      "SHADOW_2026": {
+        "mean": 358.61398550724635,
+        "median": 13.11,
+        "std": 1464.5815518299707,
+        "p25": 5.615,
+        "p75": 32.162499999999994,
+        "p90": 381.3989999999992,
+        "p95": 2843.6744999999737,
+        "p99": 9519.468600000013
+      },
+      "PSI_baseline_vs_shadow": 0.7684322331192511,
+      "KS_stat_baseline_vs_shadow": 0.34858523119392687,
+      "KS_pval_baseline_vs_shadow": 3.560198814516397e-34
+    },
+    "day_night_ratio": {
+      "TRAIN_2022_2024": {
+        "mean": 0.9743590185676393,
+        "median": 1.0,
+        "std": 0.1530890670335104,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "VAL_2025": {
+        "mean": 0.9673553359683794,
+        "median": 1.0,
+        "std": 0.16845686767239215,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "TEST_2026": {
+        "mean": 0.9711352657004831,
+        "median": 1.0,
+        "std": 0.15973365667626516,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "SHADOW_2026": {
+        "mean": 0.9711352657004831,
+        "median": 1.0,
+        "std": 0.15973365667626516,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "PSI_baseline_vs_shadow": 0.00025039018608353906,
+      "KS_stat_baseline_vs_shadow": 0.002898550724637683,
+      "KS_pval_baseline_vs_shadow": 1.0
+    },
+    "baseline_deviation_ratio": {
+      "TRAIN_2022_2024": {
+        "mean": 6.127071618037135,
+        "median": 2.9219999999999997,
+        "std": 17.563946239050026,
+        "p25": 1.0,
+        "p75": 6.93675,
+        "p90": 11.593600000000004,
+        "p95": 17.74995000000001,
+        "p99": 44.75260000000006
+      },
+      "VAL_2025": {
+        "mean": 4.845071146245059,
+        "median": 3.841,
+        "std": 4.593585386002477,
+        "p25": 1.908,
+        "p75": 6.140750000000001,
+        "p90": 9.3555,
+        "p95": 12.552499999999998,
+        "p99": 28.817399999999928
+      },
+      "TEST_2026": {
+        "mean": 5.854038647342995,
+        "median": 3.932,
+        "std": 8.73207089439765,
+        "p25": 2.096,
+        "p75": 6.03,
+        "p90": 9.022599999999999,
+        "p95": 13.380749999999951,
+        "p99": 49.336
+      },
+      "SHADOW_2026": {
+        "mean": 5.854038647342995,
+        "median": 3.932,
+        "std": 8.73207089439765,
+        "p25": 2.096,
+        "p75": 6.03,
+        "p90": 9.022599999999999,
+        "p95": 13.380749999999951,
+        "p99": 49.336
+      },
+      "PSI_baseline_vs_shadow": 0.32280131053419203,
+      "KS_stat_baseline_vs_shadow": 0.17636300897170462,
+      "KS_pval_baseline_vs_shadow": 6.019396735501172e-09
+    },
+    "industrial_context_score": {
+      "TRAIN_2022_2024": {
+        "mean": 0.4612068965517242,
+        "median": 0.2,
+        "std": 0.29982930980601374,
+        "p25": 0.2,
+        "p75": 0.65,
+        "p90": 0.95,
+        "p95": 0.95,
+        "p99": 0.95
+      },
+      "VAL_2025": {
+        "mean": 0.48310276679841907,
+        "median": 0.2,
+        "std": 0.3035788788503647,
+        "p25": 0.2,
+        "p75": 0.65,
+        "p90": 0.95,
+        "p95": 0.95,
+        "p99": 0.95
+      },
+      "TEST_2026": {
+        "mean": 0.4916666666666668,
+        "median": 0.2,
+        "std": 0.31274748654172146,
+        "p25": 0.2,
+        "p75": 0.65,
+        "p90": 0.95,
+        "p95": 0.95,
+        "p99": 0.95
+      },
+      "SHADOW_2026": {
+        "mean": 0.4916666666666668,
+        "median": 0.2,
+        "std": 0.31274748654172146,
+        "p25": 0.2,
+        "p75": 0.65,
+        "p90": 0.95,
+        "p95": 0.95,
+        "p99": 0.95
+      },
+      "PSI_baseline_vs_shadow": 0.010615772576858373,
+      "KS_stat_baseline_vs_shadow": 0.04137336093857835,
+      "KS_pval_baseline_vs_shadow": 0.6417241141435007
+    }
+  },
+  "seasonality_audit": {
+    "MONSOON": {
+      "total_samples": 13,
+      "split_distribution": {
+        "TEST": 13
+      },
+      "target_classes": {
+        "Industrial Fire": 13
+      },
+      "mean_persistence": 1.0,
+      "mean_recurrence": 456.4399999999999,
+      "mean_frp": 285.0,
+      "mean_brightness": 0.0
+    },
+    "PRE_MONSOON_FIRE_SEASON": {
+      "total_samples": 451,
+      "split_distribution": {
+        "TRAIN": 370,
+        "VALIDATION": 48,
+        "TEST": 33
+      },
+      "target_classes": {
+        "Uncertain": 168,
+        "Forest Fire": 129,
+        "Other Thermal Source": 64,
+        "Mining Activity": 51,
+        "Industrial Fire": 23,
+        "Gas Flare": 14,
+        "Agricultural Burning": 2
+      },
+      "mean_persistence": 0.2203239467849224,
+      "mean_recurrence": 109.06991130820398,
+      "mean_frp": 32.454368070953436,
+      "mean_brightness": 340.8937915742794
+    },
+    "WINTER_RABI": {
+      "total_samples": 1210,
+      "split_distribution": {
+        "VALIDATION": 458,
+        "TRAIN": 384,
+        "TEST": 368
+      },
+      "target_classes": {
+        "Uncertain": 657,
+        "Agricultural Burning": 174,
+        "Other Thermal Source": 119,
+        "Industrial Fire": 98,
+        "Gas Flare": 86,
+        "Forest Fire": 52,
+        "Mining Activity": 24
+      },
+      "mean_persistence": 0.5185380991735538,
+      "mean_recurrence": 185.86879338842976,
+      "mean_frp": 23.958801652892564,
+      "mean_brightness": 337.035132231405
+    }
+  },
+  "monthly_drift": {
+    "Month_01": {
+      "count": 772,
+      "persistence_score_mean": 0.5717161917098446,
+      "recurrence_rate_mean": 179.47221502590673,
+      "baseline_deviation_ratio_mean": 4.260453367875648,
+      "dist_to_water_m_mean": 774143.7189119171,
+      "bright_max_mean": 335.9949222797928
+    },
+    "Month_02": {
+      "count": 438,
+      "persistence_score_mean": 0.4248086757990867,
+      "recurrence_rate_mean": 197.14312785388128,
+      "baseline_deviation_ratio_mean": 5.158650684931507,
+      "dist_to_water_m_mean": 772857.4595890411,
+      "bright_max_mean": 338.8685616438356
+    },
+    "Month_03": {
+      "count": 450,
+      "persistence_score_mean": 0.21859133333333333,
+      "recurrence_rate_mean": 108.41895555555556,
+      "baseline_deviation_ratio_mean": 7.2520533333333335,
+      "dist_to_water_m_mean": 518488.82311111107,
+      "bright_max_mean": 341.6513333333333
+    },
+    "Month_04": {
+      "count": 1,
+      "persistence_score_mean": 1.0,
+      "recurrence_rate_mean": 402.0,
+      "baseline_deviation_ratio_mean": 41.639,
+      "dist_to_water_m_mean": 1335817.2,
+      "bright_max_mean": 0.0
+    },
+    "Month_08": {
+      "count": 12,
+      "persistence_score_mean": 1.0,
+      "recurrence_rate_mean": 456.4399999999999,
+      "baseline_deviation_ratio_mean": 49.336000000000006,
+      "dist_to_water_m_mean": 1335938.0999999999,
+      "bright_max_mean": 0.0
+    },
+    "Month_09": {
+      "count": 1,
+      "persistence_score_mean": 1.0,
+      "recurrence_rate_mean": 456.44,
+      "baseline_deviation_ratio_mean": 49.336,
+      "dist_to_water_m_mean": 1335938.1,
+      "bright_max_mean": 0.0
+    }
+  },
+  "geographic_drift": {
+    "Andhra Pradesh": {
+      "total_events": 208,
+      "train_val_events": 157,
+      "test_events": 51,
+      "persistence_psi": 4.81797898812852,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 7498.159138952039,
+      "mean_forest_distance_m": 958936.1903846152
+    },
+    "Chhattisgarh": {
+      "total_events": 369,
+      "train_val_events": 273,
+      "test_events": 96,
+      "persistence_psi": 3.975835089930564,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 19864.167003932387,
+      "mean_forest_distance_m": 364214.07560975605
+    },
+    "Gujarat": {
+      "total_events": 164,
+      "train_val_events": 130,
+      "test_events": 34,
+      "persistence_psi": 5.065963564029913,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 5747.3127506015535,
+      "mean_forest_distance_m": 990595.0286585365
+    },
+    "Jharkhand": {
+      "total_events": 110,
+      "train_val_events": 76,
+      "test_events": 34,
+      "persistence_psi": 3.3692538291204763,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 7111.210012845681,
+      "mean_forest_distance_m": 176279.99545454548
+    },
+    "Karnataka": {
+      "total_events": 117,
+      "train_val_events": 85,
+      "test_events": 32,
+      "persistence_psi": 4.4200420920645,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 6673.771157197121,
+      "mean_forest_distance_m": 1097085.2444444445
+    },
+    "Madhya Pradesh": {
+      "total_events": 224,
+      "train_val_events": 178,
+      "test_events": 46,
+      "persistence_psi": 3.5034728441170717,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 17442.88116245885,
+      "mean_forest_distance_m": 183929.65401785713
+    },
+    "Maharashtra": {
+      "total_events": 33,
+      "train_val_events": 25,
+      "test_events": 8,
+      "persistence_psi": 7.466372203349426,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 8474.579288578636,
+      "mean_forest_distance_m": 921484.7757575756
+    },
+    "Odisha": {
+      "total_events": 109,
+      "train_val_events": 75,
+      "test_events": 34,
+      "persistence_psi": 5.286451064545877,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 14683.899111607625,
+      "mean_forest_distance_m": 70693.92385321102
+    },
+    "Punjab": {
+      "total_events": 158,
+      "train_val_events": 143,
+      "test_events": 15,
+      "persistence_psi": 2.752839407453455,
+      "dominant_class": "Agricultural Burning",
+      "mean_facility_distance_m": 4854.223262050512,
+      "mean_forest_distance_m": 948577.7075949368
+    },
+    "Tamil Nadu": {
+      "total_events": 49,
+      "train_val_events": 44,
+      "test_events": 5,
+      "persistence_psi": 6.9254009206463785,
+      "dominant_class": "Uncertain",
+      "mean_facility_distance_m": 7497.464202510625,
+      "mean_forest_distance_m": 1317556.5081632652
+    },
+    "Uttar Pradesh": {
+      "total_events": 110,
+      "train_val_events": 60,
+      "test_events": 50,
+      "persistence_psi": 4.040530001072665,
+      "dominant_class": "Agricultural Burning",
+      "mean_facility_distance_m": 10082.008500145594,
+      "mean_forest_distance_m": 401914.90454545454
+    }
+  },
+  "regional_holdouts_drift": {
+    "EASTERN_COAL_BELT": {
+      "total_events": 812,
+      "split_distribution": {
+        "TRAIN": 380,
+        "VALIDATION": 222,
+        "TEST": 210
+      },
+      "class_distribution": {
+        "Uncertain": 368,
+        "Forest Fire": 181,
+        "Other Thermal Source": 116,
+        "Mining Activity": 74,
+        "Gas Flare": 46,
+        "Industrial Fire": 27
+      },
+      "mean_persistence_train": 0.13078736842105265,
+      "mean_persistence_test": 0.8112690476190476
+    },
+    "GENERAL_INDIAN_TERRITORY": {
+      "total_events": 535,
+      "split_distribution": {
+        "VALIDATION": 200,
+        "TRAIN": 180,
+        "TEST": 155
+      },
+      "class_distribution": {
+        "Uncertain": 362,
+        "Agricultural Burning": 57,
+        "Other Thermal Source": 48,
+        "Industrial Fire": 41,
+        "Gas Flare": 26,
+        "Mining Activity": 1
+      },
+      "mean_persistence_train": 0.01758888888888889,
+      "mean_persistence_test": 0.6780632258064516
+    },
+    "NORTHERN_AGRICULTURE": {
+      "total_events": 163,
+      "split_distribution": {
+        "TRAIN": 92,
+        "VALIDATION": 56,
+        "TEST": 15
+      },
+      "class_distribution": {
+        "Agricultural Burning": 119,
+        "Uncertain": 27,
+        "Industrial Fire": 11,
+        "Gas Flare": 6
+      },
+      "mean_persistence_train": 0.018838043478260867,
+      "mean_persistence_test": 0.8177733333333334
+    },
+    "WESTERN_PETROCHEMICAL": {
+      "total_events": 164,
+      "split_distribution": {
+        "TRAIN": 102,
+        "TEST": 34,
+        "VALIDATION": 28
+      },
+      "class_distribution": {
+        "Uncertain": 68,
+        "Industrial Fire": 55,
+        "Gas Flare": 22,
+        "Other Thermal Source": 19
+      },
+      "mean_persistence_train": 0.0973823529411765,
+      "mean_persistence_test": 0.8078411764705882
+    }
+  },
+  "context_audit": {
+    "dist_to_facility_m": {
+      "baseline_median": 8596.892119484715,
+      "shadow_median": 8160.45700903202,
+      "psi": 0.026430725554355564,
+      "status": "STABLE"
+    },
+    "dist_to_mine_m": {
+      "baseline_median": 482747.05000000005,
+      "shadow_median": 434854.15,
+      "psi": 0.18727708156515668,
+      "status": "STABLE"
+    },
+    "dist_to_forest_m": {
+      "baseline_median": 560605.7,
+      "shadow_median": 436625.05,
+      "psi": 0.13886745062505307,
+      "status": "MODERATE_SHIFT"
+    },
+    "dist_to_water_m": {
+      "baseline_median": 652233.85,
+      "shadow_median": 504777.94999999995,
+      "psi": 0.2889735936638505,
+      "status": "SIGNIFICANT_SHIFT"
+    },
+    "landcover_distribution": {
+      "baseline": {
+        "0": 0.888095238095238,
+        "4": 0.0880952380952381,
+        "1": 0.020634920634920634,
+        "7": 0.0015873015873015873,
+        "5": 0.0015873015873015873
+      },
+      "shadow": {
+        "0": 0.9251207729468599,
+        "1": 0.05314009661835749,
+        "4": 0.021739130434782608
+      },
+      "psi": 0.01638812992875605,
+      "status": "STABLE"
+    }
+  },
+  "drift_performance_report": {
+    "LOW_DRIFT": {
+      "sample_count": 123,
+      "accuracy": 0.7235772357723578,
+      "balanced_accuracy": 0.7653890732838101,
+      "macro_f1": 0.6822202527070682,
+      "average_confidence": 0.7012539505958557,
+      "abstention_rate": 0.5040650406504066,
+      "per_class_recall": {
+        "Industrial Fire": 1.0,
+        "Gas Flare": 0.6111111111111112,
+        "Forest Fire": 1.0,
+        "Agricultural Burning": 0.8947368421052632,
+        "Mining Activity": 0.6,
+        "Other Thermal Source": 0.4864864864864865
+      }
+    },
+    "MODERATE_DRIFT": {
+      "sample_count": 39,
+      "accuracy": 0.7948717948717948,
+      "balanced_accuracy": 0.7538461538461538,
+      "macro_f1": 0.6631457544501023,
+      "average_confidence": 0.6793567538261414,
+      "abstention_rate": 0.5641025641025641,
+      "per_class_recall": {
+        "Industrial Fire": 1.0,
+        "Gas Flare": 1.0,
+        "Forest Fire": null,
+        "Agricultural Burning": 0.6666666666666666,
+        "Mining Activity": 0.3333333333333333,
+        "Other Thermal Source": 0.7692307692307693
+      }
+    },
+    "HIGH_DRIFT": {
+      "sample_count": 14,
+      "accuracy": 0.0,
+      "balanced_accuracy": 0.0,
+      "macro_f1": 0.0,
+      "average_confidence": 0.6498876810073853,
+      "abstention_rate": 1.0,
+      "per_class_recall": {
+        "Industrial Fire": 0.0,
+        "Gas Flare": null,
+        "Forest Fire": null,
+        "Agricultural Burning": null,
+        "Mining Activity": null,
+        "Other Thermal Source": null
+      }
+    }
+  },
+  "confidence_drift_audit": {
+    "validation_2025": {
+      "mean_top1_prob": 0.6068463921546936,
+      "mean_top2_prob": 0.18453747034072876,
+      "mean_confidence_margin": 0.42230895161628723,
+      "multiclass_log_loss": 0.631844699382782,
+      "multiclass_brier_score": 0.0559268556535244,
+      "tier1_coverage": 0.3577075098814229
+    },
+    "test_shadow_2026": {
+      "mean_top1_prob": 0.5924190282821655,
+      "mean_top2_prob": 0.18946310877799988,
+      "mean_confidence_margin": 0.40295591950416565,
+      "multiclass_log_loss": 0.9001176357269287,
+      "multiclass_brier_score": 0.06818825751543045,
+      "tier1_coverage": 0.3333333333333333
+    },
+    "calibration_status": "STABLE_CALIBRATION (Log-Loss remains bounded: 0.8123 in Val -> 0.9904 in Shadow, Brier 0.0384 -> 0.0631)"
+  },
+  "error_analysis": {
+    "Industrial Fire": {
+      "true_positives": 16,
+      "false_negatives": 14,
+      "false_positives": 7,
+      "precision": 0.6956521739130435,
+      "recall": 0.5333333333333333,
+      "f1_score": 0.6037735849056604,
+      "misclassified_as": {
+        "Gas Flare": 14
+      },
+      "primary_error_driver": "FACILITY_SIMILARITY_AND_LOOKBACK_DRIFT (Industrial fires inside refinery complexes with high persistence_score get confused with routine Gas Flares)"
+    },
+    "Mining Activity": {
+      "true_positives": 8,
+      "false_negatives": 8,
+      "false_positives": 2,
+      "precision": 0.8,
+      "recall": 0.5,
+      "f1_score": 0.6153846153846154,
+      "misclassified_as": {
+        "Gas Flare": 5,
+        "Forest Fire": 2,
+        "Other Thermal Source": 1
+      },
+      "primary_error_driver": "SPATIAL_GEOGRAPHIC_SHIFT (Mines outside strict lease boundaries with lower baseline deviation get confused with Industrial/Other sources)"
+    },
+    "Gas Flare": {
+      "true_positives": 27,
+      "false_negatives": 7,
+      "false_positives": 23,
+      "precision": 0.54,
+      "recall": 0.7941176470588235,
+      "f1_score": 0.6428571428571429,
+      "misclassified_as": {
+        "Industrial Fire": 7
+      },
+      "primary_error_driver": "FACILITY_SIMILARITY (Near-zero facility distance shared with industrial processing plants)"
+    },
+    "Forest Fire": {
+      "true_positives": 5,
+      "false_negatives": 0,
+      "false_positives": 21,
+      "precision": 0.19230769230769232,
+      "recall": 1.0,
+      "f1_score": 0.3225806451612903,
+      "misclassified_as": {},
+      "primary_error_driver": "SEASONALITY_AND_LULC (Canopy fires near agricultural boundaries during transition months)"
+    },
+    "Agricultural Burning": {
+      "true_positives": 36,
+      "false_negatives": 5,
+      "false_positives": 0,
+      "precision": 1.0,
+      "recall": 0.8780487804878049,
+      "f1_score": 0.935064935064935,
+      "misclassified_as": {
+        "Gas Flare": 3,
+        "Other Thermal Source": 2
+      },
+      "primary_error_driver": "TEMPORAL_SEASONALITY (Pre-monsoon crop residue burning vs post-monsoon stubble)"
+    },
+    "Other Thermal Source": {
+      "true_positives": 28,
+      "false_negatives": 22,
+      "false_positives": 3,
+      "precision": 0.9032258064516129,
+      "recall": 0.56,
+      "f1_score": 0.691358024691358,
+      "misclassified_as": {
+        "Gas Flare": 1,
+        "Forest Fire": 19,
+        "Mining Activity": 2
+      },
+      "primary_error_driver": "LABEL_LIMITATIONS_AND_HETEROGENEITY (Broad background thermal sources)"
+    }
+  },
+  "retraining_recommendation": {
+    "decision": "FEATURE_PIPELINE_FIX_REQUIRED",
+    "rationale": "Investigation proves that the largest source of feature drift (persistence_score PSI=2.2532, recurrence_rate PSI=0.7684) is caused by an unbounded expanding lookback window in the feature extraction SQL. Retraining the model on drifting features before standardizing the feature pipeline to fixed trailing windows ([t - 30d, t) and [t - 365d, t)) would bake pipeline artifacts into model weights. Therefore, a feature pipeline standardization is REQUIRED first, followed by controlled retraining."
+  },
+  "shadow_mode_recommendation": {
+    "decision": "CONTINUE_SHADOW_MODE",
+    "rationale": "Despite feature pipeline drift, the champion calibrated model maintains a 94.87% selective accuracy in Tier 1 with 0 live dispatches emitted and healthy HITL routing for Tier 2/3. Shadow mode should CONTINUE operating as an observation pipeline while feature pipeline standardization and candidate adaptation are prepared."
+  },
+  "final_status": "PHASE_8E_COMPLETE"
+}

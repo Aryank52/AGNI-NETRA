@@ -1,0 +1,1103 @@
+{
+  "model_name": "AGNI-NETRA XGBoost Real Classifier Candidate",
+  "version": "xgb-v2.0-real-candidate",
+  "benchmark_version": "rf-v2.0-real-candidate",
+  "dataset_name": "dataset_v3.0-real-authoritative",
+  "dataset_version": "v3.0-real-authoritative",
+  "dataset_sha256": "9d246bedd1f52b3fd223148b6158ad22f310c2e72a06e6093668b5d72212b835",
+  "supervised_sample_count": 849,
+  "target_classes": [
+    "Industrial Fire",
+    "Gas Flare",
+    "Forest Fire",
+    "Agricultural Burning",
+    "Mining Activity",
+    "Other Thermal Source"
+  ],
+  "feature_columns": [
+    "frp_max",
+    "frp_avg",
+    "frp_std",
+    "bright_max",
+    "bright_avg",
+    "delta_brightness",
+    "dist_to_facility_m",
+    "dist_to_forest_m",
+    "dist_to_agriculture_m",
+    "dist_to_settlement_m",
+    "dist_to_water_m",
+    "dist_to_mine_m",
+    "landcover_code",
+    "persistence_score",
+    "recurrence_rate",
+    "day_night_ratio",
+    "baseline_deviation_ratio",
+    "industrial_context_score"
+  ],
+  "class_weights": {
+    "Industrial Fire": 0.824,
+    "Gas Flare": 4.5833,
+    "Forest Fire": 0.4444,
+    "Agricultural Burning": 0.9649,
+    "Mining Activity": 2.0952,
+    "Other Thermal Source": 1.2429
+  },
+  "temporal_splits": {
+    "train": {
+      "period": "2022-01-01 to 2024-12-31",
+      "samples": 440
+    },
+    "validation": {
+      "period": "2025-01-01 to 2025-12-31",
+      "samples": 233
+    },
+    "test": {
+      "period": "2026-01-01 to 2026-12-31",
+      "samples": 176
+    }
+  },
+  "xgb_hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 5,
+    "learning_rate": 0.05,
+    "subsample": 0.85,
+    "colsample_bytree": 0.85,
+    "objective": "multi:softprob",
+    "num_class": 6,
+    "eval_metric": "mlogloss",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "rf_hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 10,
+    "min_samples_split": 4,
+    "min_samples_leaf": 2,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "environment": {
+    "python_version": "3.12.10",
+    "xgboost_version": "3.4.1",
+    "scikit_learn_version": "1.9.0",
+    "shap_version": "0.52.0",
+    "operating_system": "Windows-11-10.0.26200-SP0"
+  },
+  "artifact_hashes": {
+    "xgb_v2_real_candidate.joblib": "55c2b5df638fe1bd9c6b98b09cd1c40d16fa5b234cbad26738b2b64de1b8a503",
+    "rf_v2_real_candidate.joblib": "bb14f061093a9bfdfc026f5b34829e25cbc536b284b4ca3d1675fc8cfadcb4ec",
+    "shap_explainer_v2.joblib": "03604e98db719fcc0e7b12164357cbddcb9a2b9438a8bb000297786411141fac"
+  },
+  "spatial_holdout_evaluation": {
+    "strategy": "GroupKFold by spatial_holdout_region (4 regions)",
+    "folds": [
+      {
+        "fold": 1,
+        "held_out_region": "EASTERN_COAL_BELT",
+        "sample_count": 366,
+        "rf_macro_f1": 0.3758,
+        "xgb_macro_f1": 0.3572
+      },
+      {
+        "fold": 2,
+        "held_out_region": "NORTHERN_AGRICULTURE",
+        "sample_count": 124,
+        "rf_macro_f1": 0.2903,
+        "xgb_macro_f1": 0.3322
+      },
+      {
+        "fold": 3,
+        "held_out_region": "GENERAL_INDIAN_TERRITORY",
+        "sample_count": 112,
+        "rf_macro_f1": 0.4304,
+        "xgb_macro_f1": 0.4899
+      },
+      {
+        "fold": 4,
+        "held_out_region": "WESTERN_PETROCHEMICAL",
+        "sample_count": 71,
+        "rf_macro_f1": 0.4869,
+        "xgb_macro_f1": 0.4801
+      }
+    ],
+    "rf_mean_macro_f1": 0.3959,
+    "rf_std_macro_f1": 0.0725,
+    "xgb_mean_macro_f1": 0.4148,
+    "xgb_std_macro_f1": 0.0708
+  },
+  "xgboost_metrics": {
+    "train": {
+      "split": "TRAIN",
+      "sample_count": 440,
+      "accuracy": 0.9977,
+      "balanced_accuracy": 0.999,
+      "macro_precision": 0.9954,
+      "weighted_precision": 0.9978,
+      "macro_recall": 0.999,
+      "weighted_recall": 0.9977,
+      "macro_f1": 0.9971,
+      "weighted_f1": 0.9977,
+      "roc_auc_ovr": 1.0,
+      "pr_auc_ovr": 1.0,
+      "brier_score": 0.0058,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 89
+        },
+        "Gas Flare": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 16
+        },
+        "Forest Fire": {
+          "precision": 1.0,
+          "recall": 0.9939,
+          "f1_score": 0.997,
+          "support": 165
+        },
+        "Agricultural Burning": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 76
+        },
+        "Mining Activity": {
+          "precision": 0.9722,
+          "recall": 1.0,
+          "f1_score": 0.9859,
+          "support": 35
+        },
+        "Other Thermal Source": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 59
+        }
+      },
+      "confusion_matrix": [
+        [
+          89,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          16,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          164,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          76,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          35,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          59
+        ]
+      ]
+    },
+    "validation": {
+      "split": "VALIDATION",
+      "sample_count": 233,
+      "accuracy": 0.6996,
+      "balanced_accuracy": 0.7318,
+      "macro_precision": 0.6956,
+      "weighted_precision": 0.8302,
+      "macro_recall": 0.7318,
+      "weighted_recall": 0.6996,
+      "macro_f1": 0.6367,
+      "weighted_f1": 0.7263,
+      "roc_auc_ovr": 0.9252,
+      "pr_auc_ovr": 0.766,
+      "brier_score": 0.4582,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 0.3846,
+          "recall": 1.0,
+          "f1_score": 0.5556,
+          "support": 15
+        },
+        "Gas Flare": {
+          "precision": 0.6905,
+          "recall": 0.58,
+          "f1_score": 0.6304,
+          "support": 50
+        },
+        "Forest Fire": {
+          "precision": 0.2564,
+          "recall": 0.9091,
+          "f1_score": 0.4,
+          "support": 11
+        },
+        "Agricultural Burning": {
+          "precision": 1.0,
+          "recall": 0.8644,
+          "f1_score": 0.9273,
+          "support": 59
+        },
+        "Mining Activity": {
+          "precision": 0.9,
+          "recall": 0.375,
+          "f1_score": 0.5294,
+          "support": 24
+        },
+        "Other Thermal Source": {
+          "precision": 0.9423,
+          "recall": 0.6622,
+          "f1_score": 0.7778,
+          "support": 74
+        }
+      },
+      "confusion_matrix": [
+        [
+          15,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          29,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          10,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          6,
+          2,
+          51,
+          0,
+          0
+        ],
+        [
+          0,
+          6,
+          6,
+          0,
+          9,
+          3
+        ],
+        [
+          3,
+          1,
+          21,
+          0,
+          0,
+          49
+        ]
+      ]
+    },
+    "test": {
+      "split": "TEST",
+      "sample_count": 176,
+      "accuracy": 0.6761,
+      "balanced_accuracy": 0.7076,
+      "macro_precision": 0.6975,
+      "weighted_precision": 0.7946,
+      "macro_recall": 0.7076,
+      "weighted_recall": 0.6761,
+      "macro_f1": 0.6327,
+      "weighted_f1": 0.7031,
+      "roc_auc_ovr": 0.8743,
+      "pr_auc_ovr": 0.7568,
+      "brier_score": 0.5209,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 0.6667,
+          "recall": 0.5333,
+          "f1_score": 0.5926,
+          "support": 30
+        },
+        "Gas Flare": {
+          "precision": 0.551,
+          "recall": 0.7941,
+          "f1_score": 0.6506,
+          "support": 34
+        },
+        "Forest Fire": {
+          "precision": 0.1786,
+          "recall": 1.0,
+          "f1_score": 0.303,
+          "support": 5
+        },
+        "Agricultural Burning": {
+          "precision": 1.0,
+          "recall": 0.878,
+          "f1_score": 0.9351,
+          "support": 41
+        },
+        "Mining Activity": {
+          "precision": 0.8889,
+          "recall": 0.5,
+          "f1_score": 0.64,
+          "support": 16
+        },
+        "Other Thermal Source": {
+          "precision": 0.9,
+          "recall": 0.54,
+          "f1_score": 0.675,
+          "support": 50
+        }
+      },
+      "confusion_matrix": [
+        [
+          16,
+          14,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          27,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          36,
+          0,
+          2
+        ],
+        [
+          0,
+          5,
+          2,
+          0,
+          8,
+          1
+        ],
+        [
+          1,
+          0,
+          21,
+          0,
+          1,
+          27
+        ]
+      ]
+    }
+  },
+  "random_forest_metrics": {
+    "train": {
+      "split": "TRAIN",
+      "sample_count": 440,
+      "accuracy": 0.9886,
+      "balanced_accuracy": 0.9931,
+      "macro_precision": 0.9828,
+      "weighted_precision": 0.9892,
+      "macro_recall": 0.9931,
+      "weighted_recall": 0.9886,
+      "macro_f1": 0.9877,
+      "weighted_f1": 0.9887,
+      "roc_auc_ovr": 0.9999,
+      "pr_auc_ovr": 0.9995,
+      "brier_score": 0.0526,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 0.9889,
+          "recall": 1.0,
+          "f1_score": 0.9944,
+          "support": 89
+        },
+        "Gas Flare": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 16
+        },
+        "Forest Fire": {
+          "precision": 1.0,
+          "recall": 0.9758,
+          "f1_score": 0.9877,
+          "support": 165
+        },
+        "Agricultural Burning": {
+          "precision": 0.987,
+          "recall": 1.0,
+          "f1_score": 0.9935,
+          "support": 76
+        },
+        "Mining Activity": {
+          "precision": 0.9211,
+          "recall": 1.0,
+          "f1_score": 0.9589,
+          "support": 35
+        },
+        "Other Thermal Source": {
+          "precision": 1.0,
+          "recall": 0.9831,
+          "f1_score": 0.9915,
+          "support": 59
+        }
+      },
+      "confusion_matrix": [
+        [
+          89,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          16,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          161,
+          1,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          76,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          35,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          58
+        ]
+      ]
+    },
+    "validation": {
+      "split": "VALIDATION",
+      "sample_count": 233,
+      "accuracy": 0.6781,
+      "balanced_accuracy": 0.7172,
+      "macro_precision": 0.6789,
+      "weighted_precision": 0.8113,
+      "macro_recall": 0.7172,
+      "weighted_recall": 0.6781,
+      "macro_f1": 0.6158,
+      "weighted_f1": 0.7021,
+      "roc_auc_ovr": 0.9469,
+      "pr_auc_ovr": 0.7538,
+      "brier_score": 0.4151,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 0.3125,
+          "recall": 1.0,
+          "f1_score": 0.4762,
+          "support": 15
+        },
+        "Gas Flare": {
+          "precision": 0.6667,
+          "recall": 0.4,
+          "f1_score": 0.5,
+          "support": 50
+        },
+        "Forest Fire": {
+          "precision": 0.2778,
+          "recall": 0.9091,
+          "f1_score": 0.4255,
+          "support": 11
+        },
+        "Agricultural Burning": {
+          "precision": 1.0,
+          "recall": 0.9153,
+          "f1_score": 0.9558,
+          "support": 59
+        },
+        "Mining Activity": {
+          "precision": 0.9091,
+          "recall": 0.4167,
+          "f1_score": 0.5714,
+          "support": 24
+        },
+        "Other Thermal Source": {
+          "precision": 0.9074,
+          "recall": 0.6622,
+          "f1_score": 0.7656,
+          "support": 74
+        }
+      },
+      "confusion_matrix": [
+        [
+          15,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          30,
+          20,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          10,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          4,
+          1,
+          54,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          5,
+          0,
+          10,
+          5
+        ],
+        [
+          3,
+          2,
+          20,
+          0,
+          0,
+          49
+        ]
+      ]
+    },
+    "test": {
+      "split": "TEST",
+      "sample_count": 176,
+      "accuracy": 0.5966,
+      "balanced_accuracy": 0.6302,
+      "macro_precision": 0.6209,
+      "weighted_precision": 0.7063,
+      "macro_recall": 0.6302,
+      "weighted_recall": 0.5966,
+      "macro_f1": 0.5541,
+      "weighted_f1": 0.6231,
+      "roc_auc_ovr": 0.927,
+      "pr_auc_ovr": 0.7075,
+      "brier_score": 0.4927,
+      "per_class": {
+        "Industrial Fire": {
+          "precision": 0.4571,
+          "recall": 0.5333,
+          "f1_score": 0.4923,
+          "support": 30
+        },
+        "Gas Flare": {
+          "precision": 0.4324,
+          "recall": 0.4706,
+          "f1_score": 0.4507,
+          "support": 34
+        },
+        "Forest Fire": {
+          "precision": 0.1724,
+          "recall": 1.0,
+          "f1_score": 0.2941,
+          "support": 5
+        },
+        "Agricultural Burning": {
+          "precision": 1.0,
+          "recall": 0.9024,
+          "f1_score": 0.9487,
+          "support": 41
+        },
+        "Mining Activity": {
+          "precision": 0.8571,
+          "recall": 0.375,
+          "f1_score": 0.5217,
+          "support": 16
+        },
+        "Other Thermal Source": {
+          "precision": 0.8065,
+          "recall": 0.5,
+          "f1_score": 0.6173,
+          "support": 50
+        }
+      },
+      "confusion_matrix": [
+        [
+          16,
+          14,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          18,
+          16,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          37,
+          0,
+          2
+        ],
+        [
+          0,
+          4,
+          2,
+          0,
+          6,
+          4
+        ],
+        [
+          1,
+          1,
+          22,
+          0,
+          1,
+          25
+        ]
+      ]
+    }
+  },
+  "feature_importance": {
+    "xgb_mdi_gain": {
+      "persistence_score": 0.1913,
+      "landcover_code": 0.1788,
+      "industrial_context_score": 0.1168,
+      "delta_brightness": 0.1075,
+      "dist_to_facility_m": 0.0647,
+      "dist_to_forest_m": 0.0581,
+      "dist_to_agriculture_m": 0.057,
+      "dist_to_mine_m": 0.0494,
+      "frp_std": 0.0437,
+      "recurrence_rate": 0.0426,
+      "dist_to_water_m": 0.0232,
+      "frp_max": 0.0216,
+      "baseline_deviation_ratio": 0.0137,
+      "frp_avg": 0.0135,
+      "bright_max": 0.0096,
+      "bright_avg": 0.0084,
+      "dist_to_settlement_m": 0.0,
+      "day_night_ratio": 0.0
+    },
+    "rf_mdi_gini": {
+      "dist_to_facility_m": 0.1717,
+      "dist_to_agriculture_m": 0.1164,
+      "industrial_context_score": 0.102,
+      "recurrence_rate": 0.0843,
+      "persistence_score": 0.0842,
+      "dist_to_forest_m": 0.0758,
+      "dist_to_mine_m": 0.0638,
+      "dist_to_water_m": 0.0608,
+      "landcover_code": 0.049,
+      "frp_max": 0.0427,
+      "delta_brightness": 0.0329,
+      "baseline_deviation_ratio": 0.0308,
+      "frp_avg": 0.0291,
+      "frp_std": 0.0234,
+      "bright_max": 0.0182,
+      "bright_avg": 0.0144,
+      "day_night_ratio": 0.0005,
+      "dist_to_settlement_m": 0.0
+    },
+    "permutation_importance": {
+      "frp_max": {
+        "mean": 0.0004,
+        "std": 0.004
+      },
+      "frp_avg": {
+        "mean": -0.0026,
+        "std": 0.0039
+      },
+      "frp_std": {
+        "mean": 0.0069,
+        "std": 0.0061
+      },
+      "bright_max": {
+        "mean": -0.0004,
+        "std": 0.0013
+      },
+      "bright_avg": {
+        "mean": -0.0009,
+        "std": 0.0017
+      },
+      "delta_brightness": {
+        "mean": 0.0052,
+        "std": 0.0032
+      },
+      "dist_to_facility_m": {
+        "mean": 0.2069,
+        "std": 0.0192
+      },
+      "dist_to_forest_m": {
+        "mean": 0.0,
+        "std": 0.0112
+      },
+      "dist_to_agriculture_m": {
+        "mean": 0.1884,
+        "std": 0.0148
+      },
+      "dist_to_settlement_m": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "dist_to_water_m": {
+        "mean": -0.0013,
+        "std": 0.0027
+      },
+      "dist_to_mine_m": {
+        "mean": 0.0129,
+        "std": 0.0077
+      },
+      "landcover_code": {
+        "mean": -0.0021,
+        "std": 0.0021
+      },
+      "persistence_score": {
+        "mean": 0.0464,
+        "std": 0.0166
+      },
+      "recurrence_rate": {
+        "mean": -0.0086,
+        "std": 0.0027
+      },
+      "day_night_ratio": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "baseline_deviation_ratio": {
+        "mean": 0.0026,
+        "std": 0.0044
+      },
+      "industrial_context_score": {
+        "mean": -0.0129,
+        "std": 0.0064
+      }
+    },
+    "shap_global_mean_abs": {
+      "dist_to_facility_m": 1.104,
+      "persistence_score": 0.5227,
+      "dist_to_agriculture_m": 0.4408,
+      "dist_to_forest_m": 0.2617,
+      "dist_to_mine_m": 0.2484,
+      "delta_brightness": 0.1463,
+      "industrial_context_score": 0.1427,
+      "frp_std": 0.1261,
+      "recurrence_rate": 0.1185,
+      "baseline_deviation_ratio": 0.087,
+      "landcover_code": 0.0866,
+      "frp_max": 0.0616,
+      "bright_max": 0.0605,
+      "dist_to_water_m": 0.0591,
+      "frp_avg": 0.0442,
+      "bright_avg": 0.0399,
+      "dist_to_settlement_m": 0.0,
+      "day_night_ratio": 0.0
+    },
+    "shap_top_drivers_per_class": {
+      "Industrial Fire": [
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 1.8719
+        },
+        {
+          "feature": "persistence_score",
+          "mean_abs_shap": 0.753
+        },
+        {
+          "feature": "industrial_context_score",
+          "mean_abs_shap": 0.4757
+        },
+        {
+          "feature": "dist_to_agriculture_m",
+          "mean_abs_shap": 0.1651
+        },
+        {
+          "feature": "baseline_deviation_ratio",
+          "mean_abs_shap": 0.1292
+        }
+      ],
+      "Gas Flare": [
+        {
+          "feature": "persistence_score",
+          "mean_abs_shap": 2.0186
+        },
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 1.2843
+        },
+        {
+          "feature": "recurrence_rate",
+          "mean_abs_shap": 0.2595
+        },
+        {
+          "feature": "frp_std",
+          "mean_abs_shap": 0.105
+        },
+        {
+          "feature": "delta_brightness",
+          "mean_abs_shap": 0.0479
+        }
+      ],
+      "Forest Fire": [
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 2.0415
+        },
+        {
+          "feature": "persistence_score",
+          "mean_abs_shap": 0.3142
+        },
+        {
+          "feature": "dist_to_forest_m",
+          "mean_abs_shap": 0.3128
+        },
+        {
+          "feature": "dist_to_mine_m",
+          "mean_abs_shap": 0.165
+        },
+        {
+          "feature": "industrial_context_score",
+          "mean_abs_shap": 0.1405
+        }
+      ],
+      "Agricultural Burning": [
+        {
+          "feature": "dist_to_agriculture_m",
+          "mean_abs_shap": 1.8109
+        },
+        {
+          "feature": "landcover_code",
+          "mean_abs_shap": 0.4244
+        },
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 0.331
+        },
+        {
+          "feature": "baseline_deviation_ratio",
+          "mean_abs_shap": 0.2089
+        },
+        {
+          "feature": "frp_max",
+          "mean_abs_shap": 0.1756
+        }
+      ],
+      "Mining Activity": [
+        {
+          "feature": "dist_to_mine_m",
+          "mean_abs_shap": 1.1734
+        },
+        {
+          "feature": "dist_to_forest_m",
+          "mean_abs_shap": 1.0612
+        },
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 0.3745
+        },
+        {
+          "feature": "dist_to_agriculture_m",
+          "mean_abs_shap": 0.3246
+        },
+        {
+          "feature": "bright_max",
+          "mean_abs_shap": 0.0966
+        }
+      ],
+      "Other Thermal Source": [
+        {
+          "feature": "delta_brightness",
+          "mean_abs_shap": 0.8076
+        },
+        {
+          "feature": "dist_to_facility_m",
+          "mean_abs_shap": 0.721
+        },
+        {
+          "feature": "frp_std",
+          "mean_abs_shap": 0.6314
+        },
+        {
+          "feature": "dist_to_agriculture_m",
+          "mean_abs_shap": 0.245
+        },
+        {
+          "feature": "bright_max",
+          "mean_abs_shap": 0.1963
+        }
+      ]
+    }
+  },
+  "error_analysis": {
+    "confused_pairs_test": [
+      {
+        "true_class": "Other Thermal Source",
+        "predicted_class": "Forest Fire",
+        "count": 21,
+        "percentage_of_true_class": 42.0
+      },
+      {
+        "true_class": "Industrial Fire",
+        "predicted_class": "Gas Flare",
+        "count": 14,
+        "percentage_of_true_class": 46.7
+      },
+      {
+        "true_class": "Gas Flare",
+        "predicted_class": "Industrial Fire",
+        "count": 7,
+        "percentage_of_true_class": 20.6
+      },
+      {
+        "true_class": "Mining Activity",
+        "predicted_class": "Gas Flare",
+        "count": 5,
+        "percentage_of_true_class": 31.2
+      },
+      {
+        "true_class": "Agricultural Burning",
+        "predicted_class": "Gas Flare",
+        "count": 3,
+        "percentage_of_true_class": 7.3
+      },
+      {
+        "true_class": "Agricultural Burning",
+        "predicted_class": "Other Thermal Source",
+        "count": 2,
+        "percentage_of_true_class": 4.9
+      },
+      {
+        "true_class": "Mining Activity",
+        "predicted_class": "Forest Fire",
+        "count": 2,
+        "percentage_of_true_class": 12.5
+      },
+      {
+        "true_class": "Mining Activity",
+        "predicted_class": "Other Thermal Source",
+        "count": 1,
+        "percentage_of_true_class": 6.2
+      },
+      {
+        "true_class": "Other Thermal Source",
+        "predicted_class": "Industrial Fire",
+        "count": 1,
+        "percentage_of_true_class": 2.0
+      },
+      {
+        "true_class": "Other Thermal Source",
+        "predicted_class": "Mining Activity",
+        "count": 1,
+        "percentage_of_true_class": 2.0
+      }
+    ],
+    "minority_class_summary": {
+      "Mining Activity": {
+        "support_test": 16,
+        "xgb_recall_test": 0.5,
+        "rf_recall_test": 0.375
+      },
+      "Gas Flare": {
+        "support_test": 34,
+        "xgb_recall_test": 0.7941,
+        "rf_recall_test": 0.4706
+      },
+      "Industrial Fire": {
+        "support_test": 30,
+        "xgb_recall_test": 0.5333,
+        "rf_recall_test": 0.5333
+      }
+    }
+  },
+  "trained_at": "2026-09-01T13:20:08.882250+00:00"
+}

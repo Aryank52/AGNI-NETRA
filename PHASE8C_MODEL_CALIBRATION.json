@@ -1,0 +1,291 @@
+{
+  "phase": "PHASE_8C_MODEL_CALIBRATION",
+  "generated_at": "2026-09-01T16:58:37.943747+00:00",
+  "dataset_version": "v3.0-real-authoritative",
+  "dataset_sha256": "9d246bedd1f52b3fd223148b6158ad22f310c2e72a06e6093668b5d72212b835",
+  "models_evaluated": {
+    "primary_candidate": "xgb-v2.0-real-candidate",
+    "benchmark_baseline": "rf-v2.0-real-candidate"
+  },
+  "reproducibility_verified": true,
+  "evaluation_split_sizes": {
+    "train_2022_2024": 440,
+    "validation_2025": 233,
+    "test_2026": 176
+  },
+  "xgboost_test_metrics_raw": {
+    "accuracy": 0.6761,
+    "balanced_accuracy": 0.7076,
+    "macro_f1": 0.6327,
+    "weighted_f1": 0.7031,
+    "macro_precision": 0.6975,
+    "macro_recall": 0.7076,
+    "log_loss": 1.2149,
+    "brier_score": 0.0868,
+    "ece": 0.2345
+  },
+  "xgboost_test_metrics_calibrated": {
+    "accuracy": 0.6818,
+    "balanced_accuracy": 0.7109,
+    "macro_f1": 0.6352,
+    "weighted_f1": 0.7064,
+    "log_loss": 0.9001,
+    "brier_score": 0.0682,
+    "ece": 0.1045
+  },
+  "random_forest_test_metrics": {
+    "accuracy": 0.5966,
+    "balanced_accuracy": 0.6302,
+    "macro_f1": 0.5541,
+    "weighted_f1": 0.6231,
+    "log_loss": 0.8741,
+    "brier_score": 0.0821,
+    "ece": 0.1409
+  },
+  "calibration_comparison": {
+    "temperature_scaling_optimal_T": 1.6489,
+    "raw_log_loss": 1.2149,
+    "platt_log_loss": 0.9001,
+    "temp_log_loss": 0.9753
+  },
+  "confidence_threshold_sweep": [
+    {
+      "confidence_threshold": 0.4,
+      "coverage_rate": 0.9432,
+      "covered_samples": 166,
+      "total_samples": 176,
+      "selective_accuracy": 0.7169,
+      "selective_macro_f1": 0.67
+    },
+    {
+      "confidence_threshold": 0.5,
+      "coverage_rate": 0.8807,
+      "covered_samples": 155,
+      "total_samples": 176,
+      "selective_accuracy": 0.7548,
+      "selective_macro_f1": 0.7111
+    },
+    {
+      "confidence_threshold": 0.6,
+      "coverage_rate": 0.7955,
+      "covered_samples": 140,
+      "total_samples": 176,
+      "selective_accuracy": 0.8071,
+      "selective_macro_f1": 0.797
+    },
+    {
+      "confidence_threshold": 0.65,
+      "coverage_rate": 0.4432,
+      "covered_samples": 78,
+      "total_samples": 176,
+      "selective_accuracy": 0.9487,
+      "selective_macro_f1": 0.8549
+    },
+    {
+      "confidence_threshold": 0.7,
+      "coverage_rate": 0.3864,
+      "covered_samples": 68,
+      "total_samples": 176,
+      "selective_accuracy": 0.9853,
+      "selective_macro_f1": 0.6504
+    },
+    {
+      "confidence_threshold": 0.75,
+      "coverage_rate": 0.375,
+      "covered_samples": 66,
+      "total_samples": 176,
+      "selective_accuracy": 0.9848,
+      "selective_macro_f1": 0.4838
+    },
+    {
+      "confidence_threshold": 0.8,
+      "coverage_rate": 0.3239,
+      "covered_samples": 57,
+      "total_samples": 176,
+      "selective_accuracy": 1.0,
+      "selective_macro_f1": 0.3333
+    }
+  ],
+  "margin_threshold_sweep": [
+    {
+      "margin_threshold": 0.05,
+      "coverage_rate": 0.9716,
+      "covered_samples": 171,
+      "selective_accuracy": 0.7018,
+      "selective_macro_f1": 0.6539
+    },
+    {
+      "margin_threshold": 0.1,
+      "coverage_rate": 0.9432,
+      "covered_samples": 166,
+      "selective_accuracy": 0.7169,
+      "selective_macro_f1": 0.67
+    },
+    {
+      "margin_threshold": 0.15,
+      "coverage_rate": 0.9375,
+      "covered_samples": 165,
+      "selective_accuracy": 0.7212,
+      "selective_macro_f1": 0.6742
+    },
+    {
+      "margin_threshold": 0.2,
+      "coverage_rate": 0.9261,
+      "covered_samples": 163,
+      "selective_accuracy": 0.7301,
+      "selective_macro_f1": 0.6862
+    },
+    {
+      "margin_threshold": 0.25,
+      "coverage_rate": 0.9034,
+      "covered_samples": 159,
+      "selective_accuracy": 0.7421,
+      "selective_macro_f1": 0.7009
+    },
+    {
+      "margin_threshold": 0.3,
+      "coverage_rate": 0.875,
+      "covered_samples": 154,
+      "selective_accuracy": 0.7597,
+      "selective_macro_f1": 0.718
+    },
+    {
+      "margin_threshold": 0.4,
+      "coverage_rate": 0.6875,
+      "covered_samples": 121,
+      "selective_accuracy": 0.8017,
+      "selective_macro_f1": 0.668
+    }
+  ],
+  "cost_sensitive_audit": {
+    "raw_total_risk_penalty": 838.0,
+    "platt_total_risk_penalty": 825.0,
+    "relative_risk_reduction_pct": 1.55
+  },
+  "hitl_policy": {
+    "tier_1_automated": {
+      "policy_rule": "P_top1 >= 0.65 AND delta_top2 >= 0.20",
+      "routing": "Direct Automated Alert Dispatch",
+      "sample_count": 78,
+      "percentage": 44.32,
+      "selective_accuracy": 0.9487,
+      "selective_macro_f1": 0.8549
+    },
+    "tier_2_analyst_review": {
+      "policy_rule": "(0.45 <= P_top1 < 0.65) OR (0.08 <= delta_top2 < 0.20)",
+      "routing": "Operational Duty Officer Verification Queue",
+      "sample_count": 85,
+      "percentage": 48.3,
+      "model_raw_accuracy": 0.5294
+    },
+    "tier_3_active_learning": {
+      "policy_rule": "P_top1 < 0.45 OR delta_top2 < 0.08",
+      "routing": "High-Uncertainty / Active Learning Investigation Radar",
+      "sample_count": 13,
+      "percentage": 7.39,
+      "model_raw_accuracy": 0.0769
+    }
+  },
+  "minority_class_error_analysis": {
+    "Mining Activity": {
+      "support": 16,
+      "true_positives": 8,
+      "false_negatives": 8,
+      "recall": 0.5,
+      "fn_confused_with": {
+        "Other Thermal Source": 1,
+        "Gas Flare": 5,
+        "Forest Fire": 2
+      },
+      "false_positives": 2,
+      "fp_sources": {
+        "Other Thermal Source": 2
+      }
+    },
+    "Industrial Fire": {
+      "support": 30,
+      "true_positives": 16,
+      "false_negatives": 14,
+      "recall": 0.5333,
+      "fn_confused_with": {
+        "Gas Flare": 14
+      },
+      "false_positives": 7,
+      "fp_sources": {
+        "Gas Flare": 7
+      }
+    },
+    "Gas Flare": {
+      "support": 34,
+      "true_positives": 27,
+      "false_negatives": 7,
+      "recall": 0.7941,
+      "fn_confused_with": {
+        "Industrial Fire": 7
+      },
+      "false_positives": 23,
+      "fp_sources": {
+        "Industrial Fire": 14,
+        "Agricultural Burning": 3,
+        "Other Thermal Source": 1,
+        "Mining Activity": 5
+      }
+    }
+  },
+  "shap_analysis": {
+    "top_features": {
+      "dist_to_facility_m": 1.0963,
+      "persistence_score": 0.5803,
+      "dist_to_agriculture_m": 0.4187,
+      "dist_to_mine_m": 0.2599,
+      "dist_to_forest_m": 0.2468,
+      "delta_brightness": 0.1507,
+      "industrial_context_score": 0.1406,
+      "recurrence_rate": 0.1289,
+      "frp_std": 0.1207,
+      "baseline_deviation_ratio": 0.0838,
+      "landcover_code": 0.0748,
+      "frp_max": 0.0676,
+      "dist_to_water_m": 0.0627,
+      "bright_max": 0.0565,
+      "frp_avg": 0.0448,
+      "bright_avg": 0.0355,
+      "dist_to_settlement_m": 0.0,
+      "day_night_ratio": 0.0
+    },
+    "representative_true_positive": {
+      "event_index": 14,
+      "true_label": "Gas Flare",
+      "predicted_label": "Gas Flare",
+      "confidence": 0.6483,
+      "key_features": {
+        "dist_to_facility_m": 499.8158967022622,
+        "persistence_score": 1.0,
+        "frp_max": 3.53,
+        "landcover_code": 0
+      }
+    },
+    "representative_confusion_case": {
+      "event_index": 0,
+      "true_label": "Industrial Fire",
+      "predicted_label": "Gas Flare",
+      "confidence": 0.6499,
+      "explanation": "High facility proximity and moderate persistence mimic industrial flare signatures without elevated peak FRP",
+      "key_features": {
+        "dist_to_facility_m": 181.91402943653523,
+        "persistence_score": 1.0,
+        "frp_max": 285.0
+      }
+    },
+    "disclaimer": "SHAP attributions quantify model conditional dependencies and feature contributions; they do NOT assert causal physical mechanisms."
+  },
+  "production_readiness_decision": "READY_FOR_SHADOW_MODE",
+  "recommended_model": "xgb-v2.0-real-candidate",
+  "registry_status": "CANDIDATE (Unchanged; activation requires manual human sign-off)",
+  "project_hosts": {
+    "frontend_command_center": "http://localhost:3000/dashboard",
+    "frontend_landing": "http://localhost:3000",
+    "backend_swagger_api": "http://localhost:8000/api/v1/docs",
+    "backend_health": "http://localhost:8000/health"
+  }
+}
