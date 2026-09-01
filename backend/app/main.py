@@ -1,11 +1,15 @@
+import time
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-import time
 
 from backend.app.core.config import settings
 from backend.app.core.database import get_db, get_database_mode, check_postgis_available, get_database_diagnostics
+from backend.app.core.middleware import (
+    CorrelationIdMiddleware, SecurityHeadersMiddleware,
+    RateLimitMiddleware, SafeExceptionMiddleware
+)
 from backend.app.api.v1.api import api_router
 from backend.app.core.storage import storage_service
 
@@ -14,20 +18,26 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
-    description="AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform"
+    description="AGNI-NETRA — Production-Grade AI Geospatial Industrial Thermal Intelligence Platform"
 )
 
-# Set all CORS enabled origins
+# 1. Register Core Security & Tracing Middlewares
+app.add_middleware(SafeExceptionMiddleware)
+app.add_middleware(RateLimitMiddleware, max_requests_per_minute=settings.RATE_LIMIT_PER_MINUTE)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
+
+# 2. CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*", settings.CORRELATION_ID_HEADER, "X-Response-Time-Ms"]
 )
 
-# Master API Router
+# 3. Master API Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
@@ -51,7 +61,7 @@ def database_health_check(db: Session = Depends(get_db)):
     """
     start_time = time.time()
     try:
-        db.execute(text("SELECT 1"))
+        db.execute(text("SELECT 1;"))
         latency_ms = round((time.time() - start_time) * 1000, 2)
         dialect = db.bind.dialect.name if db.bind else "sqlite"
         

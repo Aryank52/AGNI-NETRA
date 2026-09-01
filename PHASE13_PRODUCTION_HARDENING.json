@@ -1,0 +1,81 @@
+{
+  "phase": "PHASE_13",
+  "phase_name": "Production-Grade Hardening, Monitoring, Recovery & Security",
+  "timestamp_utc": "2026-09-01T22:35:31.052977+00:00",
+  "status": "PHASE_13_COMPLETE",
+  "configuration": {
+    "PROJECT_NAME": "AGNI-NETRA",
+    "ENVIRONMENT": "development",
+    "DEBUG": true,
+    "API_V1_STR": "/api/v1",
+    "SECRET_KEY": "agni****",
+    "ACCESS_TOKEN_EXPIRE_MINUTES": 1440,
+    "DATABASE_URL": "postgresql+psycopg2://postgres:****@localhost:5432/agni_netra",
+    "DB_POOL_SIZE": 15,
+    "DB_MAX_OVERFLOW": 25,
+    "DB_POOL_TIMEOUT": 30,
+    "DB_POOL_RECYCLE": 1800,
+    "REDIS_URL": "redis://localhost:6379/0",
+    "CELERY_BROKER_URL": "redis://localhost:6379/0",
+    "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+    "S3_ENDPOINT": "http://localhost:9000",
+    "S3_ACCESS_KEY": "mini****",
+    "S3_SECRET_KEY": "mini****",
+    "S3_USE_SSL": false,
+    "S3_BUCKET_NAME": "agni-netra",
+    "S3_BUCKET_IMAGERY": "agni-netra-imagery",
+    "S3_BUCKET_REPORTS": "agni-netra-reports",
+    "FIRMS_MAP_KEY": "57ba****",
+    "FIRMS_API_URL": "https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/?MAP_KEY=57ba86122c48a6efe3e3922a1e2c3e8a",
+    "MODEL_DIR": "ml/models",
+    "DEFAULT_MODEL_VERSION": "v1.0.0",
+    "RATE_LIMIT_PER_MINUTE": 120,
+    "CORRELATION_ID_HEADER": "X-Correlation-ID",
+    "ENABLE_OPERATIONAL_DISPATCH_GATE": false,
+    "IS_OPERATIONAL_DISPATCH_DEFAULT": false,
+    "EMAIL_ENABLED": false,
+    "SMTP_HOST": "smtp.gmail.com",
+    "SMTP_PORT": 587,
+    "SMTP_USERNAME": "",
+    "SMTP_PASSWORD": "",
+    "ALERT_FROM_EMAIL": "alerts@agni-netra.gov.in",
+    "SMS_ENABLED": false,
+    "SMS_PROVIDER": "CONSOLE",
+    "SMS_API_KEY": "",
+    "BACKEND_CORS_ORIGINS": [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:8000",
+      "http://127.0.0.1:8000"
+    ],
+    "POSTGRES_USER": "postgres",
+    "POSTGRES_PASSWORD": "projectdatabase_2026",
+    "POSTGRES_DB": "agni_netra",
+    "POSTGRES_PORT": "5432"
+  },
+  "model_integrity": {
+    "version": "xgb-v3.0-real-candidate",
+    "integrity": "VALID",
+    "verification_status": "READY_FOR_CANDIDATE_INFERENCE"
+  },
+  "database_health": {
+    "status": "OPERATIONAL",
+    "engine": "PostgreSQL",
+    "postgis_available": true,
+    "pool_size": 15,
+    "total_detections_sealed": 8221656
+  },
+  "backup_and_recovery": {
+    "backup_id": "BAK-20260901_223408",
+    "backup_file": "E:\\PROJECTS\\AGNI-NETRA\\backups\\agni_netra_backup_20260901_223408.json",
+    "restore_verified": "ISOLATED_RESTORE_VERIFIED",
+    "isolation_preserved": true
+  },
+  "safety_invariants": {
+    "historical_firms_rows_sealed": 8221554,
+    "candidate_models_inactive": true,
+    "dispatch_gate_enabled": false,
+    "is_operational_dispatch_enforced": true,
+    "live_dispatches_emitted": 0
+  }
+}

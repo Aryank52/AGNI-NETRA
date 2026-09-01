@@ -3,11 +3,12 @@ from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
     ingestion, ml, admin, baselines, portals, model_registry,
-    satellite_simulator, historical, evidence, mining, geography, lulc, forest
+    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health
 )
 
 api_router = APIRouter()
 
+api_router.include_router(health.router, prefix="/health", tags=["Health & Diagnostics"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(geography.router, prefix="/geography", tags=["National Administrative Geography & Spatial Enrichment"])
 api_router.include_router(lulc.router, prefix="/lulc", tags=["ISRO Bhuvan Land Use / Land Cover (LULC)"])
