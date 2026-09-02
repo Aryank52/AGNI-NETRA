@@ -42,19 +42,24 @@ def db_session():
 
 def test_historical_database_immutability_phase13(db_session):
     """Verifies that all 8,221,554 historical FIRMS records remain sealed and immutable."""
-    c_2022_off = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2022-01-01' AND acq_timestamp < '2023-01-01' AND is_demo = false;")).scalar()
-    c_2022_pil = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2022-01-01' AND acq_timestamp < '2023-01-01' AND is_demo = true;")).scalar()
-    c_2023_off = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2023-01-01' AND acq_timestamp < '2024-01-01' AND is_demo = false;")).scalar()
-    c_2024_rec = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2024-01-01' AND acq_timestamp < '2025-01-01';")).scalar()
-    c_2025_off = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2025-01-01' AND acq_timestamp < '2026-01-01';")).scalar()
-    c_2026_off = db_session.execute(text("SELECT COUNT(*) FROM thermal_detections WHERE acq_timestamp >= '2026-01-01';")).scalar()
+    row = db_session.execute(text("""
+        SELECT 
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2022-01-01' AND acq_timestamp < '2023-01-01' AND is_demo = false) as c_2022_off,
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2022-01-01' AND acq_timestamp < '2023-01-01' AND is_demo = true) as c_2022_pil,
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2023-01-01' AND acq_timestamp < '2024-01-01' AND is_demo = false) as c_2023_off,
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2024-01-01' AND acq_timestamp < '2025-01-01') as c_2024_rec,
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2025-01-01' AND acq_timestamp < '2026-01-01') as c_2025_off,
+            COUNT(*) FILTER (WHERE acq_timestamp >= '2026-01-01') as c_2026_off
+        FROM thermal_detections;
+    """)).fetchone()
 
-    assert c_2022_off == 1_274_383
-    assert c_2022_pil == 210_000
-    assert c_2023_off == 1_244_759
-    assert c_2024_rec == 1_711_626
-    assert c_2025_off == 2_007_898
-    assert c_2026_off >= 1_771_080
+    assert int(row[0]) == 1_274_383
+    assert int(row[1]) == 210_000
+    assert int(row[2]) == 1_244_759
+    assert int(row[3]) == 1_711_626
+    assert int(row[4]) == 2_007_898
+    assert int(row[5]) >= 1_771_080
+
 
 
 def test_production_configuration_and_secret_masking():

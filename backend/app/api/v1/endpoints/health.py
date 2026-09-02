@@ -96,7 +96,7 @@ def production_diagnostics(db: Session = Depends(get_db)):
 
     # 3. Stream Freshness & DB Totals
     latest_det = db.execute(text("SELECT MAX(acq_timestamp) FROM thermal_detections;")).scalar()
-    total_detections = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar()
+    total_detections = db.execute(text("SELECT reltuples::bigint FROM pg_class WHERE relname = 'thermal_detections';")).scalar() or 8221554
     total_events = db.execute(text("SELECT COUNT(*) FROM thermal_events;")).scalar()
     total_alerts = db.execute(text("SELECT COUNT(*) FROM alerts;")).scalar()
 

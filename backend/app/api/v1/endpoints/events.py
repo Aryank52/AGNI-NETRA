@@ -35,6 +35,36 @@ def get_thermal_events(
     """
     Retrieves list of clustered thermal events with comprehensive multi-criteria filtering and server-side pagination.
     """
+    # Sanitize against FastAPI Query defaults if called programmatically
+    if state is not None and not isinstance(state, str):
+        state = getattr(state, "default", None)
+    if district is not None and not isinstance(district, str):
+        district = getattr(district, "default", None)
+    if risk_level is not None and not isinstance(risk_level, str):
+        risk_level = getattr(risk_level, "default", None)
+    if event_type is not None and not isinstance(event_type, str):
+        event_type = getattr(event_type, "default", None)
+    if facility_status is not None and not isinstance(facility_status, str):
+        facility_status = getattr(facility_status, "default", None)
+    if status_filter is not None and not isinstance(status_filter, str):
+        status_filter = getattr(status_filter, "default", None)
+    if min_frp is not None and not isinstance(min_frp, (int, float)):
+        min_frp = getattr(min_frp, "default", None)
+    if min_persistence is not None and not isinstance(min_persistence, (int, float)):
+        min_persistence = getattr(min_persistence, "default", None)
+    if start_date is not None and not isinstance(start_date, str):
+        start_date = getattr(start_date, "default", None)
+    if end_date is not None and not isinstance(end_date, str):
+        end_date = getattr(end_date, "default", None)
+    if is_demo is not None and not isinstance(is_demo, bool):
+        is_demo = getattr(is_demo, "default", None)
+    if page is not None and not isinstance(page, int):
+        page = getattr(page, "default", None)
+    if limit is not None and not isinstance(limit, int):
+        limit = getattr(limit, "default", 100)
+    if offset is not None and not isinstance(offset, int):
+        offset = getattr(offset, "default", 0)
+
     query = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),
         joinedload(ThermalEvent.risk),
@@ -130,6 +160,19 @@ def get_thermal_events_geojson(
     Optimized GeoJSON FeatureCollection endpoint for MapLibre GL JS layers.
     Includes rich properties for interactive clustering, filtering, timestamp provenance, and styling.
     """
+    if state is not None and not isinstance(state, str):
+        state = getattr(state, "default", None)
+    if district is not None and not isinstance(district, str):
+        district = getattr(district, "default", None)
+    if risk_level is not None and not isinstance(risk_level, str):
+        risk_level = getattr(risk_level, "default", None)
+    if event_type is not None and not isinstance(event_type, str):
+        event_type = getattr(event_type, "default", None)
+    if is_demo is not None and not isinstance(is_demo, bool):
+        is_demo = getattr(is_demo, "default", None)
+    if min_frp is not None and not isinstance(min_frp, (int, float)):
+        min_frp = getattr(min_frp, "default", None)
+
     query = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),
         joinedload(ThermalEvent.risk),

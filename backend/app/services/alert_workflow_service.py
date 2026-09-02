@@ -54,45 +54,51 @@ ROUTING_TIER_WEIGHTS = {
 }
 
 
+_schema_initialized = False
+
 def ensure_alert_schema():
     """
     Ensures PostgreSQL tables and columns for Phase 11 alerts and audit logs exist.
     """
-    with engine.connect() as conn:
-        # 1. Add columns to alerts table if missing
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS routing_tier VARCHAR(50);"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS priority_score FLOAT;"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS predicted_class VARCHAR(100);"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS confidence FLOAT;"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS risk_score FLOAT;"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS evidence_summary JSONB;"))
-        conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS is_operational_dispatch BOOLEAN DEFAULT FALSE;"))
+    global _schema_initialized
+    if _schema_initialized:
+        return
+    try:
+        with engine.connect() as conn:
+            # 1. Add columns to alerts table if missing
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS routing_tier VARCHAR(50);"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS priority_score FLOAT;"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS predicted_class VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS confidence FLOAT;"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS risk_score FLOAT;"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS evidence_summary JSONB;"))
+            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS is_operational_dispatch BOOLEAN DEFAULT FALSE;"))
 
-        # 2. Create alert_audit_logs table if missing
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS alert_audit_logs (
-                id VARCHAR(36) PRIMARY KEY,
-                alert_id VARCHAR(36) NOT NULL,
-                event_id VARCHAR(36),
-                action VARCHAR(100) NOT NULL,
-                previous_state VARCHAR(50) NOT NULL,
-                new_state VARCHAR(50) NOT NULL,
-                analyst_id VARCHAR(36),
-                analyst_name VARCHAR(150),
-                notes TEXT,
-                verification_outcome VARCHAR(100),
-                evidence_snapshot JSONB,
-                is_operational_dispatch BOOLEAN DEFAULT FALSE,
-                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_alert_id ON alert_audit_logs(alert_id);"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_timestamp ON alert_audit_logs(timestamp);"))
-        conn.commit()
+            # 2. Create alert_audit_logs table if missing
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS alert_audit_logs (
+                    id VARCHAR(36) PRIMARY KEY,
+                    alert_id VARCHAR(36) NOT NULL,
+                    event_id VARCHAR(36),
+                    action VARCHAR(100) NOT NULL,
+                    previous_state VARCHAR(50) NOT NULL,
+                    new_state VARCHAR(50) NOT NULL,
+                    analyst_id VARCHAR(36),
+                    analyst_name VARCHAR(150),
+                    notes TEXT,
+                    verification_outcome VARCHAR(100),
+                    evidence_snapshot JSONB,
+                    is_operational_dispatch BOOLEAN DEFAULT FALSE,
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_alert_id ON alert_audit_logs(alert_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_timestamp ON alert_audit_logs(timestamp);"))
+            conn.commit()
+            _schema_initialized = True
+    except Exception:
+        pass
 
-
-# Run schema initialization at import
-ensure_alert_schema()
 
 
 class AlertWorkflowService:
@@ -472,7 +478,10 @@ class AlertWorkflowService:
         event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
         detections = db.query(ThermalDetection).filter(ThermalDetection.event_id == event_id).all()
         if not detections and event:
+            base_time = event.first_seen or event.created_at or datetime.now(timezone.utc)
+            min_time = base_time - timedelta(days=3)
             detections = db.query(ThermalDetection).filter(
+                ThermalDetection.acq_timestamp >= min_time,
                 ThermalDetection.latitude.between(event.latitude - 0.05, event.latitude + 0.05),
                 ThermalDetection.longitude.between(event.longitude - 0.05, event.longitude + 0.05)
             ).order_by(ThermalDetection.acq_timestamp.desc()).limit(20).all()

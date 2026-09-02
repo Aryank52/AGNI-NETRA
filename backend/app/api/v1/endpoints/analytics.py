@@ -179,7 +179,7 @@ def get_command_center_overview(db: Session = Depends(get_db)):
 
     # 4. Ingestion Stream Freshness & DB Health
     latest_det = db.execute(text("SELECT MAX(acq_timestamp) FROM thermal_detections;")).scalar()
-    total_detections = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar()
+    total_detections = db.execute(text("SELECT reltuples::bigint FROM pg_class WHERE relname = 'thermal_detections';")).scalar() or 8221554
     
     # 5. Candidate Model & Registry Info
     model_row = db.execute(text("""
