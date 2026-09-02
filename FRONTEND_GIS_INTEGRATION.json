@@ -1,0 +1,154 @@
+{
+  "audit_timestamp": "2026-09-02T12:11:11.568877+00:00",
+  "status": "HEALTHY",
+  "domains": {
+    "frontend": {
+      "status": "HEALTHY",
+      "routes": {
+        "http://localhost:3000/": {
+          "url": "http://localhost:3000/",
+          "status_code": 200,
+          "is_success": true,
+          "latency_ms": 142.31,
+          "data_length": 19826,
+          "json_data": null,
+          "error": null
+        },
+        "http://localhost:3000/dashboard": {
+          "url": "http://localhost:3000/dashboard",
+          "status_code": 200,
+          "is_success": true,
+          "latency_ms": 10.76,
+          "data_length": 47962,
+          "json_data": null,
+          "error": null
+        },
+        "http://localhost:3000/dashboard/alerts": {
+          "url": "http://localhost:3000/dashboard/alerts",
+          "status_code": 200,
+          "is_success": true,
+          "latency_ms": 26.56,
+          "data_length": 39998,
+          "json_data": null,
+          "error": null
+        }
+      }
+    },
+    "gis_endpoints": {
+      "status": "HEALTHY",
+      "endpoints": {
+        "Catalog": {
+          "endpoint": "http://localhost:8000/api/v1/gis/layers",
+          "status_code": 200,
+          "latency_ms": 4491.76,
+          "feature_count": 9,
+          "is_success": true
+        },
+        "Thermal Events": {
+          "endpoint": "http://localhost:8000/api/v1/gis/thermal-events?limit=100",
+          "status_code": 200,
+          "latency_ms": 2586.16,
+          "feature_count": 100,
+          "is_success": true
+        },
+        "Industrial Facilities": {
+          "endpoint": "http://localhost:8000/api/v1/gis/industrial-facilities?limit=200",
+          "status_code": 200,
+          "latency_ms": 2308.42,
+          "feature_count": 200,
+          "is_success": true
+        },
+        "CEA Power Stations": {
+          "endpoint": "http://localhost:8000/api/v1/gis/power-stations?limit=100",
+          "status_code": 200,
+          "latency_ms": 2074.75,
+          "feature_count": 100,
+          "is_success": true
+        },
+        "IBM Mining Intelligence": {
+          "endpoint": "http://localhost:8000/api/v1/gis/mining?limit=100",
+          "status_code": 200,
+          "latency_ms": 2069.73,
+          "feature_count": 100,
+          "is_success": true
+        },
+        "WII Protected Areas": {
+          "endpoint": "http://localhost:8000/api/v1/gis/protected-areas?limit=20",
+          "status_code": 200,
+          "latency_ms": 2046.44,
+          "feature_count": 11,
+          "is_success": true
+        },
+        "Bhuvan LULC": {
+          "endpoint": "http://localhost:8000/api/v1/gis/lulc?limit=20",
+          "status_code": 200,
+          "latency_ms": 2052.05,
+          "feature_count": 15,
+          "is_success": true
+        },
+        "Admin States": {
+          "endpoint": "http://localhost:8000/api/v1/gis/admin/states?simplify=0.01",
+          "status_code": 200,
+          "latency_ms": 2586.99,
+          "feature_count": 36,
+          "is_success": true
+        },
+        "Admin Districts": {
+          "endpoint": "http://localhost:8000/api/v1/gis/admin/districts?state=Maharashtra&limit=50",
+          "status_code": 200,
+          "latency_ms": 2065.66,
+          "feature_count": 36,
+          "is_success": true
+        }
+      }
+    },
+    "spatial_bbox_performance": {
+      "Western India (GJ / MH)": {
+        "bbox": "68.0,18.0,76.0,24.0",
+        "count": 200,
+        "latency_ms": 2184.8
+      },
+      "Central Mining Belt (CT / JH)": {
+        "bbox": "80.0,20.0,88.0,25.0",
+        "count": 200,
+        "latency_ms": 2198.69
+      },
+      "Southern Industrial Corridor (TN / KA)": {
+        "bbox": "75.0,10.0,82.0,16.0",
+        "count": 200,
+        "latency_ms": 2126.59
+      }
+    },
+    "investigation_dossier": {
+      "status": "HEALTHY",
+      "sample_event_id": "a1ea6c08-6e87-43a1-9d2c-4e0b825af89b",
+      "sample_event_code": "EVT-2026-08-0001",
+      "intelligence_coverage": {
+        "firms_telemetry": true,
+        "industrial_facility": true,
+        "cea_power_station": true,
+        "mining_intelligence": false,
+        "bhuvan_lulc": true,
+        "forest_intelligence": false,
+        "protected_area": false,
+        "administrative_geography": false,
+        "parivesh_regulatory": true
+      }
+    },
+    "database_counts": {
+      "historical_sealed_sum": 6448666,
+      "historical_baseline": 6448666,
+      "discrepancy": 0,
+      "immutability_status": "100% SEALED & IMMUTABLE",
+      "total_detections": 8221825,
+      "total_facilities": 35684,
+      "total_events": 215,
+      "total_alerts": 86
+    },
+    "safety_invariants": {
+      "dispatch_gate_held": true,
+      "live_dispatches_count": 0,
+      "status": "HEALTHY"
+    }
+  }
+}

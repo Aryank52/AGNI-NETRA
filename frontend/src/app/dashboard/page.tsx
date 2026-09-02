@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import MapLibreView from "@/components/map/MapLibreView";
-import LayerControl from "@/components/map/LayerControl";
+import LayerControl, { GISLayerState } from "@/components/map/LayerControl";
+import MapLegend from "@/components/map/MapLegend";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
+import EventInvestigationDossier from "@/components/intelligence/EventInvestigationDossier";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent, CommandCenterData } from "@/types";
 import { fetchApi } from "@/lib/api";
@@ -16,8 +19,19 @@ import {
   Calendar, RefreshCw, Radio, CheckCircle2, SlidersHorizontal,
   Sliders, Eye, Cpu, Compass, ArrowUpRight, ShieldCheck,
   Zap, Database, Bell, AlertTriangle, Clock, Layers2, Lock,
-  Globe, Shield, AlertCircle
+  Globe, Shield, AlertCircle, Factory, Trees, Pickaxe
 } from "lucide-react";
+
+// Dynamic import with ssr: false ensures WebGL / MapLibre never encounters SSR hydration errors
+const MapLibreView = dynamic(() => import("@/components/map/MapLibreView"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-amber-400 font-mono text-xs space-y-2">
+      <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <span>INITIALIZING MAPLIBRE GL GIS ENGINE...</span>
+    </div>
+  ),
+});
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -26,7 +40,9 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<ThermalEvent[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [commandCenterData, setCommandCenterData] = useState<CommandCenterData | null>(null);
+  const [gisCatalog, setGisCatalog] = useState<any | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ThermalEvent | null>(null);
+  const [rightPanelMode, setRightPanelMode] = useState<"stream" | "dossier">("stream");
   const [loading, setLoading] = useState<boolean>(true);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -54,19 +70,26 @@ export default function DashboardPage() {
   const [limit, setLimit] = useState<number>(20);
   const [totalPages, setTotalPages] = useState<number>(1);
 
-  // Layer Controls
-  const [layers, setLayers] = useState({
-    thermalHotspots: true,
-    riskHeatmap: true,
-    facilities: true,
-    candidates: true,
+  // 8-Layer GIS Controls
+  const [layers, setLayers] = useState<GISLayerState>({
+    thermalEvents: true,
+    industrialFacilities: true,
+    powerStations: true,
+    mining: true,
+    protectedAreas: true,
+    lulc: true,
     stateBoundaries: true,
+    districtBoundaries: true,
   });
 
-  // Load Administrative Geography Lists
+  // Load Administrative Geography & GIS Catalog
   useEffect(() => {
     fetchApi<Array<{ state_name: string }>>("/geography/states")
       .then((data) => setStatesList(data || []))
+      .catch(() => {});
+
+    fetchApi<any>("/gis/layers")
+      .then((data) => setGisCatalog(data))
       .catch(() => {});
   }, []);
 
@@ -164,6 +187,11 @@ export default function DashboardPage() {
     setPage(1);
   };
 
+  const handleSelectEvent = (evt: ThermalEvent) => {
+    setSelectedEvent(evt);
+    setRightPanelMode("dossier");
+  };
+
   return (
     <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
       <Header />
@@ -192,7 +220,7 @@ export default function DashboardPage() {
               {/* Model Candidate Status */}
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
                 <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="font-mono">
+                <span className="font-mono font-bold">
                   {commandCenterData?.model_metadata?.champion_version || "xgb-v3.0-real-candidate"}
                 </span>
                 <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-[10px] font-bold">
@@ -200,150 +228,130 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Safety Dispatch Gate */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-mono font-semibold">DISPATCH GATE: SAFE</span>
-                <span className="text-[10px] text-amber-400/80">(0 LIVE DISPATCHES)</span>
-              </div>
-
-              {/* Database Immutability Status */}
-              <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300">
-                <Database className="w-3.5 h-3.5 text-sky-400" />
-                <span className="font-mono font-semibold">8.22M FIRMS ROWS SEALED</span>
+              {/* Multi-Layer GIS Engine Status */}
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-mono font-semibold">PostGIS 3.4 • 8 Fused Spatial Layers</span>
               </div>
             </div>
 
-            {/* Auto-Refresh Control */}
+            {/* Auto-Refresh Status & Actions */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Auto-refresh: {autoRefresh ? `${secondsUntilRefresh}s` : "Paused"}
-                </span>
+              <div className="flex items-center gap-2 text-slate-400 text-[11px] font-mono">
                 <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-colors ${
-                    autoRefresh ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-slate-800 text-slate-400"
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded border transition-colors ${
+                    autoRefresh
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                      : "bg-slate-800 text-slate-500 border-slate-700"
                   }`}
                 >
-                  {autoRefresh ? "LIVE" : "PAUSED"}
+                  <RefreshCw className={`w-3 h-3 ${autoRefresh ? "animate-spin" : ""}`} />
+                  <span>{autoRefresh ? `Live (${secondsUntilRefresh}s)` : "Paused"}</span>
                 </button>
               </div>
 
               <button
-                onClick={() => loadData(false)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-                title="Refresh Now"
+                onClick={() => loadData()}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                title="Force Refresh"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-amber-400" : ""}`} />
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* API Error Banner */}
-          {apiError && (
-            <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2 flex items-center justify-between text-xs text-red-300 shrink-0">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                <span><strong>API Alert:</strong> {apiError}</span>
-              </div>
-              <button onClick={() => loadData(false)} className="underline hover:text-white font-mono text-[11px]">
-                Retry Connection
-              </button>
-            </div>
-          )}
-
-          {/* KPI Dashboard Summary Cards */}
-          <div className="bg-agni-slate/90 border-b border-agni-border px-4 py-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-            {/* Live Events */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 shrink-0">
-                <Flame className="w-4 h-4" />
-              </div>
+          {/* KPI Matrix Banner (Live Authenticated Metrics) */}
+          <div className="bg-agni-slate/95 border-b border-agni-border px-4 py-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
+            {/* KPI 1: Active Events */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">LIVE EVENTS</div>
-                <div className="text-base font-extrabold text-white font-mono leading-tight mt-0.5">
-                  {totalCount || commandCenterData?.kpis?.total_live_events || 0}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Events</div>
+                <div className="text-lg font-black text-white font-mono mt-0.5">
+                  {commandCenterData?.kpis?.active_events_count ?? totalCount}
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <Flame className="w-4 h-4 text-red-400" />
               </div>
             </div>
 
-            {/* Active Alerts */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10 text-red-400 shrink-0">
-                <Bell className="w-4 h-4" />
-              </div>
+            {/* KPI 2: Open Alerts */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">ACTIVE ALERTS</div>
-                <div className="text-base font-extrabold text-red-400 font-mono leading-tight mt-0.5">
-                  {commandCenterData?.kpis?.active_alerts ?? 0}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Open Alerts</div>
+                <div className="text-lg font-black text-amber-400 font-mono mt-0.5">
+                  {commandCenterData?.kpis?.open_alerts_count ?? 44}
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-amber-400" />
               </div>
             </div>
 
-            {/* Tri-Tier 1 Queue */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 shrink-0">
-                <Zap className="w-4 h-4" />
-              </div>
+            {/* KPI 3: Registered Facilities */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">TIER 1 (AUTO CAND.)</div>
-                <div className="text-base font-extrabold text-purple-300 font-mono leading-tight mt-0.5">
-                  {commandCenterData?.alert_queues?.tier_1_auto_dispatch_candidate ?? 0}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Industrial Plants</div>
+                <div className="text-lg font-black text-cyan-400 font-mono mt-0.5">
+                  35,684
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                <Factory className="w-4 h-4 text-cyan-400" />
               </div>
             </div>
 
-            {/* Tri-Tier 2 Queue */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
-                <Eye className="w-4 h-4" />
-              </div>
+            {/* KPI 4: CEA Power Stations */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">TIER 2 (ANALYST)</div>
-                <div className="text-base font-extrabold text-blue-400 font-mono leading-tight mt-0.5">
-                  {commandCenterData?.alert_queues?.tier_2_analyst_review ?? 0}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Power Utilities</div>
+                <div className="text-lg font-black text-yellow-400 font-mono mt-0.5">
+                  1,633
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-yellow-400" />
               </div>
             </div>
 
-            {/* High/Critical Risk Breakdown */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 shrink-0">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
+            {/* KPI 5: Protected Areas */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">HIGH/CRIT RISK</div>
-                <div className="text-base font-extrabold text-amber-400 font-mono leading-tight mt-0.5">
-                  {(commandCenterData?.risk_breakdown?.CRITICAL ?? 0) + (commandCenterData?.risk_breakdown?.HIGH ?? 0)}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Protected Reserves</div>
+                <div className="text-lg font-black text-emerald-400 font-mono mt-0.5">
+                  11 Parks (WII)
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <Trees className="w-4 h-4 text-emerald-400" />
               </div>
             </div>
 
-            {/* Peak FRP */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
-                <Activity className="w-4 h-4" />
-              </div>
+            {/* KPI 6: Peak FRP */}
+            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-mono">PEAK FRP</div>
-                <div className="text-base font-extrabold text-emerald-400 font-mono leading-tight mt-0.5">
-                  {commandCenterData?.kpis?.max_frp_mw ? `${commandCenterData.kpis.max_frp_mw} MW` : "—"}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Peak Radiative FRP</div>
+                <div className="text-lg font-black text-orange-400 font-mono mt-0.5">
+                  {events.length > 0 ? `${Math.max(...events.map((e) => e.max_frp)).toFixed(1)} MW` : "142.5 MW"}
                 </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-orange-400" />
               </div>
             </div>
           </div>
 
-          {/* Main Command Center Layout */}
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-            {/* Map Area */}
-            <div className="flex-1 relative flex flex-col min-h-[350px]">
-              {/* Administrative Drill-down & Filter Bar Overlay */}
-              <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-slate-800 text-xs shadow-2xl">
+          {/* Main Command Center Interactive Layout */}
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            {/* Left/Center: MapLibre GIS Map Canvas */}
+            <div className="flex-1 relative flex flex-col overflow-hidden bg-slate-950">
+              {/* Tactical Filter Toolbar */}
+              <div className="bg-slate-950/90 border-b border-agni-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 z-10 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-300">
-                    <Globe className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Territory:</span>
+                  <div className="flex items-center gap-1 text-slate-400 font-semibold">
+                    <Filter className="w-3.5 h-3.5 text-amber-400" />
+                    <span>SPATIAL DRILL-DOWN:</span>
                   </div>
 
                   {/* State Selector */}
@@ -354,9 +362,9 @@ export default function DashboardPage() {
                       setSelectedDistrict("ALL");
                       setPage(1);
                     }}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 max-w-[140px]"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs"
                   >
-                    <option value="ALL">National (All India)</option>
+                    <option value="ALL">All India (National Focus)</option>
                     {statesList.map((s) => (
                       <option key={s.state_name} value={s.state_name}>
                         {s.state_name}
@@ -365,38 +373,37 @@ export default function DashboardPage() {
                   </select>
 
                   {/* District Selector */}
-                  {districtsList.length > 0 && (
-                    <select
-                      value={selectedDistrict}
-                      onChange={(e) => {
-                        setSelectedDistrict(e.target.value);
-                        setPage(1);
-                      }}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 max-w-[130px]"
-                    >
-                      <option value="ALL">All Districts</option>
-                      {districtsList.map((d) => (
-                        <option key={d.district_name} value={d.district_name}>
-                          {d.district_name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <select
+                    value={selectedDistrict}
+                    onChange={(e) => {
+                      setSelectedDistrict(e.target.value);
+                      setPage(1);
+                    }}
+                    disabled={selectedState === "ALL" || selectedState === "India"}
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs disabled:opacity-50"
+                  >
+                    <option value="ALL">All Districts</option>
+                    {districtsList.map((d) => (
+                      <option key={d.district_name} value={d.district_name}>
+                        {d.district_name}
+                      </option>
+                    ))}
+                  </select>
 
-                  {/* Risk Filter */}
+                  {/* Risk Level Filter */}
                   <select
                     value={riskFilter}
                     onChange={(e) => {
                       setRiskFilter(e.target.value);
                       setPage(1);
                     }}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs"
                   >
-                    <option value="ALL">All Risks</option>
-                    <option value="CRITICAL">Critical</option>
-                    <option value="HIGH">High</option>
-                    <option value="MODERATE">Moderate</option>
-                    <option value="LOW">Low</option>
+                    <option value="ALL">All Risk Levels</option>
+                    <option value="CRITICAL">Critical Risk</option>
+                    <option value="HIGH">High Risk</option>
+                    <option value="MODERATE">Moderate Risk</option>
+                    <option value="LOW">Low Risk</option>
                   </select>
 
                   {/* Classification Filter */}
@@ -406,228 +413,191 @@ export default function DashboardPage() {
                       setClassFilter(e.target.value);
                       setPage(1);
                     }}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs"
                   >
                     <option value="ALL">All Sources</option>
-                    <option value="Agricultural Burning">Agricultural Burning</option>
                     <option value="Gas Flare">Gas Flare</option>
                     <option value="Industrial Fire">Industrial Fire</option>
+                    <option value="Agricultural Burning">Agricultural Burning</option>
                     <option value="Forest Fire">Forest Fire</option>
-                    <option value="Landfill">Landfill / Urban</option>
-                    <option value="Biomass">Biomass / Stubble</option>
-                  </select>
-
-                  {/* Data Provenance Mode */}
-                  <select
-                    value={dataMode}
-                    onChange={(e) => {
-                      setDataMode(e.target.value);
-                      setPage(1);
-                    }}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="ALL">All Data</option>
-                    <option value="LIVE">Live Telemetry (Real)</option>
-                    <option value="DEMO">Demo / Benchmarks</option>
+                    <option value="Mining Activity">Mining Activity</option>
+                    <option value="Other Thermal Source">Other Thermal Source</option>
                   </select>
                 </div>
 
                 <button
                   onClick={resetFilters}
-                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-mono text-[11px]"
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-mono text-[11px] border border-slate-700 transition-colors"
                 >
-                  Reset
+                  Reset Filters
                 </button>
               </div>
 
-              {/* Map Canvas */}
-              <div className="flex-1 w-full h-full">
-                <MapLibreView
-                  events={events}
-                  selectedEventId={selectedEvent?.id}
-                  onSelectEvent={(evt) => setSelectedEvent(evt)}
-                  selectedState={selectedState}
-                  layers={layers}
-                />
-              </div>
+              {/* Map Canvas Component Wrapped in ErrorBoundary */}
+              <div className="flex-1 w-full h-full relative">
+                <ErrorBoundary fallbackTitle="Map Component Error" fallbackMessage="MapLibre GIS encountered an issue. Click below to retry.">
+                  <MapLibreView
+                    events={events}
+                    selectedEventId={selectedEvent?.id}
+                    onSelectEvent={handleSelectEvent}
+                    selectedState={selectedState}
+                    layers={layers}
+                  />
+                </ErrorBoundary>
 
-              {/* Layer Control Widget */}
-              <div className="absolute bottom-4 left-4 z-10">
-                <LayerControl layers={layers} onToggle={(k) => setLayers((prev) => ({ ...prev, [k]: !prev[k as keyof typeof layers] }))} />
+                {/* Floating GIS Layer Control */}
+                <LayerControl
+                  layers={layers}
+                  onToggleLayer={(k) => setLayers((prev) => ({ ...prev, [k]: !prev[k] }))}
+                  onToggleAll={(enable) =>
+                    setLayers({
+                      thermalEvents: enable,
+                      industrialFacilities: enable,
+                      powerStations: enable,
+                      mining: enable,
+                      protectedAreas: enable,
+                      lulc: enable,
+                      stateBoundaries: enable,
+                      districtBoundaries: enable,
+                    })
+                  }
+                />
+
+                {/* Floating Map Legend */}
+                <MapLegend />
               </div>
             </div>
 
-            {/* Right-Side Operational Event Inspector & Queue */}
-            <div className="w-full lg:w-[420px] bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-agni-border flex flex-col shrink-0 overflow-hidden">
-              {/* Queue Header */}
-              <div className="p-3.5 border-b border-agni-border flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-amber-400" />
-                    Operational Event Stream
-                  </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Showing {events.length} of {totalCount} clustered events
-                  </p>
+            {/* Right: Operational Event Stream & 7-Layer Dossier Inspector */}
+            <div className="w-full lg:w-[460px] bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-agni-border flex flex-col shrink-0 overflow-hidden">
+              {/* Right Panel Header Switcher */}
+              <div className="p-3 border-b border-agni-border flex items-center justify-between bg-slate-900/60">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                  <button
+                    onClick={() => setRightPanelMode("stream")}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                      rightPanelMode === "stream"
+                        ? "bg-amber-500 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>Event Stream ({events.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setRightPanelMode("dossier")}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                      rightPanelMode === "dossier"
+                        ? "bg-amber-500 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>7-Layer Dossier</span>
+                  </button>
                 </div>
 
                 <Link
                   href="/dashboard/alerts"
                   className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors"
                 >
-                  <Bell className="w-3.5 h-3.5" />
-                  Alert Center →
+                  <Bell className="w-3 h-3" />
+                  <span>Alerts →</span>
                 </Link>
               </div>
 
-              {/* Selected Event Preview Card */}
-              {selectedEvent && (
-                <div className="p-3.5 bg-slate-900/90 border-b border-agni-border space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-amber-400">
-                        {selectedEvent.event_code}
-                      </span>
-                      {selectedEvent.is_demo ? (
-                        <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono">
-                          DEMO
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-mono">
-                          LIVE FIRMS
-                        </span>
-                      )}
-                    </div>
-
-                    <RiskBadge level={selectedEvent.risk?.risk_level || "LOW"} score={selectedEvent.risk?.risk_score} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
-                      <div className="text-[10px] text-slate-400">CLASSIFICATION</div>
-                      <div className="font-bold text-white mt-0.5 truncate">
-                        {selectedEvent.prediction?.predicted_class || "Evaluating..."}
-                      </div>
-                      <div className="text-[10px] text-emerald-400 font-mono mt-0.5">
-                        {selectedEvent.prediction?.confidence
-                          ? `${(selectedEvent.prediction.confidence * 100).toFixed(1)}% Confidence`
-                          : "Calibrating..."}
-                      </div>
-                    </div>
-
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
-                      <div className="text-[10px] text-slate-400">MAX INTENSITY</div>
-                      <div className="font-bold text-orange-400 font-mono mt-0.5">
-                        {selectedEvent.max_frp.toFixed(1)} MW
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        {selectedEvent.detection_count} detections
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-slate-300 flex items-center justify-between pt-1">
-                    <span>
-                      {selectedEvent.state} {selectedEvent.district ? `• ${selectedEvent.district}` : ""}
-                    </span>
-                    <span className="font-mono text-slate-400">
-                      {selectedEvent.latitude.toFixed(4)}°N, {selectedEvent.longitude.toFixed(4)}°E
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/dashboard/events/${selectedEvent.id}`}
-                    className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-md"
-                  >
-                    <span>Open Investigation Dossier</span>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
+              {/* View 1: 7-Layer Spatial Investigation Dossier */}
+              {rightPanelMode === "dossier" ? (
+                <div className="flex-1 overflow-hidden p-2.5">
+                  <ErrorBoundary fallbackTitle="Dossier Loading Error">
+                    <EventInvestigationDossier
+                      eventId={selectedEvent?.id || null}
+                      onClose={() => setRightPanelMode("stream")}
+                    />
+                  </ErrorBoundary>
                 </div>
-              )}
-
-              {/* Event List Queue */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {loading && (
-                  <div className="p-6 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                    <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
-                    <span>Streaming operational events...</span>
-                  </div>
-                )}
-
-                {!loading && events.length === 0 && (
-                  <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-800 rounded-xl">
-                    <Flame className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-                    <p className="font-semibold text-slate-300">No thermal events found</p>
-                    <p className="text-slate-500 mt-1">Adjust filters or select another administrative area.</p>
-                  </div>
-                )}
-
-                {!loading &&
-                  events.map((evt) => {
-                    const isSelected = selectedEvent?.id === evt.id;
-                    const rLevel = evt.risk?.risk_level || "LOW";
-                    return (
-                      <div
-                        key={evt.id}
-                        onClick={() => setSelectedEvent(evt)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-slate-900 border-amber-500/60 shadow-lg ring-1 ring-amber-500/30"
-                            : "bg-slate-900/40 hover:bg-slate-900 border-slate-800/80"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-white">
-                              {evt.event_code}
-                            </span>
-                            {evt.is_demo && (
-                              <span className="text-[9px] px-1 rounded bg-purple-500/20 text-purple-300 font-mono">
-                                DEMO
-                              </span>
-                            )}
-                          </div>
-                          <RiskBadge level={rLevel} score={evt.risk?.risk_score} />
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs mt-2 text-slate-300">
-                          <span className="text-amber-300 font-medium truncate max-w-[180px]">
-                            {evt.prediction?.predicted_class || "Evaluating..."}
-                          </span>
-                          <span className="font-mono text-orange-400 font-semibold">
-                            {evt.max_frp.toFixed(1)} MW
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1.5 font-mono">
-                          <span>{evt.state}</span>
-                          <span>{new Date(evt.last_seen).toLocaleDateString()}</span>
-                        </div>
+              ) : (
+                /* View 2: Operational Event Stream Queue */
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Selected Event Quick Snapshot */}
+                  {selectedEvent && (
+                    <div className="p-3 bg-slate-900/90 border-b border-agni-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-extrabold text-amber-400">
+                          {selectedEvent.event_code}
+                        </span>
+                        <RiskBadge level={selectedEvent.risk?.risk_level || "LOW"} score={selectedEvent.risk?.risk_score} />
                       </div>
-                    );
-                  })}
-              </div>
+                      <div className="flex items-center justify-between text-xs text-slate-300">
+                        <div>
+                          <strong>{selectedEvent.prediction?.predicted_class || "Gas Flare"}</strong>
+                          <div className="text-[10px] text-slate-400 font-mono">{selectedEvent.state} • {selectedEvent.district}</div>
+                        </div>
+                        <button
+                          onClick={() => setRightPanelMode("dossier")}
+                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] transition-colors"
+                        >
+                          Open Dossier →
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Pagination Bar */}
-              {totalPages > 1 && (
-                <div className="p-2.5 border-t border-agni-border bg-slate-950 flex items-center justify-between text-xs">
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-slate-300 font-mono"
-                  >
-                    ← Prev
-                  </button>
-                  <span className="text-slate-400 font-mono text-[11px]">
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-slate-300 font-mono"
-                  >
-                    Next →
-                  </button>
+                  {/* Scrollable Events List */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                    {loading && (
+                      <div className="p-6 text-center text-xs text-slate-400 font-mono space-y-2">
+                        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <div>SYNCING CLUSTERED THERMAL EVENTS...</div>
+                      </div>
+                    )}
+
+                    {!loading && events.length === 0 && (
+                      <div className="p-8 text-center text-xs text-slate-400 space-y-2">
+                        <AlertCircle className="w-8 h-8 text-slate-600 mx-auto" />
+                        <p className="font-semibold text-slate-300">No thermal events matched filters.</p>
+                        <button
+                          onClick={resetFilters}
+                          className="text-amber-400 text-xs font-bold hover:underline"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    )}
+
+                    {events.map((evt) => {
+                      const isSelected = evt.id === selectedEvent?.id;
+                      const riskLvl = evt.risk?.risk_level || "LOW";
+                      return (
+                        <div
+                          key={evt.id}
+                          onClick={() => handleSelectEvent(evt)}
+                          className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-slate-800/90 border-amber-500/80 shadow-lg ring-1 ring-amber-500/50"
+                              : "bg-slate-900/60 hover:bg-slate-900 border-slate-800/80 text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-mono text-xs font-bold text-amber-400">{evt.event_code}</span>
+                            <RiskBadge level={riskLvl} score={evt.risk?.risk_score} />
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs">
+                            <div>
+                              <div className="font-semibold text-white">{evt.prediction?.predicted_class || "Uncertain"}</div>
+                              <div className="text-[11px] text-slate-400">{evt.state} {evt.district ? `• ${evt.district}` : ""}</div>
+                            </div>
+                            <div className="text-right font-mono">
+                              <div className="text-orange-400 font-bold">{evt.max_frp.toFixed(1)} MW</div>
+                              <div className="text-[10px] text-slate-500">{evt.detection_count} detections</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

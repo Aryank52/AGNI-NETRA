@@ -758,6 +758,13 @@ class Alert(Base):
     description = Column(Text, nullable=False)
     status = Column(String(50), default="NEW")             # NEW, ACKNOWLEDGED, UNDER_REVIEW, VERIFIED, RESOLVED
     acknowledged_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    routing_tier = Column(String(50), default="TIER_2_ANALYST_REVIEW_QUEUE")
+    priority_score = Column(Float, nullable=True)
+    predicted_class = Column(String(100), nullable=True)
+    confidence = Column(Float, nullable=True)
+    risk_score = Column(Float, nullable=True)
+    evidence_summary = Column(JSON, default=dict)
+    is_operational_dispatch = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
