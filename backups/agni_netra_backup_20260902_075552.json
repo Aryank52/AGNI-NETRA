@@ -1,0 +1,205 @@
+{
+  "backup_id": "BAK-20260902_075552",
+  "created_at": "2026-09-02T07:56:04.677272+00:00",
+  "environment": "development",
+  "engine": "PostgreSQL",
+  "database_name": "agni_netra",
+  "total_detections_sealed": 8221714,
+  "table_row_counts": {
+    "thermal_detections": 8221714,
+    "thermal_events": 194,
+    "event_features": 184,
+    "model_predictions": 184,
+    "risk_scores": 184,
+    "alerts": 82,
+    "alert_audit_logs": 255,
+    "verification_records": 80,
+    "industrial_facilities": 35684,
+    "candidate_facilities": 10,
+    "ml_model_registry": 7,
+    "dataset_registry": 5,
+    "cea_thermal_power_stations": -1,
+    "parivesh_projects_staging": 622
+  },
+  "sample_records": {
+    "alerts": [
+      {
+        "id": "160dbe9e-c9e5-4d0a-b3cb-7e82565e8f49",
+        "event_id": "6d31e3ef-1f1f-4a10-85b6-19214c63c9e2",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 75.19
+      },
+      {
+        "id": "be2419a9-68ee-4c24-9662-cfce4d91d4ec",
+        "event_id": "38d2724d-1e62-41a6-9b4f-70983cb8be43",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 73.03
+      },
+      {
+        "id": "9abf5f1e-f379-497c-a75d-5751d6b03d38",
+        "event_id": "4f646bdf-c33c-4c80-862a-467729c3e39a",
+        "alert_level": "MODERATE",
+        "status": "CLOSED",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 76.46
+      },
+      {
+        "id": "fcac1cdc-164a-4afb-96e0-c051f7eb5923",
+        "event_id": "9ca15961-b073-4499-86dc-76f856f330d3",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 73.03
+      },
+      {
+        "id": "05660b44-c9e9-4d05-8565-beaaadc242db",
+        "event_id": "b4d8b40a-eabd-47ad-b293-0d71b755e7db",
+        "alert_level": "MODERATE",
+        "status": "CLOSED",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 76.46
+      },
+      {
+        "id": "dabbc369-5a10-4a4a-b8d0-320d64a189e8",
+        "event_id": "1f783ce5-81b6-45b4-8d87-bb1503adf913",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 73.03
+      },
+      {
+        "id": "68b06508-ce48-40ef-91b9-f2bbb961e7cc",
+        "event_id": "fe9343de-2f95-4eb0-aacf-bdb340466b5d",
+        "alert_level": "MODERATE",
+        "status": "CLOSED",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 76.46
+      },
+      {
+        "id": "d2b08fa0-faea-40e7-91f0-64ab827e969f",
+        "event_id": "30b66800-8b8f-4eb3-b2b2-4f13777c65d2",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 73.03
+      },
+      {
+        "id": "d032a410-c68e-4893-a172-25ff78ed0ee3",
+        "event_id": "d7c3ae50-2755-4079-bd7e-08f9a401eca1",
+        "alert_level": "MODERATE",
+        "status": "CLOSED",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 76.46
+      },
+      {
+        "id": "a401dcf1-bf04-4627-b148-65f889547504",
+        "event_id": "93434910-1cc8-4a53-bc09-67d9a1f94188",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_1_AUTO_DISPATCH_CANDIDATE",
+        "priority_score": 73.03
+      }
+    ],
+    "events": [
+      {
+        "id": "6d31e3ef-1f1f-4a10-85b6-19214c63c9e2",
+        "event_code": "EVT-20260902-6D31E3",
+        "latitude": 21.611,
+        "longitude": 72.189,
+        "max_frp": 210.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "38d2724d-1e62-41a6-9b4f-70983cb8be43",
+        "event_code": "EVT-20260902-38D272",
+        "latitude": 21.558,
+        "longitude": 72.193,
+        "max_frp": 175.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "4f646bdf-c33c-4c80-862a-467729c3e39a",
+        "event_code": "EVT-20260902-4F646B",
+        "latitude": 21.65,
+        "longitude": 72.22,
+        "max_frp": 230.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "9ca15961-b073-4499-86dc-76f856f330d3",
+        "event_code": "EVT-20260902-9CA159",
+        "latitude": 21.558,
+        "longitude": 72.193,
+        "max_frp": 175.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "b4d8b40a-eabd-47ad-b293-0d71b755e7db",
+        "event_code": "EVT-20260902-B4D8B4",
+        "latitude": 21.65,
+        "longitude": 72.22,
+        "max_frp": 230.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "1f783ce5-81b6-45b4-8d87-bb1503adf913",
+        "event_code": "EVT-20260902-1F783C",
+        "latitude": 21.558,
+        "longitude": 72.193,
+        "max_frp": 175.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "fe9343de-2f95-4eb0-aacf-bdb340466b5d",
+        "event_code": "EVT-20260902-FE9343",
+        "latitude": 21.65,
+        "longitude": 72.22,
+        "max_frp": 230.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "30b66800-8b8f-4eb3-b2b2-4f13777c65d2",
+        "event_code": "EVT-20260902-30B668",
+        "latitude": 21.558,
+        "longitude": 72.193,
+        "max_frp": 175.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "d7c3ae50-2755-4079-bd7e-08f9a401eca1",
+        "event_code": "EVT-20260902-D7C3AE",
+        "latitude": 21.65,
+        "longitude": 72.22,
+        "max_frp": 230.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "93434910-1cc8-4a53-bc09-67d9a1f94188",
+        "event_code": "EVT-20260902-934349",
+        "latitude": 21.558,
+        "longitude": 72.193,
+        "max_frp": 175.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      }
+    ]
+  },
+  "safety_invariants": {
+    "authoritative_db_untouched": true,
+    "is_operational_dispatch": false,
+    "zero_live_dispatches_emitted": 0
+  }
+}
