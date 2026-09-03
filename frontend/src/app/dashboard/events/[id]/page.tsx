@@ -10,6 +10,7 @@ import ShapWaterfallChart from "@/components/intelligence/ShapWaterfallChart";
 import { ThermalEvent, AlertDossier, AuditTrailItem } from "@/types";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
+import { formatNumber, formatFrp, formatPercent, formatCoord, formatDistance } from "@/lib/formatters";
 import { 
   ArrowLeft, Download, CheckSquare, Shield, 
   Activity, MapPin, Calendar, Clock, AlertTriangle, 
@@ -224,7 +225,7 @@ export default function EventDetailPage() {
                 </span>
                 <span>•</span>
                 <span className="font-mono">
-                  {event.latitude.toFixed(5)}°N, {event.longitude.toFixed(5)}°E
+                  {formatCoord(event.latitude, event.longitude, 5)}
                 </span>
                 <span>•</span>
                 <span>
@@ -232,7 +233,7 @@ export default function EventDetailPage() {
                 </span>
                 <span>•</span>
                 <span>
-                  <strong>Peak FRP:</strong> <strong className="text-orange-400">{event.max_frp.toFixed(1)} MW</strong>
+                  <strong>Peak FRP:</strong> <strong className="text-orange-400">{formatFrp(event.max_frp)}</strong>
                 </span>
               </div>
             </div>
@@ -395,7 +396,7 @@ export default function EventDetailPage() {
                   </div>
                   <div className="text-lg font-black text-white">{pClass}</div>
                   <div className="text-xs text-emerald-400 font-mono">
-                    {(pConf * 100).toFixed(1)}% Calibrated Platt Confidence
+                    {formatPercent(pConf, 1)} Calibrated Platt Confidence
                   </div>
                   <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800">
                     Routing: <strong className="text-purple-300">{alertMeta?.routing_tier || "TIER 1"}</strong>
@@ -409,13 +410,13 @@ export default function EventDetailPage() {
                     <Flame className="w-4 h-4 text-orange-400" />
                   </div>
                   <div className="text-lg font-black text-orange-400 font-mono">
-                    {event.max_frp.toFixed(1)} MW <span className="text-xs text-slate-400 font-normal">Peak</span>
+                    {formatFrp(event.max_frp)} <span className="text-xs text-slate-400 font-normal">Peak</span>
                   </div>
                   <div className="text-xs text-slate-300 font-mono">
-                    Mean FRP: {event.avg_frp.toFixed(1)} MW • Brightness: {event.avg_brightness.toFixed(1)} K
+                    Mean FRP: {formatFrp(event.avg_frp)} • Brightness: {formatNumber(event.avg_brightness, 1)} K
                   </div>
                   <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800">
-                    Persistence Score: <strong className="text-white">{event.features?.persistence_score?.toFixed(2) || "0.85"}</strong>
+                    Persistence Score: <strong className="text-white">{formatNumber(event.features?.persistence_score, 2, "0.85")}</strong>
                   </div>
                 </div>
 
@@ -426,13 +427,13 @@ export default function EventDetailPage() {
                     <ShieldAlert className="w-4 h-4 text-red-400" />
                   </div>
                   <div className="text-lg font-black text-red-400 font-mono">
-                    {event.risk?.risk_score?.toFixed(1) || "47.1"}/100
+                    {formatNumber(event.risk?.risk_score, 1, "47.1")}/100
                   </div>
                   <div className="text-xs text-slate-300 font-mono">
                     Severity: <strong className="text-amber-300">{rLevel}</strong>
                   </div>
                   <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800">
-                    Intensity: {event.risk?.intensity_subscore?.toFixed(0) || "35"} • Exposure: {event.risk?.exposure_subscore?.toFixed(0) || "25"} • Hazard: {event.risk?.context_subscore?.toFixed(0) || "18"}
+                    Intensity: {formatNumber(event.risk?.intensity_subscore, 0, "35")} • Exposure: {formatNumber(event.risk?.exposure_subscore, 0, "25")} • Hazard: {formatNumber(event.risk?.context_subscore, 0, "18")}
                   </div>
                 </div>
               </div>
@@ -453,7 +454,7 @@ export default function EventDetailPage() {
                     <div>
                       <span className="text-slate-400">Nearest Facility Distance:</span>{" "}
                       <strong className="text-white font-mono">
-                        {event.features?.dist_to_facility_m ? `${event.features.dist_to_facility_m.toFixed(0)} meters` : "120 meters"}
+                        {event.features?.dist_to_facility_m !== undefined && event.features?.dist_to_facility_m !== null ? formatDistance(event.features.dist_to_facility_m) : "120 m"}
                       </strong>
                     </div>
 
@@ -564,8 +565,8 @@ export default function EventDetailPage() {
                     <div>
                       <span className="text-slate-400">Distance to Protected Area:</span>{" "}
                       <span className="text-white font-mono">
-                        {dossier?.evidence_sources?.fsi_forest_context?.dist_to_protected_area_m
-                          ? `${(dossier.evidence_sources.fsi_forest_context.dist_to_protected_area_m / 1000).toFixed(1)} km`
+                        {dossier?.evidence_sources?.fsi_forest_context?.dist_to_protected_area_m !== undefined && dossier?.evidence_sources?.fsi_forest_context?.dist_to_protected_area_m !== null
+                          ? formatDistance(dossier.evidence_sources.fsi_forest_context.dist_to_protected_area_m)
                           : "14.2 km to nearest Wildlife Sanctuary"}
                       </span>
                     </div>
@@ -613,11 +614,11 @@ export default function EventDetailPage() {
                     {(detections.length > 0 ? detections : (dossier?.firms_observations || [])).map((d: any, idx: number) => (
                       <tr key={d.id || d.detection_id || idx} className="hover:bg-slate-900/40">
                         <td className="p-2.5 text-amber-400 font-bold">{d.sensor || "VIIRS-NOAA21"}</td>
-                        <td className="p-2.5">{d.latitude?.toFixed(5)}°N</td>
-                        <td className="p-2.5">{d.longitude?.toFixed(5)}°E</td>
-                        <td className="p-2.5">{new Date(d.acq_timestamp).toLocaleString()}</td>
-                        <td className="p-2.5 text-orange-400 font-bold">{d.frp?.toFixed(1) || "12.5"}</td>
-                        <td className="p-2.5">{d.brightness?.toFixed(1) || "340.2"}</td>
+                        <td className="p-2.5">{formatNumber(d.latitude, 5)}°N</td>
+                        <td className="p-2.5">{formatNumber(d.longitude, 5)}°E</td>
+                        <td className="p-2.5">{d.acq_timestamp ? new Date(d.acq_timestamp).toLocaleString() : "Live"}</td>
+                        <td className="p-2.5 text-orange-400 font-bold">{formatFrp(d.frp)}</td>
+                        <td className="p-2.5">{formatNumber(d.brightness, 1, "340.2")}</td>
                         <td className="p-2.5 text-emerald-400">{d.confidence ? `${d.confidence}%` : "nominal"}</td>
                         <td className="p-2.5">{d.day_night === "D" ? "Day" : "Night"}</td>
                       </tr>
@@ -650,7 +651,7 @@ export default function EventDetailPage() {
                       <div key={cls} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
                         <div className="text-slate-400 truncate">{cls}</div>
                         <div className="text-base font-bold font-mono text-white">
-                          {(prob * 100).toFixed(1)}%
+                          {formatPercent(prob, 1)}
                         </div>
                         <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                           <div

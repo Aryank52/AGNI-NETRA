@@ -1,5 +1,6 @@
 import React from "react";
 import { ThermalEvent } from "@/types";
+import { formatNumber, formatFrp, formatDistance } from "@/lib/formatters";
 import { Satellite, Shield, MapPin, Calendar, Clock, Activity, CheckCircle, Database } from "lucide-react";
 
 interface EvidenceSummaryCardProps {
@@ -33,7 +34,7 @@ export default function EvidenceSummaryCard({ event }: EvidenceSummaryCardProps)
             NASA VIIRS NOAA-20 / MODIS
           </div>
           <div className="text-[11px] text-slate-400 font-mono">
-            {event.detection_count} detections • Peak FRP: <strong className="text-amber-400">{event.max_frp.toFixed(1)} MW</strong>
+            {event.detection_count} detections • Peak FRP: <strong className="text-amber-400">{formatFrp(event.max_frp)}</strong>
           </div>
         </div>
 
@@ -47,7 +48,7 @@ export default function EvidenceSummaryCard({ event }: EvidenceSummaryCardProps)
             {hasKnownFac ? "Known Industrial Facility" : (event.facility_status === "CANDIDATE" ? "Candidate Industrial Source (Discovered)" : "Uncataloged Thermal Location")}
           </div>
           <div className="text-[11px] text-slate-400">
-            {event.nearest_facility_distance_m !== undefined ? `Distance to facility boundary: ${event.nearest_facility_distance_m.toFixed(0)}m` : "No proximate registered facility"}
+            {event.nearest_facility_distance_m !== undefined ? `Distance to facility boundary: ${formatDistance(event.nearest_facility_distance_m)}` : "No proximate registered facility"}
           </div>
         </div>
 
@@ -58,10 +59,10 @@ export default function EvidenceSummaryCard({ event }: EvidenceSummaryCardProps)
             TEMPORAL RECURRENCE DYNAMICS
           </div>
           <div className="text-slate-200 font-medium">
-            {event.features && event.features.persistence_score > 3.0 ? "Persistent Multiday Emitter" : "Transient Episode"}
+            {event.features && (event.features.persistence_score || 0) > 3.0 ? "Persistent Multiday Emitter" : "Transient Episode"}
           </div>
           <div className="text-[11px] text-slate-400 font-mono">
-            Persistence Index: <strong className="text-white">{event.features?.persistence_score?.toFixed(1) || "N/A"}</strong> / 10.0
+            Persistence Index: <strong className="text-white">{formatNumber(event.features?.persistence_score, 1, "N/A")}</strong> / 10.0
           </div>
         </div>
 

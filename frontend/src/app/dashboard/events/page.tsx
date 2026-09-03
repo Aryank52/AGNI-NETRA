@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
 import { fetchApi } from "@/lib/api";
+import { formatNumber, formatFrp, formatPercent, formatCoord, formatDistance } from "@/lib/formatters";
 import { 
   Flame, Filter, Search, ChevronRight, Activity, 
   MapPin, ShieldAlert, Sparkles, Download, Layers,
@@ -279,19 +280,19 @@ export default function EventsInventoryPage() {
                         </td>
                         <td className="p-3 text-slate-300">
                           <div className="font-semibold text-white">{evt.state}</div>
-                          <div className="text-[11px] text-slate-400">{evt.district || `${evt.latitude.toFixed(2)}°N, ${evt.longitude.toFixed(2)}°E`}</div>
+                          <div className="text-[11px] text-slate-400">{evt.district || formatCoord(evt.latitude, evt.longitude, 2)}</div>
                         </td>
                         <td className="p-3">
                           <div className="font-bold text-amber-300">{pClass}</div>
-                          <div className="text-[10px] text-emerald-400 font-mono">{(conf * 100).toFixed(0)}% Conf</div>
+                          <div className="text-[10px] text-emerald-400 font-mono">{formatPercent(conf, 0)} Conf</div>
                         </td>
                         <td className="p-3 font-mono font-bold text-white">
-                          <div>{evt.max_frp.toFixed(1)} MW</div>
-                          <div className="text-[10px] text-slate-400 font-sans">Mean: {evt.avg_frp.toFixed(1)} MW</div>
+                          <div>{formatFrp(evt.max_frp)}</div>
+                          <div className="text-[10px] text-slate-400 font-sans">Mean: {formatFrp(evt.avg_frp)}</div>
                         </td>
                         <td className="p-3">
                           <span className="font-mono text-emerald-400 font-bold">
-                            {evt.features?.persistence_score?.toFixed(1) || "5.0"}/10
+                            {formatNumber(evt.features?.persistence_score, 1, "5.0")}/10
                           </span>
                           <div className="text-[10px] text-slate-400">{evt.detection_count} Passes</div>
                         </td>
@@ -306,7 +307,7 @@ export default function EventsInventoryPage() {
                             {isCandidate ? "CANDIDATE DISCOVERY" : evt.facility_status}
                           </span>
                           <div className="text-[10px] text-slate-400 mt-0.5">
-                            {evt.nearest_facility_distance_m !== undefined ? `${evt.nearest_facility_distance_m.toFixed(0)}m to plant` : "No plant near"}
+                            {evt.nearest_facility_distance_m !== undefined && evt.nearest_facility_distance_m !== null ? `${formatDistance(evt.nearest_facility_distance_m)} to plant` : "No plant near"}
                           </div>
                         </td>
                         <td className="p-3">

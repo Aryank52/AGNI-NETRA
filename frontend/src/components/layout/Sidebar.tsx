@@ -16,37 +16,49 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  // Tier 1: COMMAND CENTER
   const commandCenter = [
-    { label: "GIS Tactical Map", href: "/dashboard", icon: Map, badge: "NRT" },
-    { label: "Mission Control (AGNI-SAT)", href: "/dashboard/mission-control", icon: Radio, badge: "SIM" },
-    { label: "India Thermal Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
-    { label: "Thermal Events", href: "/dashboard/events", icon: Flame },
-    { label: "Incident Alerts", href: "/dashboard/alerts", icon: Bell, badge: "ALERT" },
+    { label: "National Command Map", href: "/dashboard", icon: Map, badge: "LIVE" },
+    { label: "Thermal Events Inventory", href: "/dashboard/events", icon: Flame, badge: "NRT" },
+    { label: "Incident Alert Desk", href: "/dashboard/alerts", icon: Bell, badge: "ALERT" },
   ];
 
+  // Tier 2: INTELLIGENCE
   const intelligenceModules = [
-    { label: "Candidate Discovery", href: "/dashboard/candidates", icon: Search, badge: "USP" },
-    { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity },
+    { label: "Industrial Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
     { label: "Industrial Facilities", href: "/dashboard/facilities", icon: Factory },
+    { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity, badge: "PERSIST" },
+    { label: "Candidate Discovery", href: "/dashboard/candidates", icon: Search, badge: "USP" },
     { label: "Thermal Baselines", href: "/dashboard/baselines", icon: Sliders },
-    { label: "Anomaly Radar", href: "/dashboard/anomalies", icon: AlertOctagon },
-    { label: "Risk Matrix", href: "/dashboard/risk", icon: ShieldAlert },
+    { label: "Anomaly Radar", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
     { label: "Historical Trends", href: "/dashboard/analytics", icon: BarChart3 },
   ];
 
-  const operations = [
+  // Tier 3: INVESTIGATION & VERIFICATION
+  const investigation = [
     { label: "Analyst Verification", href: "/dashboard/verification", icon: CheckSquare, badge: "HITL" },
+    { label: "Multi-Factor Risk Matrix", href: "/dashboard/risk", icon: ShieldAlert },
     { label: "Intelligence Reports", href: "/dashboard/reports", icon: FileText },
   ];
 
+  // Tier 4: SATELLITE OPERATIONS
+  const satellite = [
+    { label: "Mission Control (AGNI-SAT)", href: "/dashboard/mission-control", icon: Radio, badge: "ORBIT" },
+  ];
+
+  // Tier 5: SECTOR & PUBLIC PORTALS
   const portals = [
-    { label: "Research Portal", href: "/portal/research", icon: BookOpen },
-    { label: "Industry Portal", href: "/portal/industry", icon: Building2 },
-    { label: "Public Transparency", href: "/portal/public", icon: Eye },
-    { label: "Data Ingestion Control", href: "/admin/data-sources", icon: Database, badge: "LIVE" },
+    { label: "Public Transparency", href: "/portal/public", icon: Eye, badge: "PUBLIC" },
+    { label: "Industry Compliance", href: "/portal/industry", icon: Building2, badge: "B2B" },
+    { label: "Research & Academic", href: "/portal/research", icon: BookOpen, badge: "OPEN" },
+  ];
+
+  // Tier 6: SYSTEM & GOVERNANCE (Admin Only)
+  const systemGovernance = [
+    { label: "Data Ingestion Control", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
     { label: "Model Registry", href: "/admin/models", icon: Cpu, badge: "ML" },
-    { label: "Dataset Control", href: "/admin/datasets", icon: Layers, badge: "DATA" },
-    { label: "Admin & Audit", href: "/admin", icon: Settings, minRole: "ADMIN" },
+    { label: "Dataset Registry", href: "/admin/datasets", icon: Layers, badge: "DATA" },
+    { label: "Admin & Audit Trail", href: "/admin", icon: Settings, badge: "GOV" },
   ];
 
   const renderNavGroup = (title: string, items: any[]) => (
@@ -87,8 +99,14 @@ export default function Sidebar() {
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : item.badge === "DATA"
                     ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                    : item.badge === "SIM"
+                    : item.badge === "ORBIT"
                     ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30"
+                    : item.badge === "RADAR"
+                    ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                    : item.badge === "PUBLIC"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : item.badge === "GOV"
+                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
                     : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 }`}>
                   {item.badge}
@@ -105,9 +123,11 @@ export default function Sidebar() {
     <aside className="w-64 bg-agni-slate/95 border-r border-agni-border flex flex-col justify-between py-4 px-3 shrink-0 hidden md:flex overflow-y-auto">
       <div>
         {renderNavGroup("Command Center", commandCenter)}
-        {renderNavGroup("Intelligence & Analysis", intelligenceModules)}
-        {renderNavGroup("Operations & HITL", operations)}
-        {renderNavGroup("Specialized Portals", portals)}
+        {renderNavGroup("Intelligence & Discovery", intelligenceModules)}
+        {renderNavGroup("Investigation & HITL", investigation)}
+        {renderNavGroup("Satellite Operations", satellite)}
+        {renderNavGroup("Operational Portals", portals)}
+        {user?.role === "ADMIN" && renderNavGroup("System & Governance", systemGovernance)}
 
         {/* AI & Remote Sensing Model Badge */}
         <div className="mt-4 px-3 py-2.5 rounded-xl bg-agni-card/70 border border-agni-border/60">
@@ -127,8 +147,8 @@ export default function Sidebar() {
 
       {/* Footer Provenance */}
       <div className="px-3 text-[10px] text-slate-500 border-t border-slate-800 pt-3 mt-4">
-        <div>AGNI-NETRA Platform</div>
-        <div className="text-[9px] text-slate-600">NASA FIRMS • ISRO Bhuvan • OpenStreetMap</div>
+        <div className="font-mono text-slate-400 font-bold">AGNI-NETRA v1.0</div>
+        <div className="text-[9px] text-slate-600">NASA FIRMS • ISRO Bhuvan • PostGIS</div>
       </div>
     </aside>
   );

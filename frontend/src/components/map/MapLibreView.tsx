@@ -413,7 +413,7 @@ export default function MapLibreView({
           <div class="space-y-1 text-xs">
             <div><strong>Predicted:</strong> <span class="text-amber-300 font-semibold">${p.predicted_class}</span></div>
             <div><strong>Peak FRP:</strong> <span class="font-mono font-bold text-white">${formatNumber(p.max_frp)} MW</span></div>
-            <div><strong>Confidence:</strong> <span class="font-mono text-emerald-400">${((p.confidence || 0.8) * 100).toFixed(0)}%</span></div>
+            <div><strong>Confidence:</strong> <span class="font-mono text-emerald-400">${formatPercent(p.confidence, 0, "80%")}</span></div>
             <div><strong>Location:</strong> ${p.state || ""} ${p.district ? `(${p.district})` : ""}</div>
           </div>
           <div class="pt-1.5">

@@ -8,6 +8,7 @@ import RiskBadge from "@/components/intelligence/RiskBadge";
 import { Alert } from "@/types";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
+import { formatNumber, formatPercent } from "@/lib/formatters";
 import { 
   Bell, ShieldAlert, CheckCircle2, AlertTriangle, 
   RefreshCw, CheckSquare, Clock, Filter, SlidersHorizontal,
@@ -353,7 +354,7 @@ export default function AlertsPage() {
                               priority >= 70 ? "#ef4444" : priority >= 50 ? "#f97316" : "#3b82f6",
                           }}
                         >
-                          <span>PRIO: {priority.toFixed(1)}</span>
+                          <span>PRIO: {formatNumber(priority, 1)}</span>
                         </div>
 
                         {/* Routing Tier Chip */}
@@ -409,7 +410,7 @@ export default function AlertsPage() {
                       <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
                         <div className="text-[10px] text-slate-400">CONFIDENCE</div>
                         <div className="font-bold text-emerald-400 font-mono mt-0.5">
-                          {alertItem.confidence ? `${(alertItem.confidence * 100).toFixed(1)}%` : "—"}
+                          {formatPercent(alertItem.confidence, 1, "—")}
                         </div>
                       </div>
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
+import { formatCoord, safeArray } from "@/lib/formatters";
 import { 
   Building2, ShieldCheck, Flame, Send, 
   CheckCircle2, RefreshCw, AlertCircle, FileText,
@@ -146,7 +147,7 @@ export default function IndustryPortalPage() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
                     <span className="text-slate-500 font-mono text-[11px]">
-                      {fac.latitude.toFixed(2)}°N, {fac.longitude.toFixed(2)}°E
+                      {formatCoord(fac.latitude, fac.longitude, 2)}
                     </span>
                     <button
                       onClick={() => {

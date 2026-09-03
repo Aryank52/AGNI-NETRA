@@ -8,6 +8,7 @@ import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
+import { formatNumber, formatFrp, formatPercent, formatCoord } from "@/lib/formatters";
 import { 
   CheckSquare, Shield, CheckCircle2, 
   XCircle, HelpCircle, ChevronRight, MessageSquare
@@ -117,22 +118,22 @@ export default function VerificationPage() {
                     <div className="text-[10px] text-slate-500">AI PREDICTION</div>
                     <div className="text-white font-bold">{evt.prediction?.predicted_class || "Uncertain"}</div>
                     <div className="text-[10px] text-amber-400 font-bold">
-                      {((evt.prediction?.confidence || 0.8) * 100).toFixed(1)}% Confidence
+                      {formatPercent(evt.prediction?.confidence, 1, "80.0%")} Confidence
                     </div>
                   </div>
 
                   <div>
                     <div className="text-[10px] text-slate-500">PEAK RADIATIVE POWER</div>
-                    <div className="text-white font-bold">{evt.max_frp.toFixed(1)} MW</div>
+                    <div className="text-white font-bold">{formatFrp(evt.max_frp)}</div>
                     <div className="text-[10px] text-slate-400">{evt.detection_count} Observations</div>
                   </div>
 
                   <div>
                     <div className="text-[10px] text-slate-500">PERSISTENCE</div>
                     <div className="text-emerald-400 font-bold">
-                      {evt.features?.persistence_score?.toFixed(1) || "N/A"} / 10.0
+                      {formatNumber(evt.features?.persistence_score, 1, "N/A")} / 10.0
                     </div>
-                    <div className="text-[10px] text-slate-400">Day/Night: {evt.features?.day_night_ratio?.toFixed(2) || "1.0"}x</div>
+                    <div className="text-[10px] text-slate-400">Day/Night: {formatNumber(evt.features?.day_night_ratio, 2, "1.00")}x</div>
                   </div>
 
                   <div>
@@ -145,7 +146,7 @@ export default function VerificationPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                   <span className="text-[11px] text-slate-400">
-                    Location: {evt.latitude.toFixed(4)}°N, {evt.longitude.toFixed(4)}°E
+                    Location: {formatCoord(evt.latitude, evt.longitude, 4)}
                   </span>
 
                   <div className="flex items-center gap-2">

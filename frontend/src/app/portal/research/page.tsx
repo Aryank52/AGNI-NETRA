@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
+import { formatNumber } from "@/lib/formatters";
 import { 
   BookOpen, Cpu, Database, Layers, 
   Download, FileCode, CheckCircle2, RefreshCw,
@@ -142,7 +143,7 @@ export default function ResearchPortalPage() {
               <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
                 <div className="text-slate-500 text-[10px]">XGBOOST 5-FOLD CV F1</div>
                 <div className="text-2xl font-extrabold text-emerald-400 mt-1">
-                  {overview?.evaluation_metrics?.cv_5fold_f1_mean?.toFixed(3) || "0.978"}
+                  {formatNumber(overview?.evaluation_metrics?.cv_5fold_f1_mean, 3, "0.978")}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">Primary Model</div>
               </div>
@@ -158,7 +159,7 @@ export default function ResearchPortalPage() {
               <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
                 <div className="text-slate-500 text-[10px]">HOLDOUT ACCURACY</div>
                 <div className="text-2xl font-extrabold text-cyan-400 mt-1">
-                  {overview?.evaluation_metrics?.overall_accuracy?.toFixed(3) || "0.985"}
+                  {formatNumber(overview?.evaluation_metrics?.overall_accuracy, 3, "0.985")}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">Holdout Test Split</div>
               </div>

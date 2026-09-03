@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
 import { fetchApi } from "@/lib/api";
+import { formatFrp } from "@/lib/formatters";
 import { 
   FileText, Download, Shield, Calendar, 
   MapPin, CheckCircle2, ChevronRight, Eye
@@ -76,7 +77,7 @@ export default function ReportsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {evt.prediction?.predicted_class || "Industrial Fire"} • Peak FRP: {evt.max_frp.toFixed(1)} MW • {evt.detection_count} Observations
+                      {evt.prediction?.predicted_class || "Industrial Fire"} • Peak FRP: {formatFrp(evt.max_frp)} • {evt.detection_count} Observations
                     </p>
                   </div>
                 </div>

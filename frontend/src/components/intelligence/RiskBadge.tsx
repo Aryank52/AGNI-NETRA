@@ -44,8 +44,8 @@ export default function RiskBadge({ level, score, showScore = true }: RiskBadgeP
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
       <span>{normalizedLevel}</span>
-      {showScore && score !== undefined && (
-        <span className="opacity-80">({score.toFixed(1)})</span>
+      {showScore && score !== undefined && score !== null && !isNaN(Number(score)) && (
+        <span className="opacity-80">({Number(score).toFixed(1)})</span>
       )}
     </span>
   );

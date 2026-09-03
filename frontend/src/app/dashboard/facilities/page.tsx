@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { IndustrialFacility } from "@/types";
 import { fetchApi } from "@/lib/api";
+import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatters";
 import { 
   Factory, Search, MapPin, Clock, 
   Activity, Shield, ChevronRight, CheckCircle2
@@ -134,26 +135,26 @@ export default function FacilitiesPage() {
                     <div>
                       <div className="text-[10px] text-slate-500">BASELINE MEAN</div>
                       <div className="font-bold text-amber-400">
-                        {baseline?.mean_frp ? `${baseline.mean_frp.toFixed(1)} MW` : "110 MW"}
+                        {formatFrp(baseline?.mean_frp, "110.0 MW")}
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-500">STD DEV (σ)</div>
                       <div className="font-bold text-slate-300">
-                        {baseline?.std_frp ? `±${baseline.std_frp.toFixed(1)}` : "±22.0"}
+                        {baseline?.std_frp !== undefined && baseline?.std_frp !== null ? `±${formatNumber(baseline.std_frp, 1)}` : "±22.0"}
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-500">DAY/NIGHT</div>
                       <div className="font-bold text-emerald-400">
-                        {baseline?.day_night_ratio ? `${baseline.day_night_ratio.toFixed(2)}x` : "1.1x"}
+                        {formatNumber(baseline?.day_night_ratio, 2, "1.10")}x
                       </div>
                     </div>
                   </div>
 
                   <div className="pt-1 flex items-center justify-between text-xs">
                     <span className="text-slate-500 text-[11px]">
-                      Source: {fac.source} • Coords: {fac.latitude.toFixed(4)}°N, {fac.longitude.toFixed(4)}°E
+                      Source: {fac.source} • Coords: {formatCoord(fac.latitude, fac.longitude, 4)}
                     </span>
                     <Link
                       href={`/dashboard?state=${fac.state}`}

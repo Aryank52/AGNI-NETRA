@@ -81,3 +81,7 @@ jobs:
         run: |
           test -f render.yaml && echo "render.yaml validated"
           test -f vercel.json || test -f frontend/vercel.json && echo "vercel.json validated"
+
+      - name: Validate Backend Docker Container Build
+        run: |
+          docker build -t agni-netra-backend:ci -f deployment/Dockerfile.backend .

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatNumber, formatFrp, formatPercent, formatDistance, safeArray } from "@/lib/formatters";
 import { 
   Flame, ShieldAlert, Cpu, Activity, 
   Layers, MapPin, Factory, Zap, Pickaxe, 
@@ -174,7 +175,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                 <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
                   <div className="text-[10px] text-slate-400">Calibrated Confidence</div>
                   <div className="text-sm font-extrabold text-emerald-400 font-mono mt-0.5">
-                    {((ml_intelligence?.confidence || 0.8) * 100).toFixed(1)}%
+                    {formatPercent(ml_intelligence?.confidence, 1, "80.0%")}
                   </div>
                 </div>
               </div>
@@ -291,7 +292,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                     <span>3. Calibrated ML Attribution</span>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Target classified as <strong className="text-amber-400">{ml_intelligence?.predicted_class}</strong> ({((ml_intelligence?.confidence || 0.8) * 100).toFixed(1)}% confidence).
+                    Target classified as <strong className="text-amber-400">{ml_intelligence?.predicted_class}</strong> ({formatPercent(ml_intelligence?.confidence, 1, "80.0%")} confidence).
                     <span className="text-slate-500 italic block mt-0.5">SHAP values provide local mathematical feature attributions, distinguishing statistical alignment from causal physical proof.</span>
                   </p>
                 </div>
@@ -320,7 +321,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                       </div>
                       <div className="text-right font-mono">
                         <div className="text-xs font-bold text-cyan-300">
-                          {fac.distance_m < 1000 ? `${fac.distance_m} m` : `${(fac.distance_m / 1000).toFixed(2)} km`}
+                          {formatDistance(fac.distance_m)}
                         </div>
                         <div className="text-[9px] text-slate-500">PROXIMITY</div>
                       </div>
@@ -351,7 +352,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                       </div>
                       <div className="text-right font-mono">
                         <div className="text-xs font-bold text-amber-300">
-                          {pow.distance_m < 1000 ? `${pow.distance_m} m` : `${(pow.distance_m / 1000).toFixed(2)} km`}
+                          {formatDistance(pow.distance_m)}
                         </div>
                         <div className="text-[9px] text-slate-500">DISTANCE</div>
                       </div>
@@ -410,7 +411,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                       </div>
                       <div className="text-right font-mono">
                         <div className="text-xs font-bold text-emerald-400">
-                          {(pa.distance_m / 1000).toFixed(2)} km
+                          {formatDistance(pa.distance_m)}
                         </div>
                         <div className="text-[9px] text-slate-500">
                           {pa.distance_m <= 10000 ? "INSIDE ESZ" : "OUTSIDE ESZ"}
@@ -455,7 +456,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                   <div className="text-[10px] text-slate-400">{obs.acq_timestamp ? new Date(obs.acq_timestamp).toLocaleString() : "Live"}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-amber-400 font-bold">{obs.frp?.toFixed(1) || 0.0} MW</div>
+                  <div className="text-amber-400 font-bold">{formatFrp(obs.frp)}</div>
                   <div className="text-[10px] text-slate-400">{obs.day_night === "D" ? "Day" : "Night"} • Conf: {obs.confidence}</div>
                 </div>
               </div>

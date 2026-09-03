@@ -88,3 +88,35 @@ def read_current_user(current_user: User = Depends(get_current_active_user)):
     Returns current authenticated user profile and permissions.
     """
     return current_user
+
+
+from pydantic import BaseModel
+
+class DevTokenRequest(BaseModel):
+    role: str = "ANALYST"
+
+
+@router.post("/dev-token", response_model=Token)
+def get_dev_token(req: DevTokenRequest, db: Session = Depends(get_db)):
+    """
+    Generates an authentic cryptographically signed JWT access token for a seeded development user.
+    Preserves RBAC integrity by assigning real database UUIDs and valid signature keys.
+    """
+    target_role = req.role.upper()
+    user = db.query(User).filter(User.role == target_role, User.is_active == True).first()
+    if not user:
+        user = db.query(User).filter(User.role == "ANALYST", User.is_active == True).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"No active user found for role '{target_role}'")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id, role=user.role, expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+

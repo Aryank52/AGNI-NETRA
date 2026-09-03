@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
+import { formatPercent } from "@/lib/formatters";
 import { 
   Cpu, ArrowLeft, RefreshCw, CheckCircle2, 
   ShieldCheck, AlertTriangle, Play, Sliders,
@@ -172,7 +173,7 @@ export default function ModelRegistryPage() {
                     <div>
                       <div className="text-[10px] text-slate-500">MACRO F1</div>
                       <div className="text-emerald-400 font-bold mt-0.5 text-sm">
-                        {m.metrics?.macro_f1 ? (m.metrics.macro_f1 * 100).toFixed(1) + "%" : "N/A"}
+                        {formatPercent(m.metrics?.macro_f1, 1, "N/A")}
                       </div>
                     </div>
                     <div>
@@ -184,7 +185,7 @@ export default function ModelRegistryPage() {
                     <div>
                       <div className="text-[10px] text-slate-500">SPATIAL F1</div>
                       <div className="text-amber-400 font-bold mt-0.5 text-sm">
-                        {m.metrics?.spatial_holdout_f1 ? (m.metrics.spatial_holdout_f1 * 100).toFixed(1) + "%" : "N/A"}
+                        {formatPercent(m.metrics?.spatial_holdout_f1, 1, "N/A")}
                       </div>
                     </div>
                   </div>

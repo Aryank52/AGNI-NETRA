@@ -10,10 +10,12 @@ from backend.app.models.schemas import VerificationCreate, VerificationRecordOut
 router = APIRouter()
 
 
+@router.get("", response_model=List[ThermalEventOut])
 @router.get("/queue", response_model=List[ThermalEventOut])
 def get_verification_queue(
     db: Session = Depends(get_db),
-    priority_filter: Optional[str] = None
+    priority_filter: Optional[str] = None,
+    current_user: User = Depends(require_analyst)
 ):
     """
     Retrieves prioritized list of thermal events pending human analyst verification.

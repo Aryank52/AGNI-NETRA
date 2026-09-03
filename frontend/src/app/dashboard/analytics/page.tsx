@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
+import { formatFrp } from "@/lib/formatters";
 import { 
   BarChart3, PieChart, Activity, 
   TrendingUp, Layers, MapPin
@@ -166,7 +167,7 @@ export default function AnalyticsPage() {
                     <tr key={idx} className="hover:bg-slate-800/40">
                       <td className="p-3 font-bold text-white font-sans">{st.state}</td>
                       <td className="p-3 text-amber-400 font-bold">{st.event_count}</td>
-                      <td className="p-3 text-slate-300">{st.avg_frp.toFixed(1)} MW</td>
+                      <td className="p-3 text-slate-300">{formatFrp(st.avg_frp)}</td>
                       <td className="p-3 text-red-400 font-bold">{st.high_risk_count}</td>
                     </tr>
                   ))}

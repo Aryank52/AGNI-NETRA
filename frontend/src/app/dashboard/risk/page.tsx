@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
 import { fetchApi } from "@/lib/api";
+import { formatFrp, formatDistance } from "@/lib/formatters";
 import { 
   ShieldAlert, Shield, AlertTriangle, ChevronRight, 
   Flame, RefreshCw, Layers, Compass, CheckCircle2,
@@ -153,7 +154,7 @@ export default function RiskIntelligencePage() {
                       <RiskBadge level={evt.risk?.risk_level || "CRITICAL"} score={evt.risk?.risk_score} />
                     </div>
                     <p className="text-xs text-slate-300">
-                      Classification: <strong className="text-amber-300">{evt.prediction?.predicted_class || "Industrial Fire"}</strong> • Peak FRP: <strong className="text-white font-mono">{evt.max_frp.toFixed(1)} MW</strong> • Facility: {evt.nearest_facility_distance_m !== undefined ? `${evt.nearest_facility_distance_m.toFixed(0)}m` : "Uncataloged"}
+                      Classification: <strong className="text-amber-300">{evt.prediction?.predicted_class || "Industrial Fire"}</strong> • Peak FRP: <strong className="text-white font-mono">{formatFrp(evt.max_frp)}</strong> • Facility: {evt.nearest_facility_distance_m !== undefined && evt.nearest_facility_distance_m !== null ? formatDistance(evt.nearest_facility_distance_m) : "Uncataloged"}
                     </p>
                     <div className="flex items-center gap-2 text-[11px] text-slate-400">
                       <span>Reasons:</span>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
+import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatters";
 import { 
   Sliders, Activity, MapPin, AlertTriangle, 
   CheckCircle2, RefreshCw, BarChart2, Shield,
@@ -145,36 +146,36 @@ export default function BaselinesPage() {
                   <div>
                     <div className="text-xs font-bold text-slate-200">{cell.state} Industrial Belt</div>
                     <div className="text-[11px] text-slate-400 font-mono">
-                      {cell.latitude_bin.toFixed(3)}°N, {cell.longitude_bin.toFixed(3)}°E
+                      {formatCoord(cell.latitude_bin, cell.longitude_bin, 3)}
                     </div>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs font-mono">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Historical Mean:</span>
-                      <span className="text-white font-bold">{cell.mean_frp.toFixed(1)} MW</span>
+                      <span className="text-white font-bold">{formatFrp(cell.mean_frp)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Std Deviation:</span>
-                      <span className="text-slate-300">±{cell.std_frp.toFixed(1)} MW</span>
+                      <span className="text-slate-300">±{formatNumber(cell.std_frp, 1)} MW</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Current Observed:</span>
                       <span className={`font-bold ${isSpike ? "text-red-400" : isElevated ? "text-amber-400" : "text-emerald-400"}`}>
-                        {cell.current_active_frp.toFixed(1)} MW
+                        {formatFrp(cell.current_active_frp)}
                       </span>
                     </div>
                     <div className="flex justify-between pt-1 border-t border-slate-800">
                       <span className="text-slate-400 font-bold">Deviation Ratio:</span>
                       <span className={`font-bold ${isSpike ? "text-red-400" : "text-slate-200"}`}>
-                        {cell.deviation_ratio.toFixed(2)}x
+                        {formatNumber(cell.deviation_ratio, 2, "1.00")}x
                       </span>
                     </div>
                   </div>
 
                   <div className="text-[10px] text-slate-500 flex justify-between">
                     <span>{cell.observation_count} Historical Passes</span>
-                    <span>Max: {cell.max_frp.toFixed(0)} MW</span>
+                    <span>Max: {formatFrp(cell.max_frp)}</span>
                   </div>
                 </div>
               );

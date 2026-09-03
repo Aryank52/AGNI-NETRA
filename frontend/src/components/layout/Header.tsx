@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import { UserRole } from "@/types";
 import { fetchApi } from "@/lib/api";
+import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { 
   Flame, ShieldAlert, Radio, UserCheck, 
   Layers, LogOut, ChevronDown, CheckCircle2, AlertTriangle,
@@ -122,21 +123,8 @@ export default function Header() {
     <header className="h-16 bg-agni-slate/95 border-b border-agni-border px-4 lg:px-6 flex items-center justify-between z-30 backdrop-blur-md sticky top-0 font-sans">
       {/* Brand Title */}
       <div className="flex items-center gap-3 shrink-0">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 p-0.5 shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform flex items-center justify-center">
-            <Flame className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-wider text-white">AGNI-NETRA</span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                v1.0 • Enterprise
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 hidden sm:block">
-              AI Industrial Thermal Risk & Anomaly Intelligence
-            </p>
-          </div>
+        <Link href="/" className="group">
+          <AgniNetraLogo size="md" subtext="GEOSPATIAL THERMAL INTELLIGENCE" />
         </Link>
       </div>
 

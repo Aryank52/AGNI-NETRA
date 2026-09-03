@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
+import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { 
   Flame, ShieldCheck, ArrowRight, Lock, 
   Mail, Users, CheckCircle2, AlertCircle, KeyRound
@@ -85,14 +86,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-agni-navy flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-slate-950">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link href="/" className="inline-flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-            <Flame className="w-6 h-6 text-slate-950 fill-slate-950" />
-          </div>
-          <span className="font-extrabold text-2xl tracking-wider text-white">
-            AGNI<span className="text-amber-400 font-mono">-NETRA</span>
-          </span>
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center">
+        <Link href="/" className="inline-block">
+          <AgniNetraLogo size={46} subtext="NATIONAL GEOSPATIAL INTELLIGENCE" />
         </Link>
         <h2 className="mt-4 text-xl font-extrabold text-white tracking-tight">
           Sign In to Decision Support Command Portal

@@ -209,10 +209,12 @@ def submit_planned_emission_declaration(
 # 3. PUBLIC PORTAL ENDPOINTS
 # ==========================================
 
+@router.get("/public/overview")
 @router.get("/public/advisories")
 def get_public_safety_advisories(db: Session = Depends(get_db)):
     """
     Public thermal safety and air quality advisories based on active high-intensity fires.
+    Exposes safe aggregated statistics without sensitive plant coordinates or internal notes.
     """
     critical_events = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.risk),
@@ -226,15 +228,17 @@ def get_public_safety_advisories(db: Session = Depends(get_db)):
         advisories.append({
             "id": e.id,
             "title": f"Active {e.prediction.predicted_class if e.prediction else 'Thermal Source'} Hazard in {e.state}",
-            "location": f"{e.district or e.state} ({e.latitude.toFixed(3) if hasattr(e.latitude, 'toFixed') else round(e.latitude, 3)}°N, {round(e.longitude, 3)}°E)",
+            "location": f"{e.district or e.state} ({round(e.latitude, 2)}°N, {round(e.longitude, 2)}°E)",
             "severity": e.risk.risk_level if e.risk else "HIGH",
             "frp_mw": e.max_frp,
-            "advisory_text": f"High thermal intensity ({e.max_frp:.1f} MW) detected. Air quality downwind may be impacted. Local authorities notified.",
+            "advisory_text": f"High thermal intensity ({e.max_frp:.1f} MW) detected. Air quality downwind may be impacted. Precautionary monitoring active.",
             "timestamp": e.last_seen.isoformat() if e.last_seen else datetime.now(timezone.utc).isoformat()
         })
 
     return {
         "total_active_hazards": len(crit),
         "national_status": "MONITORING ACTIVE" if crit else "ALL CLEAR",
+        "monitored_regions": "36 States & UTs",
         "public_advisories": advisories
     }
+
