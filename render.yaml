@@ -1,0 +1,54 @@
+# AGNI-NETRA — Render Cloud Deployment Manifest
+# Deploys the FastAPI Geospatial Intelligence API with PostGIS connectivity and background processing
+
+services:
+  # =========================================================================
+  # 1. PRIMARY FASTAPI GEOSPATIAL INTELLIGENCE WEB SERVICE
+  # =========================================================================
+  - type: web
+    name: agni-netra-api
+    runtime: python
+    region: oregon
+    plan: standard
+    buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT --workers 2"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: PORT
+        value: "8000"
+      - key: DATABASE_URL
+        sync: false # Connects to managed PostgreSQL/PostGIS database instance
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: FIRMS_MAP_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "https://agni-netra.vercel.app,http://localhost:3000"
+
+  # =========================================================================
+  # 2. SATELLITE FIRMS INGESTION & ANOMALY WORKER (BACKGROUND DAEMON)
+  # =========================================================================
+  - type: worker
+    name: agni-netra-ingestion-worker
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
+    startCommand: "python -m data_pipeline.firms_ingest_loop"
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: DATABASE_URL
+        sync: false
+      - key: FIRMS_MAP_KEY
+        sync: false

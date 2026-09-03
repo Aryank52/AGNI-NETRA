@@ -1,80 +1,75 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
+import { safeArray, safeNumber, formatFrp } from "@/lib/formatters";
 import { 
-  Eye, AlertTriangle, ShieldCheck, Wind, 
-  MapPin, Clock, ExternalLink, RefreshCw,
-  Flame, HeartHandshake, CheckCircle2
+  ShieldCheck, AlertTriangle, Wind, 
+  MapPin, CheckCircle2, Info, Eye, Shield, Lock
 } from "lucide-react";
 
 export default function PublicPortalPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadPublicData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetchApi<any>("/portals/public/advisories");
-      setData(res);
-    } catch (err) {
-      console.warn("Failed to load public portal data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadPublicData();
+    fetchApi<any>("/portals/public/overview")
+      .then((res) => setData(res))
+      .catch((err) => console.warn("Failed to load public portal:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans">
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full">
           {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                  TRANSPARENT CITIZEN ADVISORY
-                </span>
-                <span className="text-xs text-slate-400">National Public Health & Thermal Safety Feed</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Eye className="w-6 h-6 text-emerald-400" />
-                Public Thermal Awareness & Transparency Portal
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Real-time citizen-facing alerts for industrial fire events, major gas flare operations, and crop burning. Provides downwind smoke advisories and precautionary health guidelines.
-              </p>
+          <div className="border-b border-agni-border pb-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                PUBLIC SAFETY INFORMATION
+              </span>
+              <span className="text-xs text-slate-400">Citizen Awareness & Regional Advisories</span>
             </div>
-
-            <button
-              onClick={loadPublicData}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-              title="Refresh Public Advisories"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
-            </button>
+            <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+              <ShieldCheck className="w-6 h-6 text-emerald-400" />
+              National Thermal Safety & Public Advisory Portal
+            </h1>
+            <p className="text-xs text-slate-400">
+              Aggregated thermal activity summaries and regional precautionary alerts derived from satellite earth observations.
+            </p>
           </div>
 
-          {/* National Air & Thermal Status Banner */}
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-agni-card to-slate-900 border border-agni-border shadow-xl grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Strict Role Isolation & Public Disclaimer */}
+          <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3 text-xs text-slate-300">
+            <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <div className="text-[10px] text-slate-500 font-mono uppercase">National Fire Status</div>
-              <div className="text-xl font-extrabold text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>{data?.national_status || "MONITORING ACTIVE"}</span>
+              <div className="font-bold text-amber-300 text-xs uppercase flex items-center gap-2">
+                <span>Public Portal Safety Notice</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                  Secured Boundary
+                </span>
               </div>
-              <p className="text-xs text-slate-400">Continuous 15-minute NASA satellite refresh</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                This public dashboard provides high-level district advisories. For statutory security and privacy, internal industrial facility layouts, exact proprietary coordinates, ML SHAP attribution internals, and analyst audit trails are restricted to authorized regulatory personnel.
+              </p>
+            </div>
+          </div>
+
+          {/* Regional Summary Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-agni-card border border-agni-border">
+            <div className="space-y-1">
+              <div className="text-[10px] text-slate-500 font-mono uppercase">Monitored Regions</div>
+              <div className="text-xl font-extrabold text-white font-mono">
+                36 States & UTs
+              </div>
+              <p className="text-xs text-slate-400">Continuous 15-min satellite observation</p>
             </div>
 
             <div className="space-y-1">
@@ -99,33 +94,40 @@ export default function PublicPortalPage() {
               Active Regional Thermal Advisories
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data?.public_advisories?.map((adv: any) => (
-                <div
-                  key={adv.id}
-                  className="p-5 rounded-2xl bg-agni-card border border-agni-border hover:border-emerald-500/40 transition-all space-y-3 shadow-lg"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-amber-300 font-sans">{adv.title}</span>
-                    <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
-                      {adv.severity}
-                    </span>
-                  </div>
+            {loading ? (
+              <div className="p-8 text-center text-xs text-slate-400 font-mono space-y-2">
+                <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div>LOADING PUBLIC SAFETY ADVISORIES...</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {safeArray(data?.public_advisories).map((adv: any, idx: number) => (
+                  <div
+                    key={adv.id || idx}
+                    className="p-5 rounded-2xl bg-agni-card border border-agni-border hover:border-emerald-500/40 transition-all space-y-3 shadow-lg"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-xs font-bold text-amber-300 font-sans">{adv.title}</span>
+                      <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
+                        {adv.severity || "MODERATE"}
+                      </span>
+                    </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {adv.advisory_text}
-                  </p>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {adv.advisory_text}
+                    </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                      {adv.location}
-                    </span>
-                    <span className="text-white font-bold">{adv.frp_mw.toFixed(1)} MW</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                        {adv.location}
+                      </span>
+                      <span className="text-white font-bold">{formatFrp(adv.frp_mw)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>

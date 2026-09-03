@@ -3,15 +3,19 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import { ThermalEvent } from "@/types";
-import { GISLayerState } from "./LayerControl";
+import { GISLayerState, LayerOpacityState, DEFAULT_LAYER_OPACITIES } from "./LayerControl";
 import { fetchApi } from "@/lib/api";
+import { formatNumber, formatFrp } from "@/lib/formatters";
 
 interface MapLibreViewProps {
   events: ThermalEvent[];
   selectedEventId?: string | null;
   onSelectEvent?: (event: ThermalEvent) => void;
   selectedState?: string;
+  selectedDistrict?: string;
   layers?: GISLayerState;
+  opacities?: LayerOpacityState;
+  onNavigateEntity?: (entity: { lat: number; lon: number; zoom?: number }) => void;
 }
 
 // State Centroids and Zooms for Quick Focus
@@ -42,6 +46,7 @@ export default function MapLibreView({
   selectedEventId,
   onSelectEvent,
   selectedState = "India",
+  selectedDistrict = "ALL",
   layers = {
     thermalEvents: true,
     industrialFacilities: true,
@@ -51,7 +56,9 @@ export default function MapLibreView({
     lulc: true,
     stateBoundaries: true,
     districtBoundaries: true,
+    parivesh: true,
   },
+  opacities = DEFAULT_LAYER_OPACITIES,
 }: MapLibreViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -103,7 +110,7 @@ export default function MapLibreView({
       paint: {
         "line-color": "#94a3b8",
         "line-width": 1.2,
-        "line-opacity": 0.6,
+        "line-opacity": opacities.stateBoundaries ?? 0.6,
       },
     });
 
@@ -116,12 +123,12 @@ export default function MapLibreView({
       id: "admin-districts-line",
       type: "line",
       source: "admin_districts",
-      minzoom: 6.5,
+      minzoom: 6.0,
       paint: {
         "line-color": "#64748b",
         "line-width": 0.8,
         "line-dasharray": [2, 2],
-        "line-opacity": 0.5,
+        "line-opacity": opacities.districtBoundaries ?? 0.5,
       },
     });
 
@@ -136,7 +143,7 @@ export default function MapLibreView({
       source: "protected_areas",
       paint: {
         "fill-color": "#10b981",
-        "fill-opacity": 0.18,
+        "fill-opacity": (opacities.protectedAreas ?? 0.7) * 0.25,
       },
     });
     m.addLayer({
@@ -146,7 +153,7 @@ export default function MapLibreView({
       paint: {
         "line-color": "#10b981",
         "line-width": 1.5,
-        "line-opacity": 0.7,
+        "line-opacity": opacities.protectedAreas ?? 0.7,
       },
     });
 
@@ -161,7 +168,7 @@ export default function MapLibreView({
       source: "lulc",
       paint: {
         "fill-color": "#84cc16",
-        "fill-opacity": 0.15,
+        "fill-opacity": (opacities.lulc ?? 0.65) * 0.25,
       },
     });
     m.addLayer({
@@ -170,26 +177,48 @@ export default function MapLibreView({
       source: "lulc",
       paint: {
         "line-color": "#84cc16",
-        "line-width": 1,
-        "line-opacity": 0.5,
+        "line-width": 1.2,
+        "line-opacity": opacities.lulc ?? 0.65,
       },
     });
 
-    // E. IBM Mining Blocks
+    // E. IBM Mining Blocks & Mineral Points
     m.addSource("mining", {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
     });
     m.addLayer({
+      id: "mining-fill",
+      type: "fill",
+      source: "mining",
+      filter: ["==", "$type", "Polygon"],
+      paint: {
+        "fill-color": "#a855f7",
+        "fill-opacity": (opacities.mining ?? 0.85) * 0.3,
+      },
+    });
+    m.addLayer({
+      id: "mining-line",
+      type: "line",
+      source: "mining",
+      filter: ["==", "$type", "Polygon"],
+      paint: {
+        "line-color": "#c084fc",
+        "line-width": 1.8,
+        "line-opacity": opacities.mining ?? 0.85,
+      },
+    });
+    m.addLayer({
       id: "mining-point",
       type: "circle",
       source: "mining",
+      filter: ["==", "$type", "Point"],
       paint: {
-        "circle-radius": 5,
+        "circle-radius": 5.5,
         "circle-color": "#a855f7",
         "circle-stroke-width": 1.5,
         "circle-stroke-color": "#ffffff",
-        "circle-opacity": 0.85,
+        "circle-opacity": opacities.mining ?? 0.85,
       },
     });
 
@@ -203,15 +232,33 @@ export default function MapLibreView({
       type: "circle",
       source: "power_stations",
       paint: {
-        "circle-radius": 6,
+        "circle-radius": 6.5,
         "circle-color": "#f59e0b",
         "circle-stroke-width": 1.8,
         "circle-stroke-color": "#ffffff",
-        "circle-opacity": 0.9,
+        "circle-opacity": opacities.powerStations ?? 0.9,
       },
     });
 
-    // G. Industrial Facilities (35k+)
+    // G. PARIVESH Environmental Clearances (Layer 8)
+    m.addSource("parivesh", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+    m.addLayer({
+      id: "parivesh-point",
+      type: "circle",
+      source: "parivesh",
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#06b6d4",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": opacities.parivesh ?? 0.85,
+      },
+    });
+
+    // H. Industrial Facilities (35k+)
     m.addSource("industrial_facilities", {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
@@ -230,16 +277,16 @@ export default function MapLibreView({
           8,
           4.5,
           12,
-          7,
+          7.5,
         ],
         "circle-color": "#38bdf8",
         "circle-stroke-width": 1,
         "circle-stroke-color": "#0284c7",
-        "circle-opacity": 0.75,
+        "circle-opacity": opacities.industrialFacilities ?? 0.85,
       },
     });
 
-    // H. Thermal Events & Hotspots
+    // I. Thermal Events & Hotspots
     m.addSource("thermal_events", {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
@@ -256,9 +303,9 @@ export default function MapLibreView({
           4,
           8,
           8,
-          14,
+          16,
           12,
-          22,
+          24,
         ],
         "circle-color": [
           "match",
@@ -304,18 +351,26 @@ export default function MapLibreView({
         ],
         "circle-stroke-width": 2,
         "circle-stroke-color": "#ffffff",
-        "circle-opacity": 0.95,
+        "circle-opacity": opacities.thermalEvents ?? 0.95,
       },
     });
 
     // Click Popups & Feature Selection
     setupLayerClickHandlers(m);
 
-    // Initial Static Boundary Loading
+    // Initial Static Boundary & Multi-Layer Loading
     fetchApi<any>("/gis/admin/states?simplify=0.01")
       .then((data) => {
         if (m.getSource("admin_states")) {
           (m.getSource("admin_states") as maplibregl.GeoJSONSource).setData(data);
+        }
+      })
+      .catch(() => {});
+
+    fetchApi<any>("/gis/admin/districts?simplify=0.008&limit=800")
+      .then((data) => {
+        if (m.getSource("admin_districts")) {
+          (m.getSource("admin_districts") as maplibregl.GeoJSONSource).setData(data);
         }
       })
       .catch(() => {});
@@ -346,7 +401,7 @@ export default function MapLibreView({
       const p = feat.properties as any;
 
       const popupHtml = `
-        <div class="p-2 space-y-2 text-slate-100 font-sans min-w-[210px]">
+        <div class="p-2 space-y-2 text-slate-100 font-sans min-w-[220px]">
           <div class="flex items-center justify-between border-b border-slate-700 pb-1">
             <span class="font-mono text-xs font-bold text-amber-400">${p.event_code}</span>
             <span class="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold" style="background: ${
@@ -357,13 +412,13 @@ export default function MapLibreView({
           </div>
           <div class="space-y-1 text-xs">
             <div><strong>Predicted:</strong> <span class="text-amber-300 font-semibold">${p.predicted_class}</span></div>
-            <div><strong>Peak FRP:</strong> <span class="font-mono font-bold text-white">${p.max_frp} MW</span></div>
+            <div><strong>Peak FRP:</strong> <span class="font-mono font-bold text-white">${formatNumber(p.max_frp)} MW</span></div>
             <div><strong>Confidence:</strong> <span class="font-mono text-emerald-400">${((p.confidence || 0.8) * 100).toFixed(0)}%</span></div>
-            <div><strong>State:</strong> ${p.state} (${p.district || ""})</div>
+            <div><strong>Location:</strong> ${p.state || ""} ${p.district ? `(${p.district})` : ""}</div>
           </div>
           <div class="pt-1.5">
-            <button id="btn-select-${p.id}" class="w-full py-1 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] uppercase tracking-wide transition-colors">
-              Inspect 7-Layer Dossier →
+            <button id="btn-select-${p.id}" class="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] uppercase tracking-wide transition-colors shadow">
+              Open 7-Layer Dossier →
             </button>
           </div>
         </div>
@@ -374,7 +429,6 @@ export default function MapLibreView({
         .setHTML(popupHtml)
         .addTo(m);
 
-      // Find matched event object
       const matched = events.find((ev) => ev.id === p.id);
       if (matched && onSelectEvent) {
         onSelectEvent(matched);
@@ -395,12 +449,15 @@ export default function MapLibreView({
       new maplibregl.Popup({ offset: 10 })
         .setLngLat(e.lngLat)
         .setHTML(`
-          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[190px]">
+          <div class="p-2 space-y-1.5 text-xs text-slate-100 font-sans min-w-[210px]">
             <div class="font-bold text-cyan-300 text-xs">${p.name}</div>
-            <div class="text-[11px] text-slate-300">${p.facility_type}</div>
-            <div class="text-[10px] text-slate-400 font-mono">Sector: ${p.master_sector}</div>
-            <div class="text-[10px] text-slate-400">Location: ${p.state}, ${p.district}</div>
-            <div class="text-[10px] text-amber-400 font-mono">FIRMS 1km Hits: ${p.firms_detections_1km}</div>
+            <div class="text-[11px] text-slate-300">${p.facility_type || "Industrial Plant"}</div>
+            <div class="text-[10px] text-slate-400 font-mono">Sector: ${p.master_sector || "Manufacturing"}</div>
+            <div class="text-[10px] text-slate-400">Location: ${p.state || ""}, ${p.district || ""}</div>
+            <div class="text-[10px] text-amber-400 font-mono">FIRMS 1km Hits: ${p.firms_detections_1km || 0}</div>
+            <div class="pt-1 border-t border-slate-700/80 text-[10px]">
+              <span class="text-emerald-400">● Real PostGIS Cadastre</span>
+            </div>
           </div>
         `)
         .addTo(m);
@@ -413,52 +470,93 @@ export default function MapLibreView({
       new maplibregl.Popup({ offset: 10 })
         .setLngLat(e.lngLat)
         .setHTML(`
-          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[190px]">
+          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[210px]">
             <div class="font-bold text-amber-400 text-xs">${p.name}</div>
-            <div class="text-[10px] text-slate-300">Org: ${p.cea_organisation}</div>
-            <div class="text-[10px] text-slate-300">Prime Mover: ${p.prime_mover}</div>
-            <div class="text-[10px] text-slate-400">State: ${p.state}</div>
+            <div class="text-[10px] text-slate-300">Org: ${p.cea_organisation || "CEA Utility"}</div>
+            <div class="text-[10px] text-slate-300">Prime Mover: ${p.prime_mover || "Thermal"}</div>
+            <div class="text-[10px] text-slate-400">State: ${p.state || ""}, ${p.district || ""}</div>
+            <div class="text-[10px] text-cyan-400 font-mono">Capacity: ${p.installed_capacity_mw || "Variable"} MW</div>
           </div>
         `)
         .addTo(m);
     });
 
     // Mining Click
-    m.on("click", "mining-point", (e) => {
+    const handleMiningClick = (e: any) => {
       if (!e.features || e.features.length === 0) return;
       const p = e.features[0].properties as any;
       new maplibregl.Popup({ offset: 10 })
         .setLngLat(e.lngLat)
         .setHTML(`
-          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[180px]">
+          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[200px]">
             <div class="font-bold text-purple-300 text-xs">${p.name}</div>
-            <div class="text-[10px] text-amber-300 font-mono">Mineral: ${p.mineral}</div>
-            <div class="text-[10px] text-slate-400">${p.state}, ${p.district}</div>
-            <div class="text-[10px] text-slate-400 font-mono">FIRMS 2km: ${p.firms_count_2km}</div>
+            <div class="text-[10px] text-amber-300 font-mono">Mineral: ${p.mineral || "Mineral Resource"}</div>
+            <div class="text-[10px] text-slate-400">Location: ${p.state || ""}, ${p.district || ""}</div>
+            <div class="text-[10px] text-slate-400 font-mono">FIRMS 2km: ${p.firms_count_2km || 0} detections</div>
+            <div class="text-[10px] text-purple-400">${p.preferred_bidder ? `Bidder: ${p.preferred_bidder}` : "IBM Auction Block"}</div>
+          </div>
+        `)
+        .addTo(m);
+    };
+    m.on("click", "mining-point", handleMiningClick);
+    m.on("click", "mining-fill", handleMiningClick);
+
+    // PARIVESH Click
+    m.on("click", "parivesh-point", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const p = e.features[0].properties as any;
+      new maplibregl.Popup({ offset: 10 })
+        .setLngLat(e.lngLat)
+        .setHTML(`
+          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[210px]">
+            <div class="font-bold text-cyan-400 text-xs">${p.name}</div>
+            <div class="text-[10px] text-slate-300">Proponent: ${p.proponent || "Industrial Proponent"}</div>
+            <div class="text-[10px] text-slate-400">Type: ${p.project_type || "Clearance"} • Cat ${p.category || "A"}</div>
+            <div class="text-[10px] text-slate-400">Location: ${p.state || ""}, ${p.district || ""}</div>
+            <div class="text-[10px] text-emerald-400 font-mono font-bold">Status: ${p.clearance_status || "GRANTED"}</div>
+          </div>
+        `)
+        .addTo(m);
+    });
+
+    // Protected Area Click
+    m.on("click", "protected-areas-fill", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const p = e.features[0].properties as any;
+      new maplibregl.Popup({ offset: 10 })
+        .setLngLat(e.lngLat)
+        .setHTML(`
+          <div class="p-2 space-y-1 text-xs text-slate-100 font-sans min-w-[190px]">
+            <div class="font-bold text-emerald-400 text-xs">${p.name}</div>
+            <div class="text-[10px] text-slate-300">${p.pa_type || "Protected Reserve"}</div>
+            <div class="text-[10px] text-slate-400">State: ${p.state || ""}, ${p.district || ""}</div>
+            <div class="text-[10px] text-slate-400 font-mono">Area: ${formatNumber(p.area_sqkm)} sq km</div>
           </div>
         `)
         .addTo(m);
     });
 
     // Cursor pointer triggers
-    const layerNames = [
+    const interactiveLayers = [
       "thermal-events-point",
       "industrial-facilities-point",
       "power-stations-point",
       "mining-point",
+      "mining-fill",
+      "parivesh-point",
+      "protected-areas-fill",
     ];
-    layerNames.forEach((layer) => {
+    interactiveLayers.forEach((layer) => {
       m.on("mouseenter", layer, () => (m.getCanvas().style.cursor = "pointer"));
       m.on("mouseleave", layer, () => (m.getCanvas().style.cursor = ""));
     });
   };
 
-  // 4. Viewport-Aware Dynamic PostGIS Querying
+  // 4. Viewport-Aware Dynamic PostGIS Querying (Debounced)
   const refreshViewportLayers = useCallback(() => {
     if (!map.current || !mapLoaded) return;
     const m = map.current;
     const bounds = m.getBounds();
-    const zoom = m.getZoom();
     const bboxStr = `${bounds.getWest().toFixed(4)},${bounds.getSouth().toFixed(4)},${bounds.getEast().toFixed(4)},${bounds.getNorth().toFixed(4)}`;
 
     // Query Facilities in current bbox
@@ -493,6 +591,17 @@ export default function MapLibreView({
         })
         .catch(() => {});
     }
+
+    // Query PARIVESH Clearances
+    if (layers.parivesh && m.getSource("parivesh")) {
+      fetchApi<any>(`/gis/parivesh?bbox=${bboxStr}&limit=250`)
+        .then((data) => {
+          if (m.getSource("parivesh")) {
+            (m.getSource("parivesh") as maplibregl.GeoJSONSource).setData(data);
+          }
+        })
+        .catch(() => {});
+    }
   }, [mapLoaded, layers]);
 
   // Debounced Map Movement Listener
@@ -510,7 +619,6 @@ export default function MapLibreView({
     m.on("moveend", onMove);
     m.on("zoomend", onMove);
 
-    // Initial load
     refreshViewportLayers();
 
     return () => {
@@ -535,7 +643,7 @@ export default function MapLibreView({
         event_code: e.event_code,
         state: e.state,
         district: e.district,
-        max_frp: e.max_frp,
+        max_frp: typeof e.max_frp === "number" ? e.max_frp : 0,
         predicted_class: e.prediction?.predicted_class || "Uncertain",
         confidence: e.prediction?.confidence || 0.8,
         risk_level: e.risk?.risk_level || "LOW",
@@ -551,19 +659,44 @@ export default function MapLibreView({
     }
   }, [events, mapLoaded]);
 
-  // 6. Camera Flying on State Selection Change
+  // 6. Camera Flying on State or District Selection Change
   useEffect(() => {
-    if (!map.current) return;
-    const target = STATE_CENTROIDS[selectedState] || STATE_CENTROIDS.India;
-    map.current.flyTo({
-      center: target.center,
-      zoom: target.zoom,
-      essential: true,
-      duration: 1600,
-    });
-  }, [selectedState]);
+    if (!map.current || !mapLoaded) return;
 
-  // 7. Layer Visibility Toggle Updates
+    if (selectedDistrict && selectedDistrict !== "ALL") {
+      // Query exact PostGIS Bounding Box for District
+      const stateParam = selectedState && selectedState !== "ALL" && selectedState !== "India"
+        ? `&state=${encodeURIComponent(selectedState)}`
+        : "";
+      fetchApi<{ bbox: [number, number, number, number]; centroid: [number, number] }>(
+        `/geography/district-bounds?district=${encodeURIComponent(selectedDistrict)}${stateParam}`
+      )
+        .then((data) => {
+          if (data && data.bbox && map.current) {
+            const [minLon, minLat, maxLon, maxLat] = data.bbox;
+            map.current.fitBounds(
+              [[minLon, minLat], [maxLon, maxLat]],
+              { padding: 60, duration: 1800, maxZoom: 11 }
+            );
+          }
+        })
+        .catch(() => {
+          // Fallback to state centroid
+          const target = STATE_CENTROIDS[selectedState] || STATE_CENTROIDS.India;
+          map.current?.flyTo({ center: target.center, zoom: target.zoom, duration: 1600 });
+        });
+    } else if (selectedState) {
+      const target = STATE_CENTROIDS[selectedState] || STATE_CENTROIDS.India;
+      map.current.flyTo({
+        center: target.center,
+        zoom: target.zoom,
+        essential: true,
+        duration: 1600,
+      });
+    }
+  }, [selectedDistrict, selectedState, mapLoaded]);
+
+  // 7. Layer Visibility & Opacity Toggle Updates
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
     const m = map.current;
@@ -579,13 +712,42 @@ export default function MapLibreView({
     setVis("industrial-facilities-point", layers.industrialFacilities);
     setVis("power-stations-point", layers.powerStations);
     setVis("mining-point", layers.mining);
+    setVis("mining-fill", layers.mining);
+    setVis("mining-line", layers.mining);
+    setVis("parivesh-point", layers.parivesh);
     setVis("protected-areas-fill", layers.protectedAreas);
     setVis("protected-areas-line", layers.protectedAreas);
     setVis("lulc-fill", layers.lulc);
     setVis("lulc-line", layers.lulc);
     setVis("admin-states-line", layers.stateBoundaries);
     setVis("admin-districts-line", layers.districtBoundaries);
-  }, [layers, mapLoaded]);
+
+    // Apply Opacities
+    if (m.getLayer("thermal-events-point")) {
+      m.setPaintProperty("thermal-events-point", "circle-opacity", opacities.thermalEvents ?? 0.95);
+    }
+    if (m.getLayer("industrial-facilities-point")) {
+      m.setPaintProperty("industrial-facilities-point", "circle-opacity", opacities.industrialFacilities ?? 0.85);
+    }
+    if (m.getLayer("power-stations-point")) {
+      m.setPaintProperty("power-stations-point", "circle-opacity", opacities.powerStations ?? 0.9);
+    }
+    if (m.getLayer("mining-point")) {
+      m.setPaintProperty("mining-point", "circle-opacity", opacities.mining ?? 0.85);
+    }
+    if (m.getLayer("mining-fill")) {
+      m.setPaintProperty("mining-fill", "fill-opacity", (opacities.mining ?? 0.85) * 0.3);
+    }
+    if (m.getLayer("parivesh-point")) {
+      m.setPaintProperty("parivesh-point", "circle-opacity", opacities.parivesh ?? 0.85);
+    }
+    if (m.getLayer("protected-areas-fill")) {
+      m.setPaintProperty("protected-areas-fill", "fill-opacity", (opacities.protectedAreas ?? 0.7) * 0.25);
+    }
+    if (m.getLayer("lulc-fill")) {
+      m.setPaintProperty("lulc-fill", "fill-opacity", (opacities.lulc ?? 0.65) * 0.25);
+    }
+  }, [layers, opacities, mapLoaded]);
 
   // 8. Highlight Selected Event with Pulsing Marker
   useEffect(() => {

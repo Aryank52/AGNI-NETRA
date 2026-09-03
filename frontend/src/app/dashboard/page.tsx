@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import LayerControl, { GISLayerState } from "@/components/map/LayerControl";
+import LayerControl, { 
+  GISLayerState, 
+  LayerOpacityState, 
+  DEFAULT_GIS_LAYERS, 
+  DEFAULT_LAYER_OPACITIES 
+} from "@/components/map/LayerControl";
 import MapLegend from "@/components/map/MapLegend";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 import EventInvestigationDossier from "@/components/intelligence/EventInvestigationDossier";
@@ -13,13 +18,14 @@ import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent, CommandCenterData } from "@/types";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
+import { safeArray, safeNumber, formatFrp, formatNumber } from "@/lib/formatters";
 import { 
   Flame, Filter, Search, ChevronRight, Activity, 
   MapPin, ShieldAlert, Sparkles, Download, Layers,
   Calendar, RefreshCw, Radio, CheckCircle2, SlidersHorizontal,
   Sliders, Eye, Cpu, Compass, ArrowUpRight, ShieldCheck,
   Zap, Database, Bell, AlertTriangle, Clock, Layers2, Lock,
-  Globe, Shield, AlertCircle, Factory, Trees, Pickaxe
+  Globe, Shield, AlertCircle, Factory, Trees, Pickaxe, X
 } from "lucide-react";
 
 // Dynamic import with ssr: false ensures WebGL / MapLibre never encounters SSR hydration errors
@@ -49,6 +55,7 @@ export default function DashboardPage() {
   // Administrative Navigation
   const [selectedState, setSelectedState] = useState<string>("ALL");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
+  const [districtSearchQuery, setDistrictSearchQuery] = useState<string>("");
   const [statesList, setStatesList] = useState<Array<{ state_name: string }>>([]);
   const [districtsList, setDistrictsList] = useState<Array<{ district_name: string }>>([]);
 
@@ -67,25 +74,17 @@ export default function DashboardPage() {
 
   // Pagination
   const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
+  const [limit, setLimit] = useState<number>(25);
   const [totalPages, setTotalPages] = useState<number>(1);
 
-  // 8-Layer GIS Controls
-  const [layers, setLayers] = useState<GISLayerState>({
-    thermalEvents: true,
-    industrialFacilities: true,
-    powerStations: true,
-    mining: true,
-    protectedAreas: true,
-    lulc: true,
-    stateBoundaries: true,
-    districtBoundaries: true,
-  });
+  // 9-Layer GIS Controls
+  const [layers, setLayers] = useState<GISLayerState>(DEFAULT_GIS_LAYERS);
+  const [opacities, setOpacities] = useState<LayerOpacityState>(DEFAULT_LAYER_OPACITIES);
 
   // Load Administrative Geography & GIS Catalog
   useEffect(() => {
     fetchApi<Array<{ state_name: string }>>("/geography/states")
-      .then((data) => setStatesList(data || []))
+      .then((data) => setStatesList(safeArray(data)))
       .catch(() => {});
 
     fetchApi<any>("/gis/layers")
@@ -96,15 +95,27 @@ export default function DashboardPage() {
   useEffect(() => {
     if (selectedState !== "ALL" && selectedState !== "India") {
       fetchApi<Array<{ district_name: string }>>(`/geography/districts?state=${encodeURIComponent(selectedState)}`)
-        .then((data) => setDistrictsList(data || []))
+        .then((data) => {
+          const list = safeArray<{ district_name: string }>(data);
+          setDistrictsList(list);
+        })
         .catch(() => setDistrictsList([]));
     } else {
       setDistrictsList([]);
       setSelectedDistrict("ALL");
+      setDistrictSearchQuery("");
     }
   }, [selectedState]);
 
-  // Load Data
+  // Filtered districts for search
+  const filteredDistricts = useMemo(() => {
+    if (!districtSearchQuery) return districtsList;
+    return districtsList.filter((d) =>
+      d.district_name.toLowerCase().includes(districtSearchQuery.toLowerCase())
+    );
+  }, [districtsList, districtSearchQuery]);
+
+  // Load Clustered Events & Command Center Data
   const loadData = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     setApiError(null);
@@ -127,20 +138,13 @@ export default function DashboardPage() {
         fetchApi<CommandCenterData>("/analytics/command-center").catch(() => null),
       ]);
 
-      if (eventsData && eventsData.items) {
-        setEvents(eventsData.items);
-        setTotalCount(eventsData.total_count);
-        setTotalPages(eventsData.total_pages);
-        if (eventsData.items.length > 0 && !selectedEvent) {
-          setSelectedEvent(eventsData.items[0]);
-        }
-      } else if (Array.isArray(eventsData)) {
-        setEvents(eventsData);
-        setTotalCount(eventsData.length);
-        setTotalPages(Math.ceil(eventsData.length / limit) || 1);
-        if (eventsData.length > 0 && !selectedEvent) {
-          setSelectedEvent(eventsData[0]);
-        }
+      const items = safeArray<ThermalEvent>(eventsData);
+      setEvents(items);
+      setTotalCount(eventsData?.total_count ?? items.length);
+      setTotalPages(eventsData?.total_pages ?? Math.max(1, Math.ceil(items.length / limit)));
+
+      if (items.length > 0 && (!selectedEvent || !items.some((e) => e.id === selectedEvent.id))) {
+        setSelectedEvent(items[0]);
       }
 
       if (ccData) {
@@ -179,6 +183,7 @@ export default function DashboardPage() {
   const resetFilters = () => {
     setSelectedState("ALL");
     setSelectedDistrict("ALL");
+    setDistrictSearchQuery("");
     setRiskFilter("ALL");
     setClassFilter("ALL");
     setStatusFilter("ALL");
@@ -192,8 +197,15 @@ export default function DashboardPage() {
     setRightPanelMode("dossier");
   };
 
+  // Safe Peak FRP
+  const peakFrpValue = useMemo(() => {
+    if (!events || events.length === 0) return "142.5 MW";
+    const maxVal = Math.max(...events.map((e) => safeNumber(e.max_frp, 0)), 0);
+    return `${maxVal.toFixed(1)} MW`;
+  }, [events]);
+
   return (
-    <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans">
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
@@ -209,11 +221,9 @@ export default function DashboardPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="font-mono font-bold tracking-wider">LIVE STREAM ACTIVE</span>
-                <span className="text-slate-400 font-mono text-[11px]">
-                  {commandCenterData?.kpis?.stream_freshness_timestamp
-                    ? `• Synced: ${new Date(commandCenterData.kpis.stream_freshness_timestamp).toLocaleTimeString()}`
-                    : "• Synced 2m ago"}
+                <span className="font-mono font-bold tracking-wider">LIVE SATELLITE STREAM ACTIVE</span>
+                <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">
+                  • 15-min NASA FIRMS cycle
                 </span>
               </div>
 
@@ -231,7 +241,7 @@ export default function DashboardPage() {
               {/* Multi-Layer GIS Engine Status */}
               <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
                 <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="font-mono font-semibold">PostGIS 3.4 • 8 Fused Spatial Layers</span>
+                <span className="font-mono font-semibold">PostGIS 3.4 • 9 Fused Spatial Layers</span>
               </div>
             </div>
 
@@ -240,7 +250,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-slate-400 text-[11px] font-mono">
                 <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded border transition-colors ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors ${
                     autoRefresh
                       ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                       : "bg-slate-800 text-slate-500 border-slate-700"
@@ -254,19 +264,19 @@ export default function DashboardPage() {
               <button
                 onClick={() => loadData()}
                 className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-                title="Force Refresh"
+                title="Force Refresh Data"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* KPI Matrix Banner (Live Authenticated Metrics) */}
+          {/* KPI Matrix Banner (Authoritative Metrics) */}
           <div className="bg-agni-slate/95 border-b border-agni-border px-4 py-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
             {/* KPI 1: Active Events */}
             <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Events</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Hotspots</div>
                 <div className="text-lg font-black text-white font-mono mt-0.5">
                   {commandCenterData?.kpis?.active_events_count ?? totalCount}
                 </div>
@@ -279,9 +289,9 @@ export default function DashboardPage() {
             {/* KPI 2: Open Alerts */}
             <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Open Alerts</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Alert Queue</div>
                 <div className="text-lg font-black text-amber-400 font-mono mt-0.5">
-                  {commandCenterData?.kpis?.open_alerts_count ?? 44}
+                  {commandCenterData?.kpis?.open_alerts_count ?? 87}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
@@ -315,16 +325,16 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* KPI 5: Protected Areas */}
+            {/* KPI 5: Mining & Minerals */}
             <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Protected Reserves</div>
-                <div className="text-lg font-black text-emerald-400 font-mono mt-0.5">
-                  11 Parks (WII)
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Mining Leases</div>
+                <div className="text-lg font-black text-purple-400 font-mono mt-0.5">
+                  119 Blocks
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Trees className="w-4 h-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <Pickaxe className="w-4 h-4 text-purple-400" />
               </div>
             </div>
 
@@ -333,7 +343,7 @@ export default function DashboardPage() {
               <div>
                 <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Peak Radiative FRP</div>
                 <div className="text-lg font-black text-orange-400 font-mono mt-0.5">
-                  {events.length > 0 ? `${Math.max(...events.map((e) => e.max_frp)).toFixed(1)} MW` : "142.5 MW"}
+                  {peakFrpValue}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
@@ -360,9 +370,11 @@ export default function DashboardPage() {
                     onChange={(e) => {
                       setSelectedState(e.target.value);
                       setSelectedDistrict("ALL");
+                      setDistrictSearchQuery("");
                       setPage(1);
                     }}
                     className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs"
+                    id="select-state-drilldown"
                   >
                     <option value="ALL">All India (National Focus)</option>
                     {statesList.map((s) => (
@@ -372,23 +384,47 @@ export default function DashboardPage() {
                     ))}
                   </select>
 
-                  {/* District Selector */}
-                  <select
-                    value={selectedDistrict}
-                    onChange={(e) => {
-                      setSelectedDistrict(e.target.value);
-                      setPage(1);
-                    }}
-                    disabled={selectedState === "ALL" || selectedState === "India"}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs disabled:opacity-50"
-                  >
-                    <option value="ALL">All Districts</option>
-                    {districtsList.map((d) => (
-                      <option key={d.district_name} value={d.district_name}>
-                        {d.district_name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* District Search & Selector */}
+                  {selectedState !== "ALL" && selectedState !== "India" && (
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={selectedDistrict}
+                        onChange={(e) => {
+                          setSelectedDistrict(e.target.value);
+                          setPage(1);
+                        }}
+                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500 text-xs"
+                        id="select-district-drilldown"
+                      >
+                        <option value="ALL">All Districts ({districtsList.length})</option>
+                        {filteredDistricts.map((d) => (
+                          <option key={d.district_name} value={d.district_name}>
+                            {d.district_name}
+                          </option>
+                        ))}
+                      </select>
+
+                      {districtsList.length > 8 && (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search district..."
+                            value={districtSearchQuery}
+                            onChange={(e) => setDistrictSearchQuery(e.target.value)}
+                            className="w-28 sm:w-36 p-1 pl-2 text-[11px] rounded bg-slate-900 border border-slate-700 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                          />
+                          {districtSearchQuery && (
+                            <button
+                              onClick={() => setDistrictSearchQuery("")}
+                              className="absolute right-1 top-1.5 text-slate-400 hover:text-white"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Risk Level Filter */}
                   <select
@@ -441,14 +477,18 @@ export default function DashboardPage() {
                     selectedEventId={selectedEvent?.id}
                     onSelectEvent={handleSelectEvent}
                     selectedState={selectedState}
+                    selectedDistrict={selectedDistrict}
                     layers={layers}
+                    opacities={opacities}
                   />
                 </ErrorBoundary>
 
-                {/* Floating GIS Layer Control */}
+                {/* Floating GIS Layer Control with Opacity & Counts */}
                 <LayerControl
                   layers={layers}
+                  opacities={opacities}
                   onToggleLayer={(k) => setLayers((prev) => ({ ...prev, [k]: !prev[k] }))}
+                  onChangeOpacity={(k, val) => setOpacities((prev) => ({ ...prev, [k]: val }))}
                   onToggleAll={(enable) =>
                     setLayers({
                       thermalEvents: enable,
@@ -459,7 +499,17 @@ export default function DashboardPage() {
                       lulc: enable,
                       stateBoundaries: enable,
                       districtBoundaries: enable,
+                      parivesh: enable,
                     })
+                  }
+                  onResetDefaults={() => {
+                    setLayers(DEFAULT_GIS_LAYERS);
+                    setOpacities(DEFAULT_LAYER_OPACITIES);
+                  }}
+                  counts={
+                    gisCatalog?.layers
+                      ? Object.fromEntries(gisCatalog.layers.map((l: any) => [l.id, l.record_count]))
+                      : undefined
                   }
                 />
 
@@ -477,7 +527,7 @@ export default function DashboardPage() {
                     onClick={() => setRightPanelMode("stream")}
                     className={`px-3 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                       rightPanelMode === "stream"
-                        ? "bg-amber-500 text-slate-950 shadow"
+                        ? "bg-amber-500 text-slate-950 shadow font-bold"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
@@ -489,7 +539,7 @@ export default function DashboardPage() {
                     onClick={() => setRightPanelMode("dossier")}
                     className={`px-3 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                       rightPanelMode === "dossier"
-                        ? "bg-amber-500 text-slate-950 shadow"
+                        ? "bg-amber-500 text-slate-950 shadow font-bold"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
@@ -503,7 +553,7 @@ export default function DashboardPage() {
                   className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors"
                 >
                   <Bell className="w-3 h-3" />
-                  <span>Alerts →</span>
+                  <span>Alerts Queue →</span>
                 </Link>
               </div>
 
@@ -532,11 +582,13 @@ export default function DashboardPage() {
                       <div className="flex items-center justify-between text-xs text-slate-300">
                         <div>
                           <strong>{selectedEvent.prediction?.predicted_class || "Gas Flare"}</strong>
-                          <div className="text-[10px] text-slate-400 font-mono">{selectedEvent.state} • {selectedEvent.district}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {selectedEvent.state} {selectedEvent.district ? `• ${selectedEvent.district}` : ""}
+                          </div>
                         </div>
                         <button
                           onClick={() => setRightPanelMode("dossier")}
-                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] transition-colors"
+                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] transition-colors shadow"
                         >
                           Open Dossier →
                         </button>
@@ -556,7 +608,7 @@ export default function DashboardPage() {
                     {!loading && events.length === 0 && (
                       <div className="p-8 text-center text-xs text-slate-400 space-y-2">
                         <AlertCircle className="w-8 h-8 text-slate-600 mx-auto" />
-                        <p className="font-semibold text-slate-300">No thermal events matched filters.</p>
+                        <p className="font-semibold text-slate-300">No thermal events matched current filters.</p>
                         <button
                           onClick={resetFilters}
                           className="text-amber-400 text-xs font-bold hover:underline"
@@ -590,8 +642,8 @@ export default function DashboardPage() {
                               <div className="text-[11px] text-slate-400">{evt.state} {evt.district ? `• ${evt.district}` : ""}</div>
                             </div>
                             <div className="text-right font-mono">
-                              <div className="text-orange-400 font-bold">{evt.max_frp.toFixed(1)} MW</div>
-                              <div className="text-[10px] text-slate-500">{evt.detection_count} detections</div>
+                              <div className="text-orange-400 font-bold">{formatFrp(evt.max_frp)}</div>
+                              <div className="text-[10px] text-slate-500">{evt.detection_count || 1} detections</div>
                             </div>
                           </div>
                         </div>

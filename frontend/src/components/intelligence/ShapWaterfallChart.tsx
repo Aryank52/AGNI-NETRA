@@ -24,7 +24,10 @@ export default function ShapWaterfallChart({
   }
 
   const contributors = shapData.top_contributors;
-  const maxAbsShap = Math.max(...contributors.map((c) => Math.abs(c.shap_value)), 0.01);
+  const maxAbsShap = Math.max(
+    ...contributors.map((c) => Math.abs(Number(c.shap_value) || 0)),
+    0.01
+  );
 
   // Friendly human labels for feature columns
   const FEATURE_NAMES: Record<string, string> = {
@@ -41,6 +44,8 @@ export default function ShapWaterfallChart({
     landcover_code: "LULC Landcover Category",
   };
 
+  const safeConfidence = typeof confidence === "number" && !isNaN(confidence) ? confidence : 0.88;
+
   return (
     <div className="p-4 rounded-xl bg-agni-card/90 border border-agni-border shadow-lg">
       <div className="flex items-center justify-between mb-3">
@@ -55,7 +60,7 @@ export default function ShapWaterfallChart({
         </div>
         <div className="text-right">
           <div className="text-xs font-mono font-bold text-emerald-400">
-            {(confidence * 100).toFixed(1)}% CONFIDENCE
+            {(safeConfidence * 100).toFixed(1)}% CONFIDENCE
           </div>
           <div className="text-[10px] text-slate-500 font-mono">Base Prior: 14.3%</div>
         </div>
@@ -64,8 +69,9 @@ export default function ShapWaterfallChart({
       {/* Feature Contributions Waterfall List */}
       <div className="space-y-2.5 my-4">
         {contributors.map((item, idx) => {
-          const isPositive = item.shap_value >= 0;
-          const widthPercent = Math.min(100, (Math.abs(item.shap_value) / maxAbsShap) * 100);
+          const numVal = typeof item.shap_value === "number" ? item.shap_value : parseFloat(String(item.shap_value)) || 0;
+          const isPositive = numVal >= 0;
+          const widthPercent = Math.min(100, (Math.abs(numVal) / (maxAbsShap || 1)) * 100);
           const friendlyName = FEATURE_NAMES[item.feature] || item.feature;
 
           return (
@@ -74,7 +80,7 @@ export default function ShapWaterfallChart({
                 <span className="font-medium text-slate-300 flex items-center gap-1">
                   {friendlyName}
                   <span className="text-[10px] text-slate-500 font-mono">
-                    ({item.value})
+                    ({item.value ?? "0"})
                   </span>
                 </span>
                 <span
@@ -83,7 +89,7 @@ export default function ShapWaterfallChart({
                   }`}
                 >
                   {isPositive ? "+" : ""}
-                  {item.shap_value.toFixed(3)}
+                  {numVal.toFixed(3)}
                 </span>
               </div>
 

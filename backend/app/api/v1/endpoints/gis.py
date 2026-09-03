@@ -968,3 +968,244 @@ def get_event_spatial_dossier(
             "audit_trail": audit_history
         }
     }
+
+
+# =====================================================================================
+# 10. PARIVESH ENVIRONMENTAL CLEARANCE PROJECTS GEOJSON LAYER (LAYER 8)
+# =====================================================================================
+
+@router.get("/parivesh")
+def get_parivesh_projects_geojson(
+    bbox: Optional[str] = Query(None, description="Bounding box min_lon,min_lat,max_lon,max_lat"),
+    state: Optional[str] = Query(None, description="Filter by Indian State"),
+    category: Optional[str] = Query(None, description="Filter by Clearance Category (A/B)"),
+    limit: int = Query(300, ge=1, le=1000),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns authentic GeoJSON FeatureCollection of MoEFCC PARIVESH Environmental Clearance projects.
+    """
+    where_parts = ["latitude IS NOT NULL", "longitude IS NOT NULL"]
+    params: Dict[str, Any] = {"limit": limit}
+
+    box = parse_bbox(bbox)
+    if box:
+        where_parts.append("latitude BETWEEN :min_lat AND :max_lat AND longitude BETWEEN :min_lon AND :max_lon")
+        params.update(box)
+
+    if state and state.upper() not in ["ALL", "INDIA"]:
+        where_parts.append("LOWER(state) = LOWER(:state)")
+        params["state"] = state.strip()
+
+    if category and category.upper() not in ["ALL"]:
+        where_parts.append("LOWER(category) = LOWER(:category)")
+        params["category"] = category.strip()
+
+    where_sql = " AND ".join(where_parts)
+    query_sql = f"""
+        SELECT id, project_name, project_type, proponent, state, district,
+               category, sector, clearance_status, latitude, longitude,
+               matched_facility_id
+        FROM parivesh_projects_staging
+        WHERE {where_sql}
+        LIMIT :limit;
+    """
+    rows = db.execute(text(query_sql), params).fetchall()
+
+    features = []
+    for r in rows:
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(r[10]), float(r[9])]
+            },
+            "properties": {
+                "id": r[0],
+                "name": r[1] or "PARIVESH Project",
+                "project_type": r[2] or "Industrial / Clearance",
+                "proponent": r[3] or "Project Proponent",
+                "state": r[4] or "Unknown",
+                "district": r[5] or "Unknown",
+                "category": r[6] or "A",
+                "sector": r[7] or "Industrial",
+                "clearance_status": r[8] or "GRANTED",
+                "matched_facility_id": r[11],
+                "layer": "parivesh"
+            }
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "name": "PARIVESH Environmental Clearances",
+        "count": len(features),
+        "features": features
+    }
+
+
+# =====================================================================================
+# 11. UNIFIED GEOSPATIAL INTELLIGENCE GLOBAL SEARCH
+# =====================================================================================
+
+@router.get("/search")
+def search_spatial_entities(
+    q: str = Query(..., min_length=1, description="Search query: coordinates, Event ID, Facility, District, State, Mine"),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Global search across:
+    - Coordinates (lat, lon)
+    - Thermal Event ID / Event Code
+    - Industrial Facilities (OSM Registry)
+    - CEA Power Stations
+    - IBM Mining Blocks & Leases
+    - State & District Boundaries
+    - Protected Areas (WII)
+    - Candidate Thermal Hotspots
+    """
+    query_str = q.strip()
+    results: List[Dict[str, Any]] = []
+
+    # 1. Coordinate detection (e.g., "22.3552, 69.8654" or "22.3552 69.8654")
+    import re
+    coord_match = re.match(r"^\s*([+-]?\d+(?:\.\d+)?)\s*[, ]\s*([+-]?\d+(?:\.\d+)?)\s*$", query_str)
+    if coord_match:
+        val1 = float(coord_match.group(1))
+        val2 = float(coord_match.group(2))
+        # Determine lat vs lon (India lat: 6 to 38, lon: 68 to 98)
+        if 6.0 <= val1 <= 38.0 and 68.0 <= val2 <= 98.0:
+            lat, lon = val1, val2
+        elif 6.0 <= val2 <= 38.0 and 68.0 <= val1 <= 98.0:
+            lat, lon = val2, val1
+        else:
+            lat, lon = val1, val2
+
+        results.append({
+            "id": f"coord-{lat}-{lon}",
+            "type": "COORDINATES",
+            "title": f"Coordinate Location ({lat:.4f}°N, {lon:.4f}°E)",
+            "subtitle": "Direct Map Navigation Target",
+            "state": "India",
+            "coordinates": [lon, lat],
+            "zoom": 12
+        })
+
+    search_pattern = f"%{query_str}%"
+
+    # 2. Thermal Events (by event_code or id)
+    event_rows = db.execute(text("""
+        SELECT id, event_code, state, district, max_frp, latitude, longitude
+        FROM thermal_events
+        WHERE id ILIKE :p OR event_code ILIKE :p
+        LIMIT 4;
+    """), {"p": search_pattern}).fetchall()
+
+    for r in event_rows:
+        results.append({
+            "id": r[0],
+            "type": "EVENT",
+            "title": r[1] or f"Event {r[0][:8]}",
+            "subtitle": f"Thermal Hotspot • Peak FRP {r[4]:.1f} MW",
+            "state": r[2] or "Unknown",
+            "district": r[3] or "Unknown",
+            "coordinates": [float(r[6]), float(r[5])],
+            "zoom": 12
+        })
+
+    # 3. Industrial Facilities (by name or city)
+    fac_rows = db.execute(text("""
+        SELECT id, name, facility_type, state, district, latitude, longitude, cea_project_name
+        FROM industrial_facilities
+        WHERE (name ILIKE :p OR cea_project_name ILIKE :p OR city ILIKE :p)
+          AND latitude IS NOT NULL AND longitude IS NOT NULL
+        ORDER BY firms_detections_1km DESC NULLS LAST
+        LIMIT 5;
+    """), {"p": search_pattern}).fetchall()
+
+    for r in fac_rows:
+        is_power = bool(r[7])
+        results.append({
+            "id": r[0],
+            "type": "POWER_STATION" if is_power else "FACILITY",
+            "title": r[7] or r[1] or "Industrial Facility",
+            "subtitle": f"{r[2] or 'Industrial Plant'} • {r[4] or ''}, {r[3] or ''}",
+            "state": r[3] or "Unknown",
+            "district": r[4] or "Unknown",
+            "coordinates": [float(r[6]), float(r[5])],
+            "zoom": 13
+        })
+
+    # 4. Administrative Geography (State & District)
+    admin_rows = db.execute(text("""
+        SELECT normalized_name, state_name, admin_level,
+               ST_X(ST_Centroid(geom)) as lon, ST_Y(ST_Centroid(geom)) as lat,
+               ST_XMin(geom) as min_lon, ST_YMin(geom) as min_lat,
+               ST_XMax(geom) as max_lon, ST_YMax(geom) as max_lat
+        FROM admin_boundaries
+        WHERE admin_level IN (1, 2) AND normalized_name ILIKE :p
+        ORDER BY admin_level ASC, normalized_name ASC
+        LIMIT 5;
+    """), {"p": search_pattern}).fetchall()
+
+    for r in admin_rows:
+        is_state = r[2] == 1
+        results.append({
+            "id": f"admin-{r[0]}",
+            "type": "STATE" if is_state else "DISTRICT",
+            "title": r[0],
+            "subtitle": "State / UT of India" if is_state else f"District in {r[1] or 'India'}",
+            "state": r[0] if is_state else (r[1] or "Unknown"),
+            "district": None if is_state else r[0],
+            "coordinates": [float(r[3]), float(r[4])],
+            "bbox": [float(r[5]), float(r[6]), float(r[7]), float(r[8])],
+            "zoom": 6.8 if is_state else 9.5
+        })
+
+    # 5. IBM Mining Blocks
+    mining_rows = db.execute(text("""
+        SELECT id, block_name, mineral, state, district,
+               ST_X(ST_Centroid(geom)) as lon, ST_Y(ST_Centroid(geom)) as lat
+        FROM ibm_auctioned_blocks
+        WHERE (block_name ILIKE :p OR mineral ILIKE :p) AND geom IS NOT NULL
+        LIMIT 3;
+    """), {"p": search_pattern}).fetchall()
+
+    for r in mining_rows:
+        results.append({
+            "id": r[0],
+            "type": "MINING",
+            "title": r[1] or "Mining Block",
+            "subtitle": f"IBM Mineral Block • {r[2] or 'Mineral'}",
+            "state": r[3] or "Unknown",
+            "district": r[4] or "Unknown",
+            "coordinates": [float(r[5]), float(r[6])],
+            "zoom": 12
+        })
+
+    # 6. Protected Areas (WII)
+    pa_rows = db.execute(text("""
+        SELECT id, pa_name, pa_type, state, district,
+               ST_X(ST_Centroid(geom)) as lon, ST_Y(ST_Centroid(geom)) as lat
+        FROM protected_areas
+        WHERE pa_name ILIKE :p AND geom IS NOT NULL
+        LIMIT 3;
+    """), {"p": search_pattern}).fetchall()
+
+    for r in pa_rows:
+        results.append({
+            "id": r[0],
+            "type": "PROTECTED_AREA",
+            "title": r[1],
+            "subtitle": f"{r[2] or 'Protected Reserve'} • {r[3] or ''}",
+            "state": r[3] or "Unknown",
+            "district": r[4] or "Unknown",
+            "coordinates": [float(r[5]), float(r[6])],
+            "zoom": 11
+        })
+
+    return {
+        "query": query_str,
+        "count": len(results),
+        "results": results
+    }
+

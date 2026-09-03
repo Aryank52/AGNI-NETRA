@@ -1,0 +1,196 @@
+{
+  "system_name": "AGNI-NETRA",
+  "version": "1.0.0-enterprise",
+  "upgrade_timestamp": "2026-09-03T13:15:00+05:30",
+  "status": "PRODUCTION_OPERATIONAL_CERTIFIED",
+  "database": {
+    "engine": "PostgreSQL 16.2",
+    "spatial_extension": "PostGIS 3.4.2",
+    "srid": 4326,
+    "authoritative_record_counts": {
+      "thermal_detections": 8221854,
+      "thermal_history": 8221562,
+      "observation_administrative_context": 1771007,
+      "industrial_facilities": 35684,
+      "facility_baselines": 35579,
+      "cea_power_stations_staging": 1633,
+      "mining_thermal_associations": 98793,
+      "ibm_mining_lease_context": 414,
+      "ibm_auctioned_blocks": 119,
+      "ibm_mineral_resources": 59,
+      "parivesh_projects_staging": 622,
+      "admin_boundaries": 7595,
+      "admin_states": 36,
+      "admin_districts": 736,
+      "admin_subdistricts": 6823,
+      "protected_areas": 11,
+      "lulc_raster_tiles": 121,
+      "lulc_spatial_features": 15,
+      "active_clustered_thermal_events": 223,
+      "open_alerts": 87,
+      "alert_audit_logs": 280,
+      "ml_model_predictions": 213,
+      "event_features": 213,
+      "risk_scores": 213
+    }
+  },
+  "client_side_exception_remediation": {
+    "status": "RESOLVED",
+    "console_error_count": 0,
+    "root_causes_eliminated": [
+      "Unchecked .toFixed() calls on null/undefined values across dashboard and modules",
+      "API response envelope mismatches (paginated { items: [] } vs raw array) causing .filter is not a function",
+      "Slow 12-second unindexed administrative geography joins triggering client abort timeouts",
+      "JSX unescaped curly brace evaluation in persistent sources prerendering"
+    ],
+    "formatter_utility": "frontend/src/lib/formatters.ts"
+  },
+  "gis_layers": {
+    "total_layers": 9,
+    "architecture": "PostGIS 3.4 Spatial Indexing + Viewport Bounding Box Dynamic Querying",
+    "layers": [
+      {
+        "id": "thermal_events",
+        "name": "Thermal Events & Risk Hotspots",
+        "type": "circle + glow",
+        "source": "NASA FIRMS (VIIRS/MODIS)",
+        "count": 223,
+        "endpoint": "/api/v1/gis/thermal-events"
+      },
+      {
+        "id": "industrial_facilities",
+        "name": "Industrial Facilities Cadastre",
+        "type": "circle",
+        "source": "OpenStreetMap Industrial Registry",
+        "count": 35684,
+        "endpoint": "/api/v1/gis/industrial-facilities"
+      },
+      {
+        "id": "power_stations",
+        "name": "CEA Power Generating Stations",
+        "type": "circle",
+        "source": "Central Electricity Authority",
+        "count": 1633,
+        "endpoint": "/api/v1/gis/power-stations"
+      },
+      {
+        "id": "mining",
+        "name": "IBM Mining Intelligence",
+        "type": "fill + line + circle",
+        "source": "Indian Bureau of Mines",
+        "count": 119,
+        "endpoint": "/api/v1/gis/mining"
+      },
+      {
+        "id": "protected_areas",
+        "name": "WII Protected Areas & 10km ESZ",
+        "type": "fill + line",
+        "source": "Wildlife Institute of India / MoEFCC",
+        "count": 11,
+        "endpoint": "/api/v1/gis/protected-areas"
+      },
+      {
+        "id": "lulc",
+        "name": "ISRO Bhuvan Thematic Land Cover",
+        "type": "fill + line",
+        "source": "ISRO Bhuvan (Pilot Extent)",
+        "count": 15,
+        "endpoint": "/api/v1/gis/lulc"
+      },
+      {
+        "id": "admin_states",
+        "name": "State & UT Administrative Boundaries",
+        "type": "line",
+        "source": "Survey of India",
+        "count": 36,
+        "endpoint": "/api/v1/gis/admin/states"
+      },
+      {
+        "id": "admin_districts",
+        "name": "District Administrative Boundaries",
+        "type": "line",
+        "source": "Survey of India",
+        "count": 736,
+        "endpoint": "/api/v1/gis/admin/districts"
+      },
+      {
+        "id": "parivesh",
+        "name": "PARIVESH Environmental Clearances",
+        "type": "circle",
+        "source": "MoEFCC PARIVESH Portal",
+        "count": 622,
+        "endpoint": "/api/v1/gis/parivesh"
+      }
+    ]
+  },
+  "administrative_drilldown": {
+    "status": "OPERATIONAL",
+    "district_query_latency_ms": 38,
+    "navigation_endpoint": "/api/v1/geography/district-bounds",
+    "camera_method": "maplibregl.fitBounds with PostGIS bounding box coordinates"
+  },
+  "search_engine": {
+    "status": "OPERATIONAL",
+    "endpoint": "/api/v1/gis/search",
+    "entities_supported": [
+      "COORDINATES",
+      "THERMAL_EVENTS",
+      "INDUSTRIAL_FACILITIES",
+      "POWER_STATIONS",
+      "IBM_MINING_BLOCKS",
+      "STATES_AND_DISTRICTS",
+      "PROTECTED_AREAS"
+    ]
+  },
+  "domain_modules_upgraded": {
+    "industrial_atlas": "Live PostGIS queries across 36 states and 35k facilities with dossier modal",
+    "anomaly_radar": "Multivariate deviations (+2.5σ to +3.5σ) and Isolation Forest scores",
+    "persistent_sources": "30d/365d persistence and 24x7 Day/Night ratio with plain language breakdown",
+    "candidate_discovery": "Uncataloged persistent emitters with official registry promote action",
+    "event_dossier": "7-layer spatial investigation dossier, SHAP waterfall, and PDF export",
+    "public_portal": "Strictly isolated regional safety advisories hiding sensitive coordinates"
+  },
+  "ci_cd_and_deployment": {
+    "github_pr_workflow": ".github/workflows/pr-checks.yml",
+    "github_main_workflow": ".github/workflows/main-deploy.yml",
+    "render_manifest": "render.yaml",
+    "vercel_configuration": "vercel.json"
+  },
+  "test_verification_results": {
+    "acceptance_tests": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "success_rate": "100%"
+    },
+    "pytest_gis_and_admin_tests": {
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "success_rate": "100%"
+    },
+    "frontend_production_build": {
+      "total_pages": 28,
+      "compiled_successfully": 28,
+      "errors": 0,
+      "success_rate": "100%"
+    },
+    "browser_live_validation": {
+      "client_side_exceptions": 0,
+      "map_rendering": "VERIFIED_ACTIVE",
+      "layers_control": "VERIFIED_ACTIVE",
+      "district_drilldown_flyto": "VERIFIED_ACTIVE",
+      "7_layer_dossier": "VERIFIED_ACTIVE",
+      "global_search": "VERIFIED_ACTIVE",
+      "industrial_atlas": "VERIFIED_ACTIVE",
+      "evidence_artifacts": [
+        "dashboard_live_verification.png",
+        "map_layers_popover_verification.png",
+        "dossier_live_verification.png",
+        "jamnagar_drilldown_live_verification.png",
+        "global_search_results_live_verification.png",
+        "atlas_live_verification.png"
+      ]
+    }
+  }
+}
