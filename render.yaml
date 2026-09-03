@@ -31,6 +31,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: "https://agni-netra.vercel.app,http://localhost:3000"
+      - key: BACKEND_CORS_ORIGINS
+        value: "https://agni-netra.vercel.app,http://localhost:3000"
 
   # =========================================================================
   # 2. SATELLITE FIRMS INGESTION & ANOMALY WORKER (BACKGROUND DAEMON)

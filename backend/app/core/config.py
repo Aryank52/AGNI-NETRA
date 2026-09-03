@@ -77,8 +77,37 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
-        "http://127.0.0.1:8000"
+        "http://127.0.0.1:8000",
+        "https://agni-netra.vercel.app"
     ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            v_str = v.strip()
+            if v_str.startswith("["):
+                try:
+                    import json
+                    return json.loads(v_str)
+                except Exception:
+                    pass
+            return [i.strip() for i in v_str.split(",") if i.strip()]
+        elif isinstance(v, (list, tuple)):
+            return list(v)
+        
+        # Check alternate env var CORS_ORIGINS if passed
+        alt = os.getenv("CORS_ORIGINS")
+        if alt:
+            return [i.strip() for i in alt.split(",") if i.strip()]
+            
+        return [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "https://agni-netra.vercel.app"
+        ]
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
