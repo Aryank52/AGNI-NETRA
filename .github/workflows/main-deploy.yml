@@ -62,15 +62,17 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
+        env:
+          NODE_ENV: development
         run: |
-          npm install --legacy-peer-deps --no-audit
+          npm install --legacy-peer-deps --no-audit --include=dev
 
       - name: Build Next.js Production Bundle
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_API_URL: https://agni-netra-api.onrender.com/api/v1
         run: |
-          npm run build
+          npm run build || (echo "### Next Build Failure" >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && npm run build >> $GITHUB_STEP_SUMMARY 2>&1 && echo '```' >> $GITHUB_STEP_SUMMARY && exit 1)
 
       - name: Archive Production Frontend Artifact
         uses: actions/upload-artifact@v4
