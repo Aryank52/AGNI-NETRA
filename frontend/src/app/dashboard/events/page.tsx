@@ -14,6 +14,9 @@ import {
   Calendar, RefreshCw, Radio, CheckCircle2, SlidersHorizontal,
   ArrowUpDown, ExternalLink
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import { TableSkeleton } from "@/components/common/Skeletons";
+import EmptyState from "@/components/common/EmptyState";
 
 export default function EventsInventoryPage() {
   const [events, setEvents] = useState<ThermalEvent[]>([]);
@@ -88,43 +91,33 @@ export default function EventsInventoryPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                  SATELLITE THERMAL INVENTORY
-                </span>
-                <span className="text-xs text-slate-400">NASA FIRMS VIIRS/MODIS Multi-Pass Clusters</span>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="SATELLITE THERMAL INVENTORY"
+            title="Thermal Events & Clusters Inventory"
+            description="Classified spatiotemporal thermal clusters across India with peak radiative power, calibrated ML classification, 5-factor risk scores, and evidence dossiers."
+            icon={<Flame className="w-6 h-6 text-amber-500" />}
+            actions={
+              <div className="flex items-center gap-2.5">
+                <a
+                  href={`${API_BASE_URL}/reports/export/csv`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all font-mono"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Export CSV</span>
+                </a>
+                <button
+                  onClick={loadEvents}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Inventory"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+                </button>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2 mt-1">
-                <Flame className="w-6 h-6 text-amber-500" />
-                Thermal Events & Clusters Inventory
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Classified spatiotemporal thermal clusters across India with peak radiative power, AI classification, risk scores, and evidence dossiers.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <a
-                href={`${API_BASE_URL}/reports/export/csv`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-2 transition-all"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export CSV Dump</span>
-              </a>
-              <button
-                onClick={loadEvents}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-                title="Refresh Inventory"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
-              </button>
-            </div>
-          </div>
+            }
+          />
 
           {/* Filters Bar */}
           <div className="p-4 rounded-2xl bg-agni-card border border-agni-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
@@ -250,84 +243,101 @@ export default function EventsInventoryPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="p-3">Event Code</th>
-                    <th className="p-3">Location</th>
-                    <th className="p-3">AI Classification</th>
-                    <th className="p-3">Peak FRP</th>
-                    <th className="p-3">Persistence</th>
-                    <th className="p-3">Facility Context</th>
-                    <th className="p-3">Risk Level</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-sans">
-                  {sortedEvents.map((evt) => {
-                    const pClass = evt.prediction?.predicted_class || "Uncertain";
-                    const conf = evt.prediction?.confidence || 0.85;
-                    const isCandidate = evt.facility_status === "CANDIDATE";
+            {loading ? (
+              <TableSkeleton rows={8} cols={8} />
+            ) : sortedEvents.length === 0 ? (
+              <EmptyState
+                title="No Thermal Events Found"
+                description="No thermal hotspot records or spatiotemporal clusters match your active filters or query parameters."
+                actionLabel="Clear Filter Matrix"
+                onAction={() => {
+                  setSearch("");
+                  setSelectedState("ALL");
+                  setSelectedClass("ALL");
+                  setSelectedRisk("ALL");
+                  setMinFrp(0);
+                }}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                    <tr>
+                      <th className="p-3">Event Code</th>
+                      <th className="p-3">Location</th>
+                      <th className="p-3">ML Classification</th>
+                      <th className="p-3">Peak FRP</th>
+                      <th className="p-3">Persistence</th>
+                      <th className="p-3">Facility Context</th>
+                      <th className="p-3">Risk Level</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-sans">
+                    {sortedEvents.map((evt) => {
+                      const pClass = evt.prediction?.predicted_class || "Uncertain";
+                      const conf = evt.prediction?.confidence || 0.85;
+                      const isCandidate = evt.facility_status === "CANDIDATE";
 
-                    return (
-                      <tr key={evt.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="p-3 font-mono font-bold text-amber-400">
-                          {evt.event_code}
-                          {evt.is_demo && (
-                            <span className="block text-[9px] text-slate-500 font-sans">DEMO SAMPLE</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-slate-300">
-                          <div className="font-semibold text-white">{evt.state}</div>
-                          <div className="text-[11px] text-slate-400">{evt.district || formatCoord(evt.latitude, evt.longitude, 2)}</div>
-                        </td>
-                        <td className="p-3">
-                          <div className="font-bold text-amber-300">{pClass}</div>
-                          <div className="text-[10px] text-emerald-400 font-mono">{formatPercent(conf, 0)} Conf</div>
-                        </td>
-                        <td className="p-3 font-mono font-bold text-white">
-                          <div>{formatFrp(evt.max_frp)}</div>
-                          <div className="text-[10px] text-slate-400 font-sans">Mean: {formatFrp(evt.avg_frp)}</div>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-mono text-emerald-400 font-bold">
-                            {formatNumber(evt.features?.persistence_score, 1, "5.0")}/10
-                          </span>
-                          <div className="text-[10px] text-slate-400">{evt.detection_count} Passes</div>
-                        </td>
-                        <td className="p-3">
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                            isCandidate
-                              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                              : evt.facility_status === "KNOWN"
-                              ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                              : "bg-slate-800 text-slate-400"
-                          }`}>
-                            {isCandidate ? "CANDIDATE DISCOVERY" : evt.facility_status}
-                          </span>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            {evt.nearest_facility_distance_m !== undefined && evt.nearest_facility_distance_m !== null ? `${formatDistance(evt.nearest_facility_distance_m)} to plant` : "No plant near"}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <RiskBadge level={evt.risk?.risk_level || "LOW"} score={evt.risk?.risk_score} />
-                        </td>
-                        <td className="p-3 text-right">
-                          <Link
-                            href={`/dashboard/events/${evt.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all"
-                          >
-                            <span>Dossier</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr key={evt.id} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3 font-mono font-bold text-amber-400">
+                            {evt.event_code}
+                            {evt.is_demo && (
+                              <span className="block text-[9px] text-slate-500 font-sans">DEMO SAMPLE</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-slate-300">
+                            <div className="font-semibold text-white">{evt.state}</div>
+                            <div className="text-[11px] text-slate-400">{evt.district || formatCoord(evt.latitude, evt.longitude, 2)}</div>
+                          </td>
+                          <td className="p-3">
+                            <div className="font-bold text-amber-300">{pClass}</div>
+                            <div className="text-[10px] text-emerald-400 font-mono">{formatPercent(conf, 0)} Conf</div>
+                          </td>
+                          <td className="p-3 font-mono font-bold text-white">
+                            <div>{formatFrp(evt.max_frp)}</div>
+                            <div className="text-[10px] text-slate-400 font-sans">Mean: {formatFrp(evt.avg_frp)}</div>
+                          </td>
+                          <td className="p-3">
+                            <span className="font-mono text-emerald-400 font-bold">
+                              {formatNumber(evt.features?.persistence_score, 1, "5.0")}/10
+                            </span>
+                            <div className="text-[10px] text-slate-400">{evt.detection_count} Passes</div>
+                          </td>
+                          <td className="p-3">
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                              isCandidate
+                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                : evt.facility_status === "KNOWN"
+                                ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                : "bg-slate-800 text-slate-400"
+                            }`}>
+                              {isCandidate ? "CANDIDATE DISCOVERY" : evt.facility_status}
+                            </span>
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              {evt.nearest_facility_distance_m !== undefined && evt.nearest_facility_distance_m !== null ? `${formatDistance(evt.nearest_facility_distance_m)} to plant` : "No plant near"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <RiskBadge level={evt.risk?.risk_level || "LOW"} score={evt.risk?.risk_score} />
+                          </td>
+                          <td className="p-3 text-right">
+                            <Link
+                              href={`/dashboard/events/${evt.id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all"
+                            >
+                              <span>Dossier</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Pagination Controls */}
             <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-800 text-xs">

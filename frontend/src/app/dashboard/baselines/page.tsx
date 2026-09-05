@@ -10,6 +10,9 @@ import {
   CheckCircle2, RefreshCw, BarChart2, Shield,
   ArrowUpRight, Compass, Layers
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 
 interface BaselineCell {
   grid_id: string;
@@ -59,32 +62,22 @@ export default function BaselinesPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                  90-DAY CELL BASELINE ENGINE
-                </span>
-                <span className="text-xs text-slate-400">Historical Thermal Norms & Spatial Climatology</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Sliders className="w-6 h-6 text-emerald-400" />
-                Thermal Baseline Grid & Deviation Tracker
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Seasonal mean FRP baselines across 0.1° × 0.1° industrial grid cells. Compares live satellite passes against normal background to isolate industrial plant breaches.
-              </p>
-            </div>
-
-            <button
-              onClick={loadBaselines}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-              title="Refresh Baselines"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
-            </button>
-          </div>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="90-DAY CELL BASELINE ENGINE"
+            title="Thermal Baseline Grid & Deviation Tracker"
+            description="Seasonal mean FRP baselines across 0.1° × 0.1° industrial grid cells. Compares live satellite passes against normal background to isolate industrial plant breaches."
+            icon={<Sliders className="w-6 h-6 text-emerald-400" />}
+            actions={
+              <button
+                onClick={loadBaselines}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                title="Refresh Baselines"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
+              </button>
+            }
+          />
 
           {/* Key Baseline Metrics Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -114,7 +107,22 @@ export default function BaselinesPage() {
           </div>
 
           {/* Grid Cells Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : filteredCells.length === 0 ? (
+            <EmptyState
+              title="No Baseline Cells Available"
+              description="No grid cells match your active filter."
+              actionLabel="Refresh Baselines"
+              onAction={loadBaselines}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredCells.map((cell) => {
               const isSpike = cell.status === "CRITICAL_SPIKE";
               const isElevated = cell.status === "ELEVATED";
@@ -181,6 +189,7 @@ export default function BaselinesPage() {
               );
             })}
           </div>
+          )}
         </main>
       </div>
     </div>

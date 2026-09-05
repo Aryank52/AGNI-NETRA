@@ -11,25 +11,30 @@ import { safeArray, safeNumber, formatNumber, formatFrp } from "@/lib/formatters
 import { 
   AlertOctagon, Sparkles, TrendingUp, 
   MapPin, ChevronRight, ShieldAlert, Activity,
-  Filter, Search, ArrowUpRight
+  Filter, Search, ArrowUpRight, RefreshCw
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 
 export default function AnomaliesPage() {
   const [anomalies, setAnomalies] = useState<ThermalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string>("ALL");
 
+  const loadAnomalies = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchApi<any>("/anomalies");
+      setAnomalies(safeArray<ThermalEvent>(data));
+    } catch (err) {
+      console.warn("Failed to load anomalies:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadAnomalies = async () => {
-      try {
-        const data = await fetchApi<any>("/anomalies");
-        setAnomalies(safeArray<ThermalEvent>(data));
-      } catch (err) {
-        console.warn("Failed to load anomalies:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadAnomalies();
   }, []);
 
@@ -46,37 +51,42 @@ export default function AnomaliesPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-6xl mx-auto w-full">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
-                  ANOMALY DETECTION ENGINE
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="ANOMALY DETECTION ENGINE"
+            title="Abnormal Thermal Spikes & Behavioral Deviations"
+            description="Answers: “Is this behaviour unusual for this location?” — Detects acute sudden surges (+2.5σ to +3.5σ) above 35,579 precomputed facility baselines."
+            icon={<AlertOctagon className="w-6 h-6 text-red-400" />}
+            actions={
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold">
+                  {filtered.length} Critical Deviations Active
                 </span>
-                <span className="text-xs text-slate-400">Statistical Baseline Deviation & Outlier Analysis</span>
+                <button
+                  onClick={loadAnomalies}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Anomalies"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-red-400" : ""}`} />
+                </button>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <AlertOctagon className="w-6 h-6 text-red-400" />
-                Abnormal Thermal Spikes & Behavioral Deviations
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Answers: &ldquo;Is this behaviour unusual for this location?&rdquo; — Detects sudden surges (+2.5σ to +3.5σ) above 35,579 precomputed facility baselines.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold">
-                {filtered.length} Critical Deviations Active
-              </span>
-            </div>
-          </div>
+            }
+          />
 
           {/* Anomalies List */}
           {loading ? (
-            <div className="p-12 text-center text-xs text-slate-400 font-mono space-y-2">
-              <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <div>EVALUATING MULTIVARIATE BASELINE DEVIATIONS...</div>
+            <div className="space-y-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title="No Abnormal Thermal Surges"
+              description="All monitored industrial facilities and grid cells are currently operating within ±2.0σ of their historical baseline emission envelope."
+              actionLabel="Refresh Anomaly Radar"
+              onAction={loadAnomalies}
+            />
           ) : (
             <div className="space-y-4">
               {filtered.map((evt) => {

@@ -5,35 +5,41 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 import { ThermalEvent } from "@/types";
 import { fetchApi } from "@/lib/api";
-import { safeArray, safeNumber, formatNumber, formatFrp } from "@/lib/formatters";
+import { safeArray, safeNumber, formatNumber, formatFrp, formatCoord } from "@/lib/formatters";
 import { 
   Activity, MapPin, Calendar, Clock, 
   ChevronRight, ArrowRight, ShieldAlert, Sparkles,
-  Info, Compass, ArrowUpRight, HelpCircle
+  Info, Compass, ArrowUpRight, HelpCircle, Repeat,
+  Zap, AlertOctagon, RefreshCw
 } from "lucide-react";
 
 export default function PersistentSourcesPage() {
   const [events, setEvents] = useState<ThermalEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadEvents = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchApi<any>("/events?limit=100");
+      const list = safeArray<ThermalEvent>(data);
+      // Filter persistent sources (persistence score >= 2.0 or detection count >= 3)
+      const persistent = list.filter(
+        (e) => safeNumber(e.features?.persistence_score, 0) >= 2.0 || safeNumber(e.detection_count, 0) >= 3
+      );
+      setEvents(persistent);
+    } catch (err) {
+      console.warn("Failed to load persistent events:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        const data = await fetchApi<any>("/events?limit=100");
-        const list = safeArray<ThermalEvent>(data);
-        // Filter persistent sources (persistence score >= 2.0 or detection count >= 3)
-        const persistent = list.filter(
-          (e) => safeNumber(e.features?.persistence_score, 0) >= 2.0 || safeNumber(e.detection_count, 0) >= 3
-        );
-        setEvents(persistent);
-      } catch (err) {
-        console.warn("Failed to load persistent events:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadEvents();
   }, []);
 
@@ -44,57 +50,96 @@ export default function PersistentSourcesPage() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-6xl mx-auto w-full">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                  PERSISTENCE ENGINE
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="PERSISTENCE ENGINE"
+            title="Persistent Thermal Sources & Recurrence Analytics"
+            description="Distinguishes stationary industrial combustion (gas flares, kiln exhausts, smelters) from ephemeral agricultural or forest fires by analyzing multi-temporal recurrence, continuity, and baseline deviation."
+            icon={<Activity className="w-6 h-6 text-emerald-400" />}
+            actions={
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
+                  {events.length} Persistent Emitters Verified
                 </span>
-                <span className="text-xs text-slate-400">Multi-Temporal Thermal Continuity Analysis</span>
+                <button
+                  onClick={loadEvents}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Analytics"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
+                </button>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Activity className="w-6 h-6 text-emerald-400" />
-                Persistent Thermal Sources & Recurrence Analytics
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Distinguishes stationary industrial combustion (gas flares, kiln exhausts, smelters) from ephemeral agricultural or forest fires (t_obs &lt; t_event temporal invariant).
+            }
+          />
+
+          {/* 3-Pillar Diagnostic Framework Strip */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Pillar 1: REPEATED */}
+            <div className="p-4 rounded-2xl bg-agni-card border border-cyan-500/30 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase text-cyan-400 tracking-wider">
+                  PILLAR 1: REPEATED
+                </span>
+                <Repeat className="w-4 h-4 text-cyan-400" />
+              </div>
+              <div className="text-base font-bold text-white font-mono">Multi-Pass Observations</div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Hotspots detected across $\ge 3$ distinct satellite orbits. Rules out transient single-pass artifacts, solar glints, and temporary field clearings.
               </p>
             </div>
 
-            <span className="text-xs font-mono px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
-              {events.length} Persistent Emitters Verified
-            </span>
-          </div>
-
-          {/* Plain Language Interpretation Banner */}
-          <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3 text-xs text-slate-300 shadow-sm">
-            <Info className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-bold text-white text-xs uppercase tracking-wide">
-                How AGNI-NETRA Calculates Persistence & Recurrence
-              </span>
+            {/* Pillar 2: PERSISTENT */}
+            <div className="p-4 rounded-2xl bg-agni-card border border-emerald-500/30 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 tracking-wider">
+                  PILLAR 2: PERSISTENT
+                </span>
+                <Activity className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-base font-bold text-white font-mono">24x7 Thermal Continuity</div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                <strong>Persistence Score (0.0 to 10.0):</strong> Measures the statistical probability that a thermal hotspot at these coordinates is a continuous, permanent combustion source based on recurrent multi-day satellite detections.
-                <br />
-                <strong>Day/Night Ratio:</strong> Continuous industrial processes (petrochemical flares, blast furnaces) emit thermal radiation 24x7 with Day/Night ratios near ~1.0x, whereas agricultural field burning occurs almost exclusively during solar peak hours.
+                Persistence score $\ge 2.0/10.0$ and Day/Night ratio $\approx 1.0\times$. Signifies continuous round-the-clock combustion (refinery flares, blast furnaces).
+              </p>
+            </div>
+
+            {/* Pillar 3: ABNORMAL */}
+            <div className="p-4 rounded-2xl bg-agni-card border border-amber-500/30 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase text-amber-400 tracking-wider">
+                  PILLAR 3: ABNORMAL
+                </span>
+                <AlertOctagon className="w-4 h-4 text-amber-400" />
+              </div>
+              <div className="text-base font-bold text-white font-mono">Baseline Surge ($Z$-Score)</div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Statistical deviation from the local 90-day background norm. Isolates acute flaring surges and unpermitted combustion spikes from normal baseline operations.
               </p>
             </div>
           </div>
 
           {/* Cards Grid */}
           {loading ? (
-            <div className="p-12 text-center text-xs text-slate-400 font-mono space-y-2">
-              <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <div>COMPUTING TEMPORAL RECURRENCE VECTORS...</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
+          ) : events.length === 0 ? (
+            <EmptyState
+              title="No Persistent Emitters Identified"
+              description="No thermal hotspot records currently meet the multi-pass persistence threshold in the active catalog."
+              actionLabel="Refresh Data"
+              onAction={loadEvents}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {events.map((evt) => {
                 const pScore = safeNumber(evt.features?.persistence_score, 7.0);
                 const rRate = safeNumber(evt.features?.recurrence_rate, 4.5);
                 const dnRatio = safeNumber(evt.features?.day_night_ratio, 1.2);
+                const devRatio = safeNumber(evt.features?.baseline_deviation_ratio, 1.5);
                 const maxFrpVal = safeNumber(evt.max_frp, 0);
 
                 return (
@@ -117,23 +162,26 @@ export default function PersistentSourcesPage() {
                       <RiskBadge level={evt.risk?.risk_level || "LOW"} score={evt.risk?.risk_score} />
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 grid grid-cols-3 gap-2 text-xs font-mono text-center">
-                      <div>
-                        <div className="text-[10px] text-slate-500">PERSISTENCE</div>
-                        <div className="font-bold text-emerald-400">{formatNumber(pScore, 1)} / 10.0</div>
+                    {/* Distinct 3-Pillar Status Badge Bar */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+                      <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                        <span className="text-[9px] text-slate-400 block uppercase">REPEATED</span>
+                        <strong className="text-xs">{evt.detection_count || 3} passes</strong>
                       </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500">RECURRENCE</div>
-                        <div className="font-bold text-white">{formatNumber(rRate, 1)} passes/mo</div>
+
+                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                        <span className="text-[9px] text-slate-400 block uppercase">PERSISTENT</span>
+                        <strong className="text-xs">{formatNumber(pScore, 1)}/10 • {formatNumber(dnRatio, 1)}x D/N</strong>
                       </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500">24x7 RATIO</div>
-                        <div className="font-bold text-cyan-400">{formatNumber(dnRatio, 2)}x</div>
+
+                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        <span className="text-[9px] text-slate-400 block uppercase">ABNORMAL</span>
+                        <strong className="text-xs">+{formatNumber(devRatio, 1)}σ surge</strong>
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-400 flex items-center justify-between pt-1">
-                      <span>Peak FRP: <strong className="text-white font-mono">{formatFrp(maxFrpVal)}</strong></span>
+                    <div className="text-xs text-slate-400 flex items-center justify-between pt-1 font-mono">
+                      <span>Peak FRP: <strong className="text-white">{formatFrp(maxFrpVal)}</strong></span>
                       <div className="flex items-center gap-3">
                         <Link
                           href={`/dashboard?lat=${evt.latitude}&lon=${evt.longitude}`}

@@ -10,6 +10,7 @@ import {
   ShieldCheck, Activity, RefreshCw, CheckCircle2, AlertTriangle,
   Play, Sliders, Shield
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -98,41 +99,34 @@ export default function AdminPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
-                  ADMINISTRATIVE GOVERNANCE & AUDIT
-                </span>
-                <span className="text-xs text-slate-400">Enterprise Operations</span>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="ADMINISTRATIVE GOVERNANCE & AUDIT"
+            title="System Administration & Model Governance"
+            description="Manage data ingestion sources, supervise machine learning retraining pipelines, inspect operational audit trails, and administer role-based access controls."
+            icon={<Settings className="w-6 h-6 text-purple-400" />}
+            actions={
+              <div className="flex items-center gap-2.5 font-mono">
+                <button
+                  onClick={triggerRetrain}
+                  disabled={retraining}
+                  className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-1.5 transition-colors"
+                >
+                  <Cpu className={`w-3.5 h-3.5 ${retraining ? "animate-spin" : ""}`} />
+                  <span>{retraining ? "Retraining Models..." : "Trigger Retraining"}</span>
+                </button>
+
+                <button
+                  onClick={triggerSeed}
+                  disabled={seeding}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs shadow-md flex items-center gap-1.5 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${seeding ? "animate-spin" : ""}`} />
+                  <span>{seeding ? "Populating..." : "Re-Seed Demo Data"}</span>
+                </button>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Settings className="w-6 h-6 text-purple-400" />
-                System Administration & Model Management
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={triggerRetrain}
-                disabled={retraining}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-1.5"
-              >
-                <Cpu className={`w-3.5 h-3.5 ${retraining ? "animate-spin" : ""}`} />
-                <span>{retraining ? "Retraining Models..." : "Trigger ML Retraining"}</span>
-              </button>
-
-              <button
-                onClick={triggerSeed}
-                disabled={seeding}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${seeding ? "animate-spin" : ""}`} />
-                <span>{seeding ? "Populating Seed..." : "Re-Seed Demo Data"}</span>
-              </button>
-            </div>
-          </div>
+            }
+          />
 
           {/* Admin Notice Banner */}
           {adminNotice && (

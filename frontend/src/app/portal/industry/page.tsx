@@ -10,6 +10,9 @@ import {
   CheckCircle2, RefreshCw, AlertCircle, FileText,
   Clock, Download
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 
 export default function IndustryPortalPage() {
   const [facilities, setFacilities] = useState<any[]>([]);
@@ -78,35 +81,39 @@ export default function IndustryPortalPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                  PLANT COMPLIANCE & MONITORING
-                </span>
-                <span className="text-xs text-slate-400">CPCB Self-Reporting & Emission Ledger</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Building2 className="w-6 h-6 text-amber-400" />
-                Industry Portal & Self-Regulation Desk
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Register plant flare stacks, declare scheduled maintenance burns, monitor thermal emissions against state CPCB limits, and download verified green compliance certificates.
-              </p>
-            </div>
-
-            <button
-              onClick={() => setDeclModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Declare Planned Flaring Notice</span>
-            </button>
-          </div>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="PLANT COMPLIANCE & MONITORING"
+            title="Industry Portal & Self-Regulation Desk"
+            description="Register plant flare stacks, declare scheduled maintenance burns, monitor thermal emissions against state CPCB limits, and download verified green compliance certificates."
+            icon={<Building2 className="w-6 h-6 text-amber-400" />}
+            actions={
+              <button
+                onClick={() => setDeclModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md flex items-center gap-2 transition-all font-mono"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Declare Planned Flaring Notice</span>
+              </button>
+            }
+          />
 
           {/* Plant Registry Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : facilities.length === 0 ? (
+            <EmptyState
+              title="No Industrial Plants Registered"
+              description="No industrial facilities currently assigned to this company or compliance officer."
+              actionLabel="Refresh Facility Ledger"
+              onAction={loadFacilities}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {facilities.map((fac) => {
               const isGradeA = fac.green_rating === "GRADE A";
               const isGradeB = fac.green_rating === "GRADE B";
@@ -165,6 +172,7 @@ export default function IndustryPortalPage() {
               );
             })}
           </div>
+          )}
 
           {/* Planned Emission Declaration Modal */}
           {declModalOpen && (

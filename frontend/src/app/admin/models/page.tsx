@@ -4,6 +4,9 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
+import PageHeader from "@/components/common/PageHeader";
+import { CardSkeleton } from "@/components/common/Skeletons";
+import EmptyState from "@/components/common/EmptyState";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
 import { formatPercent } from "@/lib/formatters";
@@ -80,36 +83,27 @@ export default function ModelRegistryPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Link href="/admin" className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to Admin</span>
-                </Link>
-                <span className="text-slate-600">/</span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
-                  MODEL GOVERNANCE
-                </span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Cpu className="w-6 h-6 text-cyan-400" />
-                AI Model Governance & Version Registry
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Track ML model artifacts, validation metrics, spatial/temporal holdout scores, and lifecycle status. Models require human sign-off before ACTIVE deployment.
-              </p>
-            </div>
-
-            <button
-              onClick={loadModels}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-              title="Refresh Models"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
-            </button>
-          </div>
+          {/* Standard Page Header */}
+          <PageHeader
+            category="MODEL GOVERNANCE"
+            categoryColor="bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+            title="Machine Learning Model Governance & Version Registry"
+            titleIcon={<Cpu className="w-6 h-6 text-cyan-400" />}
+            description="Track ML model artifacts, validation metrics, spatial/temporal holdout scores, and lifecycle status. Models require human sign-off before ACTIVE deployment."
+            breadcrumbs={[
+              { label: "Admin", href: "/admin" },
+              { label: "Model Governance" }
+            ]}
+            actions={
+              <button
+                onClick={loadModels}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                title="Refresh Models"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+              </button>
+            }
+          />
 
           {statusMsg && (
             <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center gap-2">
@@ -118,8 +112,21 @@ export default function ModelRegistryPage() {
             </div>
           )}
 
-          {/* Model Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Model Cards Grid or Loading / Empty States */}
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <CardSkeleton count={4} />
+            </div>
+          ) : models.length === 0 ? (
+            <EmptyState
+              title="No Model Artifacts Registered"
+              description="No machine learning models have been registered in the system governance store."
+              icon={Cpu}
+              actionLabel="Refresh Registry"
+              onAction={loadModels}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {models.map((m) => {
               const isActive = m.is_active || m.status === "ACTIVE";
               const isApproved = m.status === "APPROVED";
@@ -223,6 +230,7 @@ export default function ModelRegistryPage() {
               );
             })}
           </div>
+          )}
         </main>
       </div>
     </div>

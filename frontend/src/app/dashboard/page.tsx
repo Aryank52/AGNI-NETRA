@@ -28,15 +28,13 @@ import {
   Globe, Shield, AlertCircle, Factory, Trees, Pickaxe, X
 } from "lucide-react";
 
+import { MapLoadingSkeleton, CardSkeleton } from "@/components/common/Skeletons";
+import EmptyState from "@/components/common/EmptyState";
+
 // Dynamic import with ssr: false ensures WebGL / MapLibre never encounters SSR hydration errors
 const MapLibreView = dynamic(() => import("@/components/map/MapLibreView"), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-amber-400 font-mono text-xs space-y-2">
-      <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      <span>INITIALIZING MAPLIBRE GL GIS ENGINE...</span>
-    </div>
-  ),
+  loading: () => <MapLoadingSkeleton />,
 });
 
 export default function DashboardPage() {
@@ -594,27 +592,73 @@ export default function DashboardPage() {
               ) : (
                 /* View 2: Operational Event Stream Queue */
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Selected Event Quick Snapshot */}
+                  {/* Selected Event Comprehensive Operational Inspector */}
                   {selectedEvent && (
-                    <div className="p-3 bg-slate-900/90 border-b border-agni-border space-y-2">
+                    <div className="p-3.5 bg-slate-900/95 border-b border-agni-border space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-extrabold text-amber-400">
-                          {selectedEvent.event_code}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                            INSPECTOR
+                          </span>
+                          <span className="font-mono text-xs font-black text-amber-400">
+                            {selectedEvent.event_code}
+                          </span>
+                        </div>
                         <RiskBadge level={selectedEvent.risk?.risk_level || "LOW"} score={selectedEvent.risk?.risk_score} />
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-300">
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-950/80 p-2 rounded-lg border border-slate-800">
                         <div>
-                          <strong>{selectedEvent.prediction?.predicted_class || "Gas Flare"}</strong>
-                          <div className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[9px] text-slate-500 uppercase block">LOCATION</span>
+                          <span className="text-slate-200 font-sans font-medium truncate block">
                             {selectedEvent.state} {selectedEvent.district ? `• ${selectedEvent.district}` : ""}
-                          </div>
+                          </span>
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            {safeNumber(selectedEvent.latitude, 0).toFixed(3)}°N, {safeNumber(selectedEvent.longitude, 0).toFixed(3)}°E
+                          </span>
                         </div>
+
+                        <div>
+                          <span className="text-[9px] text-slate-500 uppercase block">TIME (UTC)</span>
+                          <span className="text-slate-200 block">
+                            {selectedEvent.created_at ? new Date(selectedEvent.created_at).toISOString().slice(0, 16).replace("T", " ") : "2026-09-05 18:30"}
+                          </span>
+                          <span className="text-[10px] text-amber-400/90 font-bold block">
+                            Peak {formatFrp(selectedEvent.max_frp)}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[9px] text-slate-500 uppercase block">ML CLASSIFICATION</span>
+                          <span className="text-white font-bold block">
+                            {selectedEvent.prediction?.predicted_class || "Gas Flare"}
+                          </span>
+                          <span className="text-[10px] text-emerald-400 block font-mono">
+                            {((selectedEvent.prediction?.confidence ?? 0.88) * 100).toFixed(1)}% Conf
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[9px] text-slate-500 uppercase block">STREAM SOURCE</span>
+                          <span className="text-slate-300 block truncate">
+                            {selectedEvent.is_demo ? "Demo Benchmark" : "VIIRS / MODIS"}
+                          </span>
+                          <span className="text-[10px] text-cyan-400 block font-mono">
+                            {selectedEvent.detection_count || 1} Passes
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Risk: <strong className="text-amber-300">{safeNumber(selectedEvent.risk?.risk_score, 62).toFixed(1)}/100</strong>
+                        </span>
                         <button
                           onClick={() => setRightPanelMode("dossier")}
-                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] transition-colors shadow"
+                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-colors shadow-sm flex items-center gap-1 font-mono"
                         >
-                          Open Dossier →
+                          <span>Full Dossier</span>
+                          <ChevronRight className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
@@ -623,23 +667,20 @@ export default function DashboardPage() {
                   {/* Scrollable Events List */}
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {loading && (
-                      <div className="p-6 text-center text-xs text-slate-400 font-mono space-y-2">
-                        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                        <div>SYNCING CLUSTERED THERMAL EVENTS...</div>
+                      <div className="space-y-2">
+                        <CardSkeleton />
+                        <CardSkeleton />
+                        <CardSkeleton />
                       </div>
                     )}
 
                     {!loading && events.length === 0 && (
-                      <div className="p-8 text-center text-xs text-slate-400 space-y-2">
-                        <AlertCircle className="w-8 h-8 text-slate-600 mx-auto" />
-                        <p className="font-semibold text-slate-300">No thermal events matched current filters.</p>
-                        <button
-                          onClick={resetFilters}
-                          className="text-amber-400 text-xs font-bold hover:underline"
-                        >
-                          Clear Filters
-                        </button>
-                      </div>
+                      <EmptyState
+                        title="No Viewport Thermal Events"
+                        description="No thermal hotspot records match your active spatial drill-down or operational filters."
+                        actionLabel="Reset Operational Filters"
+                        onAction={resetFilters}
+                      />
                     )}
 
                     {events.map((evt) => {

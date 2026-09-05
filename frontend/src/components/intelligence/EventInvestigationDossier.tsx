@@ -158,7 +158,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-indigo-400" />
-                  <span className="font-bold text-xs text-white">AI CLASSIFICATION & CALIBRATION</span>
+                  <span className="font-bold text-xs text-white">ML CLASSIFICATION & CALIBRATION</span>
                 </div>
                 <span className="text-[10px] font-mono text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded">
                   {ml_intelligence?.model_champion}

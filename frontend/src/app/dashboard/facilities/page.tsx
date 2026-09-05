@@ -9,8 +9,11 @@ import { fetchApi } from "@/lib/api";
 import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatters";
 import { 
   Factory, Search, MapPin, Clock, 
-  Activity, Shield, ChevronRight, CheckCircle2
+  Activity, Shield, ChevronRight, CheckCircle2, RefreshCw
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 
 export default function FacilitiesPage() {
   const [facilities, setFacilities] = useState<IndustrialFacility[]>([]);
@@ -18,17 +21,19 @@ export default function FacilitiesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
+  const loadFacilities = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchApi<IndustrialFacility[]>("/facilities");
+      setFacilities(data);
+    } catch (err) {
+      console.warn("Failed to load facilities:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadFacilities = async () => {
-      try {
-        const data = await fetchApi<IndustrialFacility[]>("/facilities");
-        setFacilities(data);
-      } catch (err) {
-        console.warn("Failed to load facilities:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadFacilities();
   }, []);
 
@@ -48,27 +53,30 @@ export default function FacilitiesPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-6xl mx-auto">
-          {/* Header Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5">
-                <Factory className="w-6 h-6 text-amber-400" />
-                Industrial Facility Registry & Baselines
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Canonical multi-source industrial registry (OSM, State Pollution Boards, Central Electricity Authority).
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono px-3 py-1 rounded-lg bg-agni-card border border-agni-border text-slate-300">
-                {facilities.length} Facilities Monitored
-              </span>
-            </div>
-          </div>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="NATIONAL INDUSTRIAL REGISTRY"
+            title="Industrial Facility Registry & 90-Day Baselines"
+            description="Canonical multi-source industrial registry (OpenStreetMap, State Pollution Control Boards, Central Electricity Authority) with precomputed thermal baselines."
+            icon={<Factory className="w-6 h-6 text-amber-400" />}
+            actions={
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 font-bold">
+                  {facilities.length} Facilities Monitored
+                </span>
+                <button
+                  onClick={loadFacilities}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Facilities"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+                </button>
+              </div>
+            }
+          />
 
           {/* Filters Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-agni-slate border border-agni-border text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-agni-card border border-agni-border text-xs">
             <div className="flex items-center gap-2 flex-1 min-w-[240px]">
               <Search className="w-4 h-4 text-slate-400" />
               <input
@@ -76,16 +84,16 @@ export default function FacilitiesPage() {
                 placeholder="Search facility by name, state, or district..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 text-xs"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 font-mono">
               <span className="font-semibold text-slate-400">Type:</span>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-amber-500 text-xs"
               >
                 <option value="ALL">All Categories</option>
                 <option value="REFINERY">Refinery / Petrochemical</option>
@@ -97,7 +105,25 @@ export default function FacilitiesPage() {
           </div>
 
           {/* Facilities Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title="No Industrial Facilities Found"
+              description="No facilities match your search query or selected industry category."
+              actionLabel="Reset Search & Filters"
+              onAction={() => {
+                setSearchQuery("");
+                setTypeFilter("ALL");
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map((fac) => {
               const baseline = fac.baselines?.[0];
               return (
@@ -168,6 +194,7 @@ export default function FacilitiesPage() {
               );
             })}
           </div>
+          )}
         </main>
       </div>
     </div>

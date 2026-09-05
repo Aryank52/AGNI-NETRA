@@ -13,6 +13,9 @@ import {
   Search, X, ExternalLink, ChevronRight, CheckCircle2,
   Trees, Pickaxe, ShieldAlert
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton, TableSkeleton } from "@/components/common/Skeletons";
 
 interface StateSummary {
   state_code: string;
@@ -106,29 +109,17 @@ export default function IndiaThermalAtlasPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                  AUTHORITATIVE CADASTRE
-                </span>
-                <span className="text-xs text-slate-400">PostGIS 3.4 Multi-Source Industrial Registry</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Globe className="w-6 h-6 text-amber-400" />
-                India Industrial Thermal Atlas
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Authoritative registry of 35,684 industrial facilities and multi-year thermal activity distribution across Indian states.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="AUTHORITATIVE CADASTRE"
+            title="India Industrial Thermal Atlas"
+            description="Authoritative registry of 35,684 industrial facilities and multi-year thermal activity distribution across Indian states and union territories."
+            icon={<Globe className="w-6 h-6 text-amber-400" />}
+            actions={
               <select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
-                className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium text-xs focus:outline-none focus:border-amber-500"
+                className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium text-xs focus:outline-none focus:border-amber-500 font-mono"
               >
                 <option value="ALL">All 36 States & UTs (National View)</option>
                 {states.map((s) => (
@@ -137,8 +128,8 @@ export default function IndiaThermalAtlasPage() {
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
+            }
+          />
 
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -161,7 +152,7 @@ export default function IndiaThermalAtlasPage() {
             <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
               <div className="text-[10px] font-mono text-slate-400 uppercase">Historical Detections Ingested</div>
               <div className="text-xl font-black text-orange-400 font-mono">
-                8,221,854
+                8,221,894
               </div>
               <div className="text-[10px] text-slate-500">NASA FIRMS Sensor Archive</div>
             </div>

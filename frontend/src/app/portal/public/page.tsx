@@ -7,8 +7,11 @@ import { fetchApi } from "@/lib/api";
 import { safeArray, safeNumber, formatFrp } from "@/lib/formatters";
 import { 
   ShieldCheck, AlertTriangle, Wind, 
-  MapPin, CheckCircle2, Info, Eye, Shield, Lock
+  MapPin, CheckCircle2, Info, Eye, Shield, Lock, RefreshCw
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 
 export default function PublicPortalPage() {
   const [data, setData] = useState<any | null>(null);
@@ -29,22 +32,28 @@ export default function PublicPortalPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full">
-          {/* Header */}
-          <div className="border-b border-agni-border pb-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                PUBLIC SAFETY INFORMATION
-              </span>
-              <span className="text-xs text-slate-400">Citizen Awareness & Regional Advisories</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-              <ShieldCheck className="w-6 h-6 text-emerald-400" />
-              National Thermal Safety & Public Advisory Portal
-            </h1>
-            <p className="text-xs text-slate-400">
-              Aggregated thermal activity summaries and regional precautionary alerts derived from satellite earth observations.
-            </p>
-          </div>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="PUBLIC SAFETY INFORMATION"
+            title="National Thermal Safety & Public Advisory Portal"
+            description="Aggregated thermal activity summaries, smoke dispersal guidance, and regional precautionary alerts derived from satellite earth observations."
+            icon={<ShieldCheck className="w-6 h-6 text-emerald-400" />}
+            actions={
+              <button
+                onClick={() => {
+                  setLoading(true);
+                  fetchApi<any>("/portals/public/overview")
+                    .then((res) => setData(res))
+                    .catch(() => {})
+                    .finally(() => setLoading(false));
+                }}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                title="Refresh Advisories"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
+              </button>
+            }
+          />
 
           {/* Strict Role Isolation & Public Disclaimer */}
           <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3 text-xs text-slate-300">
@@ -57,7 +66,7 @@ export default function PublicPortalPage() {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                This public dashboard provides high-level district advisories. For statutory security and privacy, internal industrial facility layouts, exact proprietary coordinates, ML SHAP attribution internals, and analyst audit trails are restricted to authorized regulatory personnel.
+                This public portal provides high-level district advisories. For statutory security and privacy, internal industrial facility layouts, exact proprietary coordinates, ML SHAP attribution internals, and analyst audit trails are restricted to authorized regulatory personnel.
               </p>
             </div>
           </div>
@@ -95,9 +104,9 @@ export default function PublicPortalPage() {
             </h2>
 
             {loading ? (
-              <div className="p-8 text-center text-xs text-slate-400 font-mono space-y-2">
-                <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <div>LOADING PUBLIC SAFETY ADVISORIES...</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardSkeleton />
+                <CardSkeleton />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -15,6 +15,9 @@ import {
   Send, ExternalLink, Zap, Eye, HelpCircle, Lock,
   ChevronRight, ArrowUpRight, Search, Check, X, ArrowRight
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import { CardSkeleton } from "@/components/common/Skeletons";
+import EmptyState from "@/components/common/EmptyState";
 
 export default function AlertsPage() {
   const { user } = useAuth();
@@ -31,6 +34,7 @@ export default function AlertsPage() {
   const [levelFilter, setLevelFilter] = useState<string>("ALL");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<string>("priority");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Action Modal State
   const [actionModalOpen, setActionModalOpen] = useState<boolean>(false);
@@ -137,6 +141,18 @@ export default function AlertsPage() {
     }
   };
 
+  const displayAlerts = alerts.filter((a) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (a.title && a.title.toLowerCase().includes(q)) ||
+      (a.event_code && a.event_code.toLowerCase().includes(q)) ||
+      (a.state && a.state.toLowerCase().includes(q)) ||
+      (a.district && a.district.toLowerCase().includes(q)) ||
+      (a.predicted_class && a.predicted_class.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
       <Header />
@@ -145,43 +161,32 @@ export default function AlertsPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
-                  TRI-TIER OPERATIONAL ALERT SYSTEM
-                </span>
-                <span className="text-xs text-slate-400">Human-in-the-Loop Decision Center</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Bell className="w-6 h-6 text-red-400" />
-                Operational Alert Center & Decision Queue
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Point-in-time calibrated thermal alerts routed through strict confidence & risk tiers. Safe automated dispatch gating with immutable analyst audit trails.
-              </p>
-            </div>
-
-            {/* Zero Dispatch Gating Tag */}
-            <div className="flex items-center gap-3">
-              <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center gap-2 text-xs">
-                <Lock className="w-4 h-4 text-amber-400" />
-                <div>
-                  <div className="font-mono font-bold leading-none">DISPATCH GATE: SAFE</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">0 Automated Alerts Dispatched</div>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="TRI-TIER OPERATIONAL ALERT SYSTEM"
+            title="Operational Alert Center & Decision Queue"
+            description="Point-in-time calibrated thermal alerts routed through strict confidence & risk tiers. Safe automated dispatch gating with immutable analyst audit trails."
+            icon={<Bell className="w-6 h-6 text-red-400" />}
+            actions={
+              <div className="flex items-center gap-3">
+                <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center gap-2 text-xs">
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <div>
+                    <div className="font-mono font-bold leading-none">DISPATCH GATE: SAFE</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 font-mono">0 Automated Alerts Dispatched</div>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={loadAlerts}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-                title="Refresh Alerts"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
-              </button>
-            </div>
-          </div>
+                <button
+                  onClick={loadAlerts}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Alerts"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+                </button>
+              </div>
+            }
+          />
 
           {/* Tri-Tier Queue Navigation Tabs */}
           <div className="flex flex-wrap items-center gap-2 border-b border-agni-border pb-2">
@@ -239,12 +244,32 @@ export default function AlertsPage() {
             </button>
           </div>
 
-          {/* Multi-Criteria Filter Toolbar */}
+          {/* Multi-Criteria Filter & Search Toolbar */}
           <div className="p-3.5 rounded-2xl bg-agni-card border border-agni-border flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-3">
+              {/* Search Box */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search alert code, state..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 text-xs focus:outline-none focus:border-amber-500 w-44 sm:w-56"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
               {/* Lifecycle State Filter */}
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-400 font-semibold">Lifecycle State:</span>
+                <span className="text-slate-400 font-semibold">Lifecycle:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -263,7 +288,7 @@ export default function AlertsPage() {
 
               {/* Alert Level Filter */}
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-400 font-semibold">Alert Level:</span>
+                <span className="text-slate-400 font-semibold">Level:</span>
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
@@ -303,8 +328,8 @@ export default function AlertsPage() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500"
                 >
-                  <option value="priority">Priority Score (High → Low)</option>
-                  <option value="recency">Recency (Newest First)</option>
+                  <option value="priority">Priority Score</option>
+                  <option value="recency">Recency</option>
                   <option value="risk">Risk Score</option>
                   <option value="confidence">Confidence</option>
                 </select>
@@ -312,29 +337,31 @@ export default function AlertsPage() {
             </div>
 
             <span className="text-slate-400 font-mono text-[11px]">
-              Showing {alerts.length} operational alerts
+              Showing {displayAlerts.length} operational alerts
             </span>
           </div>
 
           {/* Alert Queue Feed */}
           <div className="space-y-3">
             {loading && (
-              <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
-                <span>Loading Tri-Tier operational queue...</span>
+              <div className="space-y-3">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
               </div>
             )}
 
-            {!loading && alerts.length === 0 && (
-              <div className="p-12 text-center text-slate-400 text-xs border border-dashed border-slate-800 rounded-2xl">
-                <Bell className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                <p className="font-bold text-slate-300 text-sm">No operational alerts found</p>
-                <p className="text-slate-500 mt-1">All queues are clear or adjust filter parameters.</p>
-              </div>
+            {!loading && displayAlerts.length === 0 && (
+              <EmptyState
+                title="No Operational Alerts In Queue"
+                description={searchQuery ? "No alerts match your active text search. Try clearing the query." : "All queues are clear or adjust filter parameters to view other operational tiers."}
+                actionLabel={searchQuery ? "Clear Search" : undefined}
+                onAction={searchQuery ? () => setSearchQuery("") : undefined}
+              />
             )}
 
             {!loading &&
-              alerts.map((alertItem) => {
+              displayAlerts.map((alertItem) => {
                 const isTier1 = alertItem.routing_tier === "TIER_1_AUTO_DISPATCH_CANDIDATE";
                 const isTier2 = alertItem.routing_tier === "TIER_2_ANALYST_REVIEW_QUEUE";
                 const priority = alertItem.priority_score ?? 50.0;

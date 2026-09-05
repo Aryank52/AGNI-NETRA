@@ -10,6 +10,7 @@ import {
   Download, FileCode, CheckCircle2, RefreshCw,
   ExternalLink, Sparkles, Activity
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function ResearchPortalPage() {
   const [overview, setOverview] = useState<any>(null);
@@ -37,36 +38,24 @@ export default function ResearchPortalPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
-                  ACADEMIC & SCIENTIFIC OPEN ACCESS
-                </span>
-                <span className="text-xs text-slate-400">ISRO / NASA Earth Science Collaboration</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <BookOpen className="w-6 h-6 text-cyan-400" />
-                Remote Sensing & ML Research Portal
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Open dataset documentation, 18-dimension feature schemas, benchmark evaluation metrics, and GeoJSON spatial exports for remote sensing researchers.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="ACADEMIC & SCIENTIFIC OPEN ACCESS"
+            title="Remote Sensing & ML Research Portal"
+            description="Open dataset documentation, 18-dimension feature schemas, benchmark evaluation metrics, and GeoJSON spatial exports for remote sensing researchers."
+            icon={<BookOpen className="w-6 h-6 text-cyan-400" />}
+            actions={
               <a
                 href={`${API_BASE_URL}/portals/research/geojson-export`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2 transition-all"
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-2 transition-all font-mono"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Export GeoJSON FeatureCollection</span>
               </a>
-            </div>
-          </div>
+            }
+          />
 
           {/* Model Architecture & Features Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

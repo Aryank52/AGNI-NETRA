@@ -10,6 +10,7 @@ import {
   ExternalLink, BarChart3, Clock, Check
 } from "lucide-react";
 import { getApiDocsUrl } from "@/lib/api";
+import VisualPipelineDiagram from "@/components/common/VisualPipelineDiagram";
 
 export default function LandingPage() {
   // Section 2: Scientifically Accurate Statistics
@@ -340,6 +341,13 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Section 8B: Visual Storytelling — Operational Intelligence Pipeline */}
+      <section className="px-6 lg:px-12 py-16 bg-slate-900/40 border-b border-agni-border">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <VisualPipelineDiagram />
         </div>
       </section>
 

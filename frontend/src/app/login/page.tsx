@@ -97,7 +97,7 @@ export default function LoginPage() {
           Sign In to Decision Support Command Portal
         </h2>
         <p className="mt-1 text-xs text-slate-400">
-          AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform
+          Satellite-Derived Thermal Observation & Industrial Intelligence Platform
         </p>
       </div>
 

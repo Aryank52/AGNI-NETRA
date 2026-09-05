@@ -10,7 +10,9 @@ import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { 
   Flame, ShieldAlert, Radio, UserCheck, 
   Layers, LogOut, ChevronDown, CheckCircle2, AlertTriangle,
-  Search, X, MapPin, Factory, Zap, Pickaxe, Trees, Shield, Loader2
+  Search, X, MapPin, Factory, Zap, Pickaxe, Trees, Shield, Loader2,
+  Clock, Menu, Bell, BarChart3, Globe, Cpu, Eye, Building2, GraduationCap,
+  Map as MapIcon
 } from "lucide-react";
 
 const ROLES: UserRole[] = ["ANALYST", "RESEARCHER", "INDUSTRY", "AGENCY", "PUBLIC", "ADMIN"];
@@ -31,6 +33,21 @@ export default function Header() {
   const { user, switchRole, logout } = useAuth();
   const router = useRouter();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [missionClock, setMissionClock] = useState({ utc: "", ist: "" });
+
+  useEffect(() => {
+    const updateClocks = () => {
+      const now = new Date();
+      setMissionClock({
+        utc: now.toISOString().substring(11, 19) + " UTC",
+        ist: now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false }) + " IST",
+      });
+    };
+    updateClocks();
+    const timer = setInterval(updateClocks, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Global Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,8 +209,32 @@ export default function Header() {
         )}
       </div>
 
-      {/* Role Switcher & User Profile */}
-      <div className="flex items-center gap-3 shrink-0">
+      {/* Operational Stream Indicator & Mission Clocks */}
+      <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+        <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="font-bold tracking-wider">FIRMS STREAM ACTIVE</span>
+        </div>
+
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300">
+          <Clock className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-white font-bold">{missionClock.utc}</span>
+          <span className="text-slate-600">|</span>
+          <span className="text-slate-400">{missionClock.ist}</span>
+        </div>
+      </div>
+
+      {/* Role Switcher & User Profile & Mobile Toggle */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Nav Toggle */}
+        <button
+          onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          className="p-1.5 md:hidden text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 border border-slate-700"
+          aria-label="Toggle Navigation Menu"
+        >
+          {mobileNavOpen ? <X className="w-5 h-5 text-amber-400" /> : <Menu className="w-5 h-5" />}
+        </button>
+
         {/* Role Selector Dropdown */}
         <div className="relative">
           <button
@@ -253,6 +294,84 @@ export default function Header() {
           <LogOut className="w-4 h-4" />
         </Link>
       </div>
+
+      {/* Mobile Slide-Over Navigation Menu */}
+      {mobileNavOpen && (
+        <div className="fixed inset-x-0 top-16 bottom-0 bg-slate-950/98 z-50 p-4 overflow-y-auto border-t border-slate-800 md:hidden space-y-4 animate-in fade-in slide-in-from-top-4">
+          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-400">MISSION CLOCK:</span>
+              <span className="text-white font-bold">{missionClock.utc}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-400">INGESTION:</span>
+              <span className="text-emerald-400 font-bold">ACTIVE (15-min cycle)</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider">COMMAND CENTER</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <MapIcon className="w-4 h-4 text-amber-400" />
+                <span>Dashboard</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/events" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Flame className="w-4 h-4 text-red-400" />
+                <span>Events</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/alerts" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Bell className="w-4 h-4 text-amber-400" />
+                <span>Alerts</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/verification" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Verification</span>
+              </Link>
+            </div>
+
+            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider pt-2">INTELLIGENCE & ASSETS</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/atlas" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span>Atlas</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/facilities" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Factory className="w-4 h-4 text-blue-400" />
+                <span>Facilities</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/persistent-sources" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-400" />
+                <span>Persistent</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/candidates" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Search className="w-4 h-4 text-purple-400" />
+                <span>Candidates</span>
+              </Link>
+            </div>
+
+            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider pt-2">ANALYTICS & DIGITAL TWIN</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/analytics" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-amber-400" />
+                <span>Analytics</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/mission-control" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Radio className="w-4 h-4 text-purple-400" />
+                <span>AGNI-SAT</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/portal/public" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Eye className="w-4 h-4 text-emerald-400" />
+                <span>Public Portal</span>
+              </Link>
+              <Link onClick={() => setMobileNavOpen(false)} href="/portal/research" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-cyan-400" />
+                <span>Research</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

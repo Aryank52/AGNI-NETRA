@@ -455,7 +455,7 @@ export default function MissionControlPage() {
         </div>
       )}
 
-      {/* Main 3-Column Layout: Left Controls | Center Tactical Map | Right AI Intelligence */}
+      {/* Main 3-Column Layout: Left Controls | Center Tactical Map | Right Orbital Telemetry & Inference */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* LEFT COLUMN: Scenarios, Tasking & Replay Tabs (4 cols) */}

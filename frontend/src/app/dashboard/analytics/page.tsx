@@ -9,6 +9,7 @@ import {
   BarChart3, PieChart, Activity, 
   TrendingUp, Layers, MapPin, Calendar, Clock, Sparkles
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, Cell, PieChart as RePieChart, Pie,
@@ -107,41 +108,36 @@ export default function AnalyticsPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-6xl mx-auto">
-          {/* Header & Time Horizon Selector */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5">
-                <BarChart3 className="w-6 h-6 text-amber-400" />
-                National Thermal Analytics & Multi-Temporal Intelligence
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Multi-year satellite thermal observation trends, temporal horizons, and AI class distributions across India.
-              </p>
-            </div>
-
-            {/* Time Horizon Pills */}
-            <div className="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 text-xs">
-              {[
-                { label: "24-Hour", value: "24H" },
-                { label: "7-Day", value: "7D" },
-                { label: "30-Day", value: "30D" },
-                { label: "365-Day", value: "365D" },
-                { label: "2022–2026 Archive", value: "2022-2026" },
-              ].map((pill) => (
-                <button
-                  key={pill.value}
-                  onClick={() => setTimeHorizon(pill.value as any)}
-                  className={`px-3 py-1 rounded-lg font-mono font-bold transition-all ${
-                    timeHorizon === pill.value
-                      ? "bg-amber-500 text-slate-950 shadow-sm"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Standardized Page Header with Time Horizon Pills */}
+          <PageHeader
+            category="MULTI-TEMPORAL OPERATIONAL INTELLIGENCE"
+            title="National Thermal Analytics & Multi-Temporal Horizons"
+            description="Multi-year satellite thermal observation trends, temporal horizons, and 7-class taxonomy distributions across India."
+            icon={<BarChart3 className="w-6 h-6 text-amber-400" />}
+            actions={
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 text-xs">
+                {[
+                  { label: "24-Hour", value: "24H" },
+                  { label: "7-Day", value: "7D" },
+                  { label: "30-Day", value: "30D" },
+                  { label: "365-Day", value: "365D" },
+                  { label: "2022–2026 Archive", value: "2022-2026" },
+                ].map((pill) => (
+                  <button
+                    key={pill.value}
+                    onClick={() => setTimeHorizon(pill.value as any)}
+                    className={`px-3 py-1 rounded-lg font-mono font-bold transition-all ${
+                      timeHorizon === pill.value
+                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
+            }
+          />
 
           {/* Multi-Year Timeline Chart */}
           <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">

@@ -10,6 +10,7 @@ import {
   XCircle, Clock, ShieldCheck, Play, ArrowLeft,
   Activity, Layers, Sliders, Globe, Radio
 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 interface DataSourceStatus {
   source: string;
@@ -63,47 +64,33 @@ export default function DataSourcesControlCenterPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-agni-border pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Link href="/admin" className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to Admin</span>
-                </Link>
-                <span className="text-slate-600">/</span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                  CONTROL CENTER
-                </span>
+          {/* Standardized Page Header */}
+          <PageHeader
+            category="CONTROL CENTER"
+            title="Data Ingestion Control Center & Adapter Health"
+            description="Live health monitoring for NASA FIRMS, OpenStreetMap, CEA Power Plants, ISRO Bhuvan, Copernicus Sentinel-2, and USGS Landsat."
+            icon={<Database className="w-6 h-6 text-amber-400" />}
+            actions={
+              <div className="flex items-center gap-2.5 font-mono">
+                <button
+                  onClick={loadStatus}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  title="Refresh Status"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+                </button>
+
+                <button
+                  onClick={triggerSyncAll}
+                  disabled={syncing}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Play className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+                  <span>{syncing ? "Synchronizing..." : "Trigger Multi-Source Sync"}</span>
+                </button>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1">
-                <Database className="w-6 h-6 text-amber-400" />
-                Data Ingestion Control Center & Adapter Health
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Live monitoring for NASA FIRMS, OpenStreetMap, CEA Power Plants, ISRO Bhuvan, Copernicus Sentinel-2, USGS Landsat, and ISRO MOSDAC.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={loadStatus}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-                title="Refresh Status"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
-              </button>
-
-              <button
-                onClick={triggerSyncAll}
-                disabled={syncing}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all"
-              >
-                <Play className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-                <span>{syncing ? "Synchronizing..." : "Trigger Multi-Source Sync"}</span>
-              </button>
-            </div>
-          </div>
+            }
+          />
 
           {syncResult && (
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
