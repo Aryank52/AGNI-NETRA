@@ -3,8 +3,19 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/authContext";
 
 export const metadata: Metadata = {
-  title: "AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform",
-  description: "AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform. Detect → Classify → Explain → Prioritize → Verify. Transforming NASA FIRMS, ISRO Bhuvan, and multi-sensor satellite observations into actionable industrial intelligence.",
+  title: "AGNI-NETRA — Geospatial Thermal Intelligence & Industrial Monitoring Platform",
+  description: "National-scale geospatial intelligence platform fusing NASA FIRMS satellite observations, OpenStreetMap cadastre, CEA utilities, and PostGIS 3.4 spatial analytics for industrial thermal anomaly detection and environmental risk assessment.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  openGraph: {
+    type: "website",
+    title: "AGNI-NETRA — Geospatial Thermal Intelligence Platform",
+    description: "AI-based detection, classification, and segregation of industrial fires and persistent thermal sources using NASA FIRMS, OSM, and multi-sensor satellite telemetry.",
+    siteName: "AGNI-NETRA",
+  },
 };
 
 export default function RootLayout({

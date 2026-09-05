@@ -49,7 +49,7 @@ interface LayerItemDef {
   key: keyof GISLayerState;
   label: string;
   sublabel: string;
-  category: "THERMAL" | "INDUSTRIAL & ENERGY" | "ENVIRONMENT" | "ADMINISTRATIVE";
+  category: "THERMAL" | "INDUSTRIAL" | "ENERGY" | "MINING" | "ENVIRONMENT" | "LAND COVER" | "ADMINISTRATIVE" | "REGULATORY";
   icon: any;
   color: string;
   countDefault: number;
@@ -70,10 +70,10 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "thermal_events",
     provenance: "NASA FIRMS (VIIRS/MODIS)",
   },
-  // 2. INDUSTRIAL & ENERGY
+  // 2. INDUSTRIAL
   {
     key: "industrialFacilities",
-    category: "INDUSTRIAL & ENERGY",
+    category: "INDUSTRIAL",
     label: "Industrial Facilities",
     sublabel: "Regulated Manufacturing Registry",
     icon: Factory,
@@ -82,9 +82,10 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "industrial_facilities",
     provenance: "OSM Industrial Cadastre",
   },
+  // 3. ENERGY
   {
     key: "powerStations",
-    category: "INDUSTRIAL & ENERGY",
+    category: "ENERGY",
     label: "CEA Power Stations",
     sublabel: "Thermal, Gas & Utility Plants",
     icon: Zap,
@@ -93,9 +94,10 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "power_stations",
     provenance: "Central Electricity Authority",
   },
+  // 4. MINING
   {
     key: "mining",
-    category: "INDUSTRIAL & ENERGY",
+    category: "MINING",
     label: "IBM Mining Leases",
     sublabel: "Auctioned Blocks & Mineral Leases",
     icon: Pickaxe,
@@ -104,7 +106,7 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "mining",
     provenance: "Indian Bureau of Mines",
   },
-  // 3. ENVIRONMENT
+  // 5. ENVIRONMENT
   {
     key: "protectedAreas",
     category: "ENVIRONMENT",
@@ -116,9 +118,10 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "protected_areas",
     provenance: "WII / FSI ISFR",
   },
+  // 6. LAND COVER
   {
     key: "lulc",
-    category: "ENVIRONMENT",
+    category: "LAND COVER",
     label: "Bhuvan LULC Land Cover",
     sublabel: "50m Thematic Classification",
     icon: MapPin,
@@ -127,7 +130,7 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "lulc",
     provenance: "ISRO Bhuvan Pilot",
   },
-  // 4. ADMINISTRATIVE
+  // 7. ADMINISTRATIVE
   {
     key: "stateBoundaries",
     category: "ADMINISTRATIVE",
@@ -150,9 +153,10 @@ const LAYER_ITEMS: LayerItemDef[] = [
     countKey: "admin_districts",
     provenance: "Survey of India",
   },
+  // 8. REGULATORY
   {
     key: "parivesh",
-    category: "ADMINISTRATIVE",
+    category: "REGULATORY",
     label: "PARIVESH Clearances",
     sublabel: "MoEFCC Project Locations",
     icon: FileCheck,
@@ -187,11 +191,15 @@ export default function LayerControl({
   const [isOpen, setIsOpen] = useState(false);
   const [activeOpacityKey, setActiveOpacityKey] = useState<keyof GISLayerState | null>(null);
 
-  const categories: Array<"THERMAL" | "INDUSTRIAL & ENERGY" | "ENVIRONMENT" | "ADMINISTRATIVE"> = [
+  const categories: Array<"THERMAL" | "INDUSTRIAL" | "ENERGY" | "MINING" | "ENVIRONMENT" | "LAND COVER" | "ADMINISTRATIVE" | "REGULATORY"> = [
     "THERMAL",
-    "INDUSTRIAL & ENERGY",
+    "INDUSTRIAL",
+    "ENERGY",
+    "MINING",
     "ENVIRONMENT",
-    "ADMINISTRATIVE"
+    "LAND COVER",
+    "ADMINISTRATIVE",
+    "REGULATORY"
   ];
 
   const activeCount = Object.values(layers).filter(Boolean).length;
