@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { UserRole } from "@/types";
 import { useAuth } from "@/lib/authContext";
 import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { 
@@ -12,10 +13,11 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, role, switchRole } = useAuth();
+  const { login, user, switchRole } = useAuth();
   
   const [email, setEmail] = useState("analyst@agninetra.gov.in");
   const [password, setPassword] = useState("AgniNetra@2026");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("ANALYST");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +66,10 @@ export default function LoginPage() {
     },
   ];
 
-  const handleRoleSelect = (rEmail: string, rName: any) => {
+  const handleRoleSelect = (rEmail: string, rName: UserRole) => {
     setEmail(rEmail);
     setPassword("AgniNetra@2026");
+    setSelectedRole(rName);
     switchRole(rName);
   };
 
@@ -75,7 +78,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(email, selectedRole);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to authenticate");
@@ -186,7 +189,7 @@ export default function LoginPage() {
                 <button
                   key={r.role}
                   type="button"
-                  onClick={() => handleRoleSelect(r.email, r.role)}
+                  onClick={() => handleRoleSelect(r.email, r.role as UserRole)}
                   className={`p-2.5 rounded-xl border text-left transition-all ${r.color} hover:brightness-125`}
                 >
                   <div className="flex items-center justify-between">

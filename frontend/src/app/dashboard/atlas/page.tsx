@@ -10,7 +10,8 @@ import {
   Globe, Flame, Layers, MapPin, Activity, 
   BarChart2, RefreshCw, Compass, ArrowUpRight,
   Shield, Sliders, Radio, Sparkles, Factory, Zap, 
-  Search, X, ExternalLink, ChevronRight, CheckCircle2
+  Search, X, ExternalLink, ChevronRight, CheckCircle2,
+  Trees, Pickaxe, ShieldAlert
 } from "lucide-react";
 
 interface StateSummary {
@@ -45,8 +46,25 @@ export default function IndiaThermalAtlasPage() {
   const [selectedState, setSelectedState] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedFacility, setSelectedFacility] = useState<FacilitySummary | null>(null);
+  const [facilityIntel, setFacilityIntel] = useState<any | null>(null);
+  const [intelLoading, setIntelLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<"STATES" | "FACILITIES">("STATES");
+
+  useEffect(() => {
+    if (!selectedFacility?.id) {
+      setFacilityIntel(null);
+      return;
+    }
+    setIntelLoading(true);
+    fetchApi<any>(`/facilities/${selectedFacility.id}/intelligence`)
+      .then((data) => setFacilityIntel(data))
+      .catch((err) => {
+        console.warn("Failed to load facility intelligence:", err);
+        setFacilityIntel(null);
+      })
+      .finally(() => setIntelLoading(false));
+  }, [selectedFacility]);
 
   useEffect(() => {
     setLoading(true);
@@ -300,7 +318,8 @@ export default function IndiaThermalAtlasPage() {
                   </button>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                  {/* Coordinates & Sector */}
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 space-y-0.5">
                       <span className="text-slate-400 font-mono text-[10px]">COORDINATES</span>
@@ -309,22 +328,114 @@ export default function IndiaThermalAtlasPage() {
                       </div>
                     </div>
                     <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 space-y-0.5">
-                      <span className="text-slate-400 font-mono text-[10px]">SECTOR</span>
-                      <div className="font-semibold text-slate-200">
-                        {selectedFacility.master_sector || "Manufacturing"}
+                      <span className="text-slate-400 font-mono text-[10px]">SECTOR & INDUSTRY</span>
+                      <div className="font-semibold text-slate-200 truncate">
+                        {facilityIntel?.facility?.master_sector || selectedFacility.master_sector || "Manufacturing"}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase">Statistical Thermal Baseline</div>
-                    <div className="text-slate-300">
-                      Baseline mean emission: <strong className="text-amber-400">{selectedFacility.facility_baseline?.mean_frp || 45.0} MW</strong>
+                  {/* Compliance & Operational Identity */}
+                  <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between text-[11px]">
+                    <div>
+                      <span className="text-slate-400 font-mono text-[10px]">PARIVESH CLEARANCE STATUS</span>
+                      <div className="font-bold text-emerald-400">
+                        {facilityIntel?.facility?.environmental_clearance_present
+                          ? `EC Granted (${facilityIntel.facility.ec_clearance_status || "APPROVED"})`
+                          : "Unregulated / OSM Industry Cadastre"}
+                      </div>
                     </div>
-                    <div className="text-slate-400 text-[10px]">
-                      Historical recurrence frequency: {selectedFacility.facility_baseline?.frequency_days || 15} days/month
+                    <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono text-[10px]">
+                      {facilityIntel?.facility?.operating_status || "OPERATIONAL"}
+                    </span>
+                  </div>
+
+                  {/* Statistical Thermal Baseline */}
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
+                    <div className="text-[10px] font-mono text-slate-400 uppercase flex items-center justify-between">
+                      <span>Statistical Thermal Baseline</span>
+                      <span className="text-amber-400 font-bold">{facilityIntel?.baseline?.status_band || "NORMAL BAND"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                      <div className="p-1.5 bg-slate-900/60 rounded">
+                        <div className="text-[9px] text-slate-500">Mean FRP</div>
+                        <div className="font-mono font-bold text-amber-400">
+                          {facilityIntel?.baseline?.mean_frp?.toFixed(1) || selectedFacility.facility_baseline?.mean_frp || "45.0"} MW
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-slate-900/60 rounded">
+                        <div className="text-[9px] text-slate-500">Peak FRP</div>
+                        <div className="font-mono font-bold text-orange-400">
+                          {facilityIntel?.baseline?.max_historical_frp?.toFixed(1) || "90.0"} MW
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-slate-900/60 rounded">
+                        <div className="text-[9px] text-slate-500">Frequency</div>
+                        <div className="font-mono font-bold text-white">
+                          {facilityIntel?.baseline?.frequency_days ?? selectedFacility.facility_baseline?.frequency_days ?? 15} d/mo
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Nearby Active Thermal Events */}
+                  {facilityIntel?.nearby_thermal_events && facilityIntel.nearby_thermal_events.length > 0 && (
+                    <div className="p-3 bg-slate-950 rounded-xl border border-red-500/30 space-y-2">
+                      <div className="text-[10px] font-mono text-red-400 uppercase flex items-center gap-1.5">
+                        <ShieldAlert className="w-3 h-3 text-red-400" />
+                        <span>Active Thermal Events within 5 km ({facilityIntel.nearby_thermal_events.length})</span>
+                      </div>
+                      <div className="space-y-1">
+                        {facilityIntel.nearby_thermal_events.slice(0, 3).map((ne: any) => (
+                          <div key={ne.id} className="flex items-center justify-between text-[10px] p-1.5 bg-slate-900/60 rounded font-mono">
+                            <span className="text-amber-300 font-bold">{ne.event_code}</span>
+                            <span className="text-orange-400">{ne.max_frp} MW</span>
+                            <span className="text-slate-400">{ne.distance_m} m away</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Proximity Context (Power, Mining, Ecology) */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
+                      <div className="text-slate-500 font-mono flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-amber-400" />
+                        <span>POWER INFRASTRUCTURE</span>
+                      </div>
+                      <div className="text-slate-300">
+                        {facilityIntel?.nearby_power_stations?.length
+                          ? `${facilityIntel.nearby_power_stations[0].project_name} (${facilityIntel.nearby_power_stations[0].installed_capacity_mw || 0} MW)`
+                          : "No thermal utility in district"}
+                      </div>
+                    </div>
+
+                    <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
+                      <div className="text-slate-500 font-mono flex items-center gap-1">
+                        <Pickaxe className="w-3 h-3 text-purple-400" />
+                        <span>MINING LEASES</span>
+                      </div>
+                      <div className="text-slate-300">
+                        {facilityIntel?.nearby_mining_leases?.length
+                          ? `${facilityIntel.nearby_mining_leases[0].mineral} (${facilityIntel.nearby_mining_leases[0].lease_count} active leases)`
+                          : "Non-mining district"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ecological Context */}
+                  {facilityIntel?.ecological_context?.nearest_protected_area && (
+                    <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1 text-slate-400">
+                        <Trees className="w-3 h-3 text-emerald-400" />
+                        <span>Nearest Wildlife Sanctuary:</span>
+                      </div>
+                      <span className="text-emerald-300 font-mono font-bold">
+                        {facilityIntel.ecological_context.nearest_protected_area.name} ({(facilityIntel.ecological_context.nearest_protected_area.distance_m / 1000).toFixed(1)} km)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-3 border-t border-slate-800 flex items-center justify-between">

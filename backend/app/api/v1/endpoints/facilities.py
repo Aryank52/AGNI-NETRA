@@ -1,6 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 
 from backend.app.core.database import get_db
 from backend.app.models.domain import (
@@ -222,3 +223,160 @@ def get_facility_thermal_fingerprint(facility_id: str, db: Session = Depends(get
     fingerprint["state"] = fac.state
 
     return fingerprint
+
+
+@router.get("/{facility_id}/intelligence")
+def get_facility_deep_intelligence(facility_id: str, db: Session = Depends(get_db)):
+    """
+    Comprehensive Industrial Facility Thermal & Geospatial Intelligence Dossier:
+    Returns facility identity, sector, coordinates, thermal baseline, nearby thermal events,
+    multi-year historical activity, nearby power stations, IBM mining context, and ecological proximity.
+    """
+    fac = db.query(IndustrialFacility).options(
+        joinedload(IndustrialFacility.facility_baseline)
+    ).filter(IndustrialFacility.id == facility_id).first()
+
+    if not fac:
+        raise HTTPException(status_code=404, detail="Industrial facility not found")
+
+    lat, lon = fac.latitude, fac.longitude
+
+    # 1. Nearby active thermal events within 5km
+    nearby_events = []
+    if lat is not None and lon is not None:
+        evt_rows = db.execute(text("""
+            SELECT id, event_code, max_frp, avg_frp, detection_count,
+                   state, district, status,
+                   ROUND(ST_Distance(
+                       ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
+                       ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography
+                   )::numeric, 1) as dist_m
+            FROM thermal_events
+            WHERE ST_DWithin(
+                ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
+                ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography,
+                5000
+            )
+            ORDER BY dist_m ASC
+            LIMIT 10;
+        """), {"lon": lon, "lat": lat}).fetchall()
+
+        nearby_events = [
+            {
+                "id": r[0],
+                "event_code": r[1],
+                "max_frp": float(r[2] or 0.0),
+                "avg_frp": float(r[3] or 0.0),
+                "detection_count": r[4],
+                "state": r[5],
+                "district": r[6],
+                "status": r[7],
+                "distance_m": float(r[8])
+            }
+            for r in evt_rows
+        ]
+
+    # 2. Nearby CEA Thermal Power Stations (within state/district)
+    nearby_power = []
+    if fac.district:
+        p_rows = db.execute(text("""
+            SELECT id, project_name, organisation, prime_mover, installed_capacity_mw
+            FROM cea_power_stations_staging
+            WHERE state ILIKE :st
+            ORDER BY installed_capacity_mw DESC NULLS LAST
+            LIMIT 5;
+        """), {"st": f"%{fac.state or ''}%"}).fetchall()
+        nearby_power = [
+            {
+                "id": str(r[0]),
+                "project_name": r[1],
+                "organisation": r[2],
+                "prime_mover": r[3],
+                "installed_capacity_mw": r[4]
+            }
+            for r in p_rows
+        ]
+
+    # 3. Nearby IBM Mining Leases in district
+    nearby_mining = []
+    if fac.district:
+        m_rows = db.execute(text("""
+            SELECT id, mineral, lease_count, lease_area_ha, sector
+            FROM ibm_mining_lease_context
+            WHERE district ILIKE :dist
+            ORDER BY lease_area_ha DESC NULLS LAST
+            LIMIT 5;
+        """), {"dist": f"%{fac.district}%"}).fetchall()
+        nearby_mining = [
+            {
+                "id": str(r[0]),
+                "mineral": r[1],
+                "lease_count": r[2],
+                "lease_area_ha": r[3],
+                "sector": r[4]
+            }
+            for r in m_rows
+        ]
+
+    # 4. Nearest Protected Wildlife Sanctuary
+    nearest_protected = None
+    if lat is not None and lon is not None:
+        pa_row = db.execute(text("""
+            SELECT id, pa_name, pa_type, area_sqkm,
+                   ROUND(ST_Distance(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography)::numeric, 1) as dist_m
+            FROM protected_areas
+            ORDER BY dist_m ASC
+            LIMIT 1;
+        """), {"lon": lon, "lat": lat}).fetchone()
+        if pa_row:
+            nearest_protected = {
+                "id": pa_row[0],
+                "name": pa_row[1],
+                "type": pa_row[2],
+                "area_sqkm": pa_row[3],
+                "distance_m": float(pa_row[4])
+            }
+
+    base = fac.facility_baseline
+    return {
+        "facility": {
+            "id": fac.id,
+            "name": fac.name or fac.plant_name or "Industrial Facility",
+            "facility_type": fac.facility_type,
+            "master_sector": fac.master_sector,
+            "industry_type": fac.industry_type,
+            "company_name": fac.company_name,
+            "latitude": fac.latitude,
+            "longitude": fac.longitude,
+            "state": fac.state,
+            "district": fac.district,
+            "city": fac.city,
+            "operating_status": fac.operating_status or "OPERATIONAL",
+            "environmental_clearance_present": fac.environmental_clearance_present,
+            "ec_clearance_status": fac.ec_clearance_status,
+            "ec_proposal_id": fac.ec_proposal_id,
+            "energy_intensity": fac.energy_intensity,
+            "plant_capacity": fac.plant_capacity
+        },
+        "baseline": {
+            "mean_frp": base.mean_frp if base else 45.0,
+            "max_historical_frp": base.max_historical_frp if base else (base.mean_frp * 1.8 if base else 90.0),
+            "frequency_days": base.frequency_days if base else 15,
+            "day_night_ratio": base.day_night_ratio if base else 1.0,
+            "status_band": base.status_band if base else "NORMAL"
+        },
+        "historical_activity": {
+            "firms_detections_500m": fac.firms_detections_500m or 0,
+            "firms_detections_1km": fac.firms_detections_1km or 0,
+            "firms_detections_2km": fac.firms_detections_2km or 0,
+            "thermal_activity_status": fac.thermal_activity_status or "HISTORICALLY_ACTIVE"
+        },
+        "nearby_thermal_events": nearby_events,
+        "nearby_power_stations": nearby_power,
+        "nearby_mining_leases": nearby_mining,
+        "ecological_context": {
+            "nearest_protected_area": nearest_protected,
+            "forest_related_flag": fac.forest_related_flag,
+            "wildlife_related_flag": fac.wildlife_related_flag
+        }
+    }

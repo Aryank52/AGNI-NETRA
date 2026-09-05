@@ -129,26 +129,56 @@ def get_historical_timeline(
 
 @router.get("/recurrence-map")
 def get_thermal_recurrence_map(
+    state: Optional[str] = Query(None),
+    min_frequency_days: int = Query(1, ge=1),
+    limit: int = Query(250, ge=1, le=1000),
     db: Session = Depends(get_db)
 ):
     """
     Returns spatial recurrence density clusters identifying multi-temporal persistent thermal hubs.
+    Optimized PostGIS query joining facility baselines with active recurrence frequencies.
     """
-    facilities = db.query(IndustrialFacility).all()
-    clusters = []
-    for f in facilities:
-        clusters.append({
-            "facility_id": f.id,
-            "facility_name": f.name,
-            "facility_type": f.facility_type,
-            "latitude": f.latitude,
-            "longitude": f.longitude,
-            "state": f.state,
-            "district": f.district,
-            "persistence_category": "HIGHLY_PERSISTENT" if f.facility_type in ["REFINERY", "POWER_PLANT", "STEEL_PLANT"] else "RECURRING",
-            "mean_frp": f.facility_baseline.mean_frp if f.facility_baseline else 75.0,
-            "recurrence_days_per_month": f.facility_baseline.frequency_days if f.facility_baseline else 18
-        })
+    from backend.app.models.domain import FacilityBaseline
+
+    query = db.query(
+        IndustrialFacility.id,
+        IndustrialFacility.name,
+        IndustrialFacility.facility_type,
+        IndustrialFacility.latitude,
+        IndustrialFacility.longitude,
+        IndustrialFacility.state,
+        IndustrialFacility.district,
+        FacilityBaseline.mean_frp,
+        FacilityBaseline.frequency_days,
+        FacilityBaseline.status_band
+    ).join(
+        FacilityBaseline, IndustrialFacility.id == FacilityBaseline.facility_id
+    ).filter(
+        FacilityBaseline.frequency_days >= min_frequency_days,
+        IndustrialFacility.latitude.isnot(None),
+        IndustrialFacility.longitude.isnot(None)
+    )
+
+    if state and state.upper() != "ALL":
+        query = query.filter(IndustrialFacility.state.ilike(f"%{state}%"))
+
+    rows = query.order_by(FacilityBaseline.frequency_days.desc(), FacilityBaseline.mean_frp.desc()).limit(limit).all()
+
+    clusters = [
+        {
+            "facility_id": r[0],
+            "facility_name": r[1] or "Industrial Thermal Emitter",
+            "facility_type": r[2] or "INDUSTRIAL",
+            "latitude": r[3],
+            "longitude": r[4],
+            "state": r[5],
+            "district": r[6],
+            "persistence_category": "HIGHLY_PERSISTENT" if (r[8] or 0) >= 15 else "RECURRING",
+            "mean_frp": round(float(r[7] or 75.0), 1),
+            "recurrence_days_per_month": int(r[8] or 0)
+        }
+        for r in rows
+    ]
 
     return {
         "total_clusters": len(clusters),

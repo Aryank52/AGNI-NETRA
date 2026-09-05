@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     DEFAULT_MODEL_VERSION: str = "xgb-v3.0-real-candidate"
     
     # Security, Rate Limiting & Tracing
-    RATE_LIMIT_PER_MINUTE: int = 120
+    RATE_LIMIT_PER_MINUTE: int = 600
     CORRELATION_ID_HEADER: str = "X-Correlation-ID"
     
     # Phase 13 Controlled Dispatch Safety Gate

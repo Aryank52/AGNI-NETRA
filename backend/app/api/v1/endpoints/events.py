@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Any, Dict, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, text
 
 from backend.app.core.database import get_db
 from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature
@@ -284,3 +284,118 @@ def get_event_trace(event_id: str, db: Session = Depends(get_db)):
         return lineage
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{event_id}/buffer-assets")
+def get_event_buffer_assets(
+    event_id: str,
+    radius_m: float = Query(1000.0, ge=100.0, le=50000.0, description="Buffer radius in meters (500, 1000, 2000, 5000, 10000)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Multi-Distance Spatial Buffer Asset Evaluation:
+    Computes authentic spatial proximity to industrial facilities, power stations,
+    mining context, and protected areas around the thermal epicenter.
+    """
+    event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Thermal event not found")
+
+    lon, lat = event.longitude, event.latitude
+
+    # 1. Industrial facilities within buffer
+    fac_rows = db.execute(text("""
+        SELECT id, name, industry_type, master_sector, latitude, longitude,
+               environmental_clearance_present,
+               ROUND(ST_Distance(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography)::numeric, 1) as dist_m
+        FROM industrial_facilities
+        WHERE ST_DWithin(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography, :radius_m)
+        ORDER BY dist_m ASC
+        LIMIT 25;
+    """), {"lon": lon, "lat": lat, "radius_m": radius_m}).fetchall()
+
+    facilities = [
+        {
+            "id": r[0],
+            "name": r[1] or "Industrial Facility",
+            "industry_type": r[2] or "Manufacturing",
+            "master_sector": r[3] or "General",
+            "latitude": r[4],
+            "longitude": r[5],
+            "has_clearance": bool(r[6]),
+            "distance_m": float(r[7])
+        }
+        for r in fac_rows
+    ]
+
+    # 2. Protected areas within buffer
+    pa_rows = db.execute(text("""
+        SELECT id, pa_name, pa_type, area_sqkm,
+               ROUND(ST_Distance(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography)::numeric, 1) as dist_m
+        FROM protected_areas
+        WHERE ST_DWithin(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography, :radius_m)
+        ORDER BY dist_m ASC
+        LIMIT 10;
+    """), {"lon": lon, "lat": lat, "radius_m": radius_m}).fetchall()
+
+    protected_areas = [
+        {
+            "id": r[0],
+            "name": r[1],
+            "type": r[2],
+            "area_sqkm": r[3],
+            "distance_m": float(r[4])
+        }
+        for r in pa_rows
+    ]
+
+    # 3. Mining context for district / region
+    mining_rows = []
+    if event.district:
+        mining_rows = db.execute(text("""
+            SELECT id, mineral, lease_count, lease_area_ha, sector, potential_category
+            FROM ibm_mining_lease_context
+            WHERE district ILIKE :dist
+            ORDER BY lease_area_ha DESC
+            LIMIT 10;
+        """), {"dist": f"%{event.district}%"}).fetchall()
+    elif event.state:
+        mining_rows = db.execute(text("""
+            SELECT id, mineral, lease_count, lease_area_ha, sector, potential_category
+            FROM ibm_mining_lease_context
+            WHERE state ILIKE :st
+            ORDER BY lease_area_ha DESC
+            LIMIT 10;
+        """), {"st": f"%{event.state}%"}).fetchall()
+
+    mining_context = [
+        {
+            "id": str(r[0]),
+            "mineral": r[1],
+            "lease_count": r[2],
+            "lease_area_ha": r[3],
+            "sector": r[4],
+            "potential_category": r[5]
+        }
+        for r in mining_rows
+    ]
+
+    return {
+        "event_id": event.id,
+        "event_code": event.event_code,
+        "radius_m": radius_m,
+        "center": {
+            "latitude": event.latitude,
+            "longitude": event.longitude,
+            "state": event.state,
+            "district": event.district
+        },
+        "summary": {
+            "facilities_count": len(facilities),
+            "protected_areas_count": len(protected_areas),
+            "mining_leases_count": len(mining_context)
+        },
+        "facilities": facilities,
+        "protected_areas": protected_areas,
+        "mining_context": mining_context
+    }

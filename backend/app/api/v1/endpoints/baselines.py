@@ -36,10 +36,16 @@ def get_historical_baselines(
     query = db.query(HistoricalBaseline)
     if facility_id:
         query = query.filter(HistoricalBaseline.facility_id == facility_id)
-    if month:
-        query = query.filter(HistoricalBaseline.month == month)
 
-    return query.all()
+    baselines = query.all()
+    if month is not None:
+        month_str = str(month)
+        baselines = [
+            b for b in baselines 
+            if b.monthly_pattern and (month_str in b.monthly_pattern or month in b.monthly_pattern)
+        ]
+
+    return baselines
 
 
 @router.get("/grid-cells", response_model=List[BaselineCellSummary])

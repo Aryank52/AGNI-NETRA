@@ -5,7 +5,7 @@ import maplibregl from "maplibre-gl";
 import { ThermalEvent } from "@/types";
 import { GISLayerState, LayerOpacityState, DEFAULT_LAYER_OPACITIES } from "./LayerControl";
 import { fetchApi } from "@/lib/api";
-import { formatNumber, formatFrp } from "@/lib/formatters";
+import { formatNumber, formatFrp, formatPercent } from "@/lib/formatters";
 
 interface MapLibreViewProps {
   events: ThermalEvent[];

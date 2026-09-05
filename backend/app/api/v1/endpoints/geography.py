@@ -4,6 +4,7 @@ Provides hierarchical administrative navigation (State -> District -> Sub-Distri
 spatial reverse geocoding, and administrative context query endpoints.
 """
 
+import time
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
@@ -19,6 +20,10 @@ from backend.app.models.schemas import (
 
 router = APIRouter()
 
+_STATES_CACHE: Optional[List[StateSummaryOut]] = None
+_STATES_CACHE_TIMESTAMP: float = 0.0
+_STATES_CACHE_TTL_SECONDS: float = 600.0  # 10 minutes
+
 
 @router.get("/states", response_model=List[StateSummaryOut])
 def list_states(
@@ -26,7 +31,12 @@ def list_states(
 ) -> Any:
     """
     List all 36 canonical States and Union Territories of India with facility & observation counts.
+    Cached in-memory for high performance.
     """
+    global _STATES_CACHE, _STATES_CACHE_TIMESTAMP
+    now = time.time()
+    if _STATES_CACHE is not None and (now - _STATES_CACHE_TIMESTAMP) < _STATES_CACHE_TTL_SECONDS:
+        return _STATES_CACHE
     query = text("""
         SELECT 
             b.state_code,
@@ -53,7 +63,7 @@ def list_states(
         ORDER BY b.normalized_name ASC;
     """)
     rows = db.execute(query).fetchall()
-    return [
+    result = [
         StateSummaryOut(
             state_code=r[0],
             state_name=r[1],
@@ -64,6 +74,9 @@ def list_states(
         )
         for r in rows
     ]
+    _STATES_CACHE = result
+    _STATES_CACHE_TIMESTAMP = time.time()
+    return result
 
 
 @router.get("/districts", response_model=List[DistrictSummaryOut])

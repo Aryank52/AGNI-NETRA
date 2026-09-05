@@ -134,27 +134,50 @@ class EmissionDeclarationRequest(BaseModel):
 
 
 @router.get("/industry/facilities")
-def get_industry_portal_facilities(db: Session = Depends(get_db)):
+def get_industry_portal_facilities(
+    state: Optional[str] = Query(None),
+    facility_type: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
     """
     Returns industrial plant roster with thermal emission compliance status and flare-stack inventory.
+    Paginated and filtered for high operational throughput.
     """
-    facs = db.query(IndustrialFacility).all()
-    events = db.query(ThermalEvent).all()
+    from sqlalchemy import text
 
-    # Map events count per facility
+    query = db.query(IndustrialFacility)
+    if state and state.upper() != "ALL":
+        query = query.filter(IndustrialFacility.state.ilike(f"%{state}%"))
+    if facility_type and facility_type.upper() != "ALL":
+        query = query.filter(IndustrialFacility.facility_type == facility_type)
+
+    facs = query.offset(offset).limit(limit).all()
+    fac_ids = [f.id for f in facs]
+
     counts = {}
-    for e in events:
-        if e.facility_id:
-            counts[e.facility_id] = counts.get(e.facility_id, 0) + 1
+    if fac_ids:
+        rows = db.execute(text("""
+            SELECT facility_id, COUNT(*) 
+            FROM thermal_events 
+            WHERE facility_id = ANY(:ids) 
+            GROUP BY facility_id;
+        """), {"ids": fac_ids}).fetchall()
+        counts = {r[0]: r[1] for r in rows}
 
     results = []
     for f in facs:
-        ev_count = counts.get(f.id, 0)
+        ev_count = counts.get(f.id, f.firms_detections_1km or 0)
         status = "COMPLIANT"
         if ev_count > 15:
             status = "AUDIT_REQUIRED"
         elif ev_count > 5:
             status = "ACTIVE_MONITORING"
+
+        if status_filter and status_filter.upper() != "ALL" and status != status_filter:
+            continue
 
         results.append({
             "id": f.id,

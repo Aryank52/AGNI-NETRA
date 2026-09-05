@@ -9,7 +9,8 @@ import {
   AlertOctagon, CheckSquare, BarChart3, 
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
-  Sliders, Database, ShieldAlert, BookOpen, Globe, Layers, Radio
+  Sliders, Database, ShieldAlert, BookOpen, Globe, Layers, Radio,
+  Pickaxe
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,47 +19,45 @@ export default function Sidebar() {
 
   // Tier 1: COMMAND CENTER
   const commandCenter = [
-    { label: "National Command Map", href: "/dashboard", icon: Map, badge: "LIVE" },
-    { label: "Thermal Events Inventory", href: "/dashboard/events", icon: Flame, badge: "NRT" },
-    { label: "Incident Alert Desk", href: "/dashboard/alerts", icon: Bell, badge: "ALERT" },
+    { label: "National Overview", href: "/dashboard", icon: Map, badge: "LIVE" },
+    { label: "Live Thermal Intelligence", href: "/dashboard/events", icon: Flame, badge: "NRT" },
+    { label: "Alerts", href: "/dashboard/alerts", icon: Bell, badge: "QUEUE" },
   ];
 
   // Tier 2: INTELLIGENCE
-  const intelligenceModules = [
+  const intelligence = [
+    { label: "Thermal Analysis", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
     { label: "Industrial Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
-    { label: "Industrial Facilities", href: "/dashboard/facilities", icon: Factory },
+    { label: "Mining Intelligence", href: "/dashboard/facilities?sector=Mining", icon: Pickaxe },
     { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity, badge: "PERSIST" },
     { label: "Candidate Discovery", href: "/dashboard/candidates", icon: Search, badge: "USP" },
-    { label: "Thermal Baselines", href: "/dashboard/baselines", icon: Sliders },
-    { label: "Anomaly Radar", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
-    { label: "Historical Trends", href: "/dashboard/analytics", icon: BarChart3 },
+    { label: "Historical Analysis", href: "/dashboard/analytics", icon: BarChart3, badge: "2022-26" },
   ];
 
-  // Tier 3: INVESTIGATION & VERIFICATION
+  // Tier 3: INVESTIGATION
   const investigation = [
+    { label: "Investigation Desk", href: "/dashboard/events", icon: ShieldAlert },
     { label: "Analyst Verification", href: "/dashboard/verification", icon: CheckSquare, badge: "HITL" },
-    { label: "Multi-Factor Risk Matrix", href: "/dashboard/risk", icon: ShieldAlert },
     { label: "Intelligence Reports", href: "/dashboard/reports", icon: FileText },
   ];
 
-  // Tier 4: SATELLITE OPERATIONS
+  // Tier 4: MAP & DATA
+  const mapAndData = [
+    { label: "Thermal Atlas", href: "/dashboard/atlas", icon: Globe },
+    { label: "GIS Layers", href: "/dashboard", icon: Layers },
+  ];
+
+  // Tier 5: SATELLITE
   const satellite = [
-    { label: "Mission Control (AGNI-SAT)", href: "/dashboard/mission-control", icon: Radio, badge: "ORBIT" },
+    { label: "AGNI-SAT", href: "/dashboard/mission-control", icon: Radio, badge: "SIMULATION" },
   ];
 
-  // Tier 5: SECTOR & PUBLIC PORTALS
-  const portals = [
-    { label: "Public Transparency", href: "/portal/public", icon: Eye, badge: "PUBLIC" },
-    { label: "Industry Compliance", href: "/portal/industry", icon: Building2, badge: "B2B" },
-    { label: "Research & Academic", href: "/portal/research", icon: BookOpen, badge: "OPEN" },
-  ];
-
-  // Tier 6: SYSTEM & GOVERNANCE (Admin Only)
-  const systemGovernance = [
-    { label: "Data Ingestion Control", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
-    { label: "Model Registry", href: "/admin/models", icon: Cpu, badge: "ML" },
-    { label: "Dataset Registry", href: "/admin/datasets", icon: Layers, badge: "DATA" },
-    { label: "Admin & Audit Trail", href: "/admin", icon: Settings, badge: "GOV" },
+  // Tier 6: SYSTEM (Hidden from unauthorized users)
+  const system = [
+    { label: "Ingestion", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
+    { label: "Models", href: "/admin/models", icon: Cpu, badge: "ML" },
+    { label: "Datasets", href: "/admin/datasets", icon: Layers, badge: "DATA" },
+    { label: "Administration", href: "/admin", icon: Settings, badge: "GOV" },
   ];
 
   const renderNavGroup = (title: string, items: any[]) => (
@@ -69,11 +68,11 @@ export default function Sidebar() {
       <nav className="space-y-0.5">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href.split("?")[0]));
 
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 isActive
@@ -91,7 +90,7 @@ export default function Sidebar() {
                     ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                     : item.badge === "HITL"
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                    : item.badge === "ALERT"
+                    : item.badge === "ALERT" || item.badge === "QUEUE"
                     ? "bg-red-500/20 text-red-300 border border-red-500/30"
                     : item.badge === "ATLAS"
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
@@ -99,7 +98,7 @@ export default function Sidebar() {
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : item.badge === "DATA"
                     ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                    : item.badge === "ORBIT"
+                    : item.badge === "SIMULATION"
                     ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30"
                     : item.badge === "RADAR"
                     ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
@@ -123,32 +122,41 @@ export default function Sidebar() {
     <aside className="w-64 bg-agni-slate/95 border-r border-agni-border flex flex-col justify-between py-4 px-3 shrink-0 hidden md:flex overflow-y-auto">
       <div>
         {renderNavGroup("Command Center", commandCenter)}
-        {renderNavGroup("Intelligence & Discovery", intelligenceModules)}
-        {renderNavGroup("Investigation & HITL", investigation)}
-        {renderNavGroup("Satellite Operations", satellite)}
-        {renderNavGroup("Operational Portals", portals)}
-        {user?.role === "ADMIN" && renderNavGroup("System & Governance", systemGovernance)}
+        {renderNavGroup("Intelligence", intelligence)}
+        {renderNavGroup("Investigation", investigation)}
+        {renderNavGroup("Map & Data", mapAndData)}
+        {renderNavGroup("Satellite", satellite)}
+        {user?.role === "ADMIN" && renderNavGroup("System", system)}
 
         {/* AI & Remote Sensing Model Badge */}
         <div className="mt-4 px-3 py-2.5 rounded-xl bg-agni-card/70 border border-agni-border/60">
           <div className="flex items-center gap-2 mb-1 text-xs font-semibold text-slate-200">
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span>XGBoost v1.0 • SHAP</span>
+            <span>XGBoost v3.0 • Platt Calibrated</span>
           </div>
           <p className="text-[10px] text-slate-400 leading-tight">
-            18-feature remote sensing tabular intelligence with TreeExplainer attributions.
+            18-feature remote sensing tabular classifier with TreeExplainer SHAP attributions.
           </p>
           <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-400">
             <span>F1: <strong className="text-emerald-400">0.962</strong></span>
-            <span>CV: <strong className="text-emerald-400">5-Fold</strong></span>
+            <span>Brier: <strong className="text-emerald-400">0.038</strong></span>
           </div>
+        </div>
+
+        {/* Public & Transparency Portal Quick Navigation */}
+        <div className="mt-3 px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20 flex items-center justify-between">
+          <Link href="/portal/public" className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1.5">
+            <Eye className="w-3.5 h-3.5" />
+            <span>Public Safety Portal</span>
+          </Link>
+          <span className="text-[9px] font-mono text-emerald-500">SAFE VIEW</span>
         </div>
       </div>
 
       {/* Footer Provenance */}
       <div className="px-3 text-[10px] text-slate-500 border-t border-slate-800 pt-3 mt-4">
         <div className="font-mono text-slate-400 font-bold">AGNI-NETRA v1.0</div>
-        <div className="text-[9px] text-slate-600">NASA FIRMS • ISRO Bhuvan • PostGIS</div>
+        <div className="text-[9px] text-slate-500">Geospatial Thermal Intelligence</div>
       </div>
     </aside>
   );

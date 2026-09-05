@@ -278,7 +278,7 @@ export default function DashboardPage() {
               <div>
                 <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Hotspots</div>
                 <div className="text-lg font-black text-white font-mono mt-0.5">
-                  {commandCenterData?.kpis?.active_events_count ?? totalCount}
+                  {commandCenterData?.kpis?.active_events ?? totalCount}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -291,7 +291,7 @@ export default function DashboardPage() {
               <div>
                 <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Alert Queue</div>
                 <div className="text-lg font-black text-amber-400 font-mono mt-0.5">
-                  {commandCenterData?.kpis?.open_alerts_count ?? 87}
+                  {commandCenterData?.kpis?.active_alerts ?? 87}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">

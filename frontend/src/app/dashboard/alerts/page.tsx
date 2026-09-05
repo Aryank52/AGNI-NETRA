@@ -551,12 +551,13 @@ export default function AlertsPage() {
                           onChange={(e) => setGroundTruthClass(e.target.value)}
                           className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-amber-500"
                         >
-                          <option value="Agricultural Burning">Agricultural Burning</option>
-                          <option value="Gas Flare">Gas Flare</option>
                           <option value="Industrial Fire">Industrial Fire</option>
+                          <option value="Gas Flare">Gas Flare</option>
                           <option value="Forest Fire">Forest Fire</option>
-                          <option value="Landfill / Urban Fire">Landfill / Urban Fire</option>
-                          <option value="Biomass / Stubble">Biomass / Stubble</option>
+                          <option value="Agricultural Burning">Agricultural Burning</option>
+                          <option value="Mining Activity">Mining Activity</option>
+                          <option value="Other Thermal Source">Other Thermal Source</option>
+                          <option value="Uncertain">Uncertain</option>
                         </select>
                       </div>
 

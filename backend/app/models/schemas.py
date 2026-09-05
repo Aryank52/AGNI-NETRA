@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 # ------------------------------------------------------------------------------
@@ -31,8 +31,7 @@ class UserOut(UserBase):
     is_active: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -64,8 +63,7 @@ class ThermalDetectionOut(BaseModel):
     confidence: float
     day_night: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ModelPredictionOut(BaseModel):
@@ -76,8 +74,7 @@ class ModelPredictionOut(BaseModel):
     explanation_summary: Optional[str]
     predicted_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RiskScoreOut(BaseModel):
@@ -91,8 +88,7 @@ class RiskScoreOut(BaseModel):
     risk_reasons: List[str]
     evaluated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventFeatureOut(BaseModel):
@@ -108,8 +104,7 @@ class EventFeatureOut(BaseModel):
     baseline_deviation_ratio: float
     industrial_context_score: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ThermalEventOut(BaseModel):
@@ -143,8 +138,7 @@ class ThermalEventOut(BaseModel):
     risk: Optional[RiskScoreOut] = None
     features: Optional[EventFeatureOut] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ThermalEventGeoJSON(BaseModel):
@@ -175,8 +169,7 @@ class HistoricalBaselineOut(BaseModel):
     monthly_pattern: Dict[str, float]
     baseline_status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FacilityBaselineOut(BaseModel):
@@ -193,8 +186,7 @@ class FacilityBaselineOut(BaseModel):
     notes: Optional[str] = None
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MiningThermalAssociationOut(BaseModel):
@@ -216,8 +208,7 @@ class MiningThermalAssociationOut(BaseModel):
     recurrence_rate: Optional[float] = None
     persistence_days: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FacilityMiningEvidenceOut(BaseModel):
@@ -266,8 +257,7 @@ class FacilityMiningEvidenceOut(BaseModel):
     evidence_summary: Dict[str, Any] = {}
     associations: List[MiningThermalAssociationOut] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MiningContextSummaryOut(BaseModel):
@@ -349,8 +339,7 @@ class IndustrialFacilityOut(BaseModel):
     facility_baseline: Optional[FacilityBaselineOut] = None
     mining_evidence: Optional[FacilityMiningEvidenceOut] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class IbmMiningLeaseContextOut(BaseModel):
@@ -391,8 +380,7 @@ class IbmMineralResourceOut(BaseModel):
     page_number: Optional[int] = None
     table_number: str = "Table 6"
     provisional_flag: bool = True
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class IbmAuctionedBlockOut(BaseModel):
@@ -419,8 +407,7 @@ class IbmAuctionedBlockOut(BaseModel):
     is_provisional: bool = True
     raw_metadata: Dict[str, Any] = {}
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PariveshProjectOut(BaseModel):
@@ -450,8 +437,7 @@ class PariveshProjectOut(BaseModel):
     match_confidence: Optional[str] = None
     match_score: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CandidateFacilityOut(BaseModel):
@@ -469,8 +455,7 @@ class CandidateFacilityOut(BaseModel):
     last_detected_at: datetime
     evidence_summary: Dict[str, Any]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -488,8 +473,7 @@ class AlertOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlertUpdate(BaseModel):
@@ -514,8 +498,7 @@ class VerificationRecordOut(BaseModel):
     notes: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -537,8 +520,7 @@ class MLModelRegistryOut(BaseModel):
     approved_at: Optional[datetime] = None
     notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MLModelStatusUpdate(BaseModel):
@@ -560,8 +542,7 @@ class DatasetRegistryOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -628,8 +609,7 @@ class ReportOut(BaseModel):
     summary_data: Dict[str, Any]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -656,8 +636,7 @@ class DataSourceOut(BaseModel):
     terms_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ThermalHistoryOut(BaseModel):
@@ -682,8 +661,7 @@ class ThermalHistoryOut(BaseModel):
     raw_metadata: Dict[str, Any] = {}
     is_demo: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -711,8 +689,7 @@ class EvidenceRecordOut(BaseModel):
     verified_by: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -734,8 +711,7 @@ class SimulationScenarioOut(BaseModel):
     status: str
     last_run_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SatelliteTaskingRequest(BaseModel):
@@ -764,8 +740,7 @@ class SatelliteTelemetryOut(BaseModel):
     raw_packet: Dict[str, Any] = {}
     is_simulation: bool = True
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LatencyBenchmarkOut(BaseModel):
@@ -794,8 +769,7 @@ class MissionTaskOut(BaseModel):
     observed_at: Optional[datetime] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ------------------------------------------------------------------------------
@@ -821,8 +795,7 @@ class AdminBoundaryOut(BaseModel):
     source_version: Optional[str] = "2024"
     is_authoritative: bool = True
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StateSummaryOut(BaseModel):
@@ -860,8 +833,7 @@ class FacilityAdministrativeContextOut(BaseModel):
     administrative_source: str = "geoBoundaries / Local Government Directory"
     administrative_confidence: str = "HIGH"
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ObservationAdministrativeContextOut(BaseModel):
@@ -876,8 +848,7 @@ class ObservationAdministrativeContextOut(BaseModel):
     boundary_source: str = "geoBoundaries / Local Government Directory"
     administrative_confidence: str = "HIGH"
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PariveshAdministrativeContextOut(BaseModel):
@@ -895,8 +866,7 @@ class PariveshAdministrativeContextOut(BaseModel):
     administrative_method: str = "POSTGIS_SPATIAL_JOIN"
     administrative_confidence: str = "HIGH"
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdministrativeReverseLookupOut(BaseModel):
@@ -925,8 +895,7 @@ class LULCClassOut(BaseModel):
     risk_weight: float
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LULCSourceOut(BaseModel):
@@ -942,8 +911,7 @@ class LULCSourceOut(BaseModel):
     source_url: str
     metadata_info: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LULCLookupOut(BaseModel):
@@ -990,8 +958,7 @@ class ObservationLULCContextOut(BaseModel):
     confidence_score: float
     reference_date: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FacilityLULCContextOut(BaseModel):
@@ -1007,8 +974,7 @@ class FacilityLULCContextOut(BaseModel):
     confidence_score: float
     reference_date: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LULCStatsOut(BaseModel):
@@ -1035,8 +1001,7 @@ class FSISourceOut(BaseModel):
     license: str
     metadata_info: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FSIISFRStatsOut(BaseModel):
@@ -1057,8 +1022,7 @@ class FSIISFRStatsOut(BaseModel):
     page_table_reference: Optional[str] = None
     provisional_flag: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProtectedAreaOut(BaseModel):
@@ -1075,8 +1039,7 @@ class ProtectedAreaOut(BaseModel):
     reference_date: Optional[str] = None
     metadata_info: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ObservationForestContextOut(BaseModel):
@@ -1098,8 +1061,7 @@ class ObservationForestContextOut(BaseModel):
     confidence_score: float
     spatial_match_method: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FacilityForestContextOut(BaseModel):
@@ -1117,8 +1079,7 @@ class FacilityForestContextOut(BaseModel):
     reference_year: Optional[int] = None
     confidence_score: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ForestLookupOut(BaseModel):

@@ -56,7 +56,7 @@ def get_verification_history(
     """
     Retrieves recent audit log of human-in-the-loop analyst decisions and label corrections.
     """
-    records = db.query(VerificationRecord).order_by(VerificationRecord.verified_at.desc()).limit(limit).all()
+    records = db.query(VerificationRecord).order_by(VerificationRecord.created_at.desc()).limit(limit).all()
     return records
 
 
