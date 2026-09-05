@@ -45,6 +45,124 @@ export const DEFAULT_LAYER_OPACITIES: LayerOpacityState = {
   parivesh: 0.85,
 };
 
+interface LayerItemDef {
+  key: keyof GISLayerState;
+  label: string;
+  sublabel: string;
+  category: "THERMAL" | "INDUSTRIAL & ENERGY" | "ENVIRONMENT" | "ADMINISTRATIVE";
+  icon: any;
+  color: string;
+  countDefault: number;
+  countKey: string;
+  provenance: string;
+}
+
+const LAYER_ITEMS: LayerItemDef[] = [
+  // 1. THERMAL
+  {
+    key: "thermalEvents",
+    category: "THERMAL",
+    label: "Thermal Events & Risk",
+    sublabel: "Active Multi-Pixel Hotspots",
+    icon: Flame,
+    color: "#ef4444",
+    countDefault: 240,
+    countKey: "thermal_events",
+    provenance: "NASA FIRMS (VIIRS/MODIS)",
+  },
+  // 2. INDUSTRIAL & ENERGY
+  {
+    key: "industrialFacilities",
+    category: "INDUSTRIAL & ENERGY",
+    label: "Industrial Facilities",
+    sublabel: "Regulated Manufacturing Registry",
+    icon: Factory,
+    color: "#38bdf8",
+    countDefault: 35684,
+    countKey: "industrial_facilities",
+    provenance: "OSM Industrial Cadastre",
+  },
+  {
+    key: "powerStations",
+    category: "INDUSTRIAL & ENERGY",
+    label: "CEA Power Stations",
+    sublabel: "Thermal, Gas & Utility Plants",
+    icon: Zap,
+    color: "#f59e0b",
+    countDefault: 1633,
+    countKey: "power_stations",
+    provenance: "Central Electricity Authority",
+  },
+  {
+    key: "mining",
+    category: "INDUSTRIAL & ENERGY",
+    label: "IBM Mining Leases",
+    sublabel: "Auctioned Blocks & Mineral Leases",
+    icon: Pickaxe,
+    color: "#a855f7",
+    countDefault: 414,
+    countKey: "mining",
+    provenance: "Indian Bureau of Mines",
+  },
+  // 3. ENVIRONMENT
+  {
+    key: "protectedAreas",
+    category: "ENVIRONMENT",
+    label: "Protected Areas & Reserves",
+    sublabel: "National Parks & Eco-Sensitive Zones",
+    icon: Trees,
+    color: "#10b981",
+    countDefault: 11,
+    countKey: "protected_areas",
+    provenance: "WII / FSI ISFR",
+  },
+  {
+    key: "lulc",
+    category: "ENVIRONMENT",
+    label: "Bhuvan LULC Land Cover",
+    sublabel: "50m Thematic Classification",
+    icon: MapPin,
+    color: "#84cc16",
+    countDefault: 15,
+    countKey: "lulc",
+    provenance: "ISRO Bhuvan Pilot",
+  },
+  // 4. ADMINISTRATIVE
+  {
+    key: "stateBoundaries",
+    category: "ADMINISTRATIVE",
+    label: "State / UT Boundaries",
+    sublabel: "36 Sovereign Jurisdictions",
+    icon: Layers,
+    color: "#94a3b8",
+    countDefault: 36,
+    countKey: "admin_states",
+    provenance: "Survey of India",
+  },
+  {
+    key: "districtBoundaries",
+    category: "ADMINISTRATIVE",
+    label: "District Boundaries",
+    sublabel: "736 District Administrative Borders",
+    icon: Layers,
+    color: "#64748b",
+    countDefault: 736,
+    countKey: "admin_districts",
+    provenance: "Survey of India",
+  },
+  {
+    key: "parivesh",
+    category: "ADMINISTRATIVE",
+    label: "PARIVESH Clearances",
+    sublabel: "MoEFCC Project Locations",
+    icon: FileCheck,
+    color: "#06b6d4",
+    countDefault: 622,
+    countKey: "parivesh",
+    provenance: "MoEFCC PARIVESH",
+  },
+];
+
 interface LayerControlProps {
   layers: GISLayerState;
   opacities?: LayerOpacityState;
@@ -69,106 +187,11 @@ export default function LayerControl({
   const [isOpen, setIsOpen] = useState(false);
   const [activeOpacityKey, setActiveOpacityKey] = useState<keyof GISLayerState | null>(null);
 
-  const layerItems: Array<{
-    key: keyof GISLayerState;
-    label: string;
-    sublabel: string;
-    icon: any;
-    color: string;
-    countDefault: number;
-    countKey: string;
-    provenance: string;
-  }> = [
-    {
-      key: "thermalEvents",
-      label: "Thermal Events & Risk",
-      sublabel: "Active Multi-Pixel Hotspots",
-      icon: Flame,
-      color: "#ef4444",
-      countDefault: 223,
-      countKey: "thermal_events",
-      provenance: "NASA FIRMS (VIIRS/MODIS)",
-    },
-    {
-      key: "industrialFacilities",
-      label: "Industrial Facilities",
-      sublabel: "National Manufacturing Registry",
-      icon: Factory,
-      color: "#38bdf8",
-      countDefault: 35684,
-      countKey: "industrial_facilities",
-      provenance: "OSM Industrial Cadastre",
-    },
-    {
-      key: "powerStations",
-      label: "CEA Power Stations",
-      sublabel: "Thermal, Hydro & Gas Utilities",
-      icon: Zap,
-      color: "#f59e0b",
-      countDefault: 1633,
-      countKey: "power_stations",
-      provenance: "Central Electricity Authority",
-    },
-    {
-      key: "mining",
-      label: "IBM Mining Intelligence",
-      sublabel: "Auctioned Blocks & Leases",
-      icon: Pickaxe,
-      color: "#a855f7",
-      countDefault: 119,
-      countKey: "mining",
-      provenance: "Indian Bureau of Mines",
-    },
-    {
-      key: "protectedAreas",
-      label: "Protected Areas & Forests",
-      sublabel: "National Parks & Eco-Sensitive Zones",
-      icon: Trees,
-      color: "#10b981",
-      countDefault: 11,
-      countKey: "protected_areas",
-      provenance: "WII / FSI ISFR",
-    },
-    {
-      key: "lulc",
-      label: "Bhuvan LULC Land Cover",
-      sublabel: "Thematic Pilot Extent (50m)",
-      icon: MapPin,
-      color: "#84cc16",
-      countDefault: 15,
-      countKey: "lulc",
-      provenance: "ISRO Bhuvan (Pilot Subset)",
-    },
-    {
-      key: "stateBoundaries",
-      label: "State / UT Boundaries",
-      sublabel: "36 Administrative Territories",
-      icon: Layers,
-      color: "#94a3b8",
-      countDefault: 36,
-      countKey: "admin_states",
-      provenance: "Survey of India / Bharat Atlas",
-    },
-    {
-      key: "districtBoundaries",
-      label: "District Boundaries",
-      sublabel: "736 District Administrative Borders",
-      icon: Layers,
-      color: "#64748b",
-      countDefault: 736,
-      countKey: "admin_districts",
-      provenance: "Survey of India / Bharat Atlas",
-    },
-    {
-      key: "parivesh",
-      label: "PARIVESH Clearances",
-      sublabel: "Environmental Project Locations",
-      icon: FileCheck,
-      color: "#06b6d4",
-      countDefault: 622,
-      countKey: "parivesh",
-      provenance: "MoEFCC PARIVESH Portal",
-    },
+  const categories: Array<"THERMAL" | "INDUSTRIAL & ENERGY" | "ENVIRONMENT" | "ADMINISTRATIVE"> = [
+    "THERMAL",
+    "INDUSTRIAL & ENERGY",
+    "ENVIRONMENT",
+    "ADMINISTRATIVE"
   ];
 
   const activeCount = Object.values(layers).filter(Boolean).length;
@@ -183,7 +206,7 @@ export default function LayerControl({
         <Layers className="w-4 h-4 text-amber-400" />
         <span className="font-bold tracking-wider">MAP LAYERS</span>
         <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30">
-          {activeCount} / {layerItems.length}
+          {activeCount} / {LAYER_ITEMS.length}
         </span>
       </button>
 
@@ -205,14 +228,14 @@ export default function LayerControl({
                 <>
                   <button
                     onClick={() => onToggleAll(true)}
-                    className="px-2 py-0.5 rounded bg-slate-850 hover:bg-slate-800 text-amber-300 border border-slate-700 font-bold transition-colors"
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 font-bold transition-colors text-[10px]"
                     title="Enable All Layers"
                   >
                     All ON
                   </button>
                   <button
                     onClick={() => onToggleAll(false)}
-                    className="px-2 py-0.5 rounded bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-colors text-[10px]"
                     title="Disable All Layers"
                   >
                     All OFF
@@ -222,7 +245,7 @@ export default function LayerControl({
               {onResetDefaults && (
                 <button
                   onClick={onResetDefaults}
-                  className="p-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-700 transition-colors"
+                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-400 border border-slate-700 transition-colors"
                   title="Reset to Default Configuration"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -231,102 +254,112 @@ export default function LayerControl({
             </div>
           </div>
 
-          {/* Scrollable Layer List */}
-          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-            {layerItems.map((item) => {
-              const active = layers[item.key];
-              const opacity = opacities[item.key] ?? 1.0;
-              const isLoading = Boolean(loadingLayers[item.key]);
-              const recordCount = counts?.[item.countKey] ?? item.countDefault;
-              const Icon = item.icon;
-              const isSliderOpen = activeOpacityKey === item.key;
-
+          {/* Categorized Layer List */}
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+            {categories.map((cat) => {
+              const catItems = LAYER_ITEMS.filter((item) => item.category === cat);
               return (
-                <div
-                  key={item.key}
-                  className={`rounded-xl border transition-all ${
-                    active
-                      ? "bg-slate-900/90 border-slate-700/80 text-white"
-                      : "bg-slate-950/40 border-slate-850 text-slate-500"
-                  }`}
-                >
-                  <div className="p-2.5 flex items-center justify-between gap-2">
-                    {/* Layer Icon & Information */}
-                    <div 
-                      className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
-                      onClick={() => onToggleLayer(item.key)}
-                    >
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-                        style={{ backgroundColor: `${item.color}22`, border: `1px solid ${item.color}44` }}
-                      >
-                        <Icon className="w-3.5 h-3.5" style={{ color: item.color }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-semibold text-xs truncate leading-tight ${active ? "text-slate-100" : "text-slate-500"}`}>
-                            {item.label}
-                          </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800/80 text-amber-400 shrink-0">
-                            {recordCount.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 truncate mt-0.5 flex items-center gap-1">
-                          <span>{item.sublabel}</span>
-                          <span>•</span>
-                          <span className="text-slate-500 text-[9px]">{item.provenance}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions: Loading / Opacity Slider Toggle / Visibility Toggle */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-                      ) : (
-                        active && onChangeOpacity && (
-                          <button
-                            onClick={() => setActiveOpacityKey(isSliderOpen ? null : item.key)}
-                            className={`p-1 rounded hover:bg-slate-800 transition-colors ${
-                              isSliderOpen ? "text-amber-400" : "text-slate-400"
-                            }`}
-                            title={`Opacity: Math.round(opacity * 100)%`}
-                          >
-                            <Sliders className="w-3.5 h-3.5" />
-                          </button>
-                        )
-                      )}
-
-                      <button
-                        onClick={() => onToggleLayer(item.key)}
-                        className={`p-1 rounded transition-colors ${
-                          active ? "text-emerald-400 hover:text-emerald-300" : "text-slate-600 hover:text-slate-400"
-                        }`}
-                        title={active ? "Hide Layer" : "Show Layer"}
-                      >
-                        {active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                    </div>
+                <div key={cat} className="space-y-1">
+                  <div className="text-[9px] font-mono uppercase tracking-wider font-bold text-slate-400 px-1">
+                    {cat}
                   </div>
+                  {catItems.map((item) => {
+                    const active = layers[item.key];
+                    const opacity = opacities[item.key] ?? 1.0;
+                    const isLoading = Boolean(loadingLayers[item.key]);
+                    const recordCount = counts?.[item.countKey] ?? item.countDefault;
+                    const Icon = item.icon;
+                    const isSliderOpen = activeOpacityKey === item.key;
 
-                  {/* Inline Opacity Slider */}
-                  {isSliderOpen && active && onChangeOpacity && (
-                    <div className="px-3 pb-2.5 pt-1 border-t border-slate-800/80 flex items-center justify-between gap-3 text-[11px] font-mono animate-in fade-in">
-                      <span className="text-slate-400 text-[10px]">Opacity</span>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1.0"
-                        step="0.05"
-                        value={opacity}
-                        onChange={(e) => onChangeOpacity(item.key, parseFloat(e.target.value))}
-                        className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                      />
-                      <span className="text-amber-300 text-[10px] w-8 text-right font-bold">
-                        {Math.round(opacity * 100)}%
-                      </span>
-                    </div>
-                  )}
+                    return (
+                      <div
+                        key={item.key}
+                        className={`rounded-xl border transition-all ${
+                          active
+                            ? "bg-slate-900/90 border-slate-700/80 text-white"
+                            : "bg-slate-950/40 border-slate-800/60 text-slate-500"
+                        }`}
+                      >
+                        <div className="p-2 flex items-center justify-between gap-2">
+                          {/* Layer Icon & Information */}
+                          <div 
+                            className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+                            onClick={() => onToggleLayer(item.key)}
+                          >
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+                              style={{ backgroundColor: `${item.color}22`, border: `1px solid ${item.color}44` }}
+                            >
+                              <Icon className="w-3.5 h-3.5" style={{ color: item.color }} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`font-semibold text-xs truncate leading-tight ${active ? "text-slate-100" : "text-slate-500"}`}>
+                                  {item.label}
+                                </span>
+                                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800/80 text-amber-400 shrink-0">
+                                  {recordCount.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate mt-0.5 flex items-center gap-1">
+                                <span>{item.sublabel}</span>
+                                <span>•</span>
+                                <span className="text-slate-500 text-[9px]">{item.provenance}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions: Loading / Opacity Slider Toggle / Visibility Toggle */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {isLoading ? (
+                              <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                            ) : (
+                              active && onChangeOpacity && (
+                                <button
+                                  onClick={() => setActiveOpacityKey(isSliderOpen ? null : item.key)}
+                                  className={`p-1 rounded hover:bg-slate-800 transition-colors ${
+                                    isSliderOpen ? "text-amber-400" : "text-slate-400"
+                                  }`}
+                                  title={`Opacity: ${Math.round(opacity * 100)}%`}
+                                >
+                                  <Sliders className="w-3.5 h-3.5" />
+                                </button>
+                              )
+                            )}
+
+                            <button
+                              onClick={() => onToggleLayer(item.key)}
+                              className={`p-1 rounded transition-colors ${
+                                active ? "text-emerald-400 hover:text-emerald-300" : "text-slate-600 hover:text-slate-400"
+                              }`}
+                              title={active ? "Hide Layer" : "Show Layer"}
+                            >
+                              {active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Inline Opacity Slider */}
+                        {isSliderOpen && active && onChangeOpacity && (
+                          <div className="px-3 pb-2 pt-1 border-t border-slate-800/80 flex items-center justify-between gap-3 text-[11px] font-mono animate-in fade-in">
+                            <span className="text-slate-400 text-[10px]">Opacity</span>
+                            <input
+                              type="range"
+                              min="0.1"
+                              max="1.0"
+                              step="0.05"
+                              value={opacity}
+                              onChange={(e) => onChangeOpacity(item.key, parseFloat(e.target.value))}
+                              className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                            />
+                            <span className="text-amber-300 text-[10px] w-8 text-right font-bold">
+                              {Math.round(opacity * 100)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -334,7 +367,7 @@ export default function LayerControl({
 
           {/* Footer note */}
           <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
-            <span>Viewport-aware lazy loading</span>
+            <span>Viewport BBOX optimization active</span>
             <span className="text-amber-500/80 font-mono">EPSG:4326 (WGS 84)</span>
           </div>
         </div>

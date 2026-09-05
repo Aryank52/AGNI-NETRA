@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #070d1e;
-  --foreground: #f8fafc;
+  --background: #060b18;
+  --foreground: #f1f5f9;
 }
 
 body {
@@ -12,71 +12,86 @@ body {
   background: var(--background);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  letter-spacing: -0.01em;
 }
 
-/* Custom Tactical Scrollbars */
+/* Professional Geospatial Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b1426;
+  background: #080f20;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e2e4f;
-  border-radius: 3px;
+  background: #1a2744;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #f59e0b;
 }
 
-/* Glowing Tactical Borders */
-.glow-border-critical {
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
-  border-color: #ef4444;
-}
-
-.glow-border-high {
-  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
-  border-color: #f97316;
-}
-
-.glow-border-accent {
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
-  border-color: #f59e0b;
-}
-
-/* Glassmorphism Panels */
+/* Operational Surface Panels (Restrained, crisp 1px borders, subtle elevation) */
 .glass-panel {
-  background: rgba(17, 28, 53, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 46, 79, 0.8);
+  background: rgba(12, 20, 38, 0.88);
+  border: 1px solid rgba(30, 48, 80, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .glass-panel-subtle {
-  background: rgba(11, 20, 38, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(30, 46, 79, 0.5);
+  background: rgba(9, 15, 29, 0.75);
+  border: 1px solid rgba(28, 44, 74, 0.65);
 }
 
-/* MapLibre Tooltip Customization */
+/* High-Contrast Semantic Operational Borders (Replaces neon glow with crisp tactical lines) */
+.glow-border-critical,
+.border-tactical-critical {
+  border: 1px solid rgba(239, 68, 68, 0.7) !important;
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.glow-border-high,
+.border-tactical-high {
+  border: 1px solid rgba(249, 115, 22, 0.7) !important;
+  background-color: rgba(249, 115, 22, 0.04);
+}
+
+.glow-border-accent,
+.border-tactical-accent {
+  border: 1px solid rgba(245, 158, 11, 0.7) !important;
+  background-color: rgba(245, 158, 11, 0.04);
+}
+
+/* Operational Telemetry Font Styling */
+.telemetry-val {
+  font-family: "JetBrains Mono", monospace;
+  font-feature-settings: "zero" 1, "tnum" 1;
+}
+
+/* MapLibre Tooltip & Popup Precision Styling */
 .maplibregl-popup-content {
-  background: #0b1426 !important;
-  color: #f8fafc !important;
+  background: #080f20 !important;
+  color: #f1f5f9 !important;
   border: 1px solid #1e2e4f !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
-  padding: 12px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+  padding: 10px 14px !important;
+  font-size: 11px !important;
 }
 .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-  border-bottom-color: #0b1426 !important;
+  border-bottom-color: #080f20 !important;
 }
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: #0b1426 !important;
+  border-top-color: #080f20 !important;
 }
 .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: #0b1426 !important;
+  border-right-color: #080f20 !important;
 }
 .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: #0b1426 !important;
+  border-left-color: #080f20 !important;
+}
+
+/* Table Row Hover State */
+.table-row-hover:hover {
+  background-color: rgba(26, 41, 71, 0.4);
 }

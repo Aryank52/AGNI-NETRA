@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [retraining, setRetraining] = useState(false);
+  const [adminNotice, setAdminNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const loadAdminData = async () => {
     try {
@@ -48,41 +49,44 @@ export default function AdminPage() {
   }, []);
 
   const triggerSeed = async () => {
+    setAdminNotice(null);
     setSeeding(true);
     try {
       await fetchApi("/ingestion/trigger/demo-seed", { method: "POST" });
-      alert("Sample Indian industrial dataset re-seeded with active thermal clusters!");
+      setAdminNotice({ type: "success", message: "Sample Indian industrial dataset re-seeded with active thermal clusters." });
       await loadAdminData();
-    } catch (err) {
-      alert("Seed failed: " + err);
+    } catch (err: any) {
+      setAdminNotice({ type: "error", message: "Seed failed: " + (err?.message || err) });
     } finally {
       setSeeding(false);
     }
   };
 
   const triggerRetrain = async () => {
+    setAdminNotice(null);
     setRetraining(true);
     try {
       const res = await fetchApi<any>("/ml/retrain", { method: "POST" });
-      alert("Model retraining completed and exported to ml/models!");
+      setAdminNotice({ type: "success", message: "Model retraining completed and exported to ml/models." });
       await loadAdminData();
-    } catch (err) {
-      alert("Retrain failed: " + err);
+    } catch (err: any) {
+      setAdminNotice({ type: "error", message: "Retrain failed: " + (err?.message || err) });
     } finally {
       setRetraining(false);
     }
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
+    setAdminNotice(null);
     try {
       await fetchApi(`/admin/users/${userId}/role`, {
         method: "PATCH",
         body: JSON.stringify({ new_role: newRole }),
       });
-      alert(`User role updated to ${newRole}!`);
+      setAdminNotice({ type: "success", message: `User role updated to ${newRole} in RBAC registry.` });
       await loadAdminData();
-    } catch (err) {
-      alert("Failed to update role: " + err);
+    } catch (err: any) {
+      setAdminNotice({ type: "error", message: "Failed to update role: " + (err?.message || err) });
     }
   };
 
@@ -129,6 +133,23 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+
+          {/* Admin Notice Banner */}
+          {adminNotice && (
+            <div className={`p-3.5 rounded-xl border text-xs flex items-center justify-between font-mono ${
+              adminNotice.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                : "bg-red-500/10 border-red-500/30 text-red-300"
+            }`}>
+              <span>{adminNotice.message}</span>
+              <button
+                onClick={() => setAdminNotice(null)}
+                className="text-slate-400 hover:text-white text-xs ml-4"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Top Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

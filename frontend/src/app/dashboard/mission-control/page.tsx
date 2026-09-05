@@ -135,6 +135,7 @@ export default function MissionControlPage() {
   const [taskPriority, setTaskPriority] = useState("HIGH");
   const [taskFeedback, setTaskFeedback] = useState<any | null>(null);
   const [missionTasksList, setMissionTasksList] = useState<any[]>([]);
+  const [missionNotice, setMissionNotice] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   // Historical Replay Form
   const [historicalHubs, setHistoricalHubs] = useState<any[]>([
@@ -322,9 +323,10 @@ export default function MissionControlPage() {
       // Refresh telemetry logs & tasks
       const logs = await fetchApi<any[]>("/satellite/telemetry/logs?limit=10");
       setTelemetryLogs(logs);
+      setMissionNotice({ type: "success", message: `Scenario "${selectedScenario.name}" executed successfully through synthetic telemetry pipeline.` });
     } catch (err: any) {
       clearInterval(stepInterval);
-      alert(`Simulation execution failed: ${err.message}`);
+      setMissionNotice({ type: "error", message: `Simulation execution failed: ${err.message}` });
     } finally {
       setIsExecuting(false);
     }
@@ -348,8 +350,9 @@ export default function MissionControlPage() {
       setTaskFeedback(res);
       const tasks = await fetchApi<any[]>("/satellite/tasks?limit=10");
       setMissionTasksList(tasks);
+      setMissionNotice({ type: "success", message: `Mission task "${taskName}" successfully scheduled in simulation queue.` });
     } catch (err: any) {
-      alert(`Task scheduling failed: ${err.message}`);
+      setMissionNotice({ type: "error", message: `Task scheduling failed: ${err.message}` });
     }
   };
 
@@ -376,8 +379,9 @@ export default function MissionControlPage() {
         })
       });
       setReplayResult(res);
+      setMissionNotice({ type: "info", message: `Historical telemetry for "${hub.name}" replayed through pipeline.` });
     } catch (err: any) {
-      alert(`Historical replay failed: ${err.message}`);
+      setMissionNotice({ type: "error", message: `Historical replay failed: ${err.message}` });
     }
   };
 
@@ -398,7 +402,7 @@ export default function MissionControlPage() {
                   AGNI-SAT-01 • Digital Twin Mission Control
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase">
-                  SIMULATION ENGINE
+                  SIMULATION / DIGITAL TWIN
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -428,6 +432,28 @@ export default function MissionControlPage() {
           </div>
         </div>
       </div>
+
+      {/* Mission Notice Banner */}
+      {missionNotice && (
+        <div className={`p-3 rounded-xl border text-xs flex items-center justify-between font-mono ${
+          missionNotice.type === "success"
+            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+            : missionNotice.type === "info"
+            ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+            : "bg-red-500/10 border-red-500/30 text-red-300"
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="font-bold">[{missionNotice.type.toUpperCase()}]</span>
+            <span>{missionNotice.message}</span>
+          </div>
+          <button
+            onClick={() => setMissionNotice(null)}
+            className="text-slate-400 hover:text-white text-xs ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Main 3-Column Layout: Left Controls | Center Tactical Map | Right AI Intelligence */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

@@ -61,7 +61,7 @@ export default function RiskIntelligencePage() {
                 Risk Intelligence & Critical Hazard Evaluation
               </h1>
               <p className="text-xs text-slate-400 mt-1">
-                Transparent multi-factor formula evaluating thermal intensity (40%), baseline abnormality (25%), and surrounding environmental/population exposure (35%).
+                Standardized transparent formula: 0.30×Intensity + 0.25×Abnormality + 0.20×Exposure + 0.15×Persistence + 0.10×Context without black-box scoring.
               </p>
             </div>
 

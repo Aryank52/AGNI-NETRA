@@ -66,11 +66,15 @@ export default function DashboardPage() {
   const [dataMode, setDataMode] = useState<string>("ALL"); // ALL, LIVE, DEMO
   const [minFrp, setMinFrp] = useState<number>(0);
 
-  // Live Auto-Refresh
+  // Live Auto-Refresh & Mission Telemetry Clocks
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [refreshInterval, setRefreshInterval] = useState<number>(20); // seconds
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState<number>(20);
+  const [missionClock, setMissionClock] = useState<{ utc: string; ist: string }>({
+    utc: "00:00:00 UTC",
+    ist: "00:00:00 IST",
+  });
 
   // Pagination
   const [page, setPage] = useState<number>(1);
@@ -180,6 +184,20 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [autoRefresh, refreshInterval, selectedState, selectedDistrict, riskFilter, classFilter, statusFilter, minFrp, dataMode, page]);
 
+  // Real-time Mission Digital Clocks (UTC Zulu & IST)
+  useEffect(() => {
+    const updateClocks = () => {
+      const now = new Date();
+      setMissionClock({
+        utc: now.toISOString().substring(11, 19) + " UTC",
+        ist: now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false }) + " IST",
+      });
+    };
+    updateClocks();
+    const clockInterval = setInterval(updateClocks, 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
+
   const resetFilters = () => {
     setSelectedState("ALL");
     setSelectedDistrict("ALL");
@@ -213,35 +231,41 @@ export default function DashboardPage() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Top System Health & Ingestion Telemetry Banner */}
-          <div className="bg-slate-950/90 border-b border-agni-border px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs">
+          <div className="bg-slate-950/95 border-b border-agni-border px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs">
             <div className="flex flex-wrap items-center gap-3">
+              {/* Mission Clocks */}
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-white font-bold">{missionClock.utc}</span>
+                <span className="text-slate-500">|</span>
+                <span className="text-slate-400">{missionClock.ist}</span>
+              </div>
+
               {/* Live Ingestion Stream Status */}
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="font-mono font-bold tracking-wider">LIVE SATELLITE STREAM ACTIVE</span>
+                <span className="font-mono font-bold tracking-wider">VIIRS / MODIS INGESTION ACTIVE</span>
                 <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">
-                  • 15-min NASA FIRMS cycle
+                  • 15-min cycle
                 </span>
               </div>
 
               {/* Model Candidate Status */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
-                <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="font-mono font-bold">
-                  {commandCenterData?.model_metadata?.champion_version || "xgb-v3.0-real-candidate"}
-                </span>
-                <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-[10px] font-bold">
-                  {commandCenterData?.model_metadata?.registry_status || "CANDIDATE"}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-mono text-[11px]">XGBoost Calibrated</span>
+                <span className="px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold">
+                  ACTIVE
                 </span>
               </div>
 
               {/* Multi-Layer GIS Engine Status */}
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
                 <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="font-mono font-semibold">PostGIS 3.4 • 9 Fused Spatial Layers</span>
+                <span className="font-mono text-[11px]">PostGIS 3.4 • 9 Layers • 8.22M Detections</span>
               </div>
             </div>
 
@@ -250,20 +274,20 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-slate-400 text-[11px] font-mono">
                 <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded border transition-colors ${
                     autoRefresh
                       ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                       : "bg-slate-800 text-slate-500 border-slate-700"
                   }`}
                 >
                   <RefreshCw className={`w-3 h-3 ${autoRefresh ? "animate-spin" : ""}`} />
-                  <span>{autoRefresh ? `Live (${secondsUntilRefresh}s)` : "Paused"}</span>
+                  <span>{autoRefresh ? `Auto-Refresh (${secondsUntilRefresh}s)` : "Paused"}</span>
                 </button>
               </div>
 
               <button
                 onClick={() => loadData()}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                 title="Force Refresh Data"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -271,83 +295,83 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* KPI Matrix Banner (Authoritative Metrics) */}
-          <div className="bg-agni-slate/95 border-b border-agni-border px-4 py-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
+          {/* KPI Matrix Banner (Operational Instrument Panels) */}
+          <div className="bg-slate-950/90 border-b border-agni-border px-4 py-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 shrink-0">
             {/* KPI 1: Active Events */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Hotspots</div>
-                <div className="text-lg font-black text-white font-mono mt-0.5">
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Active Hotspots</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
                   {commandCenterData?.kpis?.active_events ?? totalCount}
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                <Flame className="w-4 h-4 text-red-400" />
+              <div className="w-7 h-7 rounded bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <Flame className="w-3.5 h-3.5 text-red-400" />
               </div>
             </div>
 
             {/* KPI 2: Open Alerts */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Alert Queue</div>
-                <div className="text-lg font-black text-amber-400 font-mono mt-0.5">
-                  {commandCenterData?.kpis?.active_alerts ?? 87}
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Alert Queue</div>
+                <div className="text-base font-black text-amber-400 font-mono mt-0.5">
+                  {commandCenterData?.kpis?.active_alerts ?? 99}
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-amber-400" />
+              <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
             </div>
 
             {/* KPI 3: Registered Facilities */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Industrial Plants</div>
-                <div className="text-lg font-black text-cyan-400 font-mono mt-0.5">
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Industrial Plants</div>
+                <div className="text-base font-black text-cyan-400 font-mono mt-0.5">
                   35,684
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                <Factory className="w-4 h-4 text-cyan-400" />
+              <div className="w-7 h-7 rounded bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                <Factory className="w-3.5 h-3.5 text-cyan-400" />
               </div>
             </div>
 
             {/* KPI 4: CEA Power Stations */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Power Utilities</div>
-                <div className="text-lg font-black text-yellow-400 font-mono mt-0.5">
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Power Utilities</div>
+                <div className="text-base font-black text-amber-300 font-mono mt-0.5">
                   1,633
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-yellow-400" />
+              <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
               </div>
             </div>
 
-            {/* KPI 5: Mining & Minerals */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            {/* KPI 5: Mining Leases (Real PostGIS count: 414) */}
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Mining Leases</div>
-                <div className="text-lg font-black text-purple-400 font-mono mt-0.5">
-                  119 Blocks
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Mining Leases</div>
+                <div className="text-base font-black text-purple-400 font-mono mt-0.5">
+                  414 Leases
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <Pickaxe className="w-4 h-4 text-purple-400" />
+              <div className="w-7 h-7 rounded bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <Pickaxe className="w-3.5 h-3.5 text-purple-400" />
               </div>
             </div>
 
             {/* KPI 6: Peak FRP */}
-            <div className="bg-agni-card/90 border border-agni-border p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Peak Radiative FRP</div>
-                <div className="text-lg font-black text-orange-400 font-mono mt-0.5">
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Peak Radiative FRP</div>
+                <div className="text-base font-black text-orange-400 font-mono mt-0.5">
                   {peakFrpValue}
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                <Activity className="w-4 h-4 text-orange-400" />
+              <div className="w-7 h-7 rounded bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                <Activity className="w-3.5 h-3.5 text-orange-400" />
               </div>
             </div>
           </div>

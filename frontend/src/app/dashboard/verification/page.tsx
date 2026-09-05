@@ -22,6 +22,7 @@ export default function VerificationPage() {
   const [verifiedClass, setVerifiedClass] = useState("Industrial Fire");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const loadQueue = async () => {
     try {
@@ -51,11 +52,17 @@ export default function VerificationPage() {
           notes: notes || `Verified by ${user?.full_name || "Analyst"}`,
         }),
       });
-      alert(`Event ${activeModalEvent.event_code} verified (${action}) and fed back to model training!`);
+      setNotification({
+        type: "success",
+        message: `Event ${activeModalEvent.event_code} verified (${action}) and committed to active learning audit trail.`
+      });
       setActiveModalEvent(null);
       await loadQueue();
-    } catch (err) {
-      alert("Failed to submit verification: " + err);
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: "Failed to submit verification: " + (err?.message || err)
+      });
     } finally {
       setSubmitting(false);
     }
@@ -91,6 +98,30 @@ export default function VerificationPage() {
               {queue.length} Events Awaiting Review
             </span>
           </div>
+
+          {/* Status Notification Banner */}
+          {notification && (
+            <div className={`p-3.5 rounded-xl border text-xs flex items-center justify-between ${
+              notification.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                : "bg-red-500/10 border-red-500/30 text-red-300"
+            }`}>
+              <div className="flex items-center gap-2">
+                {notification.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                )}
+                <span className="font-semibold">{notification.message}</span>
+              </div>
+              <button
+                onClick={() => setNotification(null)}
+                className="text-slate-400 hover:text-white text-xs font-mono ml-4"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Queue List */}
           <div className="space-y-4">

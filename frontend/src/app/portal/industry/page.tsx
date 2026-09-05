@@ -22,6 +22,7 @@ export default function IndustryPortalPage() {
   const [contact, setContact] = useState("compliance@plant.in");
   const [notes, setNotes] = useState("");
   const [declSuccess, setDeclSuccess] = useState<string | null>(null);
+  const [declError, setDeclError] = useState<string | null>(null);
 
   const loadFacilities = async () => {
     setLoading(true);
@@ -44,6 +45,7 @@ export default function IndustryPortalPage() {
 
   const handleDeclareSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDeclError(null);
     try {
       const res = await fetchApi<any>("/portals/industry/declare-emission", {
         method: "POST",
@@ -63,8 +65,8 @@ export default function IndustryPortalPage() {
         setDeclModalOpen(false);
         setDeclSuccess(null);
       }, 2000);
-    } catch (err) {
-      alert("Failed to submit declaration: " + err);
+    } catch (err: any) {
+      setDeclError("Failed to submit declaration: " + (err?.message || err));
     }
   };
 
@@ -190,6 +192,11 @@ export default function IndustryPortalPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleDeclareSubmit} className="space-y-4 text-xs">
+                    {declError && (
+                      <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+                        {declError}
+                      </div>
+                    )}
                     <div>
                       <label className="block font-semibold text-slate-300 mb-1">
                         Facility Name

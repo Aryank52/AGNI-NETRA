@@ -19,6 +19,7 @@ export default function CandidateDiscoveryPage() {
   const [candidates, setCandidates] = useState<CandidateFacility[]>([]);
   const [loading, setLoading] = useState(true);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [candidateNotice, setCandidateNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const loadCandidates = async () => {
     try {
@@ -36,13 +37,20 @@ export default function CandidateDiscoveryPage() {
   }, []);
 
   const handlePromote = async (candId: string) => {
-    if (!confirm("Promote this candidate thermal source to the Official Known & Verified Industrial Registry?")) return;
+    setCandidateNotice(null);
     setPromotingId(candId);
     try {
       await fetchApi(`/candidates/${candId}/promote`, { method: "POST" });
+      setCandidateNotice({
+        type: "success",
+        message: "Candidate thermal source successfully promoted to the Known Industrial Registry."
+      });
       await loadCandidates();
-    } catch (err) {
-      alert("Failed to promote candidate: " + err);
+    } catch (err: any) {
+      setCandidateNotice({
+        type: "error",
+        message: "Failed to promote candidate: " + (err?.message || err)
+      });
     } finally {
       setPromotingId(null);
     }
@@ -74,10 +82,27 @@ export default function CandidateDiscoveryPage() {
               </p>
             </div>
 
-            <span className="text-xs font-mono px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-bold">
-              {candidates.length} Discovered Candidates
+            <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300">
+              {candidates.length} Candidate Sites Identified
             </span>
           </div>
+
+          {/* Candidate Notice Banner */}
+          {candidateNotice && (
+            <div className={`p-3.5 rounded-xl border text-xs flex items-center justify-between font-mono ${
+              candidateNotice.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                : "bg-red-500/10 border-red-500/30 text-red-300"
+            }`}>
+              <span>{candidateNotice.message}</span>
+              <button
+                onClick={() => setCandidateNotice(null)}
+                className="text-slate-400 hover:text-white text-xs ml-4"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Candidates List */}
           {loading ? (
