@@ -6,7 +6,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 import { formatFrp } from "@/lib/formatters";
 import { 
   FileText, Download, Shield, Calendar, 
@@ -95,7 +95,7 @@ export default function ReportsPage() {
                     </Link>
 
                     <a
-                      href={`http://localhost:8000/api/v1/reports/event/${evt.id}/download`}
+                      href={`${API_BASE_URL}/reports/event/${evt.id}/download`}
                       target="_blank"
                       rel="noreferrer"
                       className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md flex items-center gap-1.5 transition-colors"

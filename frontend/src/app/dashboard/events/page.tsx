@@ -6,7 +6,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 import { formatNumber, formatFrp, formatPercent, formatCoord, formatDistance } from "@/lib/formatters";
 import { 
   Flame, Filter, Search, ChevronRight, Activity, 
@@ -108,7 +108,7 @@ export default function EventsInventoryPage() {
 
             <div className="flex items-center gap-3">
               <a
-                href="http://localhost:8000/api/v1/reports/export/csv"
+                href={`${API_BASE_URL}/reports/export/csv`}
                 target="_blank"
                 rel="noreferrer"
                 className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-2 transition-all"

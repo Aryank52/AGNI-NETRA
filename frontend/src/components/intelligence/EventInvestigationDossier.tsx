@@ -12,7 +12,7 @@ import {
 import RiskBadge from "./RiskBadge";
 import IntelligenceCoveragePanel from "./IntelligenceCoveragePanel";
 import ShapWaterfallChart from "./ShapWaterfallChart";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 
 interface DossierProps {
   eventId: string | null;
@@ -115,7 +115,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
           <div className="flex items-center gap-2">
             <RiskBadge level={risk_assessment?.risk_level || "LOW"} score={risk_assessment?.risk_score} />
             <a
-              href={`http://localhost:8000/api/v1/reports/event/${eventId}/download`}
+              href={`${API_BASE_URL}/reports/event/${eventId}/download`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all"

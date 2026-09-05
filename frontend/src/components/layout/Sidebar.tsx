@@ -39,7 +39,7 @@ export default function Sidebar() {
     { label: "Multi-Horizon Analytics", href: "/dashboard/analytics", icon: BarChart3, badge: "2022-26" },
     { label: "Risk Assessment", href: "/dashboard/risk", icon: ShieldAlert, badge: "FORMULA" },
     { label: "Intelligence Reports", href: "/dashboard/reports", icon: FileText },
-    { label: "Thermal Baselines", href: "/dashboard/baselines", icon: Layers },
+    { label: "Thermal Baselines", href: "/dashboard/baselines", icon: Layers, badge: "ENHANCED" },
   ];
 
   // 4. MISSION

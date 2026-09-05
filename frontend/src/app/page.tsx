@@ -9,6 +9,7 @@ import {
   Building2, GraduationCap, Globe, ShieldCheck, Lock,
   ExternalLink, BarChart3, Clock, Check
 } from "lucide-react";
+import { getApiDocsUrl } from "@/lib/api";
 
 export default function LandingPage() {
   // Section 2: Scientifically Accurate Statistics
@@ -603,7 +604,7 @@ export default function LandingPage() {
             <ul className="space-y-1.5 text-[11px]">
               <li>
                 <a
-                  href="http://127.0.0.1:8000/docs"
+                  href={getApiDocsUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-amber-400 hover:underline flex items-center gap-1 font-mono"

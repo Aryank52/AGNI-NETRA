@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 import { formatNumber } from "@/lib/formatters";
 import { 
   BookOpen, Cpu, Database, Layers, 
@@ -57,7 +57,7 @@ export default function ResearchPortalPage() {
 
             <div className="flex items-center gap-3">
               <a
-                href="http://localhost:8000/api/v1/portals/research/geojson-export"
+                href={`${API_BASE_URL}/portals/research/geojson-export`}
                 target="_blank"
                 rel="noreferrer"
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2 transition-all"
