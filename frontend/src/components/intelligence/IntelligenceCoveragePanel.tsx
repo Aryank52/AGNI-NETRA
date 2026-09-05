@@ -135,7 +135,7 @@ const AUTHORITATIVE_SOURCES: SourceMetadata[] = [
     authority: "Ministry of Environment, Forest and Climate Change",
     systemStatus: "AVAILABLE",
     recordCount: "622 clearance projects staged",
-    coverageExtent: "Category A & B Industrial Proposals",
+    coverageExtent: "PARTIAL (26 States, 622 Clearances)",
     lastSync: "PARIVESH National Portal 2026",
     provenanceDetails: "Official statutory clearance tracking linked to corresponding industrial complexes and expansion projects.",
     icon: FileCheck,

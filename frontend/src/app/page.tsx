@@ -104,10 +104,10 @@ export default function LandingPage() {
     },
     {
       source: "MoEFCC PARIVESH",
-      role: "Environmental clearance project locations & compliance filings",
-      coverage: "REGULATORY DATASET",
+      role: "Environmental clearance context (26 states, 622 clearances)",
+      coverage: "PARTIAL",
       status: "INTEGRATED",
-      coverageColor: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+      coverageColor: "text-amber-400 bg-amber-500/10 border-amber-500/30",
     },
   ];
 
