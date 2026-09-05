@@ -244,8 +244,8 @@ export default function AlertsPage() {
             </button>
           </div>
 
-          {/* Multi-Criteria Filter & Search Toolbar */}
-          <div className="p-3.5 rounded-2xl bg-agni-card border border-agni-border flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* Multi-Criteria Filter & Search Toolbar (Sticky) */}
+          <div className="p-3.5 rounded-2xl bg-agni-card/95 backdrop-blur-md border border-agni-border flex flex-wrap items-center justify-between gap-3 text-xs sticky top-0 z-20 shadow-md">
             <div className="flex flex-wrap items-center gap-3">
               {/* Search Box */}
               <div className="relative">

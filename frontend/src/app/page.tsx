@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { getApiDocsUrl } from "@/lib/api";
 import VisualPipelineDiagram from "@/components/common/VisualPipelineDiagram";
+import ObservationQuickExplorer from "@/components/common/ObservationQuickExplorer";
+import SystemStatusBanner from "@/components/common/SystemStatusBanner";
 
 export default function LandingPage() {
   // Section 2: Scientifically Accurate Statistics
@@ -208,8 +210,11 @@ export default function LandingPage() {
         </h1>
 
         <p className="max-w-3xl mx-auto text-base sm:text-lg text-slate-300 font-normal leading-relaxed">
-          &ldquo;FIRMS tells us where a thermal anomaly is. <br className="hidden sm:inline" />
-          <strong className="text-white">AGNI-NETRA</strong> tells us what it most likely is, whether it is persistent or abnormal, how risky it is, and why.&rdquo;
+          Satellite-derived thermal intelligence for industrial, environmental and infrastructure monitoring.
+        </p>
+
+        <p className="text-xs font-mono text-amber-400/90 tracking-wide">
+          [ 20.5937° N, 78.9629° E • EPSG:4326 WGS84 • REAL-TIME THERMAL OBSERVATIONS ]
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
@@ -240,6 +245,18 @@ export default function LandingPage() {
               Decision-Support Platform: Autonomous emergency dispatch is disabled by statutory policy. Satellite-derived thermal observations are classified, contextualized, and prioritized for authorized analyst human-in-the-loop review and operational decision support.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Observation Quick-Explorer Section */}
+      <section className="px-6 lg:px-12 py-12 bg-slate-950/80 border-b border-agni-border">
+        <ObservationQuickExplorer />
+      </section>
+
+      {/* Platform Operational Governance Strip */}
+      <section className="px-6 lg:px-12 py-8 bg-slate-900/30 border-b border-agni-border">
+        <div className="max-w-6xl mx-auto">
+          <SystemStatusBanner variant="full" />
         </div>
       </section>
 

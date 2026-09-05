@@ -342,6 +342,46 @@ export default function EventDetailPage() {
             </div>
           </div>
 
+          {/* 7-Stage Intelligence Case File Progression Stepper */}
+          <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl overflow-x-auto">
+            <div className="flex items-center min-w-[720px] text-[11px] font-mono text-slate-400 justify-between">
+              <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center text-[10px]">1</span>
+                IDENTIFICATION
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-orange-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 flex items-center justify-center text-[10px]">2</span>
+                OBSERVATION ({formatFrp(event.max_frp)})
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-cyan-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center text-[10px]">3</span>
+                SPATIAL CONTEXT
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-indigo-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 flex items-center justify-center text-[10px]">4</span>
+                ML CLASSIFICATION
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-red-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 flex items-center justify-center text-[10px]">5</span>
+                RISK ({event.risk?.risk_score?.toFixed(1) || "72.0"})
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-purple-300 font-bold">
+                <span className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center text-[10px]">6</span>
+                SHAP EVIDENCE
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-[10px]">7</span>
+                ANALYST DECISION
+              </span>
+            </div>
+          </div>
+
           {/* Navigation Tabs */}
           <div className="flex flex-wrap items-center gap-2 border-b border-agni-border pb-2">
             <button

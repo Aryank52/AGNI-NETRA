@@ -340,8 +340,8 @@ export default function VerificationPage() {
                   </div>
                 </div>
 
-                {/* PANEL 3: RIGHT (Cols 9-12) - Human Decision & Action Desk */}
-                <div className="lg:col-span-4 space-y-4">
+                {/* PANEL 3: RIGHT (Cols 9-12) - Human Decision & Action Desk (Sticky Dock) */}
+                <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-6 self-start">
                   <div className="p-4 rounded-2xl bg-agni-card border-2 border-blue-500/50 space-y-4 shadow-xl ring-1 ring-blue-500/20">
                     <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
                       <span className="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">

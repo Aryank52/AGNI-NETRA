@@ -11,6 +11,7 @@ import {
   Play, Sliders, Shield
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
+import SystemStatusBanner from "@/components/common/SystemStatusBanner";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -144,6 +145,9 @@ export default function AdminPage() {
               </button>
             </div>
           )}
+
+          {/* Real-time System Status & Health Invariants */}
+          <SystemStatusBanner variant="full" />
 
           {/* Top Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

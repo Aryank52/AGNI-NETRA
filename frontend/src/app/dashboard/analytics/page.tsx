@@ -141,13 +141,18 @@ export default function AnalyticsPage() {
 
           {/* Multi-Year Timeline Chart */}
           <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
-                <span>Multi-Temporal Thermal Detections & Radiative Power Trend ({timeHorizon})</span>
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800 pb-2.5">
+              <div>
+                <div className="text-[10px] font-mono text-cyan-400 uppercase font-bold tracking-wider">
+                  QUESTION: How has thermal activity and radiated energy evolved across time?
+                </div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 mt-0.5">
+                  <TrendingUp className="w-4 h-4 text-cyan-400" />
+                  <span>Temporal Hotspot Ingestion & Mean FRP Trend ({timeHorizon})</span>
+                </h3>
+              </div>
               <span className="text-[10px] font-mono text-slate-400">
-                NASA FIRMS VIIRS / MODIS Archive (8.22M Observations)
+                NASA FIRMS VIIRS / MODIS Archive (8.22M Records)
               </span>
             </div>
 
@@ -175,11 +180,16 @@ export default function AnalyticsPage() {
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Classification Distribution */}
-            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                <PieChart className="w-4 h-4 text-amber-400" />
-                AI Thermal Source Class Breakdown
-              </h3>
+            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
+              <div className="border-b border-slate-800 pb-2">
+                <div className="text-[10px] font-mono text-amber-400 uppercase font-bold tracking-wider">
+                  QUESTION: Which thermal sources dominate the observation stream?
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 mt-0.5">
+                  <PieChart className="w-4 h-4 text-amber-400" />
+                  <span>7-Class Machine Learning Taxonomy Breakdown</span>
+                </h3>
+              </div>
 
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -200,11 +210,16 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Risk Distribution */}
-            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-red-400" />
-                AGNI-NETRA Risk Severity Matrix
-              </h3>
+            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
+              <div className="border-b border-slate-800 pb-2">
+                <div className="text-[10px] font-mono text-red-400 uppercase font-bold tracking-wider">
+                  QUESTION: Where are risk concentrations situated across severity tiers?
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 mt-0.5">
+                  <Activity className="w-4 h-4 text-red-400" />
+                  <span>5-Factor Deterministic Risk Distribution</span>
+                </h3>
+              </div>
 
               <div className="h-64 w-full flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
