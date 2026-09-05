@@ -18,7 +18,7 @@ import {
   HelpCircle, Cpu, Layers, ExternalLink, RefreshCw,
   GitCommit, ChevronRight, Binary, Globe, Lock,
   Zap, Eye, Trees, Factory, Pickaxe, ShieldCheck, X,
-  Flame, ShieldAlert
+  Flame, ShieldAlert, Compass
 } from "lucide-react";
 
 export default function EventDetailPage() {
@@ -339,6 +339,55 @@ export default function EventDetailPage() {
             <div className="flex items-center gap-2 text-amber-400/90 font-mono text-[11px]">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
               <span>DISPATCH GATED: SAFE / ZERO LIVE EMISSIONS</span>
+            </div>
+          </div>
+
+          {/* Cross-Navigation Command Strip */}
+          <div className="p-3 rounded-2xl bg-slate-900/90 border border-agni-border flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono">
+            <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-amber-500" />
+              Cross-Navigation:
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/dashboard?lat=${event.latitude}&lon=${event.longitude}&event_id=${event.id}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors hover:text-white"
+              >
+                <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                <span>Fly on Map</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/atlas?search=${encodeURIComponent(event.district || event.state || "")}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors hover:text-white"
+              >
+                <Factory className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Facility in Atlas</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/baselines?state=${encodeURIComponent(event.state || "Gujarat")}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors hover:text-white"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Baseline Intelligence</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/verification?event_id=${event.id}`}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>Verify at Workstation</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/reports?event_id=${event.id}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors hover:text-white"
+              >
+                <Download className="w-3.5 h-3.5 text-orange-400" />
+                <span>Official Report</span>
+              </Link>
             </div>
           </div>
 

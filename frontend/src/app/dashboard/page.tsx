@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import LayerControl, { 
@@ -37,8 +38,9 @@ const MapLibreView = dynamic(() => import("@/components/map/MapLibreView"), {
   loading: () => <MapLoadingSkeleton />,
 });
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
 
   // State & Data
   const [events, setEvents] = useState<ThermalEvent[]>([]);
@@ -56,6 +58,40 @@ export default function DashboardPage() {
   const [districtSearchQuery, setDistrictSearchQuery] = useState<string>("");
   const [statesList, setStatesList] = useState<Array<{ state_name: string }>>([]);
   const [districtsList, setDistrictsList] = useState<Array<{ district_name: string }>>([]);
+
+  // Deep-linking URL parameters & Target coordinates
+  const urlLat = searchParams.get("lat");
+  const urlLon = searchParams.get("lon");
+  const urlEventId = searchParams.get("event_id");
+  const urlState = searchParams.get("state");
+  const urlDistrict = searchParams.get("district");
+  const [targetCoordinates, setTargetCoordinates] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
+
+  useEffect(() => {
+    if (urlLat && urlLon) {
+      const latVal = parseFloat(urlLat);
+      const lonVal = parseFloat(urlLon);
+      if (!isNaN(latVal) && !isNaN(lonVal)) {
+        setTargetCoordinates({ lat: latVal, lon: lonVal, zoom: 13 });
+      }
+    }
+    if (urlState && urlState !== "ALL") {
+      setSelectedState(urlState);
+    }
+    if (urlDistrict && urlDistrict !== "ALL") {
+      setSelectedDistrict(urlDistrict);
+    }
+    if (urlEventId) {
+      fetchApi<ThermalEvent>(`/events/${urlEventId}`)
+        .then((evt) => {
+          if (evt) {
+            setSelectedEvent(evt);
+            setTargetCoordinates({ lat: evt.latitude, lon: evt.longitude, zoom: 13 });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [urlLat, urlLon, urlEventId, urlState, urlDistrict]);
 
   // Operational Filters
   const [riskFilter, setRiskFilter] = useState<string>("ALL");
@@ -210,8 +246,19 @@ export default function DashboardPage() {
 
   const handleSelectEvent = (evt: ThermalEvent) => {
     setSelectedEvent(evt);
-    setRightPanelMode("dossier");
+    setTargetCoordinates({ lat: evt.latitude, lon: evt.longitude, zoom: 13 });
   };
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedState !== "ALL" && selectedState !== "India") count++;
+    if (selectedDistrict !== "ALL") count++;
+    if (riskFilter !== "ALL") count++;
+    if (classFilter !== "ALL") count++;
+    if (statusFilter !== "ALL") count++;
+    if (minFrp > 0) count++;
+    return count;
+  }, [selectedState, selectedDistrict, riskFilter, classFilter, statusFilter, minFrp]);
 
   // Safe Peak FRP
   const peakFrpValue = useMemo(() => {
@@ -491,6 +538,70 @@ export default function DashboardPage() {
                 </button>
               </div>
 
+              {/* Active Filter Chips Tray */}
+              {activeFiltersCount > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-slate-950/90 border-b border-agni-border text-xs font-mono">
+                  <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Filter className="w-3 h-3 text-amber-500" />
+                    {activeFiltersCount} Filter{activeFiltersCount > 1 ? "s" : ""} Active:
+                  </span>
+                  {selectedState !== "ALL" && selectedState !== "India" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      State: {selectedState}
+                      <button onClick={() => { setSelectedState("ALL"); setSelectedDistrict("ALL"); }} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedDistrict !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      District: {selectedDistrict}
+                      <button onClick={() => setSelectedDistrict("ALL")} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {riskFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      Risk: {riskFilter}
+                      <button onClick={() => setRiskFilter("ALL")} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {classFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      Class: {classFilter}
+                      <button onClick={() => setClassFilter("ALL")} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {statusFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      Status: {statusFilter}
+                      <button onClick={() => setStatusFilter("ALL")} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {minFrp > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                      Min FRP: {minFrp} MW
+                      <button onClick={() => setMinFrp(0)} className="text-slate-400 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={resetFilters}
+                    className="ml-auto text-[10px] text-amber-400 hover:text-amber-300 font-bold hover:underline"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+
               {/* Map Canvas Component Wrapped in ErrorBoundary */}
               <div className="flex-1 w-full h-full relative">
                 <ErrorBoundary fallbackTitle="Map Component Error" fallbackMessage="MapLibre GIS encountered an issue. Click below to retry.">
@@ -502,6 +613,7 @@ export default function DashboardPage() {
                     selectedDistrict={selectedDistrict}
                     layers={layers}
                     opacities={opacities}
+                    targetCoordinates={targetCoordinates}
                   />
                 </ErrorBoundary>
 
@@ -653,13 +765,48 @@ export default function DashboardPage() {
                         <span className="text-[10px] text-slate-400 font-mono">
                           Risk: <strong className="text-amber-300">{safeNumber(selectedEvent.risk?.risk_score, 62).toFixed(1)}/100</strong>
                         </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {selectedEvent.facility_status ? `FACILITY: ${selectedEvent.facility_status}` : "TIER 1"}
+                        </span>
+                      </div>
+
+                      {/* Deep Operational Cross-Navigation Dock */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800">
                         <button
                           onClick={() => setRightPanelMode("dossier")}
-                          className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-colors shadow-sm flex items-center gap-1 font-mono"
+                          className="flex-1 px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-colors shadow-sm flex items-center justify-center gap-1 font-mono"
                         >
-                          <span>Full Dossier</span>
-                          <ChevronRight className="w-3 h-3" />
+                          <Layers className="w-3 h-3" />
+                          <span>7-Layer Dossier</span>
                         </button>
+                        <Link
+                          href={`/dashboard/events/${selectedEvent.id}`}
+                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-mono border border-slate-700 flex items-center gap-1 transition-colors"
+                        >
+                          <span>Dossier Page</span>
+                          <ArrowUpRight className="w-3 h-3 text-amber-400" />
+                        </Link>
+                        <Link
+                          href={`/dashboard/verification?event_id=${selectedEvent.id}`}
+                          className="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-mono border border-amber-500/30 flex items-center gap-1 transition-colors"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Verify</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard/atlas?search=${encodeURIComponent(selectedEvent.district || selectedEvent.state || "")}`}
+                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-mono border border-slate-700 flex items-center gap-1 transition-colors"
+                        >
+                          <Factory className="w-3 h-3" />
+                          <span>Atlas</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard/reports?event_id=${selectedEvent.id}`}
+                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-mono border border-slate-700 flex items-center gap-1 transition-colors"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Report</span>
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -722,5 +869,13 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<MapLoadingSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,51 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { ShapExplanation, ShapContributor } from "@/types";
-import { Info, HelpCircle } from "lucide-react";
+import { Info, HelpCircle, Sparkles } from "lucide-react";
 
 interface ShapWaterfallChartProps {
   shapData?: ShapExplanation;
   predictedClass?: string;
   confidence?: number;
+}
+
+function getFeatureExplanation(feature: string, value: any, shapVal: number, predictedClass: string): string {
+  const isPos = shapVal >= 0;
+  const numVal = parseFloat(String(value)) || 0;
+  
+  if (feature.includes("facility") || feature.includes("dist_to_facility")) {
+    if (isPos) {
+      return numVal < 1000 
+        ? `Tight proximity to registered industrial facility (${numVal.toFixed(0)}m) strongly indicates point-source plant emissions.`
+        : `Moderate plant proximity (${numVal.toFixed(0)}m) contributes positively toward industrial classification.`;
+    } else {
+      return `Significant distance from registered facilities (${numVal.toFixed(0)}m) reduces likelihood of an asset-linked industrial flare.`;
+    }
+  }
+  if (feature.includes("persistence")) {
+    return isPos
+      ? `High multi-pass temporal persistence (${numVal.toFixed(1)}/10 index) indicates ongoing, stationary thermal generation.`
+      : `Low temporal persistence suggests an episodic, short-duration thermal event.`;
+  }
+  if (feature.includes("day_night") || feature.includes("ratio")) {
+    return isPos
+      ? `Day/night thermal continuity (${numVal.toFixed(2)} ratio) matches 24/7 continuous industrial processing cycles.`
+      : `Day/night variance is atypical for continuous manufacturing operations.`;
+  }
+  if (feature.includes("frp_max") || feature.includes("frp")) {
+    return isPos
+      ? `Elevated peak radiative energy (${numVal.toFixed(1)} MW) aligns with high-temperature combustion characteristics.`
+      : `Moderate radiative intensity (${numVal.toFixed(1)} MW) moderates high-temperature classification weights.`;
+  }
+  if (feature.includes("forest") || feature.includes("agriculture")) {
+    return isPos
+      ? `Spatial buffer from vegetative zones differentiates this signature from open biomass burning.`
+      : `Proximity to vegetative landcover introduces natural or agricultural burning probability.`;
+  }
+  return isPos
+    ? `${feature.replace(/_/g, " ")} (${numVal.toFixed(1)}) positively reinforces ${predictedClass} prediction.`
+    : `${feature.replace(/_/g, " ")} (${numVal.toFixed(1)}) reduces confidence in ${predictedClass}.`;
 }
 
 export default function ShapWaterfallChart({
@@ -45,6 +83,13 @@ export default function ShapWaterfallChart({
   };
 
   const safeConfidence = typeof confidence === "number" && !isNaN(confidence) ? confidence : 0.88;
+
+  const narrativeSentences = useMemo(() => {
+    return contributors.slice(0, 3).map((item) => {
+      const sVal = typeof item.shap_value === "number" ? item.shap_value : parseFloat(String(item.shap_value)) || 0;
+      return getFeatureExplanation(item.feature, item.value, sVal, predictedClass);
+    });
+  }, [contributors, predictedClass]);
 
   return (
     <div className="p-4 rounded-xl bg-agni-card/90 border border-agni-border shadow-lg">
@@ -119,6 +164,22 @@ export default function ShapWaterfallChart({
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-red-400" /> Opposes Classification
         </span>
+      </div>
+
+      {/* Plain-Language Operational Interpretation */}
+      <div className="mt-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Operational Plain-Language Interpretation</span>
+        </div>
+        <ul className="space-y-1.5 text-xs text-slate-300">
+          {narrativeSentences.map((sentence, sIdx) => (
+            <li key={sIdx} className="flex items-start gap-2 text-[11px] leading-relaxed">
+              <span className="text-amber-500 font-bold">•</span>
+              <span>{sentence}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
@@ -16,11 +17,15 @@ import {
   CheckSquare, Shield, CheckCircle2, 
   XCircle, HelpCircle, ChevronRight, MessageSquare,
   Activity, MapPin, Eye, AlertTriangle, UserCheck,
-  Flame, Cpu, Database, RefreshCw, ExternalLink, Sliders
+  Flame, Cpu, Database, RefreshCw, ExternalLink, Sliders,
+  ArrowUpRight, FileText, Factory, Compass
 } from "lucide-react";
 
-export default function VerificationPage() {
+function VerificationContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlEventId = searchParams.get("event_id");
+
   const [queue, setQueue] = useState<ThermalEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<ThermalEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,14 +37,32 @@ export default function VerificationPage() {
   const loadQueue = async () => {
     try {
       const data = await fetchApi<ThermalEvent[]>("/verification/queue");
-      const list = Array.isArray(data) ? data : [];
-      setQueue(list);
-      if (list.length > 0 && (!selectedEvent || !list.some((e) => e.id === selectedEvent.id))) {
+      let list = Array.isArray(data) ? data : [];
+
+      if (urlEventId) {
+        const found = list.find((e) => e.id === urlEventId);
+        if (found) {
+          setSelectedEvent(found);
+          setVerifiedClass(found.prediction?.predicted_class || "Industrial Fire");
+        } else {
+          try {
+            const specificEvt = await fetchApi<ThermalEvent>(`/events/${urlEventId}`);
+            if (specificEvt?.id) {
+              list = [specificEvt, ...list.filter((e) => e.id !== specificEvt.id)];
+              setSelectedEvent(specificEvt);
+              setVerifiedClass(specificEvt.prediction?.predicted_class || "Industrial Fire");
+            }
+          } catch (fetchErr) {
+            console.warn("Could not fetch target event by ID:", fetchErr);
+          }
+        }
+      } else if (list.length > 0 && (!selectedEvent || !list.some((e) => e.id === selectedEvent.id))) {
         setSelectedEvent(list[0]);
         setVerifiedClass(list[0].prediction?.predicted_class || "Industrial Fire");
       } else if (list.length === 0) {
         setSelectedEvent(null);
       }
+      setQueue(list);
     } catch (err) {
       console.warn("Failed to load verification queue:", err);
     } finally {
@@ -49,7 +72,7 @@ export default function VerificationPage() {
 
   useEffect(() => {
     loadQueue();
-  }, []);
+  }, [urlEventId]);
 
   const handleSelectEvent = (evt: ThermalEvent) => {
     setSelectedEvent(evt);
@@ -154,7 +177,47 @@ export default function VerificationPage() {
               onAction={loadQueue}
             />
           ) : selectedEvent && (
-            <div className="space-y-6">
+            <div className="space-y-5">
+              {/* 7-Stage Analyst Workflow Progression Header */}
+              <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-2xl overflow-x-auto">
+                <div className="flex items-center min-w-[780px] text-[11px] font-mono text-slate-400 justify-between">
+                  <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center text-[10px]">1</span>
+                    SELECT EVENT ({selectedEvent.event_code})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-orange-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 flex items-center justify-center text-[10px]">2</span>
+                    OBSERVATION ({formatFrp(selectedEvent.max_frp)})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-cyan-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center text-[10px]">3</span>
+                    CONTEXT ({selectedEvent.state})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-purple-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center text-[10px]">4</span>
+                    MODEL ({selectedEvent.prediction?.predicted_class || "Uncertain"})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-rose-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center justify-center text-[10px]">5</span>
+                    RISK ({safeNumber(selectedEvent.risk?.risk_score, 50).toFixed(0)}/100)
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-amber-300 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 flex items-center justify-center text-[10px]">6</span>
+                    HUMAN DETERMINATION
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-[10px]">7</span>
+                    RECORD DECISION
+                  </span>
+                </div>
+              </div>
+
               {/* Tri-Panel Workstation Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                 {/* PANEL 1: LEFT (Cols 1-4) - Event Selection & Spatial Context */}
@@ -247,14 +310,33 @@ export default function VerificationPage() {
                         </div>
                       </div>
 
-                      <Link
-                        href={`/dashboard/events/${selectedEvent.id}`}
-                        target="_blank"
-                        className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-[11px] font-semibold border border-slate-700 flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <span>Open 7-Layer Investigation Dossier</span>
-                        <ExternalLink className="w-3 h-3 text-amber-400" />
-                      </Link>
+                      {/* Deep Cross-Navigation Actions */}
+                      <div className="flex flex-col gap-1.5 pt-1 font-mono">
+                        <Link
+                          href={`/dashboard/events/${selectedEvent.id}`}
+                          className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Open 7-Layer Investigation Dossier</span>
+                          <ArrowUpRight className="w-3 h-3 text-amber-400" />
+                        </Link>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Link
+                            href={`/dashboard?lat=${selectedEvent.latitude}&lon=${selectedEvent.longitude}&event_id=${selectedEvent.id}`}
+                            className="py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold border border-slate-700 flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <MapPin className="w-3 h-3 text-amber-400" />
+                            <span>Fly on Map</span>
+                          </Link>
+                          <Link
+                            href={`/dashboard/atlas?search=${encodeURIComponent(selectedEvent.district || selectedEvent.state || "")}`}
+                            className="py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold border border-slate-700 flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <Factory className="w-3 h-3 text-cyan-400" />
+                            <span>Atlas Facility</span>
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -446,5 +528,13 @@ export default function VerificationPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function VerificationPage() {
+  return (
+    <Suspense fallback={<CardSkeleton />}>
+      <VerificationContent />
+    </Suspense>
   );
 }

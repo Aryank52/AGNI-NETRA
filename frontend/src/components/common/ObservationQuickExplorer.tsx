@@ -159,12 +159,15 @@ export default function ObservationQuickExplorer() {
             <span className="text-xs font-mono uppercase text-amber-400 font-bold tracking-wider">
               INTERACTIVE GEOSPATIAL EXPLORER
             </span>
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-mono font-bold">
+              REFERENCE OBSERVATION / FIELD BENCHMARK
+            </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
             Real-World Observation Inspection Dossier
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Select an active operational sample to inspect how AGNI-NETRA combines raw remote sensing telemetry with PostGIS cadastre spatial enrichment and calibrated ML inference.
+            Select an authoritative reference observation to inspect how AGNI-NETRA combines raw remote sensing telemetry with PostGIS cadastre spatial enrichment and calibrated ML inference.
           </p>
         </div>
 
@@ -172,7 +175,7 @@ export default function ObservationQuickExplorer() {
           href="/dashboard"
           className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
         >
-          <span>Open Live Map</span>
+          <span>Open Tactical Map</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -304,18 +307,33 @@ export default function ObservationQuickExplorer() {
             <p>{current.summary}</p>
           </div>
 
-          {/* Bottom Action Dock */}
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+          {/* Bottom Action Dock with Cross-Navigation */}
+          <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <span className="text-[11px] font-mono text-slate-400">
               Target Asset: <strong className="text-white">{current.nearestAsset}</strong>
             </span>
-            <Link
-              href="/dashboard/events"
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
-            >
-              <span>Explore All Events</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/dashboard?lat=${current.lat}&lon=${current.lon}&state=${encodeURIComponent(current.state)}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 text-xs font-mono font-bold flex items-center gap-1 transition-colors"
+              >
+                <span>Fly on Map</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href={`/dashboard/baselines?state=${encodeURIComponent(current.state)}`}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono font-bold flex items-center gap-1 transition-colors"
+              >
+                <span>Historical Baseline</span>
+              </Link>
+              <Link
+                href={`/dashboard/events?state=${encodeURIComponent(current.state)}`}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs flex items-center gap-1 transition-colors shadow-md"
+              >
+                <span>Events in {current.state}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

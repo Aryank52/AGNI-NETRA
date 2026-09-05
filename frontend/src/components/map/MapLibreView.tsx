@@ -15,6 +15,7 @@ interface MapLibreViewProps {
   selectedDistrict?: string;
   layers?: GISLayerState;
   opacities?: LayerOpacityState;
+  targetCoordinates?: { lat: number; lon: number; zoom?: number } | null;
   onNavigateEntity?: (entity: { lat: number; lon: number; zoom?: number }) => void;
 }
 
@@ -59,6 +60,7 @@ export default function MapLibreView({
     parivesh: true,
   },
   opacities = DEFAULT_LAYER_OPACITIES,
+  targetCoordinates,
 }: MapLibreViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -416,10 +418,18 @@ export default function MapLibreView({
             <div><strong>Confidence:</strong> <span class="font-mono text-emerald-400">${formatPercent(p.confidence, 0, "80%")}</span></div>
             <div><strong>Location:</strong> ${p.state || ""} ${p.district ? `(${p.district})` : ""}</div>
           </div>
-          <div class="pt-1.5">
-            <button id="btn-select-${p.id}" class="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] uppercase tracking-wide transition-colors shadow">
-              Open 7-Layer Dossier →
-            </button>
+          <div class="pt-2 space-y-1.5 border-t border-slate-700/80">
+            <a href="/dashboard/events/${p.id}" class="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] uppercase tracking-wide transition-colors shadow text-center block font-mono">
+              Open Event Dossier →
+            </a>
+            <div class="flex items-center gap-1.5">
+              <button id="btn-select-${p.id}" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-mono transition-colors border border-slate-700">
+                Inspect Panel
+              </button>
+              <a href="/dashboard/verification?event_id=${p.id}" class="flex-1 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-[10px] font-mono text-center border border-blue-500/30">
+                Verify
+              </a>
+            </div>
           </div>
         </div>
       `;
@@ -695,6 +705,17 @@ export default function MapLibreView({
       });
     }
   }, [selectedDistrict, selectedState, mapLoaded]);
+
+  // Programmatic FlyTo for Deep Target Coordinates (from URL / Search / Cross-links)
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !targetCoordinates) return;
+    map.current.flyTo({
+      center: [targetCoordinates.lon, targetCoordinates.lat],
+      zoom: targetCoordinates.zoom || 13,
+      essential: true,
+      duration: 1800,
+    });
+  }, [targetCoordinates, mapLoaded]);
 
   // 7. Layer Visibility & Opacity Toggle Updates
   useEffect(() => {

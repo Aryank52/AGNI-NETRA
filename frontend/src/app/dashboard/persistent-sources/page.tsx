@@ -15,7 +15,7 @@ import {
   Activity, MapPin, Calendar, Clock, 
   ChevronRight, ArrowRight, ShieldAlert, Sparkles,
   Info, Compass, ArrowUpRight, HelpCircle, Repeat,
-  Zap, AlertOctagon, RefreshCw
+  Zap, AlertOctagon, RefreshCw, Factory, ShieldCheck
 } from "lucide-react";
 
 export default function PersistentSourcesPage() {
@@ -180,22 +180,31 @@ export default function PersistentSourcesPage() {
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-400 flex items-center justify-between pt-1 font-mono">
+                    <div className="text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 font-mono">
                       <span>Peak FRP: <strong className="text-white">{formatFrp(maxFrpVal)}</strong></span>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
                         <Link
-                          href={`/dashboard?lat=${evt.latitude}&lon=${evt.longitude}`}
-                          className="text-slate-400 hover:text-white flex items-center gap-1 text-xs"
+                          href={`/dashboard/events/${evt.id}`}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 transition-colors"
                         >
-                          <span>Map</span>
+                          <span>OPEN DOSSIER</span>
                           <ArrowUpRight className="w-3 h-3" />
                         </Link>
                         <Link
-                          href={`/dashboard/events/${evt.id}`}
-                          className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 text-xs"
+                          href={`/dashboard?lat=${evt.latitude}&lon=${evt.longitude}&event_id=${evt.id}`}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                          title="Fly to Hotspot on Tactical Map"
                         >
-                          <span>Dossier</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
+                          <MapPin className="w-3 h-3 text-amber-400" />
+                          <span>MAP</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard/atlas?search=${encodeURIComponent(evt.district || evt.state || "")}`}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                          title="View Registered Plants in this District"
+                        >
+                          <Factory className="w-3 h-3 text-cyan-400" />
+                          <span>ATLAS</span>
                         </Link>
                       </div>
                     </div>

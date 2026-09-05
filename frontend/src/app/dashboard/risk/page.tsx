@@ -14,7 +14,8 @@ import { formatFrp, formatDistance, safeNumber, formatNumber } from "@/lib/forma
 import { 
   ShieldAlert, Shield, AlertTriangle, ChevronRight, 
   Flame, RefreshCw, Layers, Compass, CheckCircle2,
-  Download, Activity, Sliders, Info, Eye
+  Download, Activity, Sliders, Info, Eye,
+  MapPin, ShieldCheck, ArrowUpRight
 } from "lucide-react";
 
 export default function RiskIntelligencePage() {
@@ -195,26 +196,46 @@ export default function RiskIntelligencePage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 font-mono">
                           <RiskBadge level={evt.risk?.risk_level || "CRITICAL"} score={score} />
                           <Link
                             href={`/dashboard/events/${evt.id}`}
-                            className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-500/20 flex items-center gap-1 font-mono transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-500/20 flex items-center gap-1 transition-colors"
                           >
-                            <span>Dossier</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            <span>OPEN EVENT</span>
+                            <ArrowUpRight className="w-3 h-3" />
+                          </Link>
+                          <Link
+                            href={`/dashboard?lat=${evt.latitude}&lon=${evt.longitude}&event_id=${evt.id}`}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs flex items-center gap-1 transition-colors"
+                            title="Fly to Hotspot on Tactical Map"
+                          >
+                            <MapPin className="w-3 h-3 text-amber-400" />
+                            <span className="hidden sm:inline">MAP</span>
+                          </Link>
+                          <Link
+                            href={`/dashboard/verification?event_id=${evt.id}`}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs flex items-center gap-1 transition-colors"
+                            title="Verify in HITL Workstation"
+                          >
+                            <ShieldCheck className="w-3 h-3 text-amber-400" />
+                            <span className="hidden sm:inline">VERIFY</span>
                           </Link>
                         </div>
                       </div>
 
                       {/* 5-Factor Visual Decomposition Bar Matrix */}
                       <div>
-                        <div className="text-[10px] text-slate-500 font-mono uppercase mb-2">
-                          WHY THIS EVENT IS RISKY — 5-FACTOR DECOMPOSITION
+                        <div className="text-[10px] text-slate-500 font-mono uppercase mb-2 flex items-center justify-between">
+                          <span>WHY THIS EVENT IS RISKY — 5-FACTOR DECOMPOSITION</span>
+                          <span className="text-[9px] text-slate-600 font-mono">HOVER FACTORS FOR WEIGHT FORMULAS</span>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono">
-                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
+                          <div
+                            className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-help"
+                            title="Intensity Component (30% Weight): Logarithmic function of peak Fire Radiative Power (MW) relative to national threshold benchmarks."
+                          >
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span className="text-slate-400">Intensity (30%)</span>
                               <strong className="text-amber-400">{cIntensity}</strong>
@@ -224,7 +245,10 @@ export default function RiskIntelligencePage() {
                             </div>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
+                          <div
+                            className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-help"
+                            title="Abnormality Component (25% Weight): Standard deviation surges (z-scores) above sealed 2022-2025 spatiotemporal cell baseline."
+                          >
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span className="text-slate-400">Abnormality (25%)</span>
                               <strong className="text-orange-400">{cAbnormality}</strong>
@@ -234,7 +258,10 @@ export default function RiskIntelligencePage() {
                             </div>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
+                          <div
+                            className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-help"
+                            title="Exposure Component (20% Weight): Inverse distance buffer to registered industrial assets, power stations, urban settlements, and eco-sensitive reserves."
+                          >
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span className="text-slate-400">Exposure (20%)</span>
                               <strong className="text-red-400">{cExposure}</strong>
@@ -244,7 +271,10 @@ export default function RiskIntelligencePage() {
                             </div>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
+                          <div
+                            className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-help"
+                            title="Persistence Component (15% Weight): Thermal signature recurrence frequency across successive satellite overpass orbits."
+                          >
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span className="text-slate-400">Persistence (15%)</span>
                               <strong className="text-emerald-400">{cPersistence}</strong>
@@ -254,7 +284,10 @@ export default function RiskIntelligencePage() {
                             </div>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
+                          <div
+                            className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-help"
+                            title="Context Component (10% Weight): LULC landcover classification, weather parameters, and adjacent industrial clustering density."
+                          >
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span className="text-slate-400">Context (10%)</span>
                               <strong className="text-cyan-400">{cContext}</strong>

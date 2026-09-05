@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -13,7 +13,8 @@ import {
   Bell, ShieldAlert, CheckCircle2, AlertTriangle, 
   RefreshCw, CheckSquare, Clock, Filter, SlidersHorizontal,
   Send, ExternalLink, Zap, Eye, HelpCircle, Lock,
-  ChevronRight, ArrowUpRight, Search, Check, X, ArrowRight
+  ChevronRight, ArrowUpRight, Search, Check, X, ArrowRight,
+  MapPin, ShieldCheck
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { CardSkeleton } from "@/components/common/Skeletons";
@@ -152,6 +153,22 @@ export default function AlertsPage() {
       (a.predicted_class && a.predicted_class.toLowerCase().includes(q))
     );
   });
+
+  const resetAlertFilters = () => {
+    setStatusFilter("ALL");
+    setLevelFilter("ALL");
+    setStateFilter("ALL");
+    setSearchQuery("");
+  };
+
+  const activeAlertFiltersCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== "ALL") count++;
+    if (levelFilter !== "ALL") count++;
+    if (stateFilter !== "ALL") count++;
+    if (searchQuery.trim().length > 0) count++;
+    return count;
+  }, [statusFilter, levelFilter, stateFilter, searchQuery]);
 
   return (
     <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950">
@@ -341,6 +358,54 @@ export default function AlertsPage() {
             </span>
           </div>
 
+          {/* Active Filter Chips Tray */}
+          {activeAlertFiltersCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-950/90 border border-agni-border text-xs font-mono">
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <Filter className="w-3 h-3 text-amber-500" />
+                {activeAlertFiltersCount} Filter{activeAlertFiltersCount > 1 ? "s" : ""} Active:
+              </span>
+              {searchQuery.trim().length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Search: "{searchQuery}"
+                  <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {statusFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Lifecycle: {statusFilter}
+                  <button onClick={() => setStatusFilter("ALL")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {levelFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Level: {levelFilter}
+                  <button onClick={() => setLevelFilter("ALL")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {stateFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  State: {stateFilter}
+                  <button onClick={() => setStateFilter("ALL")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={resetAlertFilters}
+                className="ml-auto text-[10px] text-amber-400 hover:text-amber-300 font-bold hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
           {/* Alert Queue Feed */}
           <div className="space-y-3">
             {loading && (
@@ -514,14 +579,32 @@ export default function AlertsPage() {
                         )}
                       </div>
 
-                      {/* Link to Full Dossier */}
-                      <Link
-                        href={`/dashboard/events/${alertItem.event_id}`}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
-                      >
-                        <span>Full Evidence Dossier</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Link>
+                      {/* Cross-Navigation Action Links */}
+                      <div className="flex flex-wrap items-center gap-1.5 font-mono">
+                        <Link
+                          href={`/dashboard/events/${alertItem.event_id}`}
+                          className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 shadow-sm transition-colors"
+                        >
+                          <span>OPEN DOSSIER</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
+                        <Link
+                          href={`/dashboard/verification?event_id=${alertItem.event_id}`}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs flex items-center gap-1 transition-colors"
+                          title="Verify in HITL Workstation"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="hidden sm:inline">VERIFY</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard?event_id=${alertItem.event_id}`}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs flex items-center gap-1 transition-colors"
+                          title="Fly to Hotspot on Tactical Map"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="hidden sm:inline">MAP</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );

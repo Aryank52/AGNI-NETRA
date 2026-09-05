@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
@@ -11,7 +12,7 @@ import {
   BarChart2, RefreshCw, Compass, ArrowUpRight,
   Shield, Sliders, Radio, Sparkles, Factory, Zap, 
   Search, X, ExternalLink, ChevronRight, CheckCircle2,
-  Trees, Pickaxe, ShieldAlert
+  Trees, Pickaxe, ShieldAlert, Filter, ShieldCheck
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import EmptyState from "@/components/common/EmptyState";
@@ -43,16 +44,20 @@ interface FacilitySummary {
   };
 }
 
-export default function IndiaThermalAtlasPage() {
+function AtlasContent() {
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search");
+  const urlState = searchParams.get("state");
+
   const [states, setStates] = useState<StateSummary[]>([]);
   const [facilities, setFacilities] = useState<FacilitySummary[]>([]);
-  const [selectedState, setSelectedState] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>(urlState || "ALL");
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearch || "");
   const [selectedFacility, setSelectedFacility] = useState<FacilitySummary | null>(null);
   const [facilityIntel, setFacilityIntel] = useState<any | null>(null);
   const [intelLoading, setIntelLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<"STATES" | "FACILITIES">("STATES");
+  const [activeTab, setActiveTab] = useState<"STATES" | "FACILITIES">(urlSearch ? "FACILITIES" : "STATES");
 
   useEffect(() => {
     if (!selectedFacility?.id) {
@@ -204,6 +209,38 @@ export default function IndiaThermalAtlasPage() {
               </div>
             )}
           </div>
+
+          {/* Active Filter Chips Tray */}
+          {(selectedState !== "ALL" || searchQuery.trim().length > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs font-mono">
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <Filter className="w-3 h-3 text-amber-500" />
+                Active Filters:
+              </span>
+              {selectedState !== "ALL" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  State: {selectedState}
+                  <button onClick={() => setSelectedState("ALL")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {searchQuery.trim().length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Query: "{searchQuery}"
+                  <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={() => { setSelectedState("ALL"); setSearchQuery(""); }}
+                className="ml-auto text-[10px] text-amber-400 hover:text-amber-300 font-bold hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
 
           {/* Tab 1: State Density Table */}
           {activeTab === "STATES" && (
@@ -429,18 +466,34 @@ export default function IndiaThermalAtlasPage() {
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <Link
-                    href={`/dashboard?lat=${selectedFacility.latitude}&lon=${selectedFacility.longitude}`}
-                    className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-colors inline-flex items-center gap-1.5"
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Fly to Facility on Map</span>
-                  </Link>
+                <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 font-mono">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Link
+                      href={`/dashboard?lat=${selectedFacility.latitude}&lon=${selectedFacility.longitude}`}
+                      className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>Fly on Map</span>
+                    </Link>
+                    <Link
+                      href={`/dashboard/events?state=${encodeURIComponent(selectedFacility.state)}`}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition-colors inline-flex items-center gap-1"
+                    >
+                      <Flame className="w-3.5 h-3.5 text-orange-400" />
+                      <span>State Events</span>
+                    </Link>
+                    <Link
+                      href="/dashboard/risk"
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs transition-colors inline-flex items-center gap-1"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Risk Profile</span>
+                    </Link>
+                  </div>
 
                   <button
                     onClick={() => setSelectedFacility(null)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs"
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs font-sans"
                   >
                     Close
                   </button>
@@ -451,5 +504,13 @@ export default function IndiaThermalAtlasPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function IndiaThermalAtlasPage() {
+  return (
+    <Suspense fallback={<CardSkeleton />}>
+      <AtlasContent />
+    </Suspense>
   );
 }

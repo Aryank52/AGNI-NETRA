@@ -15,7 +15,7 @@ import {
   Search, ShieldAlert, Sparkles, MapPin, 
   Activity, CheckCircle2, ArrowRight, AlertTriangle,
   Compass, ArrowUpRight, Loader2, RefreshCw, Factory,
-  Layers, HelpCircle, FileSearch
+  Layers, HelpCircle, FileSearch, Flame
 } from "lucide-react";
 
 export default function CandidateDiscoveryPage() {
@@ -218,18 +218,37 @@ export default function CandidateDiscoveryPage() {
                     </div>
 
                     {/* Navigation Bar */}
-                    <div className="flex items-center justify-between pt-1 text-xs font-mono">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs font-mono">
                       <span className="text-[11px] text-slate-400">
-                        Classification Recommendation: <strong className="text-white">Industrial Flare / Furnace Stack</strong>
+                        Recommendation: <strong className="text-white">Industrial Flare / High-Heat Furnace Stack</strong>
                       </span>
 
-                      <Link
-                        href={`/dashboard?lat=${latVal}&lon=${lonVal}`}
-                        className="text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold"
-                      >
-                        <Compass className="w-3.5 h-3.5" />
-                        <span>Inspect in GIS Workstation →</span>
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/dashboard?lat=${latVal}&lon=${lonVal}`}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 transition-colors"
+                          title="Fly to Candidate Site on Tactical Map"
+                        >
+                          <Compass className="w-3 h-3" />
+                          <span>GIS Workstation</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard/atlas?search=${encodeURIComponent(cand.district || cand.state || "")}`}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                          title="View Registered Plants in this District"
+                        >
+                          <Factory className="w-3 h-3 text-cyan-400" />
+                          <span>Atlas</span>
+                        </Link>
+                        <Link
+                          href={`/dashboard/events?state=${encodeURIComponent(cand.state || "")}`}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                          title="View Thermal Events in this State"
+                        >
+                          <Flame className="w-3 h-3 text-orange-400" />
+                          <span>Events</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );

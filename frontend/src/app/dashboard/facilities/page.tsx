@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -9,7 +9,8 @@ import { fetchApi } from "@/lib/api";
 import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatters";
 import { 
   Factory, Search, MapPin, Clock, 
-  Activity, Shield, ChevronRight, CheckCircle2, RefreshCw
+  Activity, Shield, ChevronRight, CheckCircle2, RefreshCw,
+  Flame, ArrowUpRight, Filter, X
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import EmptyState from "@/components/common/EmptyState";
@@ -104,6 +105,38 @@ export default function FacilitiesPage() {
             </div>
           </div>
 
+          {/* Active Filter Chips Tray */}
+          {(typeFilter !== "ALL" || searchQuery.trim().length > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 px-3.5 py-1.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs font-mono">
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <Filter className="w-3 h-3 text-amber-500" />
+                Active Filters:
+              </span>
+              {typeFilter !== "ALL" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Category: {typeFilter}
+                  <button onClick={() => setTypeFilter("ALL")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {searchQuery.trim().length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[11px]">
+                  Query: "{searchQuery}"
+                  <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={() => { setTypeFilter("ALL"); setSearchQuery(""); }}
+                className="ml-auto text-[10px] text-amber-400 hover:text-amber-300 font-bold hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
           {/* Facilities Cards Grid */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,17 +211,36 @@ export default function FacilitiesPage() {
                     </div>
                   </div>
 
-                  <div className="pt-1 flex items-center justify-between text-xs">
+                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                     <span className="text-slate-500 text-[11px]">
-                      Source: {fac.source} • Coords: {formatCoord(fac.latitude, fac.longitude, 4)}
+                      Source: {fac.source} • Coords: {formatCoord(fac.latitude, fac.longitude, 3)}
                     </span>
-                    <Link
-                      href={`/dashboard?state=${fac.state}`}
-                      className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
-                    >
-                      <span>Locate on Map</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/dashboard?lat=${fac.latitude}&lon=${fac.longitude}`}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 transition-colors"
+                        title="Fly directly to facility coordinates on Tactical Map"
+                      >
+                        <MapPin className="w-3 h-3" />
+                        <span>Locate</span>
+                      </Link>
+                      <Link
+                        href={`/dashboard/atlas?search=${encodeURIComponent(fac.name)}`}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                        title="Open Facility Intelligence in Atlas"
+                      >
+                        <Factory className="w-3 h-3 text-cyan-400" />
+                        <span>Atlas</span>
+                      </Link>
+                      <Link
+                        href={`/dashboard/events?state=${encodeURIComponent(fac.state)}`}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1 transition-colors"
+                        title="View Thermal Events in this State"
+                      >
+                        <Flame className="w-3 h-3 text-orange-400" />
+                        <span>Events</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );

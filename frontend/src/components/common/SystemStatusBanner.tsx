@@ -85,7 +85,7 @@ export default function SystemStatusBanner({
         <div className="flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1.5">
             <Cpu className="w-3 h-3 text-indigo-400" />
-            <strong>MODEL:</strong> XGBoost V2 Active (V3 Candidate Inactive)
+            <strong>MODEL:</strong> XGBoost V3 (Candidate / Inactive • Platt-Calibrated)
           </span>
           <span className="text-slate-600">|</span>
           <span className="flex items-center gap-1.5 text-amber-400">
@@ -183,9 +183,9 @@ export default function SystemStatusBanner({
           <div className="text-[10px] font-mono text-slate-500 uppercase">ML MODEL</div>
           <div className="text-xs font-bold font-mono text-indigo-400 flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5" />
-            XGBOOST V2
+            XGBOOST V3
           </div>
-          <div className="text-[10px] text-slate-400">V3 Candidate Inactive</div>
+          <div className="text-[10px] text-slate-400">Candidate / Inactive • Platt</div>
         </div>
 
         {/* 5. Dispatch Gate */}
