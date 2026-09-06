@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
 from backend.app.core.database import get_db
+from backend.app.api.deps import require_analyst
 from backend.app.models.domain import (
     IndustrialFacility, HistoricalBaseline, FacilityBaseline, ThermalEvent,
     PariveshProjectStaging, IbmMiningLeaseContext, IbmMineralResource,
-    FacilityMiningEvidence, MiningThermalAssociation, IbmAuctionedBlock
+    FacilityMiningEvidence, MiningThermalAssociation, IbmAuctionedBlock, User
 )
 from backend.app.models.schemas import (
     IndustrialFacilityOut, ThermalEventOut, FacilityBaselineOut,
@@ -22,6 +23,7 @@ router = APIRouter()
 @router.get("", response_model=List[IndustrialFacilityOut])
 def get_industrial_facilities(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     facility_type: Optional[str] = None,
     state: Optional[str] = None,
     district: Optional[str] = None,
@@ -36,7 +38,7 @@ def get_industrial_facilities(
 ):
     """
     Retrieves registered known and verified industrial facilities with search, pagination,
-    and environmental clearance filtering support.
+    and environmental clearance filtering support. Permitted for ANALYST and ADMIN roles.
     """
     query = db.query(IndustrialFacility).options(
         joinedload(IndustrialFacility.baselines),
@@ -76,6 +78,7 @@ def get_industrial_facilities(
 @router.get("/parivesh/projects", response_model=List[PariveshProjectOut])
 def get_parivesh_projects(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     state: Optional[str] = None,
     match_status: Optional[str] = None,
     clearance_status: Optional[str] = None,
@@ -99,6 +102,7 @@ def get_parivesh_projects(
 @router.get("/ibm/mining-leases", response_model=List[IbmMiningLeaseContextOut])
 def get_ibm_mining_lease_context(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     state: Optional[str] = None,
     district: Optional[str] = None,
     mineral: Optional[str] = None,
@@ -131,6 +135,7 @@ def get_ibm_mining_lease_context(
 @router.get("/ibm/mineral-resources", response_model=List[IbmMineralResourceOut])
 def get_ibm_mineral_resources(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     commodity: Optional[str] = None,
     mineral: Optional[str] = None,
     not_estimated: Optional[bool] = None,
@@ -154,6 +159,7 @@ def get_ibm_mineral_resources(
 @router.get("/ibm/auctioned-blocks", response_model=List[IbmAuctionedBlockOut])
 def get_ibm_auctioned_blocks(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     state: Optional[str] = None,
     mineral: Optional[str] = None,
     match_confidence: Optional[str] = None,
@@ -178,7 +184,11 @@ def get_ibm_auctioned_blocks(
 
 
 @router.get("/{facility_id}", response_model=IndustrialFacilityOut)
-def get_facility_detail(facility_id: str, db: Session = Depends(get_db)):
+def get_facility_detail(
+    facility_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Retrieves full details, baseline metrics, and mining evidence for a facility.
     """
@@ -194,7 +204,11 @@ def get_facility_detail(facility_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{facility_id}/baseline")
-def get_facility_baseline_profile(facility_id: str, db: Session = Depends(get_db)):
+def get_facility_baseline_profile(
+    facility_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Retrieves empirical facility-specific thermal baseline (mean, median, variance, FRP distribution, status band).
     """
@@ -206,7 +220,11 @@ def get_facility_baseline_profile(facility_id: str, db: Session = Depends(get_db
 
 
 @router.get("/{facility_id}/fingerprint")
-def get_facility_thermal_fingerprint(facility_id: str, db: Session = Depends(get_db)):
+def get_facility_thermal_fingerprint(
+    facility_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Computes analytical Thermal Fingerprint Profile for an industrial facility.
     """
@@ -226,7 +244,11 @@ def get_facility_thermal_fingerprint(facility_id: str, db: Session = Depends(get
 
 
 @router.get("/{facility_id}/intelligence")
-def get_facility_deep_intelligence(facility_id: str, db: Session = Depends(get_db)):
+def get_facility_deep_intelligence(
+    facility_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Comprehensive Industrial Facility Thermal & Geospatial Intelligence Dossier:
     Returns facility identity, sector, coordinates, thermal baseline, nearby thermal events,

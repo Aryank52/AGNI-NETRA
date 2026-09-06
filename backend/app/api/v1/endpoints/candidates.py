@@ -21,6 +21,7 @@ class CandidatePromotionRequest(BaseModel):
 @router.get("", response_model=List[CandidateFacilityOut])
 def get_candidate_facilities(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     state: Optional[str] = None,
     status_filter: Optional[str] = None
 ):

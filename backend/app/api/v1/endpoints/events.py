@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, text
 
 from backend.app.core.database import get_db
-from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature
+from backend.app.api.deps import require_agency, require_analyst
+from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature, User
 from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut, EventTraceLineageOut
 from backend.app.services.lineage_service import generate_event_trace_lineage
 
@@ -17,6 +18,7 @@ router = APIRouter()
 def get_thermal_events(
     response: Response,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,
@@ -149,6 +151,7 @@ def get_thermal_events(
 @router.get("/geojson")
 def get_thermal_events_geojson(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,
@@ -243,7 +246,11 @@ def get_thermal_events_geojson(
 
 
 @router.get("/{event_id}", response_model=ThermalEventOut)
-def get_event_detail(event_id: str, db: Session = Depends(get_db)):
+def get_event_detail(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Retrieves granular intelligence dossier for a single thermal event.
     """
@@ -262,7 +269,11 @@ def get_event_detail(event_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{event_id}/detections", response_model=List[ThermalDetectionOut])
-def get_event_detections(event_id: str, db: Session = Depends(get_db)):
+def get_event_detections(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Retrieves the raw satellite thermal observations constituting this event.
     """
@@ -273,7 +284,11 @@ def get_event_detections(event_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{event_id}/trace", response_model=EventTraceLineageOut)
-def get_event_trace(event_id: str, db: Session = Depends(get_db)):
+def get_event_trace(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Trace Data API:
     Generates a complete 10-stage scientific data lineage from raw sensor telemetry
@@ -290,7 +305,8 @@ def get_event_trace(event_id: str, db: Session = Depends(get_db)):
 def get_event_buffer_assets(
     event_id: str,
     radius_m: float = Query(1000.0, ge=100.0, le=50000.0, description="Buffer radius in meters (500, 1000, 2000, 5000, 10000)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Multi-Distance Spatial Buffer Asset Evaluation:

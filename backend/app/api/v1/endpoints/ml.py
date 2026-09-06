@@ -8,6 +8,8 @@ from sqlalchemy import text
 from pydantic import BaseModel, Field
 
 from backend.app.core.database import get_db
+from backend.app.api.deps import require_analyst
+from backend.app.models.domain import User
 from ml.inference.production_inference_service import (
     production_thermal_predictor,
     FEATURE_COLUMNS,
@@ -50,7 +52,10 @@ class BatchPredictionRequest(BaseModel):
 
 
 @router.get("/model-info")
-def get_model_info(db: Session = Depends(get_db)):
+def get_model_info(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Returns active ML model metadata, architecture, real evaluation metrics, confusion matrix, and feature importances.
     """
@@ -109,7 +114,10 @@ def get_model_info(db: Session = Depends(get_db)):
 
 
 @router.post("/predict")
-def run_live_prediction(req: PredictionRequest):
+def run_live_prediction(
+    req: PredictionRequest,
+    current_user: User = Depends(require_analyst)
+):
     """
     Runs production-grade versioned inference with calibrated probabilities, SHAP attribution,
     Tri-Tier routing, risk assessment, and persistent audit logging.
@@ -120,7 +128,10 @@ def run_live_prediction(req: PredictionRequest):
 
 
 @router.post("/predict-batch")
-def run_batch_prediction(req: BatchPredictionRequest):
+def run_batch_prediction(
+    req: BatchPredictionRequest,
+    current_user: User = Depends(require_analyst)
+):
     """
     Runs batch inference on multiple thermal events with audit logging and performance metrics.
     """
@@ -145,7 +156,8 @@ def get_prediction_audit_logs(
     limit: int = Query(default=20, ge=1, le=100),
     tier: Optional[str] = Query(default=None, description="Filter by routing tier"),
     model_version: Optional[str] = Query(default=None, description="Filter by model version"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Queries recent ML prediction audit logs from PostgreSQL table ml_prediction_audit_logs.

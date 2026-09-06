@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import require_analyst, get_current_active_user
+from backend.app.api.deps import require_analyst, require_agency, require_admin, get_current_active_user
 from backend.app.models.domain import Alert, User, AuditLog
 from backend.app.models.schemas import AlertOut, AlertUpdate
 from backend.app.services.alert_workflow_service import alert_workflow_service
@@ -46,6 +46,7 @@ class TestNotificationRequest(BaseModel):
 @router.get("")
 def list_operational_alerts(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency),
     tier: Optional[str] = Query(None, description="Routing tier filter (TIER_1_AUTO_DISPATCH_CANDIDATE, TIER_2_ANALYST_REVIEW_QUEUE, TIER_3_UNCERTAINTY_QUEUE)"),
     status_filter: Optional[str] = Query(None, alias="status", description="Lifecycle state (NEW, ACKNOWLEDGED, UNDER_INVESTIGATION, VERIFIED, ESCALATED, DISMISSED, CLOSED)"),
     min_risk: Optional[float] = Query(None, description="Minimum risk score threshold (0-100)"),
@@ -56,7 +57,7 @@ def list_operational_alerts(
 ):
     """
     Retrieves operational alerts with multi-tier routing, state filtering,
-    and priority queue ordering.
+    and priority queue ordering. Permitted for AGENCY, ANALYST, and ADMIN roles.
     """
     return alert_workflow_service.list_alerts(
         db=db,
@@ -73,13 +74,14 @@ def list_operational_alerts(
 @router.get("/{alert_id}/dossier")
 def get_alert_investigation_dossier(
     alert_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Aggregates comprehensive multi-layer investigation evidence for an alert:
     FIRMS telemetry, industrial facilities, CEA power stations, IBM mining context,
     Bhuvan LULC, FSI forest zones, administrative geography, SHAP attributions,
-    and complete audit trail history.
+    and complete audit trail history. Permitted for ANALYST and ADMIN roles.
     """
     try:
         return alert_workflow_service.get_alert_investigation_dossier(db, alert_id)
@@ -87,23 +89,31 @@ def get_alert_investigation_dossier(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+def _extract_actor(user: Any) -> tuple[str, str]:
+    if isinstance(user, User):
+        return user.id, (user.full_name or user.email)
+    return "SYS-ANALYST", "System Analyst"
+
+
 @router.post("/{alert_id}/acknowledge")
 def acknowledge_alert(
     alert_id: str,
     req: ActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
 ):
     """
-    Transitions alert from NEW to ACKNOWLEDGED.
+    Transitions alert from NEW to ACKNOWLEDGED. Permitted for AGENCY, ANALYST, and ADMIN.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="ACKNOWLEDGE",
             target_state="ACKNOWLEDGED",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=req.notes
         )
     except ValueError as e:
@@ -114,19 +124,21 @@ def acknowledge_alert(
 def start_alert_investigation(
     alert_id: str,
     req: ActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
 ):
     """
     Transitions alert from ACKNOWLEDGED to UNDER_INVESTIGATION.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="START_INVESTIGATION",
             target_state="UNDER_INVESTIGATION",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=req.notes
         )
     except ValueError as e:
@@ -137,20 +149,22 @@ def start_alert_investigation(
 def verify_alert_decision(
     alert_id: str,
     req: VerifyActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
 ):
     """
     Transitions alert from UNDER_INVESTIGATION / ESCALATED to VERIFIED.
     Creates a formal VerificationRecord with ground truth label.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="VERIFY",
             target_state="VERIFIED",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=req.notes,
             verification_outcome=req.verification_outcome,
             ground_truth_class=req.ground_truth_class
@@ -163,19 +177,21 @@ def verify_alert_decision(
 def escalate_alert(
     alert_id: str,
     req: EscalateActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
 ):
     """
     Transitions alert from UNDER_INVESTIGATION / VERIFIED to ESCALATED.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="ESCALATE",
             target_state="ESCALATED",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=f"Escalated to {req.target_agency}. Reason: {req.reason}. Notes: {req.notes or 'None'}"
         )
     except ValueError as e:
@@ -186,19 +202,22 @@ def escalate_alert(
 def dismiss_alert(
     alert_id: str,
     req: DismissActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Transitions alert from NEW / ACKNOWLEDGED / UNDER_INVESTIGATION / ESCALATED to DISMISSED.
+    Requires ANALYST or ADMIN role.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="DISMISS",
             target_state="DISMISSED",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=f"Dismissed. Reason: {req.reason}. Notes: {req.notes or 'None'}"
         )
     except ValueError as e:
@@ -209,19 +228,22 @@ def dismiss_alert(
 def close_alert(
     alert_id: str,
     req: ActionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Transitions alert from VERIFIED / ESCALATED / DISMISSED to CLOSED.
+    Requires ANALYST or ADMIN role.
     """
     try:
+        actor_id, actor_name = _extract_actor(current_user)
         return alert_workflow_service.execute_state_action(
             db=db,
             alert_id=alert_id,
             action="CLOSE",
             target_state="CLOSED",
-            analyst_id="ANALYST-OPS-01",
-            analyst_name="Duty Thermal Analyst",
+            analyst_id=actor_id,
+            analyst_name=actor_name,
             notes=req.notes
         )
     except ValueError as e:
@@ -231,7 +253,8 @@ def close_alert(
 @router.get("/{alert_id}/audit-trail")
 def get_alert_audit_trail(
     alert_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
 ):
     """
     Retrieves chronological audit trail of all actions and state transitions on this alert.
@@ -252,7 +275,7 @@ def update_alert_status(
     alert_id: str,
     alert_update: AlertUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_agency)
 ):
     """
     Legacy status update endpoint for backward compatibility.
@@ -280,7 +303,7 @@ def update_alert_status(
 @router.post("/test-notification")
 def send_test_notification(
     req: TestNotificationRequest,
-    current_user: User = Depends(require_analyst)
+    current_user: User = Depends(require_admin)
 ):
     """
     Dispatches a test notification through configured email and SMS providers.

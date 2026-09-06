@@ -51,7 +51,8 @@ def get_verification_queue(
 @router.get("/history", response_model=List[VerificationRecordOut])
 def get_verification_history(
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Retrieves recent audit log of human-in-the-loop analyst decisions and label corrections.
@@ -64,7 +65,7 @@ def get_verification_history(
 def submit_verification(
     verif_in: VerificationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Records human-in-the-loop analyst verification / label correction.

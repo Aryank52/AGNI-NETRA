@@ -45,12 +45,12 @@ export default function PublicPortalPage() {
     setLoading(true);
     Promise.all([
       fetchApi<any>("/portals/public/overview").catch(() => null),
-      fetchApi<any>("/events?limit=25").catch(() => null),
+      fetchApi<any>("/portals/public/hazard-map").catch(() => null),
     ])
-      .then(([overviewRes, eventsRes]) => {
+      .then(([overviewRes, hazardRes]) => {
         if (overviewRes) setData(overviewRes);
-        if (eventsRes && Array.isArray(eventsRes.events)) {
-          setEvents(eventsRes.events);
+        if (hazardRes && Array.isArray(hazardRes.events)) {
+          setEvents(hazardRes.events);
         }
       })
       .finally(() => setLoading(false));

@@ -265,3 +265,79 @@ def get_public_safety_advisories(db: Session = Depends(get_db)):
         "public_advisories": advisories
     }
 
+
+@router.get("/public/hazard-map")
+def get_public_hazard_map(
+    db: Session = Depends(get_db),
+    state: Optional[str] = None
+):
+    """
+    Public thermal safety and hazard map.
+    Rounds coordinates to 2 decimal places (~1.1 km privacy blur) to avoid exposing sensitive
+    industrial facility perimeters while providing accurate regional situational awareness.
+    Strips internal ML internals, SHAP explanations, and facility associations.
+    """
+    query = db.query(ThermalEvent).options(
+        joinedload(ThermalEvent.risk),
+        joinedload(ThermalEvent.prediction)
+    ).filter(ThermalEvent.status == "ACTIVE")
+
+    if state and state.upper() not in ["ALL", "INDIA"]:
+        query = query.filter(ThermalEvent.state.ilike(f"%{state}%"))
+
+    events = query.order_by(ThermalEvent.max_frp.desc()).limit(50).all()
+
+    public_events = []
+    features = []
+
+    for e in events:
+        sev = e.risk.risk_level if e.risk else "MODERATE"
+        blurred_lat = round(e.latitude, 2)
+        blurred_lon = round(e.longitude, 2)
+        p_class = "Industrial Thermal Activity" if (e.prediction and "Industrial" in e.prediction.predicted_class) else "Regional Thermal Hotspot"
+
+        pub_evt = {
+            "id": e.id,
+            "event_code": f"HAZ-{e.state[:2].upper() if e.state else 'IN'}-{e.id[:6]}",
+            "state": e.state,
+            "district": e.district,
+            "latitude": blurred_lat,
+            "longitude": blurred_lon,
+            "max_frp": round(e.max_frp, 1),
+            "detection_count": e.detection_count,
+            "last_seen": e.last_seen.isoformat() if e.last_seen else None,
+            "risk": {
+                "risk_level": sev,
+                "risk_score": round(e.risk.risk_score, 1) if e.risk else 50.0
+            },
+            "prediction": {
+                "predicted_class": p_class,
+                "confidence": 1.0
+            },
+            "advisory": f"Thermal activity detected near {e.district or e.state}. Maintain standard air quality precautions downwind."
+        }
+        public_events.append(pub_evt)
+
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [blurred_lon, blurred_lat]
+            },
+            "properties": {
+                "id": e.id,
+                "hazard_level": sev,
+                "state": e.state,
+                "district": e.district,
+                "frp_mw": round(e.max_frp, 1),
+                "category": p_class
+            }
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "total_hazards": len(public_events),
+        "features": features,
+        "events": public_events
+    }
+

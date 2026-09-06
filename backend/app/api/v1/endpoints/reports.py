@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from backend.app.core.database import get_db
 from backend.app.models.domain import ThermalEvent, IndustrialFacility, Report, User, AuditLog
 from backend.app.services.report_service import generate_event_pdf_report
-from backend.app.api.deps import get_current_active_user, require_researcher
+from backend.app.api.deps import get_current_active_user, require_analyst
 
 router = APIRouter()
 
@@ -17,7 +17,8 @@ router = APIRouter()
 @router.get("/event/{event_id}/download")
 def download_event_pdf_report(
     event_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
 ):
     """
     Generates and downloads a formal AGNI-NETRA Intelligence Dossier PDF for a thermal event.
@@ -90,6 +91,7 @@ def download_event_pdf_report(
 @router.get("/export/csv")
 def export_events_csv(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     state: Optional[str] = None,
     risk_level: Optional[str] = None
 ):

@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 
 from backend.app.core.database import get_db
 from backend.app.core.config import settings
-from backend.app.models.domain import DataSource, DataIngestionJob, IndustrialFacility, ThermalEvent
+from backend.app.api.deps import require_admin, require_analyst
+from backend.app.models.domain import DataSource, DataIngestionJob, IndustrialFacility, ThermalEvent, User
 from data_pipeline.adapters.firms_adapter import firms_adapter, FIRMSAdapter
 from data_pipeline.adapters.osm_adapter import osm_adapter, OSMIndustrialAdapter
 from data_pipeline.adapters.cea_adapter import cea_adapter
@@ -29,7 +30,10 @@ class IncrementalSyncRequest(BaseModel):
 
 
 @router.get("/health-diagnostics")
-def get_ingestion_health_diagnostics(db: Session = Depends(get_db)):
+def get_ingestion_health_diagnostics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Control Center Diagnostic API:
     Returns real-time source freshness, unprocessed queue status, ingestion jobs telemetry,
@@ -41,7 +45,8 @@ def get_ingestion_health_diagnostics(db: Session = Depends(get_db)):
 @router.post("/incremental-sync")
 def trigger_incremental_ingestion_sync(
     req: IncrementalSyncRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Executes production-grade incremental ingestion and downstream processing:
@@ -148,7 +153,11 @@ def get_all_sources_live_status():
 
 
 @router.get("/jobs/history")
-def get_ingestion_jobs_history(db: Session = Depends(get_db), limit: int = 20):
+def get_ingestion_jobs_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+    limit: int = 20
+):
     """
     Retrieves execution history of automated and incremental ingestion jobs.
     """
@@ -157,7 +166,10 @@ def get_ingestion_jobs_history(db: Session = Depends(get_db), limit: int = 20):
 
 
 @router.post("/trigger/demo-seed")
-def trigger_seed_ingestion(db: Session = Depends(get_db)):
+def trigger_seed_ingestion(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     """
     Triggers re-seeding of realistic Indian thermal observations and intelligence layers.
     """
@@ -170,7 +182,8 @@ def trigger_firms_ingestion(
     country: str = "IND",
     days: int = 1,
     source_type: str = "VIIRS_NOAA20_NRT",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Triggers live ingestion from NASA FIRMS API (using FIRMS_MAP_KEY environment variable).
@@ -191,7 +204,10 @@ def trigger_firms_ingestion(
 
 
 @router.post("/trigger/osm")
-def trigger_osm_facility_ingestion(db: Session = Depends(get_db)):
+def trigger_osm_facility_ingestion(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     """
     Ingests and resolves industrial facilities from OpenStreetMap Overpass API.
     """
@@ -201,7 +217,10 @@ def trigger_osm_facility_ingestion(db: Session = Depends(get_db)):
 
 
 @router.post("/trigger/cea")
-def trigger_cea_facility_ingestion(db: Session = Depends(get_db)):
+def trigger_cea_facility_ingestion(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     """
     Ingests official thermal power stations from Central Electricity Authority (CEA).
     """
@@ -211,7 +230,10 @@ def trigger_cea_facility_ingestion(db: Session = Depends(get_db)):
 
 
 @router.post("/trigger/sync-all")
-def trigger_sync_all_sources(db: Session = Depends(get_db)):
+def trigger_sync_all_sources(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     """
     Executes a multi-source synchronization across FIRMS, OSM, CEA, and Sentinel catalog.
     """
@@ -237,7 +259,8 @@ async def upload_firms_csv(
     file: UploadFile = File(...),
     source_name: str = Form("VIIRS_CSV_UPLOAD"),
     is_demo: bool = Form(False),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Uploads and processes a local NASA FIRMS CSV file without requiring API keys.

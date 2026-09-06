@@ -12,7 +12,10 @@ router = APIRouter()
 
 
 @router.get("/models", response_model=List[MLModelRegistryOut])
-def get_registered_models(db: Session = Depends(get_db)):
+def get_registered_models(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Retrieves all machine learning models in the governance registry with evaluation metrics and lifecycle statuses.
     """
@@ -24,11 +27,11 @@ def update_model_lifecycle_status(
     model_id: str,
     payload: MLModelStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_analyst)
+    current_user: User = Depends(require_admin)
 ):
     """
     Updates the lifecycle status of a model (e.g. CANDIDATE -> APPROVED -> ACTIVE).
-    Requires ANALYST or ADMIN role with full audit logging.
+    Requires ADMIN role with full audit logging.
     """
     try:
         updated = model_registry_service.update_model_status(
@@ -44,7 +47,10 @@ def update_model_lifecycle_status(
 
 
 @router.get("/datasets", response_model=List[DatasetRegistryOut])
-def get_registered_datasets(db: Session = Depends(get_db)):
+def get_registered_datasets(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
     """
     Retrieves all partitioned training and validation datasets with provenance metadata.
     """

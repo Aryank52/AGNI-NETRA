@@ -3,14 +3,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
-from backend.app.models.domain import ThermalEvent, RiskScore
+from backend.app.api.deps import require_agency
+from backend.app.models.domain import ThermalEvent, RiskScore, User
 from backend.app.models.schemas import ThermalEventOut, RiskScoreOut
 
 router = APIRouter()
 
 
 @router.get("/critical", response_model=List[ThermalEventOut])
-def get_critical_risk_events(db: Session = Depends(get_db)):
+def get_critical_risk_events(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Retrieves all active thermal events flagged as CRITICAL risk.
     """
@@ -24,7 +28,10 @@ def get_critical_risk_events(db: Session = Depends(get_db)):
 
 
 @router.get("/summary")
-def get_risk_summary(db: Session = Depends(get_db)):
+def get_risk_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Aggregates risk score stats across the country.
     """

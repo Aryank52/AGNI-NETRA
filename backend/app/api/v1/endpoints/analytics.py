@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
 from backend.app.core.database import get_db
+from backend.app.api.deps import require_agency
 from backend.app.models.domain import (
     ThermalEvent, IndustrialFacility, CandidateFacility,
-    Alert, VerificationRecord
+    Alert, VerificationRecord, User
 )
 from backend.app.models.schemas import DashboardKPIs
 
@@ -15,7 +16,10 @@ router = APIRouter()
 
 
 @router.get("/kpis", response_model=DashboardKPIs)
-def get_dashboard_kpis(db: Session = Depends(get_db)):
+def get_dashboard_kpis(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Computes top-level command center KPIs.
     """
@@ -46,7 +50,10 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
 
 
 @router.get("/class-distribution")
-def get_class_distribution(db: Session = Depends(get_db)):
+def get_class_distribution(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Computes classification distribution for charts.
     """
@@ -68,7 +75,10 @@ def get_class_distribution(db: Session = Depends(get_db)):
 
 
 @router.get("/risk-distribution")
-def get_risk_distribution(db: Session = Depends(get_db)):
+def get_risk_distribution(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Computes risk level breakdown for analytics charts.
     """
@@ -93,7 +103,10 @@ def get_risk_distribution(db: Session = Depends(get_db)):
 
 
 @router.get("/state-summary")
-def get_state_summary(db: Session = Depends(get_db)):
+def get_state_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Aggregates thermal events and average FRP per state.
     """
@@ -122,7 +135,10 @@ def get_state_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/command-center")
-def get_command_center_overview(db: Session = Depends(get_db)):
+def get_command_center_overview(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Unified National Command Center operational telemetry payload.
     Provides real-time event counts, alert queue distributions, risk severity breakdowns,
@@ -232,7 +248,10 @@ def get_command_center_overview(db: Session = Depends(get_db)):
 
 
 @router.get("/operational-trends")
-def get_operational_trends(db: Session = Depends(get_db)):
+def get_operational_trends(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Computes time-series and categorical trend analytics for command center charts.
     """

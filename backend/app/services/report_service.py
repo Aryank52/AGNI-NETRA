@@ -193,14 +193,42 @@ def generate_event_pdf_report(
     story.append(t_fac)
     story.append(Spacer(1, 14))
 
-    # 5. Risk Assessment Breakdown
+    # 3. Risk Assessment Breakdown
     story.append(Paragraph("3. Risk Evaluation & Drivers", section_title_style))
     risk_reasons = risk_data.get("risk_reasons", []) if risk_data else ["Standard thermal evaluation."]
     for reason in risk_reasons:
         story.append(Paragraph(f"• {reason}", body_style))
     story.append(Spacer(1, 14))
 
-    # 6. Disclaimer & Verification Notice
+    # 4. Model Governance & Data Provenance
+    story.append(Paragraph("4. Model Governance & Data Provenance", section_title_style))
+    analyst_decision = event_data.get("analyst_decision", "Pending Human Verification")
+    gov_info = [
+        [
+            Paragraph("<b>Model Version:</b> XGBoost V3 (xgb-v3.0-real-candidate • Platt-Calibrated)", body_style),
+            Paragraph("<b>Telemetry Source:</b> NASA FIRMS S-NPP/VIIRS 375m NRT", body_style)
+        ],
+        [
+            Paragraph("<b>Spatial Context Engine:</b> PostGIS 3.4 Multi-Layer Topology", body_style),
+            Paragraph(f"<b>Verification Status:</b> {event_data.get('status', 'ACTIVE')} ({analyst_decision})", body_style)
+        ],
+        [
+            Paragraph("<b>Automated Dispatch:</b> DISABLED / GATED SAFE (Human Decision Support)", body_style),
+            Paragraph(f"<b>Dossier Generated:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}", body_style)
+        ]
+    ]
+    t_gov = Table(gov_info, colWidths=[270, 270])
+    t_gov.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8fafc')),
+    ]))
+    story.append(t_gov)
+    story.append(Spacer(1, 14))
+
+    # 5. Disclaimer & Verification Notice
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceAfter=8))
     disclaimer = (
         "<b>LEGAL & SCIENTIFIC DISCLAIMER:</b> This document contains automated analytical intelligence derived from "

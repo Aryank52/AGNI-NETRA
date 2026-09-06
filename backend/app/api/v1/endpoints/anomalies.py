@@ -3,14 +3,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
-from backend.app.models.domain import ThermalEvent
+from backend.app.api.deps import require_agency
+from backend.app.models.domain import ThermalEvent, User
 from backend.app.models.schemas import ThermalEventOut
 
 router = APIRouter()
 
 
 @router.get("", response_model=List[ThermalEventOut])
-def get_anomalies(db: Session = Depends(get_db)):
+def get_anomalies(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agency)
+):
     """
     Retrieves events exhibiting abnormal baseline spikes or behavioral anomalies.
     """
