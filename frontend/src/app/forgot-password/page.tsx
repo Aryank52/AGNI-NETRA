@@ -12,10 +12,17 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setLoading(false);
       setSent(true);
     }, 1000);

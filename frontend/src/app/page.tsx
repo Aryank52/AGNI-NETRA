@@ -7,7 +7,7 @@ import {
   Map, Database, ArrowRight, CheckCircle2, 
   Layers, Search, FileText, ChevronRight, Zap,
   Building2, GraduationCap, Globe, ShieldCheck, Lock,
-  ExternalLink, BarChart3, Clock, Check
+  ExternalLink, BarChart3, Clock, Check, Settings
 } from "lucide-react";
 import { getApiDocsUrl } from "@/lib/api";
 import VisualPipelineDiagram from "@/components/common/VisualPipelineDiagram";
@@ -114,46 +114,46 @@ export default function LandingPage() {
     },
   ];
 
-  // Section 18: Differentiated Stakeholder Portals
+  // Section 18: Differentiated Operational Portals
   const portals = [
     {
-      title: "Command Center Dashboard",
-      badge: "ANALYSTS & DISASTER AGENCIES",
-      badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-      desc: "Full 9-layer PostGIS GIS workstation, live satellite observation triage, SHAP waterfall explainability, and HITL verification desk.",
+      title: "Analyst Portal",
+      badge: "FULL INTELLIGENCE WORKSTATION",
+      badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+      desc: "Full 9-layer PostGIS GIS workstation, live satellite observation inventory, SHAP waterfall explainability, and HITL ground truth verification desk.",
       icon: Map,
       href: "/dashboard",
-      cta: "Launch Command Center",
+      cta: "Launch Analyst Workstation",
       highlight: true,
     },
     {
+      title: "Agency Response Portal",
+      badge: "EMERGENCY OPERATIONS & NDMA",
+      badgeColor: "bg-red-500/20 text-red-300 border-red-500/40",
+      desc: "Rapid response operations center, high-priority alert triage, operational incident mapping, and immediate response lifecycle actions.",
+      icon: ShieldAlert,
+      href: "/portal/agency",
+      cta: "Open Response Center",
+      highlight: false,
+    },
+    {
       title: "Public Safety Portal",
-      badge: "CITIZEN & MUNICIPAL",
-      badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/40",
-      desc: "Transparent regional fire risk advisories, smoke dispersion exposure metrics, and non-sensitive aggregated hazard ratings.",
+      badge: "CITIZEN & MUNICIPAL ADVISORY",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      desc: "Plain-language regional fire safety advisories, smoke dispersion guidance, non-sensitive hazard impact maps, and citizen protective actions.",
       icon: Globe,
       href: "/portal/public",
-      cta: "View Public Safety Portal",
+      cta: "View Safety Advisories",
       highlight: false,
     },
     {
-      title: "Industry Compliance Portal",
-      badge: "PLANT MANAGERS & OPERATORS",
-      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-      desc: "Maintenance flare scheduling, shutdown compliance declarations, CPCB emission self-audits, and proprietary site verification.",
-      icon: Building2,
-      href: "/portal/industry",
-      cta: "Access Industry Portal",
-      highlight: false,
-    },
-    {
-      title: "Research & Academic Portal",
-      badge: "OPEN SCIENCE & MODEL RESEARCH",
+      title: "System Admin Portal",
+      badge: "SYSTEM OBSERVABILITY & GOVERNANCE",
       badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
-      desc: "Multi-year temporal baselines, diurnal burning curves, cross-calibration validation benchmarks, and exportable research datasets.",
-      icon: GraduationCap,
-      href: "/portal/research",
-      cta: "Explore Research Portal",
+      desc: "National system observability, multi-source data ingestion status, ML model registry governance, audit logging, and platform health.",
+      icon: Settings,
+      href: "/admin",
+      cta: "Enter Administration",
       highlight: false,
     },
   ];
@@ -639,8 +639,8 @@ export default function LandingPage() {
                 </a>
               </li>
               <li>
-                <Link href="/portal/research" className="hover:text-white">
-                  Research Data Lineage
+                <Link href="/dashboard/analytics" className="hover:text-white">
+                  Multi-Horizon Analytics
                 </Link>
               </li>
               <li>

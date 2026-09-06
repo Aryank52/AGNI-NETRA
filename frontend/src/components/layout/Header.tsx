@@ -12,10 +12,52 @@ import {
   Layers, LogOut, ChevronDown, CheckCircle2, AlertTriangle,
   Search, X, MapPin, Factory, Zap, Pickaxe, Trees, Shield, Loader2,
   Clock, Menu, Bell, BarChart3, Globe, Cpu, Eye, Building2, GraduationCap,
-  Map as MapIcon
+  Map as MapIcon, Settings
 } from "lucide-react";
 
-const ROLES: UserRole[] = ["ANALYST", "RESEARCHER", "INDUSTRY", "AGENCY", "PUBLIC", "ADMIN"];
+export interface PortalOption {
+  role: UserRole;
+  name: string;
+  description: string;
+  href: string;
+  badge: string;
+  badgeColor: string;
+}
+
+export const PORTAL_OPTIONS: PortalOption[] = [
+  {
+    role: "ANALYST",
+    name: "ANALYST PORTAL",
+    description: "Full Intelligence Analysis & Verification",
+    href: "/dashboard",
+    badge: "INTELLIGENCE",
+    badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  },
+  {
+    role: "AGENCY",
+    name: "AGENCY PORTAL",
+    description: "Emergency Response & Incident Operations",
+    href: "/portal/agency",
+    badge: "RESPONSE",
+    badgeColor: "bg-red-500/20 text-red-300 border-red-500/30",
+  },
+  {
+    role: "PUBLIC",
+    name: "PUBLIC PORTAL",
+    description: "Safety Alerts & Public Impact",
+    href: "/portal/public",
+    badge: "PUBLIC SAFETY",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  },
+  {
+    role: "ADMIN",
+    name: "ADMIN PORTAL",
+    description: "System Administration & National Observability",
+    href: "/admin",
+    badge: "OBSERVABILITY",
+    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  },
+];
 
 interface SearchResultItem {
   id: string;
@@ -449,28 +491,43 @@ export default function Header() {
           </button>
 
           {roleMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-agni-card border border-agni-border rounded-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                Switch Decision Portal
+            <div className="absolute right-0 mt-2 w-72 bg-agni-card border border-agni-border rounded-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                <span>Switch Operational Portal</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">4 Portals</span>
               </div>
               <div className="py-1 space-y-1">
-                {ROLES.map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => {
-                      switchRole(r);
-                      setRoleMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg transition-colors ${
-                      user?.role === r
-                        ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30"
-                        : "text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    <span>{r} PORTAL</span>
-                    {user?.role === r && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
-                  </button>
-                ))}
+                {PORTAL_OPTIONS.map((portal) => {
+                  const isActive = user?.role === portal.role;
+                  return (
+                    <button
+                      key={portal.role}
+                      onClick={() => {
+                        switchRole(portal.role);
+                        setRoleMenuOpen(false);
+                        router.push(portal.href);
+                      }}
+                      className={`w-full text-left p-2.5 rounded-lg transition-all border ${
+                        isActive
+                          ? "bg-amber-500/15 text-amber-300 font-semibold border-amber-500/40 shadow-sm"
+                          : "text-slate-300 hover:bg-slate-800/80 border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs">{portal.name}</span>
+                          <span className={`text-[8px] font-mono px-1.5 py-0.2 rounded font-bold uppercase border ${portal.badgeColor}`}>
+                            {portal.badge}
+                          </span>
+                        </div>
+                        {isActive && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                        {portal.description}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -551,7 +608,7 @@ export default function Header() {
               </Link>
             </div>
 
-            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider pt-2">ANALYTICS & DIGITAL TWIN</div>
+            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider pt-2">ANALYTICS & MISSION</div>
             <div className="grid grid-cols-2 gap-2">
               <Link onClick={() => setMobileNavOpen(false)} href="/dashboard/analytics" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-amber-400" />
@@ -561,13 +618,25 @@ export default function Header() {
                 <Radio className="w-4 h-4 text-purple-400" />
                 <span>AGNI-SAT</span>
               </Link>
-              <Link onClick={() => setMobileNavOpen(false)} href="/portal/public" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+            </div>
+
+            <div className="text-[11px] font-mono uppercase text-slate-400 font-bold tracking-wider pt-2">OPERATIONAL PORTALS</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link onClick={() => { switchRole("ANALYST"); setMobileNavOpen(false); }} href="/dashboard" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <MapIcon className="w-4 h-4 text-blue-400" />
+                <span>Analyst Portal</span>
+              </Link>
+              <Link onClick={() => { switchRole("AGENCY"); setMobileNavOpen(false); }} href="/portal/agency" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-red-400" />
+                <span>Agency Portal</span>
+              </Link>
+              <Link onClick={() => { switchRole("PUBLIC"); setMobileNavOpen(false); }} href="/portal/public" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
                 <Eye className="w-4 h-4 text-emerald-400" />
                 <span>Public Portal</span>
               </Link>
-              <Link onClick={() => setMobileNavOpen(false)} href="/portal/research" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-cyan-400" />
-                <span>Research</span>
+              <Link onClick={() => { switchRole("ADMIN"); setMobileNavOpen(false); }} href="/admin" className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white font-semibold flex items-center gap-2">
+                <Settings className="w-4 h-4 text-purple-400" />
+                <span>Admin Portal</span>
               </Link>
             </div>
           </div>

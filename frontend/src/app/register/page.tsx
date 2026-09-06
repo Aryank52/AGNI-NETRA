@@ -15,12 +15,20 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
-  const [role, setRole] = useState("RESEARCHER");
+  const [role, setRole] = useState("ANALYST");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const redirectTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +51,7 @@ export default function RegisterPage() {
         }),
       });
       setSuccess(true);
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         router.push("/login");
       }, 2000);
     } catch (err: any) {
@@ -161,8 +169,6 @@ export default function RegisterPage() {
                 >
                   <option value="ANALYST">Geospatial Analyst (Full Queue & Verification)</option>
                   <option value="AGENCY">Emergency Response Agency (NDMA/State Disaster)</option>
-                  <option value="RESEARCHER">Scientific Researcher (Open Science & Raw Data)</option>
-                  <option value="INDUSTRY">Industrial Operator (Baseline & Compliance)</option>
                   <option value="PUBLIC">Public Safety Viewer (Advisory Only)</option>
                 </select>
               </div>

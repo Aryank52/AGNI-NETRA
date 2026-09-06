@@ -27,6 +27,13 @@ export default function IndustryPortalPage() {
   const [declSuccess, setDeclSuccess] = useState<string | null>(null);
   const [declError, setDeclError] = useState<string | null>(null);
 
+  const declTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    return () => {
+      if (declTimerRef.current) clearTimeout(declTimerRef.current);
+    };
+  }, []);
+
   const loadFacilities = async () => {
     setLoading(true);
     try {
@@ -49,8 +56,9 @@ export default function IndustryPortalPage() {
   const handleDeclareSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setDeclError(null);
+    setDeclSuccess(null);
     try {
-      const res = await fetchApi<any>("/portals/industry/declare-emission", {
+      const res = await fetchApi<any>("/portals/industry/declare-flaring", {
         method: "POST",
         body: JSON.stringify({
           facility_name: selectedFacName,
@@ -64,7 +72,7 @@ export default function IndustryPortalPage() {
         }),
       });
       setDeclSuccess(res.reference_number || "CPCB-DECL-SUCCESS");
-      setTimeout(() => {
+      declTimerRef.current = setTimeout(() => {
         setDeclModalOpen(false);
         setDeclSuccess(null);
       }, 2000);

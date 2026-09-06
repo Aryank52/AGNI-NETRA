@@ -37,20 +37,6 @@ export default function LoginPage() {
       color: "border-red-500/40 text-red-400 bg-red-950/20",
     },
     {
-      role: "RESEARCHER",
-      title: "Scientific Researcher",
-      email: "researcher@isro.res.in",
-      desc: "Raw sensor data, spatial analysis, temporal trends",
-      color: "border-emerald-500/40 text-emerald-400 bg-emerald-950/20",
-    },
-    {
-      role: "INDUSTRY",
-      title: "Industrial Facility Operator",
-      email: "industry@reliance.com",
-      desc: "Facility baseline monitoring, flaring compliance",
-      color: "border-amber-500/40 text-amber-400 bg-amber-950/20",
-    },
-    {
       role: "ADMIN",
       title: "System Administrator",
       email: "admin@agninetra.gov.in",
@@ -79,7 +65,15 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, selectedRole);
-      router.push("/dashboard");
+      if (selectedRole === "AGENCY") {
+        router.push("/portal/agency");
+      } else if (selectedRole === "PUBLIC") {
+        router.push("/portal/public");
+      } else if (selectedRole === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to authenticate");
     } finally {

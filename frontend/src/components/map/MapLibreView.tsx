@@ -634,6 +634,10 @@ export default function MapLibreView({
     return () => {
       m.off("moveend", onMove);
       m.off("zoomend", onMove);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
     };
   }, [mapLoaded, refreshViewportLayers]);
 

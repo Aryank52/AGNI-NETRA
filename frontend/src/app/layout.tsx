@@ -28,6 +28,34 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  let _devToolsReportSoftNavs = window.devToolsReportSoftNavs;
+                  Object.defineProperty(window, 'devToolsReportSoftNavs', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() { return _devToolsReportSoftNavs; },
+                    set: function(fn) {
+                      if (typeof fn === 'function') {
+                        _devToolsReportSoftNavs = function(type, metric) {
+                          if (metric && Array.isArray(metric.entries) && metric.entries.length === 0) {
+                            return;
+                          }
+                          return fn.apply(this, arguments);
+                        };
+                      } else {
+                        _devToolsReportSoftNavs = fn;
+                      }
+                    }
+                  });
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning className="bg-agni-navy text-slate-100 min-h-screen antialiased flex flex-col selection:bg-amber-500 selection:text-slate-950">
         <AuthProvider>
