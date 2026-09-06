@@ -19,16 +19,16 @@ export default function LandingPage() {
   const primaryStats = [
     {
       label: "Total Thermal Observations",
-      value: "8,221,894",
+      value: "8,221,914",
       subtext: "Historical + Operational FIRMS observations",
       badge: "TOTAL REPOSITORY",
       badgeColor: "bg-slate-800 text-slate-300 border-slate-700",
     },
     {
       label: "2026 Operational Stream",
-      value: "1,773,228",
-      subtext: "Current operational-year observations",
-      badge: "OPERATIONAL STREAM",
+      value: "1,773,248",
+      subtext: "Current operational-year observations (live DB stream)",
+      badge: "2026 OPERATIONAL STREAM",
       badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
     },
     {
@@ -334,7 +334,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-base font-bold text-white">Live 2026 Operational Stream</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                1,773,228 operational-year observations processed through real-time deduplication, PostGIS spatial clustering, and automated human-in-the-loop alert routing.
+                1,773,248 operational-year observations processed through real-time deduplication, PostGIS spatial clustering, and automated human-in-the-loop alert routing.
               </p>
               <div className="pt-2 border-t border-slate-800 text-[11px] font-mono text-slate-400">
                 Status: <strong className="text-emerald-400">Live Ingest Active</strong>

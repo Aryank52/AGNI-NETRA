@@ -79,6 +79,7 @@ def test_unauthenticated_requests_blocked_from_internal_endpoints():
         "/api/v1/ml/model-info",
         "/api/v1/admin/model-monitoring",
         "/api/v1/admin/system-stats",
+        "/api/v1/reports/export/csv",
     ]
 
     for url in protected_urls:
@@ -102,6 +103,7 @@ def test_public_user_blocked_from_internal_intelligence():
             "/api/v1/admin/model-monitoring",
             "/api/v1/admin/system-stats",
             "/api/v1/admin/users",
+            "/api/v1/reports/export/csv",
         ]
 
         for url in forbidden_urls:

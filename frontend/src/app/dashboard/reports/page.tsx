@@ -282,7 +282,7 @@ function ReportsContent() {
                   </div>
                   <h3 className="text-base font-bold text-white">National Thermal Audit (2026)</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Comprehensive cross-sector analysis of 1,773,228 operational observations against the 6.45M historical baseline.
+                    Comprehensive cross-sector analysis of 1,773,248 operational observations against the 6.45M historical baseline.
                   </p>
                   <div className="pt-2">
                     <a
