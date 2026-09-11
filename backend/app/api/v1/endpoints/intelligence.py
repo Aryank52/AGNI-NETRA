@@ -80,3 +80,100 @@ def get_providers_health(
     Lightweight operational status check across all registered provider adapters.
     """
     return provider_registry.get_provider_health_summary(db)
+
+
+@router.get("/thermal/providers")
+def get_thermal_providers(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[Dict[str, Any]]:
+    """
+    Lists registered thermal observation provider adapters and their sensor characteristics.
+    """
+    providers = provider_registry.get_thermal_providers()
+    results = []
+    for p in providers:
+        meta = p.get_metadata().model_dump()
+        meta["current_health"] = p.get_health(db).value
+        results.append(meta)
+    return results
+
+
+@router.get("/thermal/coverage")
+def get_thermal_coverage(
+    region: Optional[str] = None,
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns multi-constellation thermal observation coverage breakdown.
+    """
+    return provider_registry.get_thermal_coverage_summary(region=region)
+
+
+@router.get("/thermal/health")
+def get_thermal_health(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns operational health status across thermal observation provider adapters.
+    """
+    thermal_providers = provider_registry.get_thermal_providers()
+    statuses = {}
+    for p in thermal_providers:
+        meta = p.get_metadata()
+        statuses[meta.provider_name.upper()] = {
+            "health": p.get_health(db).value,
+            "availability": meta.availability.value,
+            "dataset": meta.dataset_name,
+            "resolution": getattr(meta, "spatial_resolution", "1km"),
+            "update_frequency": getattr(meta, "update_frequency", "Orbital revisit")
+        }
+    return {
+        "status": "OPERATIONAL",
+        "thermal_providers": statuses
+    }
+
+
+@router.get("/events/{event_id}/sources")
+def get_event_thermal_sources(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves contributing thermal observation sources and agreement metrics for a specific event.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+    from backend.app.services.intelligence.thermal_fusion import query_multi_provider_thermal_intelligence
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    lat = float(raw_event.get("latitude", 22.3039))
+    lon = float(raw_event.get("longitude", 70.8022))
+
+    fusion_res = query_multi_provider_thermal_intelligence(
+        db=db,
+        latitude=lat,
+        longitude=lon,
+        radius_km=5.0,
+        event_context=raw_event
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "state": raw_event.get("state"),
+        "coordinates": [lat, lon],
+        "thermal_sources": fusion_res.get("contributing_providers", ["NASA_FIRMS"]),
+        "source_agreement": fusion_res.get("source_agreement", "SINGLE_SOURCE"),
+        "source_conflicts": fusion_res.get("source_conflicts", []),
+        "observation_count": fusion_res.get("deduplicated_observation_count", 1),
+        "observations": [o.model_dump() for o in fusion_res.get("observations", [])],
+        "provenance_records": fusion_res.get("provenance_records", [])
+    }

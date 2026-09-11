@@ -903,6 +903,14 @@ class InvestigationWorkspace(Base):
     country = Column(String(100), default="India")
     jurisdiction = Column(String(100), nullable=True)
 
+    # Phase 7 Global Thermal Intelligence & Multi-Provider Fusion
+    thermal_sources = Column(JSON, default=list)
+    observation_provenance = Column(JSON, default=list)
+    source_agreement = Column(String(50), default="SINGLE_SOURCE")
+    source_conflicts = Column(JSON, default=list)
+    thermal_coverage = Column(JSON, default=dict)
+    observation_count = Column(Integer, default=0)
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

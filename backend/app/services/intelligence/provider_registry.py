@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from backend.app.services.intelligence.providers.base import (
     BaseIntelligenceProvider,
+    ThermalProvider,
     ProviderMetadata,
     ProviderHealth,
     GeographicCoverage,
@@ -15,6 +16,9 @@ from backend.app.services.intelligence.providers.base import (
 )
 from backend.app.services.intelligence.providers.adapters import (
     FIRMSProvider,
+    CopernicusSLSTRProvider,
+    MOSDACThermalProvider,
+    NOAAGOESProvider,
     OSMFacilityProvider,
     CEAProvider,
     PARIVESHProvider,
@@ -46,6 +50,9 @@ class ProviderRegistry:
         """Populates the registry with all standard AGNI-NETRA adapters."""
         default_providers = [
             FIRMSProvider(),
+            CopernicusSLSTRProvider(),
+            MOSDACThermalProvider(),
+            NOAAGOESProvider(),
             OSMFacilityProvider(),
             CEAProvider(),
             PARIVESHProvider(),
@@ -135,6 +142,47 @@ class ProviderRegistry:
             "provider_count": len(self._providers),
             "statuses": statuses,
             "all_healthy": all(s in ("AVAILABLE", "NOT_CONFIGURED") for s in statuses.values())
+        }
+
+    def get_thermal_providers(self) -> List[ThermalProvider]:
+        """Returns all registered thermal providers (both operational and unconfigured)."""
+        return [p for p in self._providers.values() if isinstance(p, ThermalProvider)]
+
+    def get_thermal_coverage_summary(self, region: Optional[str] = None) -> Dict[str, Any]:
+        """Returns detailed coverage and status across all thermal satellite constellations."""
+        thermal_list = []
+        global_orbiters = []
+        regional_geostationary = []
+        unconfigured = []
+
+        for p in self.get_thermal_providers():
+            meta = p.get_metadata()
+            cov = p.get_coverage()
+            info = {
+                "provider_name": meta.provider_name,
+                "dataset_name": meta.dataset_name,
+                "status": meta.availability.value,
+                "coverage_type": cov.coverage_type.value,
+                "is_global": cov.is_global,
+                "description": cov.description,
+                "capabilities": meta.capabilities,
+                "limitations": meta.limitations
+            }
+            thermal_list.append(info)
+            if meta.availability == ProviderHealth.NOT_CONFIGURED:
+                unconfigured.append(info)
+            elif cov.is_global:
+                global_orbiters.append(info)
+            else:
+                regional_geostationary.append(info)
+
+        return {
+            "region": region or "GLOBAL",
+            "total_thermal_providers": len(thermal_list),
+            "global_polar_orbiters": global_orbiters,
+            "regional_geostationary": regional_geostationary,
+            "unconfigured_providers": unconfigured,
+            "providers": thermal_list
         }
 
     def build_evidence_availability_matrix(

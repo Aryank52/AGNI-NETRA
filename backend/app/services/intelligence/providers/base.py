@@ -93,6 +93,19 @@ class ThermalProvider(BaseIntelligenceProvider):
     def get_detection_provenance(self, record_id: str) -> Optional[SourceProvenance]:
         pass
 
+    def query_observations(
+        self,
+        db: Session,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        radius_km: float = 5.0,
+        start_time: Optional[Any] = None,
+        end_time: Optional[Any] = None,
+        limit: int = 100
+    ) -> List[Any]:
+        """Queries normalized ThermalObservation canonical objects."""
+        return []
+
 
 class FacilityProvider(BaseIntelligenceProvider):
     @abstractmethod

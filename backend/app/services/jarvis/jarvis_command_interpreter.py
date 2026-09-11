@@ -699,6 +699,70 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_source_provenance:
             entities["is_source_provenance"] = True
 
+        # Phase 7 Global Thermal Intelligence & Multi-Provider Fusion Commands
+        # A. Section 28 Primary Acceptance Command
+        is_section_28_acceptance = (
+            any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate event evt-827", "investigate this event"])
+            and any(w in cmd for w in ["all available thermal sources", "all thermal sources", "available thermal sources", "thermal sources"])
+            and any(w in cmd for w in ["agree", "disagree", "disagreement", "confidence", "observations agree"])
+        )
+        if is_section_28_acceptance:
+            entities["is_section_28_acceptance"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # B. Thermal Sources Support
+        is_thermal_sources_support = any(w in cmd for w in [
+            "which thermal sources support this event", "which thermal sources support",
+            "what thermal sources support", "thermal sources support this event",
+            "thermal sources supporting", "which thermal sources"
+        ]) and not is_section_28_acceptance
+        if is_thermal_sources_support:
+            entities["is_thermal_sources_support"] = True
+
+        # C. Multiple Sources Support
+        is_multiple_sources_support = any(w in cmd for w in [
+            "does more than one source support", "more than one source support this thermal event",
+            "more than one source support", "multiple thermal sources support", "multiple sources support"
+        ]) and not is_section_28_acceptance
+        if is_multiple_sources_support:
+            entities["is_multiple_sources_support"] = True
+
+        # D. Source Disagreements / Conflict
+        is_source_disagreements = any(w in cmd for w in [
+            "are there source disagreements", "source disagreements", "are there any source disagreements",
+            "source disagreement", "disagreements between sources", "disagreements among sources"
+        ]) and not is_section_28_acceptance
+        if is_source_disagreements:
+            entities["is_source_disagreements"] = True
+
+        # E. Thermal Evidence Provenance (Section 29)
+        is_thermal_provenance = any(w in cmd for w in [
+            "show the thermal evidence provenance", "show the thermal-source provenance",
+            "show thermal-source provenance", "thermal-source provenance for this investigation",
+            "thermal evidence provenance", "thermal source provenance", "thermal provenance"
+        ]) and not is_section_28_acceptance
+        if is_thermal_provenance:
+            entities["is_thermal_provenance"] = True
+
+        # F. Thermal Coverage for Region
+        is_thermal_coverage = any(w in cmd for w in [
+            "what thermal coverage is available for this region", "what thermal coverage is available",
+            "thermal coverage is available for this region", "thermal coverage for this region",
+            "thermal coverage available", "what thermal coverage"
+        ]) and not is_section_28_acceptance
+        if is_thermal_coverage:
+            entities["is_thermal_coverage"] = True
+
+        # G. Investigate Event with All Thermal Sources
+        is_investigate_all_thermal = any(w in cmd for w in [
+            "investigate this event using all available thermal sources",
+            "using all available thermal sources", "with all available thermal sources",
+            "using all thermal sources", "investigate using all available thermal sources"
+        ]) and not is_section_28_acceptance
+        if is_investigate_all_thermal:
+            entities["is_investigate_all_thermal"] = True
+
         # G. Weather Request Flag (Graceful Missing Provider Handling)
         is_weather_requested = any(w in cmd for w in [
             "weather context", "with weather", "weather data", "meteorological context"
@@ -816,7 +880,21 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_24_acceptance:
+        if is_section_28_acceptance:
+            primary_goal = "SECTION_28_ACCEPTANCE"
+        elif is_thermal_sources_support:
+            primary_goal = "THERMAL_SOURCES_SUPPORT"
+        elif is_multiple_sources_support:
+            primary_goal = "MULTIPLE_THERMAL_SOURCES_SUPPORT"
+        elif is_source_disagreements:
+            primary_goal = "SOURCE_DISAGREEMENTS"
+        elif is_thermal_provenance:
+            primary_goal = "THERMAL_SOURCE_PROVENANCE"
+        elif is_thermal_coverage:
+            primary_goal = "THERMAL_COVERAGE_QUERY"
+        elif is_investigate_all_thermal:
+            primary_goal = "INVESTIGATE_ALL_THERMAL_SOURCES"
+        elif is_section_24_acceptance:
             primary_goal = "SECTION_24_ACCEPTANCE"
         elif is_sources_used:
             primary_goal = "SOURCES_USED"
@@ -900,13 +978,19 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "COMPARISON"
         elif primary_goal in ["EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS", "SURGICAL_EXPLANATION"]:
             requested_output = "EXPLANATION"
-        elif primary_goal in ["WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE"]:
+        elif primary_goal in ["WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE", "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]:
             requested_output = "STATUS_REPORT"
-        elif primary_goal == "SECTION_24_ACCEPTANCE":
+        elif primary_goal in ["SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "INVESTIGATE_ALL_THERMAL_SOURCES"]:
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "SECTION_24_ACCEPTANCE":
+        if primary_goal == "SECTION_28_ACCEPTANCE":
+            stopping_condition = "SECTION_28_MULTI_PROVIDER_EVALUATED_AND_HALT"
+        elif primary_goal in ["THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]:
+            stopping_condition = "THERMAL_INTELLIGENCE_REPORTED_AND_HALT"
+        elif primary_goal == "INVESTIGATE_ALL_THERMAL_SOURCES":
+            stopping_condition = "ALL_THERMAL_SOURCES_EVALUATED_AND_HALT"
+        elif primary_goal == "SECTION_24_ACCEPTANCE":
             stopping_condition = "SECTION_24_VERIFICATION_EVALUATED_AND_HALT"
         elif primary_goal in ["SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE"]:
             stopping_condition = "PROVIDER_AUDIT_REPORTED_AND_HALT"

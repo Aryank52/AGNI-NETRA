@@ -474,6 +474,13 @@ export interface JarvisResponse {
   partial_sources?: string[];
   source_availability_matrix?: Record<string, string>;
   provenance_records?: Array<Record<string, any>>;
+  // Phase 7 Global Thermal Intelligence & Multi-Provider Fusion
+  thermal_sources?: string[];
+  source_agreement?: string;
+  source_conflicts?: Array<Record<string, any>>;
+  observation_count?: number;
+  observation_provenance?: Array<Record<string, any>>;
+  thermal_coverage?: Record<string, any>;
 }
 
 export interface JarvisToolInfo {
@@ -658,6 +665,13 @@ export interface InvestigationWorkspace {
   }>;
   country?: string;
   jurisdiction?: string;
+  // Phase 7 Global Thermal Intelligence & Multi-Provider Fusion
+  thermal_sources?: string[];
+  observation_provenance?: Array<Record<string, any>>;
+  source_agreement?: string;
+  source_conflicts?: Array<Record<string, any>>;
+  thermal_coverage?: Record<string, any>;
+  observation_count?: number;
 }
 
 

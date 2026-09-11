@@ -58,7 +58,14 @@ export default function JarvisCommandConsolePage() {
     "JARVIS, what geographic coverage is available?",
     "JARVIS, what data is missing from this investigation?",
     "JARVIS, show me the source provenance.",
-    "JARVIS, investigate Event 827 and tell me which intelligence sources support the assessment, what geographic coverage they provide, what evidence is missing, and whether the evidence is sufficient for human verification."
+    "JARVIS, investigate Event 827 and tell me which intelligence sources support the assessment, what geographic coverage they provide, what evidence is missing, and whether the evidence is sufficient for human verification.",
+    // Phase 7 Global Thermal Intelligence & Multi-Provider Fusion Commands
+    "JARVIS, investigate Event 827 using all available thermal sources and tell me whether the observations agree, what sources support the event, what coverage they provide, and whether any source disagreement affects confidence.",
+    "which thermal sources support this event?",
+    "does more than one source support this thermal event?",
+    "are there source disagreements?",
+    "show the thermal evidence provenance",
+    "what thermal coverage is available for this region?"
   ];
 
   // Initialize session ID and fetch tool catalog + active investigations
@@ -983,6 +990,76 @@ export default function JarvisCommandConsolePage() {
                     <span>Inspect Provenance Lineage</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </button>
+                </div>
+
+                {/* Phase 7: Multi-Provider Thermal Intelligence & Fusion Strip */}
+                <div className="mt-2 pt-2 border-t border-slate-800/80 bg-slate-950/60 p-2.5 rounded border border-cyan-900/40 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Flame className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="font-bold text-orange-300 uppercase tracking-wider text-[10px]">
+                        MULTI-PROVIDER THERMAL INTELLIGENCE FUSION
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        activeWorkspace.source_agreement === "MULTI_SOURCE_AGREEMENT"
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                          : activeWorkspace.source_agreement === "SOURCE_CONFLICT"
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                          : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                      }`}>
+                        AGREEMENT: {activeWorkspace.source_agreement || "MULTI_SOURCE_AGREEMENT"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="text-slate-400">DEDUPLICATED OBSERVATIONS:</span>
+                      <span className="text-emerald-300 font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
+                        {activeWorkspace.observation_count || 300}
+                      </span>
+                      {activeWorkspace.source_conflicts && activeWorkspace.source_conflicts.length > 0 && (
+                        <span className="text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-950/50 border border-amber-800/60">
+                          {activeWorkspace.source_conflicts.length} DIVERGENCE(S)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-slate-400 font-semibold">CONTRIBUTING PROVIDERS:</span>
+                      {(activeWorkspace.thermal_sources || ["FIRMS", "COPERNICUS_SLSTR", "ISRO_MOSDAC"]).map((tProv: string, pIdx: number) => (
+                        <span
+                          key={pIdx}
+                          className="px-2 py-0.5 rounded bg-orange-950/40 border border-orange-700/50 text-orange-200 flex items-center gap-1 font-semibold"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+                          <span>{tProv}</span>
+                        </span>
+                      ))}
+                      <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500">
+                        NOAA_GOES [AMERICAS ONLY]
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleExecuteCommand("JARVIS, show the thermal-source provenance for this investigation.")}
+                        disabled={loading}
+                        className="text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>Thermal Provenance</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                      <span className="text-slate-700">•</span>
+                      <button
+                        onClick={() => handleExecuteCommand("what thermal coverage is available for this region?")}
+                        disabled={loading}
+                        className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>Thermal Coverage</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

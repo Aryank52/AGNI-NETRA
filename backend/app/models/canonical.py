@@ -4,6 +4,7 @@ Defines provider-neutral canonical models representing domain concepts across
 both Indian operational datasets and future global intelligence sources.
 """
 
+import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Union
 from pydantic import BaseModel, Field
@@ -12,24 +13,71 @@ from backend.app.services.intelligence.provenance import SourceProvenance
 
 class ThermalObservation(BaseModel):
     """
-    Canonical single-sensor thermal pixel observation (FIRMS, Landsat, Sentinel-3).
+    Canonical single-sensor thermal observation (NASA FIRMS, Copernicus SLSTR, ISRO MOSDAC, NOAA GOES).
+    Provider-neutral representation with strict validation and full provenance lineage.
     """
-    observation_id: str = Field(..., description="Unique detection identifier")
-    latitude: float = Field(..., description="WGS84 latitude")
-    longitude: float = Field(..., description="WGS84 longitude")
-    acq_timestamp: str = Field(..., description="ISO-8601 acquisition timestamp")
-    frp: float = Field(0.0, description="Fire Radiative Power in MW")
-    brightness: Optional[float] = Field(None, description="Brightness temperature (Kelvin)")
-    confidence: float = Field(0.0, description="Detection confidence (0-100)")
-    sensor: str = Field("VIIRS", description="Sensor name (VIIRS, MODIS, SLSTR)")
-    satellite: Optional[str] = Field(None, description="Platform (NOAA-20, NOAA-21, Terra, Aqua)")
+    observation_id: str = Field(default_factory=lambda: f"obs-{uuid.uuid4().hex[:8]}", description="Unique detection identifier")
+    provider: str = Field("FIRMS", description="Provider identifier (FIRMS, COPERNICUS_SLSTR, ISRO_MOSDAC, NOAA_GOES)")
+    dataset: Optional[str] = Field("VIIRS_NRT", description="Specific dataset or product name")
+    source_record_id: Optional[str] = Field(None, description="Native source record identifier")
+    latitude: float = Field(..., description="WGS84 latitude (-90.0 to 90.0)")
+    longitude: float = Field(..., description="WGS84 longitude (-180.0 to 180.0)")
+    observation_time: str = Field(..., description="Normalized ISO-8601 UTC observation timestamp")
+    acq_timestamp: Optional[str] = Field(None, description="Backward-compatible acquisition timestamp alias")
+    radiative_power: float = Field(0.0, description="Fire Radiative Power (FRP) in MW (>= 0.0)")
+    frp: Optional[float] = Field(None, description="Backward-compatible FRP alias in MW")
+    brightness_temperature: Optional[float] = Field(None, description="Brightness temperature in Kelvin (e.g. 200 - 500K)")
+    brightness: Optional[float] = Field(None, description="Backward-compatible brightness temperature alias")
+    confidence: float = Field(0.0, description="Detection confidence percentage (0 - 100)")
+    sensor: str = Field("VIIRS", description="Sensor name (VIIRS, MODIS, SLSTR, INSAT_TIR, ABI)")
+    satellite: Optional[str] = Field(None, description="Platform (NOAA-20, NOAA-21, Sentinel-3A, Terra, Aqua)")
     day_night: str = Field("D", description="Day ('D') or Night ('N')")
-    provenance: Optional[SourceProvenance] = Field(None, description="Detailed source provenance")
+    geometry: Optional[Dict[str, Any]] = Field(None, description="WGS84 GeoJSON geometry Point")
+    quality_flags: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Raw and processed quality flags")
+    source_provenance: Optional[SourceProvenance] = Field(None, description="Detailed source provenance lineage")
+    provenance: Optional[SourceProvenance] = Field(None, description="Backward-compatible provenance alias")
+
+    def __init__(self, **data):
+        if "observation_id" not in data or not data["observation_id"]:
+            data["observation_id"] = f"obs-{uuid.uuid4().hex[:8]}"
+
+        if "observation_time" in data and isinstance(data["observation_time"], datetime):
+            data["observation_time"] = data["observation_time"].isoformat()
+        if "acq_timestamp" in data and isinstance(data["acq_timestamp"], datetime):
+            data["acq_timestamp"] = data["acq_timestamp"].isoformat()
+
+        # Synchronize backward-compatible aliases
+        if "acq_timestamp" in data and "observation_time" not in data:
+            data["observation_time"] = str(data["acq_timestamp"])
+        elif "observation_time" in data and "acq_timestamp" not in data:
+            data["acq_timestamp"] = str(data["observation_time"])
+        
+        if "frp" in data and "radiative_power" not in data:
+            data["radiative_power"] = float(data["frp"] or 0.0)
+        elif "radiative_power" in data and "frp" not in data:
+            data["frp"] = float(data["radiative_power"] or 0.0)
+
+        if "brightness" in data and "brightness_temperature" not in data:
+            data["brightness_temperature"] = data["brightness"]
+        elif "brightness_temperature" in data and "brightness" not in data:
+            data["brightness"] = data["brightness_temperature"]
+
+        if "provenance" in data and "source_provenance" not in data:
+            data["source_provenance"] = data["provenance"]
+        elif "source_provenance" in data and "provenance" not in data:
+            data["provenance"] = data["source_provenance"]
+
+        if "geometry" not in data or not data["geometry"]:
+            lat = data.get("latitude", 0.0)
+            lon = data.get("longitude", 0.0)
+            data["geometry"] = {"type": "Point", "coordinates": [lon, lat]}
+
+        super().__init__(**data)
 
 
 class ThermalEvent(BaseModel):
     """
-    Canonical spatiotemporally clustered thermal event.
+    Canonical spatiotemporally clustered and fused thermal event.
     """
     event_id: str = Field(..., description="Event identifier or event code")
     event_code: Optional[str] = Field(None, description="Human-readable event code (e.g., EVT-2026-08-0012)")
@@ -47,6 +95,12 @@ class ThermalEvent(BaseModel):
     status: str = Field("ACTIVE", description="ACTIVE, DORMANT, RESOLVED")
     matched_facility_id: Optional[str] = Field(None, description="Linked facility ID if associated")
     provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+    # Phase 7 Multi-Provider Fusion Fields
+    contributing_observations: List[str] = Field(default_factory=list, description="Constituent observation IDs")
+    contributing_providers: List[str] = Field(default_factory=list, description="Unique contributing provider names")
+    source_agreement: str = Field("SINGLE_SOURCE", description="SINGLE_SOURCE, MULTI_SOURCE_AGREEMENT, SOURCE_CONFLICT, INSUFFICIENT_OVERLAP")
+    source_conflicts: List[Dict[str, Any]] = Field(default_factory=list, description="Cross-provider conflict disclosures")
 
 
 class Facility(BaseModel):

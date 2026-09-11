@@ -264,6 +264,16 @@ class JarvisResponse(BaseModel):
     source_availability_matrix: Optional[Dict[str, Any]] = Field(default_factory=dict)
     provenance_records: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
+    # Phase 7 Global Thermal Intelligence & Multi-Provider Fusion
+    thermal_sources: Optional[List[str]] = Field(default_factory=list)
+    source_agreement: Optional[str] = None
+    thermal_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    source_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    observation_count: Optional[int] = 0
+    thermal_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    observation_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    thermal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
 
 class JarvisToolInfo(BaseModel):
     name: str
@@ -384,6 +394,14 @@ class InvestigationWorkspaceSchema(BaseModel):
     source_availability_matrix: Optional[Dict[str, Any]] = Field(default_factory=dict)
     country: Optional[str] = "India"
     jurisdiction: Optional[str] = None
+
+    # Phase 7 Global Thermal Intelligence & Multi-Provider Fusion
+    thermal_sources: Optional[List[str]] = Field(default_factory=list)
+    observation_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    source_agreement: Optional[str] = "SINGLE_SOURCE"
+    source_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    thermal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    observation_count: Optional[int] = 0
 
 
 class SessionContext(BaseModel):

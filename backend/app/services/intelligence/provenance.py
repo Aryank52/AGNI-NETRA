@@ -176,3 +176,71 @@ def create_fsi_provenance(
         confidence_tier="HIGH",
         extra_metadata={"protected_area": pa_name}
     )
+
+
+def create_copernicus_slstr_provenance(
+    record_id: Optional[str] = None,
+    observation_time: Optional[datetime] = None,
+    satellite: str = "Sentinel-3A",
+    confidence: Optional[float] = None
+) -> SourceProvenance:
+    """Helper to construct factual Copernicus Sentinel-3 SLSTR thermal provenance."""
+    obs_str = observation_time.isoformat() if observation_time else None
+    return SourceProvenance(
+        provider="COPERNICUS_SLSTR",
+        dataset=f"COPERNICUS_SENTINEL3_SLSTR_FRP_{satellite}",
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=obs_str,
+        geographic_coverage="GLOBAL",
+        spatial_resolution="1000m SLSTR Nadir Footprint",
+        temporal_resolution="Daily Global Revisit (Dual-satellite Sentinel-3A/3B)",
+        source_version="SLSTR NRT L2 FRP v2.1",
+        limitations="Solar glint filtering and thick cloud obscuration may affect low-radiative power detection.",
+        confidence_tier="HIGH" if (confidence and confidence >= 70) else "MEDIUM",
+        extra_metadata={"satellite": satellite, "confidence": confidence}
+    )
+
+
+def create_mosdac_provenance(
+    record_id: Optional[str] = None,
+    observation_time: Optional[datetime] = None,
+    satellite: str = "INSAT-3D",
+    confidence: Optional[float] = None
+) -> SourceProvenance:
+    """Helper to construct factual ISRO MOSDAC geostationary thermal provenance."""
+    obs_str = observation_time.isoformat() if observation_time else None
+    return SourceProvenance(
+        provider="ISRO_MOSDAC",
+        dataset=f"MOSDAC_{satellite}_TIR_HOTSPOT",
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=obs_str,
+        geographic_coverage="REGION:INDIAN_OCEAN",
+        spatial_resolution="4000m Geostationary TIR",
+        temporal_resolution="15-minute Rapid Scan Cadence",
+        source_version="MOSDAC FIR v1.0",
+        limitations="Coarse 4km pixel resolution compared to polar orbiters; optimized for large-scale flaring and thermal anomalies.",
+        confidence_tier="MEDIUM",
+        extra_metadata={"satellite": satellite, "confidence": confidence}
+    )
+
+
+def create_goes_provenance(
+    record_id: Optional[str] = None,
+    observation_time: Optional[datetime] = None,
+    satellite: str = "GOES-16"
+) -> SourceProvenance:
+    """Helper to construct factual NOAA GOES ABI FDCA thermal provenance."""
+    obs_str = observation_time.isoformat() if observation_time else None
+    return SourceProvenance(
+        provider="NOAA_GOES",
+        dataset=f"NOAA_GOES_ABI_FDCA_{satellite}",
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=obs_str,
+        geographic_coverage="REGION:AMERICAS",
+        spatial_resolution="2000m ABI Nadir",
+        temporal_resolution="5-minute CONUS / 10-minute Full Disk",
+        source_version="NOAA ABI L2 FDCA",
+        limitations="Geostationary coverage restricted strictly to Western Hemisphere (Americas). Not configured for Indian subcontinent.",
+        confidence_tier="HIGH",
+        extra_metadata={"satellite": satellite}
+    )
