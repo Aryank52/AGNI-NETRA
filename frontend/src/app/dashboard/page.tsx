@@ -199,7 +199,7 @@ function DashboardContent() {
 
   useEffect(() => {
     loadData();
-  }, [selectedState, selectedDistrict, riskFilter, classFilter, statusFilter, minFrp, dataMode, page]);
+  }, [selectedState, selectedDistrict, riskFilter, classFilter, statusFilter, minFrp, dataMode, page, user]);
 
   // Auto-Refresh Timer
   useEffect(() => {

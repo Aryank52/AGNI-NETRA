@@ -10,7 +10,7 @@ import {
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
   Sliders, Database, ShieldAlert, BookOpen, Globe, Layers, Radio,
-  Pickaxe, GraduationCap, Shield
+  Pickaxe, GraduationCap, Shield, Terminal
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -19,6 +19,7 @@ export default function Sidebar() {
 
   // 1. COMMAND CENTER (Analyst & Admin)
   const commandCenter = [
+    { label: "JARVIS Command Console", href: "/jarvis", icon: Terminal, badge: "AI OPS" },
     { label: "National Overview", href: "/dashboard", icon: Map, badge: "LIVE" },
     { label: "Live Hotspot Events", href: "/dashboard/events", icon: Flame, badge: "NRT" },
     { label: "Alert Queue", href: "/dashboard/alerts", icon: Bell, badge: "QUEUE" },

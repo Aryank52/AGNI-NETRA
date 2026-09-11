@@ -3,13 +3,14 @@ from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
     ingestion, ml, admin, baselines, portals, model_registry,
-    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis
+    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis, jarvis, intelligence
 )
 
 api_router = APIRouter()
 
 api_router.include_router(health.router, prefix="/health", tags=["Health & Diagnostics"])
 api_router.include_router(gis.router, prefix="/gis", tags=["Spatial GIS Multi-Layer Engine"])
+api_router.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence Providers & Global Coverage"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(geography.router, prefix="/geography", tags=["National Administrative Geography & Spatial Enrichment"])
 api_router.include_router(lulc.router, prefix="/lulc", tags=["ISRO Bhuvan Land Use / Land Cover (LULC)"])
@@ -33,6 +34,7 @@ api_router.include_router(model_registry.router, prefix="/admin", tags=["Model G
 api_router.include_router(satellite_simulator.router, prefix="/satellite", tags=["AGNI-SAT Software Satellite & Mission Control"])
 api_router.include_router(historical.router, prefix="/historical", tags=["Historical Thermal Database & Atlas"])
 api_router.include_router(evidence.router, prefix="/evidence", tags=["Multimodal Evidence & Ground Verification"])
+api_router.include_router(jarvis.router, prefix="/jarvis", tags=["JARVIS Autonomous Intelligence & Command Layer"])
 
 
 

@@ -90,14 +90,39 @@ async function fetchRoleToken(role: UserRole) {
   return null;
 }
 
+function isTokenExpired(jwtToken: string): boolean {
+  try {
+    const parts = jwtToken.split(".");
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    // Buffer by 30 seconds before expiration
+    return (payload.exp * 1000) <= (Date.now() + 30000);
+  } catch {
+    return true;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
+  const refreshAuthToken = async (role: UserRole = "ANALYST") => {
+    const auth = await fetchRoleToken(role);
+    if (auth) {
+      setUser(auth.user);
+      setToken(auth.token);
+      localStorage.setItem("agni_user", JSON.stringify(auth.user));
+      localStorage.setItem("agni_token", auth.token);
+    } else {
+      setUser(DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST);
+    }
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("agni_user");
     const savedToken = localStorage.getItem("agni_token");
-    if (savedToken && savedToken.startsWith("ey") && savedUser) {
+    if (savedToken && savedToken.startsWith("ey") && savedUser && !isTokenExpired(savedToken)) {
       try {
         setUser(JSON.parse(savedUser));
         setToken(savedToken);
@@ -105,17 +130,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     }
 
-    // Default to authentic Analyst session with valid cryptographic JWT
-    fetchRoleToken("ANALYST").then((auth) => {
-      if (auth) {
-        setUser(auth.user);
-        setToken(auth.token);
-        localStorage.setItem("agni_user", JSON.stringify(auth.user));
-        localStorage.setItem("agni_token", auth.token);
-      } else {
-        setUser(DEMO_PROFILES.ANALYST);
-      }
-    });
+    // Cached token missing, invalid, or expired -> fetch fresh authentic signed session
+    localStorage.removeItem("agni_user");
+    localStorage.removeItem("agni_token");
+    refreshAuthToken("ANALYST");
+
+    // Listen for unauthorized 401 events to auto-refresh session
+    const handleUnauthorized = () => {
+      refreshAuthToken("ANALYST");
+    };
+    window.addEventListener("agni:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("agni:unauthorized", handleUnauthorized);
   }, []);
 
   const login = async (email: string, role: UserRole = "ANALYST") => {

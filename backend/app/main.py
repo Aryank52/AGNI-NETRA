@@ -56,6 +56,7 @@ def health_check():
 
 
 @app.get("/health/db", tags=["Health"])
+@app.get(f"{settings.API_V1_STR}/health/db", tags=["Health"])
 def database_health_check(db: Session = Depends(get_db)):
     """
     Validates live database connection, response latency, and engine dialect.

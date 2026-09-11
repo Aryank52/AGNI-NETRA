@@ -80,6 +80,7 @@ export default function MapLibreView({
       center: initial.center,
       zoom: initial.zoom,
       attributionControl: false,
+      renderWorldCopies: false,
     });
 
     m.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
@@ -562,12 +563,39 @@ export default function MapLibreView({
     });
   };
 
+  // Helper: Compute normalized geographic bounding box [-180, 180] and [-85.05, 85.05]
+  const getNormalizedBBox = (m: maplibregl.Map): string => {
+    const bounds = m.getBounds();
+    const rawWest = bounds.getWest();
+    const rawEast = bounds.getEast();
+    const rawSouth = bounds.getSouth();
+    const rawNorth = bounds.getNorth();
+
+    const south = Math.max(-85.0511, Math.min(85.0511, Math.min(rawSouth, rawNorth)));
+    const north = Math.max(-85.0511, Math.min(85.0511, Math.max(rawSouth, rawNorth)));
+
+    if (Math.abs(rawEast - rawWest) >= 360) {
+      return `-180.0000,${south.toFixed(4)},180.0000,${north.toFixed(4)}`;
+    }
+
+    const normLon = (lon: number) => ((((lon + 180) % 360) + 360) % 360) - 180;
+    let west = normLon(rawWest);
+    let east = normLon(rawEast);
+
+    if (west > east) {
+      const tmp = west;
+      west = east;
+      east = tmp;
+    }
+
+    return `${west.toFixed(4)},${south.toFixed(4)},${east.toFixed(4)},${north.toFixed(4)}`;
+  };
+
   // 4. Viewport-Aware Dynamic PostGIS Querying (Debounced)
   const refreshViewportLayers = useCallback(() => {
     if (!map.current || !mapLoaded) return;
     const m = map.current;
-    const bounds = m.getBounds();
-    const bboxStr = `${bounds.getWest().toFixed(4)},${bounds.getSouth().toFixed(4)},${bounds.getEast().toFixed(4)},${bounds.getNorth().toFixed(4)}`;
+    const bboxStr = getNormalizedBBox(m);
 
     // Query Facilities in current bbox
     if (layers.industrialFacilities && m.getSource("industrial_facilities")) {
@@ -646,7 +674,11 @@ export default function MapLibreView({
     if (!map.current || !mapLoaded) return;
     const m = map.current;
 
-    const features = events.map((e) => ({
+    const validEvents = Array.isArray(events)
+      ? events.filter((e) => typeof e?.longitude === "number" && typeof e?.latitude === "number" && !isNaN(e.longitude) && !isNaN(e.latitude))
+      : [];
+
+    const features = validEvents.map((e) => ({
       type: "Feature",
       geometry: {
         type: "Point",

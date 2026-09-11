@@ -40,6 +40,11 @@ export async function fetchApi<T>(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
+      if (res.status === 401 && typeof window !== "undefined") {
+        localStorage.removeItem("agni_token");
+        localStorage.removeItem("agni_user");
+        window.dispatchEvent(new CustomEvent("agni:unauthorized"));
+      }
       let errorDetail = `HTTP ${res.status}: ${res.statusText}`;
       try {
         const errJson = await res.json();

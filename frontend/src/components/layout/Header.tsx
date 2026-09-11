@@ -12,7 +12,7 @@ import {
   Layers, LogOut, ChevronDown, CheckCircle2, AlertTriangle,
   Search, X, MapPin, Factory, Zap, Pickaxe, Trees, Shield, Loader2,
   Clock, Menu, Bell, BarChart3, Globe, Cpu, Eye, Building2, GraduationCap,
-  Map as MapIcon, Settings
+  Map as MapIcon, Settings, Sparkles
 } from "lucide-react";
 
 export interface PortalOption {
@@ -442,6 +442,16 @@ export default function Header() {
 
       {/* Operational Stream Indicator & Mission Clocks */}
       <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+        <Link
+          href="/jarvis"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 text-amber-300 text-[11px] font-mono font-bold transition-all shadow-sm group"
+          title="Launch JARVIS AI Command & Intelligence Orchestration Layer"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+          <span className="tracking-wide">JARVIS</span>
+          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-normal">AI OPS</span>
+        </Link>
+
         <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="font-bold tracking-wider">FIRMS STREAM ACTIVE</span>

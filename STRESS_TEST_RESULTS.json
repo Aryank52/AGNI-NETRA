@@ -1,0 +1,1452 @@
+{
+  "timestamp": 1789143540.6598296,
+  "scores": {
+    "total_tests_executed": 31,
+    "total_tests_passed": 31,
+    "Command_Understanding_Accuracy": 100.0,
+    "Capability_Selection_Accuracy": 100.0,
+    "Plan_Correctness": 100.0,
+    "Adaptive_Decision_Accuracy": 100.0,
+    "Stopping_Accuracy": 100.0,
+    "Context_Resolution_Accuracy": 100.0,
+    "Evidence_Grounding": 100.0,
+    "Hallucination_Rate": 0.0,
+    "Tool_Failure_Recovery": 100.0,
+    "Overall_Generalization_Score": 100.0
+  },
+  "results": {
+    "unseen_commands": {
+      "TEST_A": {
+        "command": "JARVIS, what deserves my attention most right now?",
+        "parsed_objective": {
+          "primary_goal": "QUERY",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": null,
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "QUERY",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_recent_events"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Recent High-Priority Thermal Events from Database"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'QUERY'.",
+        "final_state": "COMPLETED",
+        "final_summary": "JARVIS retrieved 10 active thermal events across Indian industrial zones. Highest severity event: EVT-GUJ-20260907-0AF4 (Gujarat) with Peak FRP 285.0 MW and CRITICAL risk.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 728.45,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_B": {
+        "command": "JARVIS, find thermal activity around industrial sites that looks unusual compared with normal behavior.",
+        "parsed_objective": {
+          "primary_goal": "COMPARE_BASELINE",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT",
+          "target_event": null,
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "COMPARE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "GEOINT",
+          "THERMAL_INTELLIGENCE",
+          "CLASSIFICATION",
+          "HISTORICAL_ANALYSIS",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_search_critical_anomalies_near_facilities",
+          "tool_get_event",
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Search Critical Thermal Anomalies Near Industrial Facilities (All India)",
+          "Retrieve Entity Record and Radiative Characteristics",
+          "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+          "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+          "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+          "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+          "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+          "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+          "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+        ],
+        "parallel_operations": [
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations"
+        ],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Identified most suspicious industrial event (EVT-GUJ-20260830-E234) and explained risk drivers using spatial proximity, XGBoost classification, and 5-factor risk decomposition; halted without unprompted dossier compilation.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - JARVIS executed end-to-end adaptive investigation for EVT-GUJ-20260830-E234. Classified as 'Gas Flare' (51.4% confidence). Thermal output: 285.0 MW (12.85x historical baseline, +4.07 sigma). Multi-factor Risk Score: 75.3/100 (CRITICAL). Human-In-The-Loop analyst review is REQUIRED.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 1041.52,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_C": {
+        "command": "JARVIS, I need the strongest case for a possible industrial fire. Find it and explain your evidence.",
+        "parsed_objective": {
+          "primary_goal": "MULTI_EVENT_COMPARE",
+          "requested_output": "COMPARISON",
+          "stopping_condition": "IDENTIFY_STRONGEST_CASE_AND_HALT",
+          "target_event": null,
+          "target_region": null,
+          "target_hypothesis": "Industrial Fire",
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "SUMMARIZE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Synthesize and fuse grounded epistemic evidence from workspace"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "EVIDENCE_REPORTED_AND_HALT: Structured evidence synthesis presented for active case.",
+        "final_state": "COMPLETED",
+        "final_summary": "### EVIDENTIARY KNOWLEDGE SYNTHESIS // INV-20260911-496856\n\n**FACTS:** (Authoritative Telemetry)\n- Target Identifier: Multiple Candidates\n\n**CLASSIFICATION EVIDENCE (MODEL OUTPUTS):**\n- Model evaluations pending.\n\n**SPATIAL CONTEXT:**\n- Geospatial proximity not yet computed.\n\n**HISTORICAL CONTEXT:**\n- Longitudinal baseline not yet evaluated.\n\n**DERIVED ASSESSMENTS:**\n- Derived synthesis in progress.\n\n**INFERENCES:**\n- Thermal signature aligns with detected multi-factor profile.\n\n**RECOMMENDATIONS:**\n- Maintain autonomous sensor surveillance.\n- Issue 'Generate dossier' to compile formal PDF intelligence document.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 36.47,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_D": {
+        "command": "JARVIS, check Gujarat and tell me which thermal incident is the most concerning.",
+        "parsed_objective": {
+          "primary_goal": "QUERY",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": null,
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "QUERY",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_recent_events"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Recent High-Priority Thermal Events from Database"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'QUERY'.",
+        "final_state": "COMPLETED",
+        "final_summary": "JARVIS retrieved 10 active thermal events across Indian industrial zones. Highest severity event: EVT-GUJ-20260907-0AF4 (Gujarat) with Peak FRP 285.0 MW and CRITICAL risk.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 223.29,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_E": {
+        "command": "JARVIS, is the current activity at Event 827 unusual for that location?",
+        "parsed_objective": {
+          "primary_goal": "INVESTIGATE_TARGET",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": "827",
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "INVESTIGATE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE",
+          "GEOINT",
+          "CLASSIFICATION",
+          "HISTORICAL_ANALYSIS",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_event",
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Event Entity and Attributes",
+          "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+          "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+          "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+          "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+          "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+          "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+          "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+        ],
+        "parallel_operations": [
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations"
+        ],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'INVESTIGATE'.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Comprehensive investigation completed for EVT-827. Classified as 'Gas Flare' with 51.4% calibrated probability. Thermal intensity is 12.85x historical baseline. Risk evaluated at 75.3/100 (CRITICAL). Human-In-The-Loop analyst verification is REQUIRED.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 678.73,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_F": {
+        "command": "JARVIS, which of these cases should an analyst look at first?",
+        "parsed_objective": {
+          "primary_goal": "QUERY",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": null,
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "QUERY",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_recent_events"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Recent High-Priority Thermal Events from Database"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'QUERY'.",
+        "final_state": "COMPLETED",
+        "final_summary": "JARVIS retrieved 10 active thermal events across Indian industrial zones. Highest severity event: EVT-GUJ-20260907-0AF4 (Gujarat) with Peak FRP 285.0 MW and CRITICAL risk.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 145.44,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_G": {
+        "command": "JARVIS, give me the evidence behind the conclusion, not just the classification.",
+        "parsed_objective": {
+          "primary_goal": "SHOW_EVIDENCE",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": "EVT-827",
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": true
+        },
+        "intent": "SUMMARIZE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Synthesize and fuse grounded epistemic evidence from workspace"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "EVIDENCE_REPORTED_AND_HALT: Structured evidence synthesis presented for EVT-827.",
+        "final_state": "COMPLETED",
+        "final_summary": "### EVIDENTIARY KNOWLEDGE SYNTHESIS // INV-20260911-C3F1BD\n\n**FACTS:** (Authoritative Telemetry)\n- Target Identifier: EVT-827\n- Region: Gujarat\n- Radiative Power: 285.0 MW peak, 249.38 MW average\n- Coordinates: Lat 22.3542, Lon 69.8644\n\n**CLASSIFICATION EVIDENCE (MODEL OUTPUTS):**\n- XGBoost Prediction: Gas Flare (Confidence: 51.4%)\n- 5-Factor Risk Score: 75.3/100 (CRITICAL)\n\n**SPATIAL CONTEXT:**\n- Nearest Critical Asset: Reliance Jamnagar Mega Refinery & Petrochemical Complex (0m)\n- Asset Type: INDUSTRIAL\n\n**HISTORICAL CONTEXT:**\n- Historical Mean FRP: 19.4 MW\n- Anomaly Z-Score: +4.07\u03c3 (Anomalous excursion)\n\n**DERIVED ASSESSMENTS:**\n- Operational Priority: P1 URGENT\n\n**INFERENCES:**\n- Consistent thermal profile conforms to operational refinery/petrochemical flare stack behavior.\n\n**RECOMMENDATIONS:**\n- Mandatory Analyst Verification: Route case to Verification Desk.\n- Issue 'Generate dossier' to compile formal PDF intelligence document.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 16.13,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_H": {
+        "command": "JARVIS, investigate this case thoroughly but do not generate a report.",
+        "parsed_objective": {
+          "primary_goal": "INVESTIGATE_TARGET",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": "EVT-827",
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": true
+        },
+        "intent": "INVESTIGATE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE",
+          "GEOINT",
+          "CLASSIFICATION",
+          "HISTORICAL_ANALYSIS",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_event",
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Event Entity and Attributes",
+          "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+          "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+          "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+          "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+          "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+          "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+          "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+        ],
+        "parallel_operations": [
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations"
+        ],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'INVESTIGATE'.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Comprehensive investigation completed for EVT-827. Classified as 'Gas Flare' with 51.4% calibrated probability. Thermal intensity is 12.85x historical baseline. Risk evaluated at 75.3/100 (CRITICAL). Human-In-The-Loop analyst verification is REQUIRED.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 507.69,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_I": {
+        "command": "JARVIS, prepare a formal report only if the investigation indicates that human review is necessary for Event 827.",
+        "parsed_objective": {
+          "primary_goal": "GENERATE_DOSSIER",
+          "requested_output": "DOSSIER_PDF",
+          "stopping_condition": "GENERATE_DOSSIER_AND_HALT",
+          "target_event": "827",
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "GENERATE_REPORT",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "REPORTING"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_compile_investigation_brief",
+          "tool_generate_investigation_dossier"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Compile Formal Technical Dossier Data Manifest",
+          "Execute ReportLab PDF Document Stream Compilation"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "DOSSIER_COMPILED_AND_EXPORTED: Successfully compiled multi-source intelligence dossier and rendered authoritative PDF via ReportLab for EVT-827 (4164 bytes).",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Formal Investigation Dossier compiled for Event 827. Title: 'Incident Investigation Dossier: EVT-827'. Classification: Gas Flare. Risk: CRITICAL (75.3/100). PDF archive size: 4164 bytes. Ready for analyst review.",
+        "has_pdf_dossier": true,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 1005.26,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "TEST_J": {
+        "command": "JARVIS, compare the two strongest cases in Gujarat and tell me whether they point to the same kind of thermal source.",
+        "parsed_objective": {
+          "primary_goal": "MULTI_EVENT_COMPARE",
+          "requested_output": "COMPARISON",
+          "stopping_condition": "IDENTIFY_STRONGEST_CASE_AND_HALT",
+          "target_event": null,
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "COMPARE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_recent_events",
+          "tool_compare_candidate_events",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Cohort of Candidate Events (Gujarat)",
+          "Execute Comparative Multi-Event Evaluation against 'Industrial Fire'",
+          "Fuse Comparative Findings and Record Candidate Hierarchy"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "IDENTIFIED_STRONGEST_CASE: Evaluated 3 candidates; identified EVT-GUJ-20260907-0AF4 with strongest empirical evidence of Industrial Fire (Composite Score: 93.5/100); halted without unprompted dossier compilation.",
+        "final_state": "COMPLETED",
+        "final_summary": "JARVIS evaluated 3 candidate thermal events against the target hypothesis 'Industrial Fire'.\n\n**Strongest Case:** EVT-GUJ-20260907-0AF4 exhibits the strongest empirical evidence of an Industrial Fire with a composite evidence score of 93.5/100. Core drivers: XGBoost classification 'Industrial Fire' with 97% confidence, 5-factor operational risk score of 80.3 (CRITICAL), peak radiative power of 285.0 MW (14.68x above historical baseline of 19.4 MW), and spatial location 181m from Reliance Jamnagar Mega Refinery & Petrochemical Complex.\n\n### MULTI-CANDIDATE COMPARATIVE MATRIX // Target Hypothesis: Industrial Fire\n\n| Candidate | Event Code | Classification | Confidence | Risk Score | Baseline Deviation | Proximity | Composite Score | Rank |\n| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n| Candidate A | EVT-GUJ-20260907-0AF4 | Industrial Fire | 97.1% | 80.3 (CRITICAL) | 14.7x baseline | 182m | 93.5/100 | **#1 WINNER** |\n| Candidate B | EVT-TEST-343664 | Gas Flare | 92.0% | 78.5 (CRITICAL) | 4.3x baseline | 10000m | 47.1/100 | #2 |\n| Candidate C | EVT-TEST-E21AFA | Gas Flare | 92.0% | 78.5 (CRITICAL) | 4.3x baseline | 10000m | 47.1/100 | #3 |\n\n**Scoring Provenance:**\nDeterministic composite evaluation: 35% classification match + 25% 5-factor risk + 15% facility proximity + 15% baseline elevation + 10% radiative power (FRP).\n\n**Winner Selection Rationale:**\nEVT-GUJ-20260907-0AF4 exhibits the strongest empirical evidence of an Industrial Fire with a composite evidence score of 93.5/100. Core drivers: XGBoost classification 'Industrial Fire' with 97% confidence, 5-factor operational risk score of 80.3 (CRITICAL), peak radiative power of 285.0 MW (14.68x above historical baseline of 19.4 MW), and spatial location 181m from Reliance Jamnagar Mega Refinery & Petrochemical Complex.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 225.18,
+        "status": "COMPLETED",
+        "test_pass": true
+      }
+    },
+    "paraphrase_robustness": {
+      "risk_synonyms": [
+        {
+          "command": "JARVIS, find the highest risk thermal event in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "LOCATE_ANOMALIES",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility",
+              "risk >= HIGH"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "GEOINT"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_search_critical_anomalies_near_facilities"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute PostGIS Spatial Join (Buffer near Industrial Polygons)"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'LOCATE'.",
+          "final_state": "COMPLETED",
+          "final_summary": "PostGIS spatial query identified 10 critical thermal anomalies within 5 km of industrial facility perimeters in Gujarat. Primary hotspot: EVT-GUJ-20260831-FDDA near Reliance Jamnagar Mega Refinery & Petrochemical Complex (181m distance).",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 67.72,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find the most concerning thermal event in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "LOCATE_ANOMALIES",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "GEOINT"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_search_critical_anomalies_near_facilities"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute PostGIS Spatial Join (Buffer near Industrial Polygons)"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'LOCATE'.",
+          "final_state": "COMPLETED",
+          "final_summary": "PostGIS spatial query identified 10 critical thermal anomalies within 5 km of industrial facility perimeters in Gujarat. Primary hotspot: EVT-GUJ-20260831-FDDA near Reliance Jamnagar Mega Refinery & Petrochemical Complex (181m distance).",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 71.27,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find the most serious thermal event in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "LOCATE_ANOMALIES",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "GEOINT"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_search_critical_anomalies_near_facilities"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute PostGIS Spatial Join (Buffer near Industrial Polygons)"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'LOCATE'.",
+          "final_state": "COMPLETED",
+          "final_summary": "PostGIS spatial query identified 10 critical thermal anomalies within 5 km of industrial facility perimeters in Gujarat. Primary hotspot: EVT-GUJ-20260831-FDDA near Reliance Jamnagar Mega Refinery & Petrochemical Complex (181m distance).",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 62.57,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find the most suspicious thermal event in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "IDENTIFY_AND_EXPLAIN_SUSPICIOUS",
+            "requested_output": "EXPLANATION",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "GEOINT"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_search_critical_anomalies_near_facilities"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute PostGIS Spatial Join (Buffer near Industrial Polygons)"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'LOCATE'.",
+          "final_state": "COMPLETED",
+          "final_summary": "PostGIS spatial query identified 10 critical thermal anomalies within 5 km of industrial facility perimeters in Gujarat. Primary hotspot: EVT-GUJ-20260831-FDDA near Reliance Jamnagar Mega Refinery & Petrochemical Complex (181m distance).",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 63.22,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, which thermal event in Gujarat requires attention?",
+          "parsed_objective": {
+            "primary_goal": "QUERY",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "QUERY",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "THERMAL_INTELLIGENCE"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_get_recent_events"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Retrieve Recent High-Priority Thermal Events from Database"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'QUERY'.",
+          "final_state": "COMPLETED",
+          "final_summary": "JARVIS retrieved 10 active thermal events across Indian industrial zones. Highest severity event: EVT-GUJ-20260907-0AF4 (Gujarat) with Peak FRP 285.0 MW and CRITICAL risk.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 129.5,
+          "status": "COMPLETED",
+          "test_pass": true
+        }
+      ],
+      "baseline_synonyms": [
+        {
+          "command": "JARVIS, compare Event 827 with its historical baseline.",
+          "parsed_objective": {
+            "primary_goal": "COMPARE_BASELINE",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT",
+            "target_event": "827",
+            "target_region": null,
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "COMPARE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "THERMAL_INTELLIGENCE",
+            "HISTORICAL_ANALYSIS"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_get_event",
+            "tool_compare_baseline",
+            "fuse_evidence"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Retrieve Event Entity and Attributes",
+            "Compare Radiative Heat against Longitudinal Facility Baseline",
+            "Synthesize Longitudinal Baseline Comparison"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON: Completed historical baseline analysis for EVT-827 (12.85x normal, +4.07 sigma); halted without unprompted actions.",
+          "final_state": "COMPLETED",
+          "final_summary": "Historical baseline comparison for Event EVT-827: Current radiative output (285.0 MW) exhibits a +4.07 sigma statistical anomaly (12.85x normal) relative to the longitudinal facility baseline (19.41 MW). Isolation Forest behavioral anomaly score: 0.542.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 297.95,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, compare Event 827 with its normal behavior.",
+          "parsed_objective": {
+            "primary_goal": "COMPARE_BASELINE",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT",
+            "target_event": "827",
+            "target_region": null,
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "COMPARE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "THERMAL_INTELLIGENCE",
+            "HISTORICAL_ANALYSIS"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_get_event",
+            "tool_compare_baseline",
+            "fuse_evidence"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Retrieve Event Entity and Attributes",
+            "Compare Radiative Heat against Longitudinal Facility Baseline",
+            "Synthesize Longitudinal Baseline Comparison"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON: Completed historical baseline analysis for EVT-827 (12.85x normal, +4.07 sigma); halted without unprompted actions.",
+          "final_state": "COMPLETED",
+          "final_summary": "Historical baseline comparison for Event EVT-827: Current radiative output (285.0 MW) exhibits a +4.07 sigma statistical anomaly (12.85x normal) relative to the longitudinal facility baseline (19.41 MW). Isolation Forest behavioral anomaly score: 0.542.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 332.7,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, compare Event 827 with its usual pattern.",
+          "parsed_objective": {
+            "primary_goal": "COMPARE_BASELINE",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT",
+            "target_event": "827",
+            "target_region": null,
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "COMPARE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "THERMAL_INTELLIGENCE",
+            "HISTORICAL_ANALYSIS"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_get_event",
+            "tool_compare_baseline",
+            "fuse_evidence"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Retrieve Event Entity and Attributes",
+            "Compare Radiative Heat against Longitudinal Facility Baseline",
+            "Synthesize Longitudinal Baseline Comparison"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON: Completed historical baseline analysis for EVT-827 (12.85x normal, +4.07 sigma); halted without unprompted actions.",
+          "final_state": "COMPLETED",
+          "final_summary": "Historical baseline comparison for Event EVT-827: Current radiative output (285.0 MW) exhibits a +4.07 sigma statistical anomaly (12.85x normal) relative to the longitudinal facility baseline (19.41 MW). Isolation Forest behavioral anomaly score: 0.542.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 283.72,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, compare Event 827 with historical expectation.",
+          "parsed_objective": {
+            "primary_goal": "COMPARE_BASELINE",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT",
+            "target_event": "827",
+            "target_region": null,
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "COMPARE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "THERMAL_INTELLIGENCE",
+            "HISTORICAL_ANALYSIS"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "tool_get_event",
+            "tool_compare_baseline",
+            "fuse_evidence"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Retrieve Event Entity and Attributes",
+            "Compare Radiative Heat against Longitudinal Facility Baseline",
+            "Synthesize Longitudinal Baseline Comparison"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON: Completed historical baseline analysis for EVT-827 (12.85x normal, +4.07 sigma); halted without unprompted actions.",
+          "final_state": "COMPLETED",
+          "final_summary": "Historical baseline comparison for Event EVT-827: Current radiative output (285.0 MW) exhibits a +4.07 sigma statistical anomaly (12.85x normal) relative to the longitudinal facility baseline (19.41 MW). Isolation Forest behavioral anomaly score: 0.542.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 83.59,
+          "status": "COMPLETED",
+          "test_pass": true
+        }
+      ],
+      "facility_synonyms": [
+        {
+          "command": "JARVIS, find anomalies near an industrial facility in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "MULTI_CONSTRAINT_SEARCH",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "CROSS_SOURCE_CORRELATION"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "search_multi_constraint_events"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute Compound Multi-Constraint Query"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "MULTI_CONSTRAINT_SEARCH_COMPLETE: Found 0 events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions.",
+          "final_state": "COMPLETED",
+          "final_summary": "### MULTI-CONSTRAINT INTELLIGENCE QUERY RESULTS (0 MATCHES)\n\n*Applied Constraints: Proximity <= 5km from industrial facility, Persistent / Anomalous Thermal Signature*\n\nNo active thermal events currently match all specified multi-constraint parameters.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 18851.61,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find anomalies near an industrial site in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "MULTI_CONSTRAINT_SEARCH",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "CROSS_SOURCE_CORRELATION"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "search_multi_constraint_events"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute Compound Multi-Constraint Query"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "MULTI_CONSTRAINT_SEARCH_COMPLETE: Found 0 events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions.",
+          "final_state": "COMPLETED",
+          "final_summary": "### MULTI-CONSTRAINT INTELLIGENCE QUERY RESULTS (0 MATCHES)\n\n*Applied Constraints: Proximity <= 5km from industrial facility, Persistent / Anomalous Thermal Signature*\n\nNo active thermal events currently match all specified multi-constraint parameters.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 18832.05,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find anomalies near an industrial plant in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "MULTI_CONSTRAINT_SEARCH",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "CROSS_SOURCE_CORRELATION"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "search_multi_constraint_events"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute Compound Multi-Constraint Query"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "MULTI_CONSTRAINT_SEARCH_COMPLETE: Found 0 events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions.",
+          "final_state": "COMPLETED",
+          "final_summary": "### MULTI-CONSTRAINT INTELLIGENCE QUERY RESULTS (0 MATCHES)\n\n*Applied Constraints: Proximity <= 5km from industrial facility, Persistent / Anomalous Thermal Signature*\n\nNo active thermal events currently match all specified multi-constraint parameters.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 18589.17,
+          "status": "COMPLETED",
+          "test_pass": true
+        },
+        {
+          "command": "JARVIS, find anomalies near an industrial location in Gujarat.",
+          "parsed_objective": {
+            "primary_goal": "MULTI_CONSTRAINT_SEARCH",
+            "requested_output": "SYNTHESIS",
+            "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+            "target_event": null,
+            "target_region": "Gujarat",
+            "target_hypothesis": null,
+            "constraints": [
+              "within 5km of facility"
+            ],
+            "resolved_from_context": false
+          },
+          "intent": "LOCATE",
+          "selected_capabilities": [
+            "SYSTEM_GOVERNANCE",
+            "CROSS_SOURCE_CORRELATION"
+          ],
+          "tools_executed": [
+            "guard_authorize_action",
+            "search_multi_constraint_events"
+          ],
+          "execution_order": [
+            "Validate Permissions, Operating Policy, and Dispatch Gate",
+            "Execute Compound Multi-Constraint Query"
+          ],
+          "parallel_operations": [],
+          "adaptive_decisions": [],
+          "stopping_reason": "MULTI_CONSTRAINT_SEARCH_COMPLETE: Found 0 events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions.",
+          "final_state": "COMPLETED",
+          "final_summary": "### MULTI-CONSTRAINT INTELLIGENCE QUERY RESULTS (0 MATCHES)\n\n*Applied Constraints: Proximity <= 5km from industrial facility, Persistent / Anomalous Thermal Signature*\n\nNo active thermal events currently match all specified multi-constraint parameters.",
+          "has_pdf_dossier": false,
+          "requires_human_approval": false,
+          "clarification_required": false,
+          "hallucination_detected": false,
+          "execution_latency_ms": 19648.52,
+          "status": "COMPLETED",
+          "test_pass": true
+        }
+      ]
+    },
+    "ambiguity": {
+      "without_context": {
+        "command": "JARVIS, investigate the serious one.",
+        "parsed_objective": {
+          "primary_goal": "QUERY",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": null,
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "INVESTIGATE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE"
+        ],
+        "tools_executed": [],
+        "execution_order": [],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "CLARIFICATION_REQUIRED: Target reference ambiguous or unspecified.",
+        "final_state": "COMPLETED",
+        "final_summary": "Target event not specified in command or session context. Please provide an event ID.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": false,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 9.63,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "with_context": {
+        "command": "JARVIS, investigate the serious one.",
+        "parsed_objective": {
+          "primary_goal": "INVESTIGATE_TARGET",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": "EVT-827",
+          "target_region": "Gujarat",
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": true
+        },
+        "intent": "INVESTIGATE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE",
+          "GEOINT",
+          "CLASSIFICATION",
+          "HISTORICAL_ANALYSIS",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_event",
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Event Entity and Attributes",
+          "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+          "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+          "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+          "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+          "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+          "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+          "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+        ],
+        "parallel_operations": [
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations"
+        ],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'INVESTIGATE'.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Comprehensive investigation completed for EVT-827. Classified as 'Gas Flare' with 51.4% calibrated probability. Thermal intensity is 12.85x historical baseline. Risk evaluated at 75.3/100 (CRITICAL). Human-In-The-Loop analyst verification is REQUIRED.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 560.07,
+        "status": "COMPLETED",
+        "test_pass": true
+      }
+    },
+    "missing_data": {
+      "command": "JARVIS, investigate Event 99999999.",
+      "parsed_objective": {
+        "primary_goal": "INVESTIGATE_TARGET",
+        "requested_output": "SYNTHESIS",
+        "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+        "target_event": "99999999",
+        "target_region": null,
+        "target_hypothesis": null,
+        "constraints": [
+          "within 5km of facility"
+        ],
+        "resolved_from_context": false
+      },
+      "intent": "INVESTIGATE",
+      "selected_capabilities": [
+        "SYSTEM_GOVERNANCE",
+        "THERMAL_INTELLIGENCE"
+      ],
+      "tools_executed": [
+        "guard_authorize_action",
+        "tool_get_event"
+      ],
+      "execution_order": [
+        "Validate Permissions, Operating Policy, and Dispatch Gate",
+        "Lookup Event Entity (99999999)"
+      ],
+      "parallel_operations": [],
+      "adaptive_decisions": [],
+      "stopping_reason": "TARGET NOT FOUND: Event 99999999 does not exist. No substitution was performed.",
+      "final_state": "COMPLETED",
+      "final_summary": "TARGET NOT FOUND: Event 99999999 was not found in the AGNI-NETRA database. No substitution was performed. Halting execution safely without data substitution.",
+      "has_pdf_dossier": false,
+      "requires_human_approval": false,
+      "clarification_required": false,
+      "hallucination_detected": false,
+      "execution_latency_ms": 50.18,
+      "status": "COMPLETED",
+      "test_pass": true
+    },
+    "tool_failure": {
+      "command": "JARVIS, investigate Event 827.",
+      "parsed_objective": {
+        "primary_goal": "INVESTIGATE_TARGET",
+        "requested_output": "SYNTHESIS",
+        "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+        "target_event": "827",
+        "target_region": null,
+        "target_hypothesis": null,
+        "constraints": [
+          "within 5km of facility"
+        ],
+        "resolved_from_context": false
+      },
+      "intent": "INVESTIGATE",
+      "selected_capabilities": [
+        "SYSTEM_GOVERNANCE",
+        "THERMAL_INTELLIGENCE",
+        "GEOINT",
+        "CLASSIFICATION",
+        "HISTORICAL_ANALYSIS",
+        "RISK_ANALYSIS"
+      ],
+      "tools_executed": [
+        "guard_authorize_action",
+        "tool_get_event",
+        "tool_get_event_spatial_context",
+        "tool_classify_event",
+        "tool_get_shap_drivers",
+        "tool_compare_baseline",
+        "tool_calculate_risk",
+        "tool_get_satellite_observations",
+        "fuse_evidence"
+      ],
+      "execution_order": [
+        "Validate Permissions, Operating Policy, and Dispatch Gate",
+        "Retrieve Event Entity and Attributes",
+        "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+        "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+        "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+        "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+        "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+        "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+        "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+      ],
+      "parallel_operations": [
+        "tool_get_event_spatial_context",
+        "tool_classify_event",
+        "tool_get_shap_drivers",
+        "tool_compare_baseline",
+        "tool_calculate_risk",
+        "tool_get_satellite_observations"
+      ],
+      "adaptive_decisions": [],
+      "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'INVESTIGATE'.",
+      "final_state": "REQUIRES_APPROVAL",
+      "final_summary": "[HUMAN APPROVAL REQUIRED] - Comprehensive investigation completed for EVT-827. Classified as 'None' with 0.0% calibrated probability. Thermal intensity is 12.85x historical baseline. Risk evaluated at 75.3/100 (CRITICAL). Human-In-The-Loop analyst verification is REQUIRED.",
+      "has_pdf_dossier": false,
+      "requires_human_approval": true,
+      "clarification_required": false,
+      "hallucination_detected": false,
+      "execution_latency_ms": 509.68,
+      "status": "COMPLETED",
+      "test_pass": true
+    },
+    "stopping_tests": {
+      "explain_risk": {
+        "command": "JARVIS, explain Event 827's risk.",
+        "parsed_objective": {
+          "primary_goal": "EXPLAIN_RISK",
+          "requested_output": "EXPLANATION",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_RISK_EXPLANATION_AND_HALT",
+          "target_event": "827",
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "EXPLAIN",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_event",
+          "tool_calculate_risk",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Event Entity and Attributes",
+          "Deconstruct Multi-Factor Risk Components",
+          "Synthesize Risk Explanation Evidence"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "SUFFICIENT_EVIDENCE_FOR_RISK_EXPLANATION: Evaluated 5-factor operational risk decomposition (75.3/100) for EVT-827; halted without unprompted actions.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Event EVT-827 has a CRITICAL Risk Score of 75.3/100. Evaluation breakdown according to authoritative formula (0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context): 1) Thermal Intensity: 100.0/100; 2) Baseline Abnormality: 100.0/100; 3) Exposure Vulnerability: 20.0/100; 4) Temporal Persistence: 48.6/100; 5) Industrial Context: 90.0/100. Key drivers: Severe radiative heat output (Peak FRP: 285.0 MW), Elevated radiative output (+26.5 sigma), Direct correlation with high-hazard industrial facility boundary.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 113.69,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "investigate": {
+        "command": "JARVIS, investigate Event 827.",
+        "parsed_objective": {
+          "primary_goal": "INVESTIGATE_TARGET",
+          "requested_output": "SYNTHESIS",
+          "stopping_condition": "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE",
+          "target_event": "827",
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "INVESTIGATE",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "THERMAL_INTELLIGENCE",
+          "GEOINT",
+          "CLASSIFICATION",
+          "HISTORICAL_ANALYSIS",
+          "RISK_ANALYSIS"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_get_event",
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations",
+          "fuse_evidence"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Retrieve Event Entity and Attributes",
+          "[PARALLEL] Evaluate PostGIS Spatial Proximity and Buffer Boundaries",
+          "[PARALLEL] Execute XGBoost Multi-Class Inference & Balanced Platt Calibration",
+          "[PARALLEL] Extract TreeExplainer SHAP Local Waterfall Drivers",
+          "[PARALLEL] Compare Current Radiative Heat Output with Longitudinal Baseline",
+          "[PARALLEL] Compute 5-Factor Authoritative Operational Risk Score",
+          "[PARALLEL] Aggregate NASA FIRMS Multi-Sensor Observation Telemetry",
+          "Fuse Multimodal Evidence Package & Enforce HITL Verification Rules"
+        ],
+        "parallel_operations": [
+          "tool_get_event_spatial_context",
+          "tool_classify_event",
+          "tool_get_shap_drivers",
+          "tool_compare_baseline",
+          "tool_calculate_risk",
+          "tool_get_satellite_observations"
+        ],
+        "adaptive_decisions": [],
+        "stopping_reason": "OBJECTIVE_MET: Executed operational action for intent 'INVESTIGATE'.",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Comprehensive investigation completed for EVT-827. Classified as 'Gas Flare' with 51.4% calibrated probability. Thermal intensity is 12.85x historical baseline. Risk evaluated at 75.3/100 (CRITICAL). Human-In-The-Loop analyst verification is REQUIRED.",
+        "has_pdf_dossier": false,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 565.35,
+        "status": "COMPLETED",
+        "test_pass": true
+      },
+      "generate_dossier": {
+        "command": "JARVIS, generate a dossier for Event 827.",
+        "parsed_objective": {
+          "primary_goal": "GENERATE_DOSSIER",
+          "requested_output": "DOSSIER_PDF",
+          "stopping_condition": "GENERATE_DOSSIER_AND_HALT",
+          "target_event": "827",
+          "target_region": null,
+          "target_hypothesis": null,
+          "constraints": [
+            "within 5km of facility"
+          ],
+          "resolved_from_context": false
+        },
+        "intent": "GENERATE_REPORT",
+        "selected_capabilities": [
+          "SYSTEM_GOVERNANCE",
+          "REPORTING"
+        ],
+        "tools_executed": [
+          "guard_authorize_action",
+          "tool_compile_investigation_brief",
+          "tool_generate_investigation_dossier"
+        ],
+        "execution_order": [
+          "Validate Permissions, Operating Policy, and Dispatch Gate",
+          "Compile Formal Technical Dossier Data Manifest",
+          "Execute ReportLab PDF Document Stream Compilation"
+        ],
+        "parallel_operations": [],
+        "adaptive_decisions": [],
+        "stopping_reason": "DOSSIER_COMPILED_AND_EXPORTED: Successfully compiled multi-source intelligence dossier and rendered authoritative PDF via ReportLab for EVT-827 (4163 bytes).",
+        "final_state": "REQUIRES_APPROVAL",
+        "final_summary": "[HUMAN APPROVAL REQUIRED] - Formal Investigation Dossier compiled for Event 827. Title: 'Incident Investigation Dossier: EVT-827'. Classification: Gas Flare. Risk: CRITICAL (75.3/100). PDF archive size: 4163 bytes. Ready for analyst review.",
+        "has_pdf_dossier": true,
+        "requires_human_approval": true,
+        "clarification_required": false,
+        "hallucination_detected": false,
+        "execution_latency_ms": 1045.35,
+        "status": "COMPLETED",
+        "test_pass": true
+      }
+    },
+    "command_composition": {
+      "command": "JARVIS, find the most concerning industrial thermal event in Gujarat, compare it with similar events, explain why it stands out, and tell me whether human verification is required.",
+      "parsed_objective": {
+        "primary_goal": "MULTI_EVENT_COMPARE",
+        "requested_output": "COMPARISON",
+        "stopping_condition": "IDENTIFY_STRONGEST_CASE_AND_HALT",
+        "target_event": null,
+        "target_region": "Gujarat",
+        "target_hypothesis": null,
+        "constraints": [
+          "within 5km of facility"
+        ],
+        "resolved_from_context": false
+      },
+      "intent": "COMPARE",
+      "selected_capabilities": [
+        "SYSTEM_GOVERNANCE",
+        "THERMAL_INTELLIGENCE"
+      ],
+      "tools_executed": [
+        "guard_authorize_action",
+        "tool_get_recent_events",
+        "tool_compare_candidate_events",
+        "fuse_evidence"
+      ],
+      "execution_order": [
+        "Validate Permissions, Operating Policy, and Dispatch Gate",
+        "Retrieve Cohort of Candidate Events (Gujarat)",
+        "Execute Comparative Multi-Event Evaluation against 'Industrial Fire'",
+        "Fuse Comparative Findings and Record Candidate Hierarchy"
+      ],
+      "parallel_operations": [],
+      "adaptive_decisions": [],
+      "stopping_reason": "IDENTIFIED_STRONGEST_CASE: Evaluated 3 candidates; identified EVT-GUJ-20260907-0AF4 with strongest empirical evidence of Industrial Fire (Composite Score: 93.5/100); halted without unprompted dossier compilation.",
+      "final_state": "COMPLETED",
+      "final_summary": "JARVIS evaluated 3 candidate thermal events against the target hypothesis 'Industrial Fire'.\n\n**Strongest Case:** EVT-GUJ-20260907-0AF4 exhibits the strongest empirical evidence of an Industrial Fire with a composite evidence score of 93.5/100. Core drivers: XGBoost classification 'Industrial Fire' with 97% confidence, 5-factor operational risk score of 80.3 (CRITICAL), peak radiative power of 285.0 MW (14.68x above historical baseline of 19.4 MW), and spatial location 181m from Reliance Jamnagar Mega Refinery & Petrochemical Complex.\n\n### MULTI-CANDIDATE COMPARATIVE MATRIX // Target Hypothesis: Industrial Fire\n\n| Candidate | Event Code | Classification | Confidence | Risk Score | Baseline Deviation | Proximity | Composite Score | Rank |\n| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n| Candidate A | EVT-GUJ-20260907-0AF4 | Industrial Fire | 97.1% | 80.3 (CRITICAL) | 14.7x baseline | 182m | 93.5/100 | **#1 WINNER** |\n| Candidate B | EVT-TEST-343664 | Gas Flare | 92.0% | 78.5 (CRITICAL) | 4.3x baseline | 10000m | 47.1/100 | #2 |\n| Candidate C | EVT-TEST-E21AFA | Gas Flare | 92.0% | 78.5 (CRITICAL) | 4.3x baseline | 10000m | 47.1/100 | #3 |\n\n**Scoring Provenance:**\nDeterministic composite evaluation: 35% classification match + 25% 5-factor risk + 15% facility proximity + 15% baseline elevation + 10% radiative power (FRP).\n\n**Winner Selection Rationale:**\nEVT-GUJ-20260907-0AF4 exhibits the strongest empirical evidence of an Industrial Fire with a composite evidence score of 93.5/100. Core drivers: XGBoost classification 'Industrial Fire' with 97% confidence, 5-factor operational risk score of 80.3 (CRITICAL), peak radiative power of 285.0 MW (14.68x above historical baseline of 19.4 MW), and spatial location 181m from Reliance Jamnagar Mega Refinery & Petrochemical Complex.",
+      "has_pdf_dossier": false,
+      "requires_human_approval": false,
+      "clarification_required": false,
+      "hallucination_detected": false,
+      "execution_latency_ms": 165.39,
+      "status": "COMPLETED",
+      "test_pass": true
+    }
+  }
+}

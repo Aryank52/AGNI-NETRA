@@ -315,3 +315,349 @@ export interface OperationalTrends {
   state_analytics: Array<{ state: string; event_count: number; max_frp: number; high_risk: number }>;
   audit_outcomes: Record<string, number>;
 }
+
+// ==============================================================================
+// JARVIS MASTER AGENT & COMMAND ORCHESTRATION LAYER TYPES
+// ==============================================================================
+
+export type JarvisState = 
+  | "IDLE"
+  | "UNDERSTANDING"
+  | "PLANNING"
+  | "EXECUTING"
+  | "EVALUATING"
+  | "WAITING_FOR_INPUT"
+  | "REQUIRES_APPROVAL"
+  | "COMPLETED"
+  | "FAILED"
+  | "BLOCKED";
+
+export type JarvisCapability = 
+  | "GEOINT"
+  | "THERMAL_INTELLIGENCE"
+  | "CLASSIFICATION"
+  | "ANOMALY_ANALYSIS"
+  | "HISTORICAL_ANALYSIS"
+  | "RISK_ANALYSIS"
+  | "ALERT_ANALYSIS"
+  | "VERIFICATION"
+  | "REPORTING"
+  | "SYSTEM_GOVERNANCE"
+  | "CROSS_SOURCE_CORRELATION";
+
+export type AgentType = 
+  | "JARVIS"
+  | "JARVIS-MASTER"
+  | "JARVIS-GEO"
+  | "JARVIS-ML"
+  | "JARVIS-ANOM"
+  | "JARVIS-RISK"
+  | "JARVIS-SAT"
+  | "JARVIS-INVEST"
+  | "JARVIS-REPORT"
+  | "JARVIS-GUARD"
+  | string;
+
+export type StepStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "BLOCKED" | "SKIPPED";
+
+export interface ExecutionStep {
+  step_number: number;
+  agent: string; // Controlled by ONE master agent: JARVIS
+  capability?: string; // Internal capability invoked (GEOINT, CLASSIFICATION, etc.)
+  action: string;
+  tool?: string;
+  parameters?: Record<string, any>;
+  status: StepStatus;
+  result_summary?: string;
+  data_snapshot?: Record<string, any>;
+  error?: string;
+  duration_ms: number;
+}
+
+export interface StateTransition {
+  state: string;
+  timestamp: string;
+  note?: string;
+}
+
+export interface CommandObjective {
+  primary_goal: string;
+  candidate_count?: number;
+  constraints: string[];
+  target_hypothesis?: string;
+  ranking_criteria?: string;
+  requested_evidence: string[];
+  requested_output: string;
+  stopping_condition?: string;
+  resolved_from_context: boolean;
+  contextual_reference?: string;
+}
+
+export interface ExecutionTrace {
+  trace_id: string;
+  command: string;
+  parsed_intent: string;
+  target_event?: string;
+  target_region?: string;
+  user_role: string;
+  current_state?: JarvisState;
+  objective?: CommandObjective;
+  stopping_reason?: string;
+  capabilities_used?: string[];
+  state_transitions?: StateTransition[];
+  steps: ExecutionStep[];
+  total_duration_ms: number;
+  status: StepStatus;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface CategorizedSynthesis {
+  facts: string[];
+  derived_analysis: string[];
+  model_output: string[];
+  spatial_context: string[];
+  inferences: string[];
+  recommendations: string[];
+  uncertainties_and_warnings: string[];
+}
+
+export interface FusedEvidence {
+  thermal_evidence?: Record<string, any>;
+  geospatial_evidence?: Record<string, any>;
+  classification?: Record<string, any>;
+  anomaly?: Record<string, any>;
+  baseline?: Record<string, any>;
+  risk?: Record<string, any>;
+  alert?: Record<string, any>;
+  verification?: Record<string, any>;
+  satellite_observations?: Array<Record<string, any>>;
+  categorized_synthesis?: CategorizedSynthesis;
+  evidence_quality: {
+    completeness_score: number;
+    provenance: string;
+    missing_elements: string[];
+    status: string;
+  };
+}
+
+export interface JarvisResponse {
+  command: string;
+  intent: string;
+  state?: JarvisState;
+  objective?: CommandObjective;
+  stopping_reason?: string;
+  capabilities_used?: string[];
+  summary: string;
+  details: Record<string, any>;
+  fused_evidence: FusedEvidence;
+  execution_trace: ExecutionTrace;
+  recommendations: string[];
+  requires_human_approval: boolean;
+  dispatch_gate_blocked: boolean;
+  system_notice: string;
+  investigation_id?: string;
+  investigation_status?: string;
+  investigation_summary?: Record<string, any>;
+  investigation_workspace?: InvestigationWorkspace;
+  evidence_conflicts?: Array<Record<string, any>>;
+  evidence_strength?: string;
+  evidence_strength_details?: Record<string, any>;
+  analyst_ranking?: Array<Record<string, any>>;
+  uncertainty_assessment?: Record<string, any>;
+  what_could_change?: string[];
+  operator_summary?: Record<string, any>;
+  // Phase 6 Global Intelligence & Provider Abstraction
+  sources_used?: string[];
+  coverage_profile?: string;
+  missing_sources?: string[];
+  partial_sources?: string[];
+  source_availability_matrix?: Record<string, string>;
+  provenance_records?: Array<Record<string, any>>;
+}
+
+export interface JarvisToolInfo {
+  name: string;
+  purpose?: string;
+  capability?: string;
+  input_schema?: Record<string, any>;
+  output_schema?: Record<string, any>;
+  dependencies?: string[];
+  description: string;
+  agent: string;
+  parameters: Record<string, any>;
+  required_role: string;
+  is_mutation: boolean;
+  is_dispatch: boolean;
+  risk_level: string;
+  audit_required: boolean;
+  read_only: boolean;
+}
+
+export type InvestigationStatus = 
+  | "CREATED"
+  | "ACTIVE"
+  | "ANALYZING"
+  | "AWAITING_INPUT"
+  | "REQUIRES_HUMAN_REVIEW"
+  | "COMPLETED"
+  | "CLOSED";
+
+export type EpistemicType = 
+  | "FACT"
+  | "MODEL_OUTPUT"
+  | "DERIVED_ANALYSIS"
+  | "SPATIAL_CONTEXT"
+  | "HISTORICAL_CONTEXT"
+  | "INFERENCE"
+  | "RECOMMENDATION";
+
+export interface StructuredEvidenceItem {
+  evidence_id: string;
+  type: string;
+  source: string;
+  timestamp: string;
+  value?: any;
+  confidence?: number;
+  tool?: string;
+  execution_id?: string;
+  epistemic_type: EpistemicType;
+  freshness_status: string;
+}
+
+export interface InvestigationWorkspace {
+  investigation_id: string;
+  session_id: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  user_role?: string;
+  status: InvestigationStatus;
+  primary_objective?: string;
+  target_event_id?: string;
+  target_region?: string;
+  candidate_set?: Array<Record<string, any>>;
+  selected_candidate?: string;
+  comparison_set?: string[];
+  command_history?: Array<{
+    command: string;
+    intent: string;
+    trace_id?: string;
+    timestamp: string;
+  }>;
+  execution_ids?: string[];
+  evidence_summary?: Record<string, any>;
+  classification_summary?: Record<string, any>;
+  risk_summary?: Record<string, any>;
+  anomaly_summary?: Record<string, any>;
+  historical_summary?: Record<string, any>;
+  spatial_summary?: Record<string, any>;
+  verification_status?: string;
+  report_status?: string;
+  report_id?: string;
+  report_file_path?: string;
+  open_questions?: Array<{ question: string; status?: string }>;
+  resolved_questions?: Array<{ question: string; resolved_by?: string; resolution?: string; resolved_at?: string }>;
+  warnings?: string[];
+  data_provenance?: Record<string, any>;
+  structured_evidence?: StructuredEvidenceItem[];
+  current_winner?: string;
+  winner_reason?: string;
+  completed_subtasks?: Array<{ id: string; name: string; summary: string; completed_at?: string }>;
+  pending_subtasks?: Array<{ id: string; name: string; summary: string; capability?: string }>;
+  blocked_subtasks?: Array<{ id: string; name: string; summary: string; reason?: string }>;
+  action_graph?: {
+    active_stage: string;
+    stages: Array<{
+      id: string;
+      label: string;
+      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+      step_ref?: string | null;
+    }>;
+    last_updated?: string;
+  };
+  objective_history?: Array<{
+    objective: string;
+    target_event?: string;
+    timestamp: string;
+  }>;
+  stopping_condition?: string;
+  stopping_evidence?: string;
+  conflicts?: Array<{
+    conflict_id?: string;
+    type?: string;
+    severity?: string;
+    dimension_a?: string;
+    signal_a?: string;
+    dimension_b?: string;
+    signal_b?: string;
+    explanation?: string;
+    recommended_action?: string;
+  }>;
+  uncertainty?: {
+    uncertainty_level?: string;
+    known?: Array<{ factor?: string; description?: string; source?: string }>;
+    uncertain?: Array<{ factor?: string; description?: string; reason?: string }>;
+    missing?: Array<{ factor?: string; description?: string; impact?: string }>;
+    conflicting?: Array<{ conflict_id?: string; severity?: string; explanation?: string }>;
+    what_could_change?: string[];
+    recommended_next_step?: string;
+  };
+  evidence_strength?: string;
+  evidence_strength_details?: {
+    evidence_strength?: string;
+    strength_level?: string;
+    verdict?: string;
+    completeness_score?: number;
+    consistency_score?: number;
+    breakdown?: Record<string, any>;
+    key_drivers?: string[];
+    gaps?: string[];
+  };
+  analyst_ranking?: Array<{
+    event_code: string;
+    rank?: number;
+    state?: string;
+    max_frp?: number;
+    risk_score?: number;
+    risk_level?: string;
+    analyst_priority_score?: number;
+    priority_level?: string;
+    score_breakdown?: {
+      risk_component?: number;
+      anomaly_component?: number;
+      proximity_component?: number;
+      verification_urgency?: number;
+      uncertainty_urgency?: number;
+    };
+    triage_reason?: string;
+    facility_name?: string;
+    facility_distance_m?: number;
+    baseline_ratio?: number;
+  }>;
+  constraints?: Record<string, any>;
+  operational_recommendations?: string[];
+  // Phase 6 Global Intelligence & Provider Abstraction
+  sources_used?: string[];
+  coverage_profile?: string;
+  missing_sources?: string[];
+  partial_sources?: string[];
+  source_availability_matrix?: Record<string, string>;
+  provenance_records?: Array<{
+    provider: string;
+    dataset: string;
+    source_record_id?: string;
+    observation_time?: string;
+    retrieval_time?: string;
+    geographic_coverage?: string;
+    spatial_resolution?: string;
+    temporal_resolution?: string;
+    source_version?: string;
+    limitations?: string;
+    confidence_tier?: string;
+  }>;
+  country?: string;
+  jurisdiction?: string;
+}
+
+

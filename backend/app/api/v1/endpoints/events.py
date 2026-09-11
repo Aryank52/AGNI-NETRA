@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, text
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import require_agency, require_analyst
+from backend.app.api.deps import require_agency, require_analyst, get_optional_current_user
 from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature, User
 from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut, EventTraceLineageOut
 from backend.app.services.lineage_service import generate_event_trace_lineage
@@ -18,7 +18,7 @@ router = APIRouter()
 def get_thermal_events(
     response: Response,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_agency),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,
@@ -151,7 +151,7 @@ def get_thermal_events(
 @router.get("/geojson")
 def get_thermal_events_geojson(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_agency),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,

@@ -32,11 +32,27 @@ def parse_bbox(bbox_str: Optional[str]) -> Optional[Dict[str, float]]:
     try:
         parts = [float(x.strip()) for x in bbox_str.split(",")]
         if len(parts) == 4:
+            raw_min_lon = min(parts[0], parts[2])
+            raw_min_lat = min(parts[1], parts[3])
+            raw_max_lon = max(parts[0], parts[2])
+            raw_max_lat = max(parts[1], parts[3])
+
+            # Clamp to canonical geographic boundaries
+            min_lon = max(-180.0, min(180.0, raw_min_lon))
+            min_lat = max(-90.0, min(90.0, raw_min_lat))
+            max_lon = max(-180.0, min(180.0, raw_max_lon))
+            max_lat = max(-90.0, min(90.0, raw_max_lat))
+
+            if min_lon > max_lon:
+                min_lon, max_lon = max_lon, min_lon
+            if min_lat > max_lat:
+                min_lat, max_lat = max_lat, min_lat
+
             return {
-                "min_lon": min(parts[0], parts[2]),
-                "min_lat": min(parts[1], parts[3]),
-                "max_lon": max(parts[0], parts[2]),
-                "max_lat": max(parts[1], parts[3])
+                "min_lon": min_lon,
+                "min_lat": min_lat,
+                "max_lon": max_lon,
+                "max_lat": max_lat
             }
     except Exception:
         pass

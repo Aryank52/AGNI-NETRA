@@ -84,6 +84,8 @@ class IndustrialFacility(Base):
     source_id = Column(String(100), nullable=True)
     state = Column(String(100), index=True, nullable=False)
     district = Column(String(100), index=True, nullable=True)
+    country = Column(String(100), default="India")
+    jurisdiction = Column(String(100), nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     boundary_geojson = Column(JSON, nullable=True)      # Polygon footprint if available
@@ -548,6 +550,8 @@ class ThermalEvent(Base):
     landcover_class = Column(String(100), default="Unknown")
     state = Column(String(100), index=True, nullable=False)
     district = Column(String(100), index=True, nullable=True)
+    country = Column(String(100), default="India")
+    jurisdiction = Column(String(100), nullable=True)
     status = Column(String(50), default="ACTIVE")            # ACTIVE, DORMANT, RESOLVED
     is_demo = Column(Boolean, default=False)
     
@@ -833,6 +837,73 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="audit_logs")
+
+
+class InvestigationWorkspace(Base):
+    __tablename__ = "investigation_workspaces"
+
+    investigation_id = Column(String(64), primary_key=True)  # e.g. INV-20260910-A1B2C3
+    session_id = Column(String(64), index=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_by = Column(String(64), nullable=True)
+    user_role = Column(String(50), default="ANALYST", nullable=False)
+    status = Column(String(50), default="CREATED", nullable=False)  # CREATED, ACTIVE, ANALYZING, AWAITING_INPUT, REQUIRES_HUMAN_REVIEW, COMPLETED, CLOSED
+    primary_objective = Column(Text, nullable=True)
+    target_event_id = Column(String(64), nullable=True, index=True)
+    target_region = Column(String(100), nullable=True)
+    candidate_set = Column(JSON, default=list)
+    selected_candidate = Column(String(64), nullable=True)
+    comparison_set = Column(JSON, default=list)
+    command_history = Column(JSON, default=list)
+    execution_ids = Column(JSON, default=list)
+    evidence_summary = Column(JSON, default=dict)
+    classification_summary = Column(JSON, default=dict)
+    risk_summary = Column(JSON, default=dict)
+    anomaly_summary = Column(JSON, default=dict)
+    historical_summary = Column(JSON, default=dict)
+    spatial_summary = Column(JSON, default=dict)
+    verification_status = Column(String(50), default="NOT_REQUIRED", nullable=False)  # NOT_REQUIRED, REQUIRES_HUMAN_REVIEW, VERIFIED, REJECTED
+    report_status = Column(String(50), default="NOT_REQUESTED", nullable=False)  # NOT_REQUESTED, GENERATING, READY, FAILED
+    report_id = Column(String(36), ForeignKey("reports.id", ondelete="SET NULL"), nullable=True)
+    report_file_path = Column(String(500), nullable=True)
+    open_questions = Column(JSON, default=list)
+    resolved_questions = Column(JSON, default=list)
+    warnings = Column(JSON, default=list)
+    data_provenance = Column(JSON, default=dict)
+    structured_evidence = Column(JSON, default=list)
+
+    # Phase 4 Intelligence Operations & Operational State Tracking
+    current_winner = Column(String(64), nullable=True)
+    winner_reason = Column(Text, nullable=True)
+    completed_subtasks = Column(JSON, default=list)
+    pending_subtasks = Column(JSON, default=list)
+    blocked_subtasks = Column(JSON, default=list)
+    action_graph = Column(JSON, default=dict)
+    objective_history = Column(JSON, default=list)
+    stopping_condition = Column(String(100), nullable=True)
+    stopping_evidence = Column(JSON, default=list)
+
+    # Phase 5 Operational Intelligence Depth
+    conflicts = Column(JSON, default=list)
+    uncertainty = Column(JSON, default=dict)
+    evidence_strength = Column(String(50), nullable=True)
+    evidence_strength_details = Column(JSON, default=dict)
+    analyst_ranking = Column(JSON, default=list)
+    constraints = Column(JSON, default=dict)
+    operational_recommendations = Column(JSON, default=list)
+
+    # Phase 6 Global Intelligence Architecture & Provider Abstraction
+    sources_used = Column(JSON, default=list)
+    coverage_profile = Column(String(50), default="INDIA")
+    missing_sources = Column(JSON, default=list)
+    partial_sources = Column(JSON, default=list)
+    provenance_records = Column(JSON, default=list)
+    source_availability_matrix = Column(JSON, default=dict)
+    country = Column(String(100), default="India")
+    jurisdiction = Column(String(100), nullable=True)
+
+    report = relationship("Report", foreign_keys=[report_id])
 
 
 class ThermalHistory(Base):

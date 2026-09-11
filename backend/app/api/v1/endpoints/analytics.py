@@ -1,11 +1,11 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import require_agency
+from backend.app.api.deps import require_agency, get_optional_current_user
 from backend.app.models.domain import (
     ThermalEvent, IndustrialFacility, CandidateFacility,
     Alert, VerificationRecord, User
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/kpis", response_model=DashboardKPIs)
 def get_dashboard_kpis(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_agency)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
     Computes top-level command center KPIs.
@@ -137,7 +137,7 @@ def get_state_summary(
 @router.get("/command-center")
 def get_command_center_overview(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_agency)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
     Unified National Command Center operational telemetry payload.
