@@ -911,6 +911,15 @@ class InvestigationWorkspace(Base):
     thermal_coverage = Column(JSON, default=dict)
     observation_count = Column(Integer, default=0)
 
+    # Phase 8 Global Context Intelligence & Cross-Domain Fusion
+    context_sources = Column(JSON, default=list)
+    context_provenance = Column(JSON, default=list)
+    context_relationships = Column(JSON, default=list)
+    context_coverage = Column(JSON, default=dict)
+    context_conflicts = Column(JSON, default=list)
+    context_uncertainty = Column(JSON, default=dict)
+    context_observation_count = Column(Integer, default=0)
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

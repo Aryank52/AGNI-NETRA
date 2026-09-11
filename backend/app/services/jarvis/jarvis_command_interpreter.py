@@ -705,18 +705,137 @@ class LocalDeterministicProvider(BaseLLMProvider):
             any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate event evt-827", "investigate this event"])
             and any(w in cmd for w in ["all available thermal sources", "all thermal sources", "available thermal sources", "thermal sources"])
             and any(w in cmd for w in ["agree", "disagree", "disagreement", "confidence", "observations agree"])
+            and not any(w in cmd for w in ["contextual sources", "contextual evidence", "thermal and contextual", "and contextual"])
         )
         if is_section_28_acceptance:
             entities["is_section_28_acceptance"] = True
             if not entities.get("event_ref"):
                 entities["event_ref"] = "EVT-827"
 
+        # Phase 8 Global Context Intelligence & Cross-Domain Fusion Commands
+        # A. Section 24 Phase 8 Primary Acceptance Command
+        is_section_24_phase8_acceptance = (
+            any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate this event"])
+            and any(w in cmd for w in ["thermal and contextual", "contextual sources", "contextual evidence", "and contextual"])
+            and any(w in cmd for w in ["reduce uncertainty", "uncertainty", "contextual evidence conflicts", "sources are missing", "supports the event"])
+        ) or any(w in cmd for w in [
+            "investigate event 827 using all available thermal and contextual sources",
+            "using all available thermal and contextual sources",
+            "what contextual evidence supports the event, what sources are missing"
+        ])
+        if is_section_24_phase8_acceptance:
+            entities["is_section_24_phase8_acceptance"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # B. Show All Context Available
+        is_show_all_context = any(w in cmd for w in [
+            "show all context available for this event", "show all context available",
+            "show all context", "all context available for this event", "all context available"
+        ]) and not is_section_24_phase8_acceptance
+        if is_show_all_context:
+            entities["is_show_all_context"] = True
+
+        # C. Investigate Industrial Context
+        is_investigate_industrial_context = any(w in cmd for w in [
+            "investigate the industrial context around this event",
+            "investigate the industrial context", "investigate industrial context",
+            "industrial context around this event", "industrial context for this event"
+        ]) and not is_section_24_phase8_acceptance
+        if is_investigate_industrial_context:
+            entities["is_investigate_industrial_context"] = True
+
+        # D. Associate Facility Context
+        is_associate_facility_context = any(w in cmd for w in [
+            "determine whether this event is associated with a facility",
+            "whether this event is associated with a facility",
+            "is associated with a facility", "associated with a facility",
+            "associated with an industrial facility", "facility association"
+        ]) and not is_section_24_phase8_acceptance
+        if is_associate_facility_context:
+            entities["is_associate_facility_context"] = True
+
+        # E. Mining Context Support
+        is_mining_context_support = any(w in cmd for w in [
+            "determine whether mining context supports this event",
+            "whether mining context supports this event",
+            "mining context supports this event", "mining context support",
+            "does mining context support", "mining support for this event"
+        ]) and not is_section_24_phase8_acceptance
+        if is_mining_context_support:
+            entities["is_mining_context_support"] = True
+
+        # F. Land Cover & Protected Area Context
+        is_landcover_protected_context = any(w in cmd for w in [
+            "show the land-cover and protected-area context",
+            "show land-cover and protected-area context",
+            "land-cover and protected-area context", "land cover and protected area context",
+            "land cover and protected area", "land-cover and protected area"
+        ]) and not is_section_24_phase8_acceptance
+        if is_landcover_protected_context:
+            entities["is_landcover_protected_context"] = True
+
+        # G. Global Context Available
+        is_global_context_available = any(w in cmd for w in [
+            "show what global context is available for this investigation",
+            "what global context is available for this investigation",
+            "what global context is available", "show what global context is available",
+            "global context is available", "global context available"
+        ]) and not is_section_24_phase8_acceptance
+        if is_global_context_available:
+            entities["is_global_context_available"] = True
+
+        # H. Missing Context Sources
+        is_missing_context_sources = any(w in cmd for w in [
+            "tell me which contextual sources are missing",
+            "which contextual sources are missing", "contextual sources are missing",
+            "what contextual sources are missing", "missing contextual sources"
+        ]) and not is_section_24_phase8_acceptance
+        if is_missing_context_sources:
+            entities["is_missing_context_sources"] = True
+
+        # I. Conflicting Context Evidence
+        is_conflicting_context_evidence = any(w in cmd for w in [
+            "identify conflicting contextual evidence", "conflicting contextual evidence",
+            "identify conflicting context", "conflicting context evidence", "conflicting context"
+        ]) and not is_section_24_phase8_acceptance
+        if is_conflicting_context_evidence:
+            entities["is_conflicting_context_evidence"] = True
+
+        # J. Compare Strongest Contextual Explanations
+        is_strongest_context_explanations = any(w in cmd for w in [
+            "compare the strongest contextual explanations",
+            "strongest contextual explanations", "compare contextual explanations",
+            "strongest contextual explanation", "contextual explanations"
+        ]) and not is_section_24_phase8_acceptance
+        if is_strongest_context_explanations:
+            entities["is_strongest_context_explanations"] = True
+
+        # K. Reduce Uncertainty Context
+        is_reduce_uncertainty_context = any(w in cmd for w in [
+            "tell me what additional context would reduce uncertainty",
+            "what additional context would reduce uncertainty",
+            "additional context would reduce uncertainty",
+            "reduce uncertainty with additional context", "reduce uncertainty"
+        ]) and not is_section_24_phase8_acceptance
+        if is_reduce_uncertainty_context:
+            entities["is_reduce_uncertainty_context"] = True
+
+        # L. Context Provenance
+        is_context_provenance = any(w in cmd for w in [
+            "show the context provenance", "show contextual provenance",
+            "context provenance for this investigation", "context provenance",
+            "contextual provenance", "context source provenance"
+        ]) and not is_section_24_phase8_acceptance
+        if is_context_provenance:
+            entities["is_context_provenance"] = True
+
         # B. Thermal Sources Support
         is_thermal_sources_support = any(w in cmd for w in [
             "which thermal sources support this event", "which thermal sources support",
             "what thermal sources support", "thermal sources support this event",
             "thermal sources supporting", "which thermal sources"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_thermal_sources_support:
             entities["is_thermal_sources_support"] = True
 
@@ -724,7 +843,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         is_multiple_sources_support = any(w in cmd for w in [
             "does more than one source support", "more than one source support this thermal event",
             "more than one source support", "multiple thermal sources support", "multiple sources support"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_multiple_sources_support:
             entities["is_multiple_sources_support"] = True
 
@@ -732,7 +851,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         is_source_disagreements = any(w in cmd for w in [
             "are there source disagreements", "source disagreements", "are there any source disagreements",
             "source disagreement", "disagreements between sources", "disagreements among sources"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_source_disagreements:
             entities["is_source_disagreements"] = True
 
@@ -741,7 +860,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "show the thermal evidence provenance", "show the thermal-source provenance",
             "show thermal-source provenance", "thermal-source provenance for this investigation",
             "thermal evidence provenance", "thermal source provenance", "thermal provenance"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_thermal_provenance:
             entities["is_thermal_provenance"] = True
 
@@ -750,7 +869,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "what thermal coverage is available for this region", "what thermal coverage is available",
             "thermal coverage is available for this region", "thermal coverage for this region",
             "thermal coverage available", "what thermal coverage"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_thermal_coverage:
             entities["is_thermal_coverage"] = True
 
@@ -759,7 +878,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "investigate this event using all available thermal sources",
             "using all available thermal sources", "with all available thermal sources",
             "using all thermal sources", "investigate using all available thermal sources"
-        ]) and not is_section_28_acceptance
+        ]) and not is_section_28_acceptance and not is_section_24_phase8_acceptance
         if is_investigate_all_thermal:
             entities["is_investigate_all_thermal"] = True
 
@@ -880,8 +999,32 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_28_acceptance:
+        if is_section_24_phase8_acceptance:
+            primary_goal = "SECTION_24_PHASE8_ACCEPTANCE"
+        elif is_section_28_acceptance:
             primary_goal = "SECTION_28_ACCEPTANCE"
+        elif is_show_all_context:
+            primary_goal = "SHOW_ALL_CONTEXT"
+        elif is_investigate_industrial_context:
+            primary_goal = "INVESTIGATE_INDUSTRIAL_CONTEXT"
+        elif is_associate_facility_context:
+            primary_goal = "ASSOCIATE_FACILITY_CONTEXT"
+        elif is_mining_context_support:
+            primary_goal = "MINING_CONTEXT_SUPPORT"
+        elif is_landcover_protected_context:
+            primary_goal = "LANDCOVER_PROTECTED_CONTEXT"
+        elif is_global_context_available:
+            primary_goal = "GLOBAL_CONTEXT_AVAILABLE"
+        elif is_missing_context_sources:
+            primary_goal = "MISSING_CONTEXT_SOURCES"
+        elif is_conflicting_context_evidence:
+            primary_goal = "CONFLICTING_CONTEXT_EVIDENCE"
+        elif is_strongest_context_explanations:
+            primary_goal = "STRONGEST_CONTEXT_EXPLANATIONS"
+        elif is_reduce_uncertainty_context:
+            primary_goal = "REDUCE_UNCERTAINTY_CONTEXT"
+        elif is_context_provenance:
+            primary_goal = "CONTEXT_PROVENANCE"
         elif is_thermal_sources_support:
             primary_goal = "THERMAL_SOURCES_SUPPORT"
         elif is_multiple_sources_support:
@@ -976,16 +1119,24 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "DOSSIER_PDF"
         elif primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES"]:
             requested_output = "COMPARISON"
-        elif primary_goal in ["EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS", "SURGICAL_EXPLANATION"]:
+        elif primary_goal in ["EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS", "SURGICAL_EXPLANATION", "ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]:
             requested_output = "EXPLANATION"
-        elif primary_goal in ["WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE", "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]:
+        elif primary_goal in ["WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE", "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY", "SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:
             requested_output = "STATUS_REPORT"
-        elif primary_goal in ["SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "INVESTIGATE_ALL_THERMAL_SOURCES"]:
+        elif primary_goal in ["SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE", "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT"]:
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "SECTION_28_ACCEPTANCE":
+        if primary_goal == "SECTION_24_PHASE8_ACCEPTANCE":
+            stopping_condition = "SECTION_24_PHASE8_CROSS_DOMAIN_EVALUATED_AND_HALT"
+        elif primary_goal == "SECTION_28_ACCEPTANCE":
             stopping_condition = "SECTION_28_MULTI_PROVIDER_EVALUATED_AND_HALT"
+        elif primary_goal in ["SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:
+            stopping_condition = "CONTEXT_INTELLIGENCE_REPORTED_AND_HALT"
+        elif primary_goal in ["ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]:
+            stopping_condition = "CONTEXTUAL_EXPLANATION_REPORTED_AND_HALT"
+        elif primary_goal == "INVESTIGATE_INDUSTRIAL_CONTEXT":
+            stopping_condition = "INDUSTRIAL_CONTEXT_EVALUATED_AND_HALT"
         elif primary_goal in ["THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]:
             stopping_condition = "THERMAL_INTELLIGENCE_REPORTED_AND_HALT"
         elif primary_goal == "INVESTIGATE_ALL_THERMAL_SOURCES":

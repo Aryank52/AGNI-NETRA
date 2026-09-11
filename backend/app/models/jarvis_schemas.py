@@ -274,6 +274,15 @@ class JarvisResponse(BaseModel):
     observation_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     thermal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
+    # Phase 8 Global Context Intelligence & Cross-Domain Fusion
+    context_sources: Optional[List[str]] = Field(default_factory=list)
+    context_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_relationships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    context_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    context_observation_count: Optional[int] = 0
+
 
 class JarvisToolInfo(BaseModel):
     name: str
@@ -402,6 +411,15 @@ class InvestigationWorkspaceSchema(BaseModel):
     source_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     thermal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
     observation_count: Optional[int] = 0
+
+    # Phase 8 Global Context Intelligence & Cross-Domain Fusion
+    context_sources: Optional[List[str]] = Field(default_factory=list)
+    context_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_relationships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    context_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    context_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    context_observation_count: Optional[int] = 0
 
 
 class SessionContext(BaseModel):

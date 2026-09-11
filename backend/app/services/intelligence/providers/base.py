@@ -151,3 +151,25 @@ class HistoricalBaselineProvider(BaseIntelligenceProvider):
     @abstractmethod
     def get_baseline_for_facility(self, db: Session, facility_id: str) -> Optional[Dict[str, Any]]:
         pass
+
+
+class EnvironmentalProvider(BaseIntelligenceProvider):
+    """
+    Abstract contract for statutory environmental compliance, clearance filings, and ecological sensitivity.
+    """
+    @abstractmethod
+    def query_environmental_context(
+        self,
+        db: Session,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+        limit: int = 50
+    ) -> List[Any]:
+        pass
+
+    @abstractmethod
+    def get_clearance_by_proposal_id(self, db: Session, proposal_id: str) -> Optional[Any]:
+        pass
+

@@ -218,6 +218,19 @@ class ProviderRegistry:
 
         return matrix
 
+    def get_context_providers(self) -> List[BaseIntelligenceProvider]:
+        """Returns all registered contextual intelligence providers (non-purely-thermal)."""
+        return [
+            p for p in self._providers.values() 
+            if not isinstance(p, ThermalProvider)
+        ]
+
+    def get_context_coverage_summary(self, region: str = "GLOBAL") -> Dict[str, Any]:
+        """Returns domain-level coverage and factual availability from GlobalContextProfile."""
+        from backend.app.services.intelligence.profiles import GlobalContextProfile
+        return GlobalContextProfile.get_context_coverage(region=region)
+
 
 # Singleton accessor
 provider_registry = ProviderRegistry()
+

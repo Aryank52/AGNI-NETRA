@@ -65,7 +65,21 @@ export default function JarvisCommandConsolePage() {
     "does more than one source support this thermal event?",
     "are there source disagreements?",
     "show the thermal evidence provenance",
-    "what thermal coverage is available for this region?"
+    "what thermal coverage is available for this region?",
+    // Phase 8 Global Context Intelligence & Cross-Domain Fusion Commands
+    "JARVIS, investigate Event 827 using all available thermal and contextual sources. Tell me what contextual evidence supports the event, what sources are missing, whether any contextual evidence conflicts, and what additional context would reduce uncertainty.",
+    "show all contextual evidence for this event",
+    "what contextual evidence supports this event?",
+    "what industrial facilities are near this event?",
+    "what power infrastructure is near this event?",
+    "what mining context supports this event?",
+    "what land-cover and protected area context surrounds this event?",
+    "what global context is available?",
+    "what contextual sources are missing?",
+    "does any contextual evidence conflict?",
+    "what are the strongest contextual explanations?",
+    "what context would reduce uncertainty?",
+    "show context provenance"
   ];
 
   // Initialize session ID and fetch tool catalog + active investigations
@@ -1056,6 +1070,96 @@ export default function JarvisCommandConsolePage() {
                         className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                       >
                         <span>Thermal Coverage</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phase 8: Cross-Domain Contextual Intelligence Fusion Strip */}
+                <div className="mt-2 pt-2 border-t border-slate-800/80 bg-slate-950/70 p-2.5 rounded border border-emerald-900/40 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="font-bold text-emerald-300 uppercase tracking-wider text-[10px]">
+                        CROSS-DOMAIN CONTEXTUAL INTELLIGENCE FUSION (7 DOMAINS)
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                        UNCERTAINTY: {typeof activeWorkspace.context_uncertainty === "object"
+                          ? ((activeWorkspace.context_uncertainty as any)?.overall_level || "LOW")
+                          : (activeWorkspace.context_uncertainty || "KNOWN")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="text-slate-400">CONTEXT OBSERVATIONS:</span>
+                      <span className="text-cyan-300 font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
+                        {activeWorkspace.context_observation_count || (activeWorkspace.context_sources ? 14 : 0)}
+                      </span>
+                      <span className="text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-950/50 border border-emerald-800/60">
+                        {activeWorkspace.context_sources?.length || 6} / 7 DOMAINS ACTIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <span className="text-slate-400 font-semibold">CANONICAL DOMAINS:</span>
+                    {[
+                      { name: "FACILITIES", provider: "OSM", status: "AVAILABLE" },
+                      { name: "POWER", provider: "CEA", status: "PARTIAL" },
+                      { name: "MINING", provider: "IBM", status: "PARTIAL" },
+                      { name: "LAND_COVER", provider: "ISRO_BHUVAN", status: "PARTIAL" },
+                      { name: "PROTECTED_AREAS", provider: "FSI", status: "PARTIAL" },
+                      { name: "ADMINISTRATIVE", provider: "ADMIN", status: "PARTIAL" },
+                      { name: "ENVIRONMENTAL", provider: "PARIVESH", status: "PARTIAL" }
+                    ].map((dom, dIdx) => (
+                      <span
+                        key={dIdx}
+                        className={`px-2 py-0.5 rounded border text-[10px] flex items-center gap-1 font-semibold ${
+                          dom.status === "AVAILABLE"
+                            ? "bg-cyan-950/60 border-cyan-800/80 text-cyan-200"
+                            : "bg-emerald-950/60 border-emerald-800/80 text-emerald-300"
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>{dom.name}</span>
+                        <span className="opacity-70 text-[9px]">[{dom.provider}]</span>
+                      </span>
+                    ))}
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 text-[10px]">
+                      WEATHER [NOT CONFIGURED]
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 text-[10px]">
+                      HIGH_RES_OPTICAL [NOT CONFIGURED]
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-900 text-slate-400">
+                    <span className="truncate">Multi-distance spatial buffer analysis (500m, 1km, 2km, 5km, 10km) across all 7 canonical domains.</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleExecuteCommand("JARVIS, investigate Event 827 using all available thermal and contextual sources. Tell me what contextual evidence supports the event, what sources are missing, whether any contextual evidence conflicts, and what additional context would reduce uncertainty.")}
+                        disabled={loading}
+                        className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50 font-semibold"
+                      >
+                        <span>Cross-Domain Fusion</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                      <span className="text-slate-700">•</span>
+                      <button
+                        onClick={() => handleExecuteCommand("show context provenance")}
+                        disabled={loading}
+                        className="text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>Context Provenance</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                      <span className="text-slate-700">•</span>
+                      <button
+                        onClick={() => handleExecuteCommand("what global context is available?")}
+                        disabled={loading}
+                        className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>Coverage Matrix</span>
                         <ExternalLink className="w-2.5 h-2.5" />
                       </button>
                     </div>

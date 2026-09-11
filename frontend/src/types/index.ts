@@ -481,6 +481,14 @@ export interface JarvisResponse {
   observation_count?: number;
   observation_provenance?: Array<Record<string, any>>;
   thermal_coverage?: Record<string, any>;
+  // Phase 8 Global Context Intelligence & Cross-Domain Fusion
+  context_sources?: string[];
+  context_provenance?: Array<Record<string, any>>;
+  context_relationships?: Array<Record<string, any>>;
+  context_coverage?: Record<string, any>;
+  context_conflicts?: Array<Record<string, any>>;
+  context_uncertainty?: string;
+  context_observation_count?: number;
 }
 
 export interface JarvisToolInfo {
@@ -672,6 +680,14 @@ export interface InvestigationWorkspace {
   source_conflicts?: Array<Record<string, any>>;
   thermal_coverage?: Record<string, any>;
   observation_count?: number;
+  // Phase 8 Global Context Intelligence & Cross-Domain Fusion
+  context_sources?: string[];
+  context_provenance?: Array<Record<string, any>>;
+  context_relationships?: Array<Record<string, any>>;
+  context_coverage?: Record<string, any>;
+  context_conflicts?: Array<Record<string, any>>;
+  context_uncertainty?: string;
+  context_observation_count?: number;
 }
 
 

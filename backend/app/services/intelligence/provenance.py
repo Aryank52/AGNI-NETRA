@@ -35,6 +35,17 @@ class SourceProvenance(BaseModel):
         "from_attributes": True
     }
 
+    def __init__(self, **data):
+        if "provider_name" in data and "provider" not in data:
+            data["provider"] = data.pop("provider_name")
+        if "dataset_name" in data and "dataset" not in data:
+            data["dataset"] = data.pop("dataset_name")
+        if "geographic_coverage_type" in data and "geographic_coverage" not in data:
+            data["geographic_coverage"] = data.pop("geographic_coverage_type")
+        if "authoritative_limitations" in data and "limitations" not in data:
+            data["limitations"] = data.pop("authoritative_limitations")
+        super().__init__(**data)
+
 
 def create_firms_provenance(
     record_id: Optional[str] = None,
@@ -62,19 +73,24 @@ def create_firms_provenance(
 def create_osm_provenance(
     osm_id: Optional[Any] = None,
     osm_type: Optional[str] = None,
-    entity_classification: Optional[str] = None
+    entity_classification: Optional[str] = None,
+    record_id: Optional[str] = None,
+    confidence: Optional[Any] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual OpenStreetMap industrial facility provenance."""
+    src_id = str(record_id) if record_id else (f"{osm_type}/{osm_id}" if osm_type and osm_id else (str(osm_id) if osm_id else None))
+    tier = "HIGH" if (confidence in ("HIGH", 80) or (isinstance(confidence, (int, float)) and confidence >= 80)) else "MEDIUM"
     return SourceProvenance(
         provider="OSM",
         dataset="OPENSTREETMAP_INDUSTRIAL_REGISTRY",
-        source_record_id=f"{osm_type}/{osm_id}" if osm_type and osm_id else (str(osm_id) if osm_id else None),
+        source_record_id=src_id,
         geographic_coverage="GLOBAL / REGIONAL",
         spatial_resolution="Vector (Polygon/Point)",
         temporal_resolution="Crowdsourced / Quarterly Snapshot",
         source_version="OSM Planet Snapshot",
         limitations="Crowdsourced boundary definitions; non-exhaustive industrial operator tagging in rural regions.",
-        confidence_tier="MEDIUM",
+        confidence_tier=tier,
         extra_metadata={"osm_type": osm_type, "classification": entity_classification}
     )
 
@@ -82,13 +98,15 @@ def create_osm_provenance(
 def create_cea_provenance(
     cea_record_id: Optional[str] = None,
     plant_name: Optional[str] = None,
-    prime_mover: Optional[str] = None
+    prime_mover: Optional[str] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual Central Electricity Authority provenance."""
+    rec_id = cea_record_id or kwargs.get("record_id")
     return SourceProvenance(
         provider="CEA",
         dataset="CENTRAL_ELECTRICITY_AUTHORITY_POWER_REGISTRY",
-        source_record_id=str(cea_record_id) if cea_record_id else None,
+        source_record_id=str(rec_id) if rec_id else None,
         geographic_coverage="COUNTRY:IN",
         spatial_resolution="Plant / District Level Coordinates",
         temporal_resolution="Annual CEA Power Survey",
@@ -102,13 +120,15 @@ def create_cea_provenance(
 def create_parivesh_provenance(
     proposal_id: Optional[str] = None,
     category: Optional[str] = None,
-    decision_date: Optional[str] = None
+    decision_date: Optional[str] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual MoEFCC PARIVESH regulatory clearance provenance."""
+    rec_id = proposal_id or kwargs.get("record_id")
     return SourceProvenance(
         provider="PARIVESH",
         dataset="MOEFCC_PARIVESH_ENVIRONMENTAL_CLEARANCES",
-        source_record_id=str(proposal_id) if proposal_id else None,
+        source_record_id=str(rec_id) if rec_id else None,
         observation_time=decision_date,
         geographic_coverage="COUNTRY:IN (PARTIAL)",
         spatial_resolution="Project Footprint Coordinates",
@@ -123,7 +143,8 @@ def create_parivesh_provenance(
 def create_ibm_provenance(
     record_id: Optional[str] = None,
     mineral: Optional[str] = None,
-    table_number: Optional[str] = None
+    table_number: Optional[str] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual Indian Bureau of Mines mining lease provenance."""
     return SourceProvenance(
@@ -142,13 +163,15 @@ def create_ibm_provenance(
 
 def create_bhuvan_provenance(
     feature_id: Optional[str] = None,
-    lulc_class: Optional[str] = None
+    lulc_class: Optional[str] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual ISRO Bhuvan LULC provenance."""
+    rec_id = feature_id or kwargs.get("record_id")
     return SourceProvenance(
         provider="ISRO_BHUVAN",
         dataset="BHUVAN_LULC_THEMATIC_MAPS",
-        source_record_id=str(feature_id) if feature_id else None,
+        source_record_id=str(rec_id) if rec_id else None,
         geographic_coverage="COUNTRY:IN",
         spatial_resolution="1:50,000 / 30m Grid",
         temporal_resolution="Multi-year Land Use Cycle",
@@ -161,7 +184,8 @@ def create_bhuvan_provenance(
 
 def create_fsi_provenance(
     record_id: Optional[str] = None,
-    pa_name: Optional[str] = None
+    pa_name: Optional[str] = None,
+    **kwargs: Any
 ) -> SourceProvenance:
     """Helper to construct factual Forest Survey of India protected area provenance."""
     return SourceProvenance(

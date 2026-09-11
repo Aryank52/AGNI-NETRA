@@ -12,7 +12,8 @@ from backend.app.core.database import get_db
 from backend.app.api.deps import get_optional_current_user
 from backend.app.models.domain import User
 from backend.app.services.intelligence.provider_registry import provider_registry
-from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile
+from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile, GlobalContextProfile
+from backend.app.services.intelligence.context_engine import context_engine
 
 router = APIRouter()
 
@@ -177,3 +178,140 @@ def get_event_thermal_sources(
         "observations": [o.model_dump() for o in fusion_res.get("observations", [])],
         "provenance_records": fusion_res.get("provenance_records", [])
     }
+
+
+@router.get("/context/providers")
+def get_context_providers(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[Dict[str, Any]]:
+    """
+    Lists registered contextual intelligence providers across all 7 domains:
+    Facilities, Power, Mining, Land Cover, Protected Areas, Administrative, Environmental.
+    """
+    providers = provider_registry.get_context_providers()
+    results = []
+    for p in providers:
+        meta = p.get_metadata().model_dump()
+        meta["current_health"] = p.get_health(db).value
+        results.append(meta)
+    return results
+
+
+@router.get("/context/coverage")
+def get_context_coverage(
+    region: Optional[str] = "GLOBAL",
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns multi-domain contextual intelligence coverage breakdown across the 7 domains.
+    Truthfully reports AVAILABLE, PARTIAL, and NOT_CONFIGURED without fabricating global sources.
+    """
+    return provider_registry.get_context_coverage_summary(region=region or "GLOBAL")
+
+
+@router.get("/context/health")
+def get_context_health(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns operational health status across registered contextual intelligence providers.
+    """
+    context_providers = provider_registry.get_context_providers()
+    statuses = {}
+    for p in context_providers:
+        meta = p.get_metadata()
+        statuses[meta.provider_name.upper()] = {
+            "health": p.get_health(db).value,
+            "availability": meta.availability.value,
+            "dataset": meta.dataset_name,
+            "domain": getattr(meta, "category", "CONTEXT"),
+            "geographic_reach": getattr(meta, "geographic_reach", "India Operational")
+        }
+    return {
+        "status": "OPERATIONAL",
+        "total_context_providers": len(context_providers),
+        "context_providers": statuses
+    }
+
+
+@router.get("/events/{event_id}/context")
+def get_event_context(
+    event_id: str,
+    buffer_meters: Optional[int] = 5000,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Discovers and correlates multi-domain contextual intelligence around a specific thermal event.
+    Returns observations across 7 domains, spatial relationships, supporting/conflicting evidence,
+    strongest explanation, and remaining uncertainty.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    lat = float(raw_event.get("latitude", 22.3039))
+    lon = float(raw_event.get("longitude", 70.8022))
+
+    correlation = context_engine.discover_and_correlate(
+        db=db,
+        event_ref_or_obj=raw_event,
+        thermal_data=None
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "coordinates": [lat, lon],
+        "state": raw_event.get("state"),
+        "correlation": correlation
+    }
+
+
+@router.get("/events/{event_id}/context/provenance")
+def get_event_context_provenance(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves full contextual provenance records and uncertainty analysis for a specific event.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    lat = float(raw_event.get("latitude", 22.3039))
+    lon = float(raw_event.get("longitude", 70.8022))
+
+    correlation = context_engine.discover_and_correlate(
+        db=db,
+        event_ref_or_obj=raw_event,
+        thermal_data=None
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "coordinates": [lat, lon],
+        "context_sources": correlation.get("context_sources", []),
+        "context_provenance": correlation.get("context_provenance", []),
+        "context_coverage": correlation.get("context_coverage", {}),
+        "context_uncertainty": correlation.get("context_uncertainty", "KNOWN"),
+        "evidence_strength": correlation.get("evidence_strength", "LIMITED"),
+        "missing_sources": correlation.get("missing_sources", []),
+        "conflicting_evidence": correlation.get("conflicting_evidence", [])
+    }
+

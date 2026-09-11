@@ -288,3 +288,190 @@ class Verification(BaseModel):
     notes: Optional[str] = Field(None, description="Analyst grounding and justification notes")
     verified_at: Optional[str] = Field(None, description="Timestamp of review completion")
     provenance: Optional[SourceProvenance] = Field(None, description="Audit provenance")
+
+
+# ============================================================================
+# Phase 8: Canonical Global Context Models
+# ============================================================================
+
+class ContextProvenance(SourceProvenance):
+    """
+    Context-specific extension of canonical SourceProvenance.
+    """
+    context_domain: Optional[str] = Field(None, description="FACILITIES, POWER, MINING, LAND_COVER, PROTECTED_AREAS, ADMINISTRATIVE, ENVIRONMENTAL")
+
+
+class ContextObservation(BaseModel):
+    """
+    Canonical provider-neutral contextual intelligence record.
+    Supports multi-domain spatial and environmental context associating with thermal events.
+    """
+    context_id: str = Field(default_factory=lambda: f"CTX-{uuid.uuid4().hex[:8].upper()}", description="Unique contextual record identifier")
+    context_domain: str = Field(..., description="FACILITIES, POWER, MINING, LAND_COVER, PROTECTED_AREAS, ADMINISTRATIVE, ENVIRONMENTAL")
+    provider: str = Field(..., description="Provider name (e.g. OSM, CEA, IBM_MINING, ISRO_BHUVAN, FSI, ADMIN_BOUNDARIES, PARIVESH)")
+    dataset: str = Field(..., description="Specific dataset or catalog identifier")
+    source_record_id: Optional[str] = Field(None, description="Native source database key")
+    country: str = Field("India", description="Country of contextual feature")
+    jurisdiction: Optional[str] = Field(None, description="State, province, or primary administrative unit")
+    latitude: Optional[float] = Field(None, description="WGS84 latitude")
+    longitude: Optional[float] = Field(None, description="WGS84 longitude")
+    geometry: Optional[Dict[str, Any]] = Field(None, description="GeoJSON geometry if available")
+    observation_time: Optional[str] = Field(None, description="Observation or acquisition timestamp")
+    effective_time: Optional[str] = Field(None, description="Publication or gazette effective date")
+    source_resolution: Optional[str] = Field(None, description="Spatial resolution or scale")
+    confidence: Optional[float] = Field(None, description="Provider-reported confidence (0-100)")
+    distance_meters: Optional[float] = Field(None, description="Geodesic distance to target event epicenter (m)")
+    spatial_relationship: Optional[str] = Field(None, description="DIRECT_OVERLAP, VERY_NEAR, NEAR, DISTANT, NO_RELEVANT_CONTEXT")
+    spatial_relevance: Optional[str] = Field("MEDIUM", description="HIGH, MEDIUM, LOW, NEGLIGIBLE")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Domain-specific key-value attributes")
+    provenance: Optional[SourceProvenance] = Field(None, description="Canonical source provenance metadata")
+    limitations: Optional[str] = Field(None, description="Data caveats or coverage constraints")
+    coverage_status: str = Field("AVAILABLE", description="AVAILABLE, PARTIAL, NOT_CONFIGURED")
+
+
+class FacilityContext(ContextObservation):
+    """Canonical industrial facility context."""
+    context_domain: str = Field("FACILITIES", description="FACILITIES")
+    facility_name: Optional[str] = Field(None, description="Facility or complex name")
+    facility_type: Optional[str] = Field(None, description="Industrial classification (e.g. REFINERY, STEEL_PLANT)")
+    sector: Optional[str] = Field(None, description="Industrial sector")
+    operating_status: Optional[str] = Field("OPERATIONAL", description="OPERATIONAL, DORMANT, UNDER_CONSTRUCTION")
+
+
+class PowerContext(ContextObservation):
+    """Canonical power generation infrastructure context."""
+    context_domain: str = Field("POWER", description="POWER")
+    plant_name: Optional[str] = Field(None, description="Power station designation")
+    prime_mover: Optional[str] = Field(None, description="Generation type: THERMAL, HYDRO, NUCLEAR, GAS, SOLAR, WIND")
+    installed_capacity_mw: Optional[float] = Field(None, description="Capacity in MW")
+    organisation: Optional[str] = Field(None, description="Utility or operating entity")
+
+
+class MiningContext(ContextObservation):
+    """Canonical mineral concession and extraction context."""
+    context_domain: str = Field("MINING", description="MINING")
+    block_name: Optional[str] = Field(None, description="Mining lease or block designation")
+    lease_name: Optional[str] = Field(None, description="Lease name alias")
+    mineral: Optional[str] = Field(None, description="Primary mineral commodity")
+    lease_status: Optional[str] = Field(None, description="ACTIVE, AUCTIONED, EXPIRED")
+    lease_area_hectares: Optional[float] = Field(None, description="Lease area in hectares")
+
+    def __init__(self, **data):
+        if "lease_name" in data and "block_name" not in data:
+            data["block_name"] = data["lease_name"]
+        elif "block_name" in data and "lease_name" not in data:
+            data["lease_name"] = data["block_name"]
+        super().__init__(**data)
+
+
+class LandCoverContext(ContextObservation):
+    """Canonical thematic Land Use / Land Cover (LULC) context."""
+    context_domain: str = Field("LAND_COVER", description="LAND_COVER")
+    canonical_class: Optional[str] = Field(None, description="Standard class: Industrial, Forest, Agricultural, Water, Barren")
+    primary_class: Optional[str] = Field(None, description="Primary LULC class alias")
+    secondary_class: Optional[str] = Field(None, description="Secondary LULC class")
+    resolution_m: Optional[float] = Field(None, description="Resolution in meters")
+    is_industrial_compatible: Optional[bool] = Field(None, description="Whether land cover permits thermal/industrial operations")
+
+    def __init__(self, **data):
+        if "primary_class" in data and "canonical_class" not in data:
+            data["canonical_class"] = data["primary_class"]
+        elif "canonical_class" in data and "primary_class" not in data:
+            data["primary_class"] = data["canonical_class"]
+        super().__init__(**data)
+
+
+class ProtectedAreaContext(ContextObservation):
+    """Canonical ecological reserve and protected area context."""
+    context_domain: str = Field("PROTECTED_AREAS", description="PROTECTED_AREAS")
+    pa_name: Optional[str] = Field(None, description="Sanctuary or reserve designation")
+    pa_category: Optional[str] = Field(None, description="NATIONAL_PARK, WILDLIFE_SANCTUARY, BIOSPHERE_RESERVE, ESZ")
+    buffer_distance_km: Optional[float] = Field(10.0, description="Statutory buffer perimeter in km")
+
+
+class AdministrativeContext(ContextObservation):
+    """Canonical geopolitical administrative hierarchy context."""
+    context_domain: str = Field("ADMINISTRATIVE", description="ADMINISTRATIVE")
+    admin_level: Optional[int] = Field(None, description="0=Country, 1=State, 2=District, 3=Subdistrict")
+    admin_name: Optional[str] = Field(None, description="Administrative boundary designation")
+    state: Optional[str] = Field(None, description="State/Province name")
+    district: Optional[str] = Field(None, description="District name")
+
+
+class EnvironmentalContext(ContextObservation):
+    """Canonical statutory environmental clearance and compliance context."""
+    context_domain: str = Field("ENVIRONMENTAL", description="ENVIRONMENTAL")
+    proposal_id: Optional[str] = Field(None, description="Statutory filing or proposal identifier")
+    proposal_no: Optional[str] = Field(None, description="Proposal number alias")
+    project_name: Optional[str] = Field(None, description="Project title in clearance registry")
+    ec_category: Optional[str] = Field(None, description="EIA Category (A, B1, B2)")
+    category: Optional[str] = Field(None, description="Category alias")
+    decision_date: Optional[str] = Field(None, description="Date of clearance determination")
+    compliance_status: Optional[str] = Field(None, description="APPROVED, REJECTED, PENDING")
+    status: Optional[str] = Field(None, description="Status alias")
+
+    def __init__(self, **data):
+        if "category" in data and "ec_category" not in data:
+            data["ec_category"] = data["category"]
+        elif "ec_category" in data and "category" not in data:
+            data["category"] = data["ec_category"]
+        if "status" in data and "compliance_status" not in data:
+            data["compliance_status"] = data["status"]
+        elif "compliance_status" in data and "status" not in data:
+            data["status"] = data["compliance_status"]
+        if "proposal_no" in data and "proposal_id" not in data:
+            data["proposal_id"] = data["proposal_no"]
+        elif "proposal_id" in data and "proposal_no" not in data:
+            data["proposal_no"] = data["proposal_id"]
+        super().__init__(**data)
+
+
+class ContextRelationship(BaseModel):
+    """
+    Deterministic spatial and semantic relationship between a thermal event and a contextual entity.
+    """
+    relationship_id: str = Field(default_factory=lambda: f"REL-{uuid.uuid4().hex[:8].upper()}")
+    event_id: str = Field(..., description="Target thermal event ID")
+    context_id: str = Field(..., description="Associated contextual record ID")
+    domain: str = Field(..., description="Context domain (FACILITIES, POWER, MINING, etc.)")
+    category: str = Field(..., description="DIRECT_OVERLAP, VERY_NEAR, NEAR, DISTANT, NO_RELEVANT_CONTEXT")
+    distance_m: float = Field(..., description="Distance in meters")
+    spatial_relevance: str = Field("MEDIUM", description="HIGH, MEDIUM, LOW, NEGLIGIBLE")
+    is_supporting: bool = Field(False, description="Whether this relationship supports the operational hypothesis")
+    is_conflicting: bool = Field(False, description="Whether this relationship conflicts with other evidence")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Diagnostic and contextual detail payload")
+
+
+class ContextCoverage(BaseModel):
+    """
+    Deterministic coverage disclosure for an intelligence context domain.
+    """
+    domain: str = Field(..., description="FACILITIES, POWER, MINING, LAND_COVER, PROTECTED_AREAS, ADMINISTRATIVE, ENVIRONMENTAL")
+    provider: str = Field(..., description="Provider name")
+    dataset: str = Field(..., description="Dataset name")
+    geographic_coverage: str = Field("GLOBAL", description="GLOBAL, REGIONAL, COUNTRY")
+    status: str = Field("AVAILABLE", description="AVAILABLE, PARTIAL, NOT_CONFIGURED")
+    availability: str = Field("AVAILABLE", description="AVAILABLE, DEGRADED, UNAVAILABLE, NOT_CONFIGURED")
+    resolution: Optional[str] = Field(None, description="Nominal resolution or scale")
+    limitations: Optional[str] = Field(None, description="Known operational limitations")
+    last_health_state: str = Field("AVAILABLE", description="Health check outcome")
+    is_global: bool = Field(False, description="Whether coverage is global")
+    coverage_status: Optional[str] = Field(None, description="Alias for status")
+    geographic_scope: Optional[str] = Field(None, description="Alias for geographic_coverage")
+
+    def __init__(self, **data):
+        if "coverage_status" in data and "status" not in data:
+            data["status"] = data["coverage_status"]
+        if "status" in data and "coverage_status" not in data:
+            data["coverage_status"] = data["status"]
+        if "geographic_scope" in data and "geographic_coverage" not in data:
+            data["geographic_coverage"] = data["geographic_scope"]
+        if "geographic_coverage" in data and "geographic_scope" not in data:
+            data["geographic_scope"] = data["geographic_coverage"]
+        super().__init__(**data)
+        if self.coverage_status is None:
+            object.__setattr__(self, "coverage_status", self.status)
+        if self.geographic_scope is None:
+            object.__setattr__(self, "geographic_scope", self.geographic_coverage)
+
+

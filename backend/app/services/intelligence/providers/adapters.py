@@ -17,6 +17,7 @@ from backend.app.services.intelligence.providers.base import (
     LandCoverProvider,
     ProtectedAreaProvider,
     HistoricalBaselineProvider,
+    EnvironmentalProvider,
     BaseIntelligenceProvider,
     ProviderMetadata,
     GeographicCoverage,
@@ -494,7 +495,7 @@ class CEAProvider(PowerProvider):
         return q.limit(50).all()
 
 
-class PARIVESHProvider(BaseIntelligenceProvider):
+class PARIVESHProvider(EnvironmentalProvider):
     """
     Authoritative provider wrapping MoEFCC PARIVESH statutory Environmental Clearance portal.
     Coverage: INDIA (PARTIAL).
@@ -538,6 +539,26 @@ class PARIVESHProvider(BaseIntelligenceProvider):
         if project_type:
             q = q.filter(PariveshProjectStaging.project_type.ilike(f"%{project_type}%"))
         return q.limit(50).all()
+
+    def query_environmental_context(
+        self,
+        db: Session,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+        limit: int = 50
+    ) -> List[Any]:
+        q = db.query(PariveshProjectStaging)
+        if state:
+            q = q.filter(PariveshProjectStaging.state.ilike(f"%{state}%"))
+        if district:
+            q = q.filter(PariveshProjectStaging.district.ilike(f"%{district}%"))
+        return q.limit(limit).all()
+
+    def get_clearance_by_proposal_id(self, db: Session, proposal_id: str) -> Optional[Any]:
+        return db.query(PariveshProjectStaging).filter(PariveshProjectStaging.proposal_no == proposal_id).first()
+
 
 
 class IBMMiningProvider(MiningProvider):
