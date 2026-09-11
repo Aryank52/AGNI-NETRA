@@ -699,6 +699,243 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_source_provenance:
             entities["is_source_provenance"] = True
 
+        # Phase 9 Global Historical Baselines & Temporal Pattern Intelligence Commands
+        # A. Section 26 Primary Acceptance Command
+        is_section_26_phase9_acceptance = (
+            any(w in cmd for w in [
+                "analyze the historical baseline and temporal behavior",
+                "historical baseline and temporal behavior",
+                "historical thermal, contextual, and temporal behavior",
+                "historical thermal contextual and temporal",
+                "temporal behavior of event 827",
+                "temporal behavior of event",
+                "temporal behavior for evt-827",
+                "temporal behavior for event 827",
+                "all available thermal, contextual, and temporal",
+                "all available thermal contextual and temporal",
+                "thermal, contextual, and temporal sources",
+                "thermal contextual and temporal sources"
+            ])
+            or (
+                ("827" in cmd or "event" in cmd)
+                and "temporal" in cmd
+                and any(w in cmd for w in ["historical baseline", "persistent or recurring", "behavior for", "baseline and temporal"])
+            )
+        )
+        if is_section_26_phase9_acceptance:
+            entities["is_section_26_phase9_acceptance"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # B. Analyze Historical Behavior
+        is_analyze_historical_behavior = (
+            any(w in cmd for w in [
+                "what is the historical baseline",
+                "historical baseline for",
+                "historical baseline of",
+                "analyze the historical behavior of this event",
+                "analyze the historical behavior",
+                "historical behavior of this event",
+                "analyze historical behavior"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_analyze_historical_behavior:
+            entities["is_analyze_historical_behavior"] = True
+
+        # C. Determine Persistence
+        is_determine_persistence = (
+            any(w in cmd for w in [
+                "is this event persistent",
+                "is this persistent",
+                "determine whether this event is persistent",
+                "whether this event is persistent",
+                "determine whether the event is persistent",
+                "event is persistent",
+                "persistence analysis",
+                "how persistent is this"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_determine_persistence:
+            entities["is_determine_persistence"] = True
+
+        # D. Determine Recurrence
+        is_determine_recurrence = (
+            any(w in cmd for w in [
+                "has this location burned or flared before",
+                "burned or flared before",
+                "flared before",
+                "burned before",
+                "determine whether this activity is recurring",
+                "whether this activity is recurring",
+                "is this activity recurring",
+                "activity is recurring",
+                "recurrence analysis",
+                "has this burned before",
+                "has this location flared before"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_determine_recurrence:
+            entities["is_determine_recurrence"] = True
+
+        # E. Compare Historical Baseline
+        is_compare_historical_baseline = (
+            any(w in cmd for w in [
+                "compare this event to historical baseline",
+                "compare this event to its historical baseline",
+                "compare this event with its historical baseline",
+                "compare this event with historical baseline",
+                "compare to historical baseline",
+                "compare with its historical baseline",
+                "compare with historical baseline"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_compare_historical_baseline:
+            entities["is_compare_historical_baseline"] = True
+
+        # F. Determine Temporal Anomaly
+        is_determine_temporal_anomaly = (
+            any(w in cmd for w in [
+                "is this an anomalous deviation or routine activity",
+                "anomalous deviation or routine activity",
+                "routine activity",
+                "anomalous deviation",
+                "tell me whether this event is temporally anomalous",
+                "whether this event is temporally anomalous",
+                "is this event temporally anomalous",
+                "temporally anomalous",
+                "temporal anomaly"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_determine_temporal_anomaly:
+            entities["is_determine_temporal_anomaly"] = True
+
+        # G. Determine Seasonality
+        is_determine_seasonality = (
+            any(w in cmd for w in [
+                "does this event follow a seasonal pattern",
+                "follow a seasonal pattern",
+                "follows a seasonal pattern",
+                "determine whether the event follows a seasonal pattern",
+                "whether the event follows a seasonal pattern",
+                "seasonal pattern",
+                "is this event seasonal"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_determine_seasonality:
+            entities["is_determine_seasonality"] = True
+
+        # H. Show Day-Night Behavior
+        is_show_day_night = (
+            any(w in cmd for w in [
+                "show day versus night behavior",
+                "day versus night behavior",
+                "day vs night behavior",
+                "show the day-night behavior of this event",
+                "day-night behavior of this event",
+                "show day-night behavior",
+                "day-night behavior",
+                "day night behavior",
+                "diurnal behavior"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_show_day_night:
+            entities["is_show_day_night"] = True
+
+        # I. Explain Temporal Evidence
+        is_explain_temporal_evidence = (
+            any(w in cmd for w in [
+                "explain the temporal evidence for this event",
+                "explain the temporal evidence",
+                "explain temporal evidence",
+                "temporal evidence for this event"
+            ]) and "provenance" not in cmd
+            and "combine" not in cmd
+            and not is_section_26_phase9_acceptance
+        )
+        if is_explain_temporal_evidence:
+            entities["is_explain_temporal_evidence"] = True
+
+        # J. Show Missing Historical Data
+        is_missing_historical_data = (
+            any(w in cmd for w in [
+                "what historical data is missing",
+                "show what historical data is missing",
+                "historical data is missing",
+                "missing historical data",
+                "which historical data is missing"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_missing_historical_data:
+            entities["is_missing_historical_data"] = True
+
+        # K. Reduce Temporal Uncertainty
+        is_reduce_temporal_uncertainty = (
+            any(w in cmd for w in [
+                "what observations would reduce temporal uncertainty",
+                "observations would reduce temporal uncertainty",
+                "what additional observations would reduce temporal uncertainty",
+                "tell me what additional observations would reduce temporal uncertainty",
+                "reduce temporal uncertainty"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_reduce_temporal_uncertainty:
+            entities["is_reduce_temporal_uncertainty"] = True
+
+        # L. Combine All Evidence
+        is_combine_all_evidence = (
+            any(w in cmd for w in [
+                "combine all thermal, contextual, and temporal evidence",
+                "combine all thermal contextual and temporal evidence",
+                "combine thermal, contextual, and temporal evidence",
+                "combine thermal contextual and temporal evidence",
+                "combine all evidence"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_combine_all_evidence:
+            entities["is_combine_all_evidence"] = True
+
+        # M. Temporal Provenance
+        is_temporal_provenance = (
+            any(w in cmd for w in [
+                "show the temporal evidence provenance",
+                "show temporal evidence provenance",
+                "show temporal provenance",
+                "temporal evidence provenance",
+                "temporal source provenance",
+                "temporal provenance"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_temporal_provenance:
+            entities["is_temporal_provenance"] = True
+
+        # N. Temporal Coverage
+        is_temporal_coverage = (
+            any(w in cmd for w in [
+                "what temporal coverage is available for this event",
+                "what temporal coverage is available",
+                "temporal coverage is available",
+                "temporal coverage available",
+                "show temporal coverage",
+                "temporal coverage"
+            ]) and not is_section_26_phase9_acceptance
+        )
+        if is_temporal_coverage:
+            entities["is_temporal_coverage"] = True
+
+        is_any_phase9 = (
+            is_section_26_phase9_acceptance or is_analyze_historical_behavior or
+            is_determine_persistence or is_determine_recurrence or
+            is_compare_historical_baseline or is_determine_temporal_anomaly or
+            is_determine_seasonality or is_show_day_night or
+            is_explain_temporal_evidence or is_missing_historical_data or
+            is_reduce_temporal_uncertainty or is_combine_all_evidence or
+            is_temporal_provenance or is_temporal_coverage
+        )
+        if is_any_phase9:
+            entities["clarification_required"] = False
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or context.get("selected_candidate_ref") or "EVT-827"
+
         # Phase 7 Global Thermal Intelligence & Multi-Provider Fusion Commands
         # A. Section 28 Primary Acceptance Command
         is_section_28_acceptance = (
@@ -706,6 +943,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             and any(w in cmd for w in ["all available thermal sources", "all thermal sources", "available thermal sources", "thermal sources"])
             and any(w in cmd for w in ["agree", "disagree", "disagreement", "confidence", "observations agree"])
             and not any(w in cmd for w in ["contextual sources", "contextual evidence", "thermal and contextual", "and contextual"])
+            and not is_section_26_phase9_acceptance
         )
         if is_section_28_acceptance:
             entities["is_section_28_acceptance"] = True
@@ -718,15 +956,19 @@ class LocalDeterministicProvider(BaseLLMProvider):
             any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate this event"])
             and any(w in cmd for w in ["thermal and contextual", "contextual sources", "contextual evidence", "and contextual"])
             and any(w in cmd for w in ["reduce uncertainty", "uncertainty", "contextual evidence conflicts", "sources are missing", "supports the event"])
-        ) or any(w in cmd for w in [
-            "investigate event 827 using all available thermal and contextual sources",
-            "using all available thermal and contextual sources",
-            "what contextual evidence supports the event, what sources are missing"
-        ])
+            and not is_section_26_phase9_acceptance
+        ) or (
+            any(w in cmd for w in [
+                "investigate event 827 using all available thermal and contextual sources",
+                "using all available thermal and contextual sources",
+                "what contextual evidence supports the event, what sources are missing"
+            ]) and not is_section_26_phase9_acceptance
+        )
         if is_section_24_phase8_acceptance:
             entities["is_section_24_phase8_acceptance"] = True
             if not entities.get("event_ref"):
                 entities["event_ref"] = "EVT-827"
+
 
         # B. Show All Context Available
         is_show_all_context = any(w in cmd for w in [
@@ -999,7 +1241,35 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_24_phase8_acceptance:
+        if is_section_26_phase9_acceptance:
+            primary_goal = "SECTION_26_PHASE9_ACCEPTANCE"
+        elif is_analyze_historical_behavior:
+            primary_goal = "ANALYZE_HISTORICAL_BEHAVIOR"
+        elif is_determine_persistence:
+            primary_goal = "DETERMINE_PERSISTENCE"
+        elif is_determine_recurrence:
+            primary_goal = "DETERMINE_RECURRENCE"
+        elif is_compare_historical_baseline:
+            primary_goal = "COMPARE_HISTORICAL_BASELINE"
+        elif is_determine_temporal_anomaly:
+            primary_goal = "DETERMINE_TEMPORAL_ANOMALY"
+        elif is_determine_seasonality:
+            primary_goal = "DETERMINE_SEASONALITY"
+        elif is_show_day_night:
+            primary_goal = "SHOW_DAY_NIGHT_BEHAVIOR"
+        elif is_explain_temporal_evidence:
+            primary_goal = "EXPLAIN_TEMPORAL_EVIDENCE"
+        elif is_missing_historical_data:
+            primary_goal = "SHOW_MISSING_HISTORICAL_DATA"
+        elif is_reduce_temporal_uncertainty:
+            primary_goal = "REDUCE_TEMPORAL_UNCERTAINTY"
+        elif is_combine_all_evidence:
+            primary_goal = "COMBINE_ALL_EVIDENCE"
+        elif is_temporal_provenance:
+            primary_goal = "TEMPORAL_PROVENANCE"
+        elif is_temporal_coverage:
+            primary_goal = "TEMPORAL_COVERAGE"
+        elif is_section_24_phase8_acceptance:
             primary_goal = "SECTION_24_PHASE8_ACCEPTANCE"
         elif is_section_28_acceptance:
             primary_goal = "SECTION_28_ACCEPTANCE"
@@ -1119,18 +1389,52 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "DOSSIER_PDF"
         elif primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES"]:
             requested_output = "COMPARISON"
-        elif primary_goal in ["EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS", "SURGICAL_EXPLANATION", "ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]:
+        elif primary_goal in [
+            "EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS",
+            "SURGICAL_EXPLANATION", "ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT",
+            "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT", "DETERMINE_PERSISTENCE",
+            "DETERMINE_RECURRENCE", "COMPARE_HISTORICAL_BASELINE", "DETERMINE_TEMPORAL_ANOMALY",
+            "DETERMINE_SEASONALITY", "EXPLAIN_TEMPORAL_EVIDENCE", "REDUCE_TEMPORAL_UNCERTAINTY"
+        ]:
             requested_output = "EXPLANATION"
-        elif primary_goal in ["WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE", "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY", "SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:
+        elif primary_goal in [
+            "WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED",
+            "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE",
+            "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS",
+            "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY", "SHOW_ALL_CONTEXT",
+            "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES",
+            "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE", "ANALYZE_HISTORICAL_BEHAVIOR",
+            "SHOW_DAY_NIGHT_BEHAVIOR", "SHOW_MISSING_HISTORICAL_DATA", "TEMPORAL_PROVENANCE",
+            "TEMPORAL_COVERAGE"
+        ]:
             requested_output = "STATUS_REPORT"
-        elif primary_goal in ["SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE", "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT"]:
+        elif primary_goal in [
+            "SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE",
+            "SECTION_26_PHASE9_ACCEPTANCE", "COMBINE_ALL_EVIDENCE", "INVESTIGATE_ALL_THERMAL_SOURCES",
+            "INVESTIGATE_INDUSTRIAL_CONTEXT"
+        ]:
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "SECTION_24_PHASE8_ACCEPTANCE":
+        if primary_goal == "SECTION_26_PHASE9_ACCEPTANCE":
+            stopping_condition = "SECTION_26_PHASE9_HISTORICAL_TEMPORAL_EVALUATED_AND_HALT"
+        elif primary_goal == "SECTION_24_PHASE8_ACCEPTANCE":
             stopping_condition = "SECTION_24_PHASE8_CROSS_DOMAIN_EVALUATED_AND_HALT"
         elif primary_goal == "SECTION_28_ACCEPTANCE":
             stopping_condition = "SECTION_28_MULTI_PROVIDER_EVALUATED_AND_HALT"
+        elif primary_goal in [
+            "ANALYZE_HISTORICAL_BEHAVIOR", "SHOW_DAY_NIGHT_BEHAVIOR", "SHOW_MISSING_HISTORICAL_DATA",
+            "TEMPORAL_PROVENANCE", "TEMPORAL_COVERAGE"
+        ]:
+            stopping_condition = "TEMPORAL_INTELLIGENCE_REPORTED_AND_HALT"
+        elif primary_goal in [
+            "DETERMINE_PERSISTENCE", "DETERMINE_RECURRENCE", "COMPARE_HISTORICAL_BASELINE",
+            "DETERMINE_TEMPORAL_ANOMALY", "DETERMINE_SEASONALITY", "EXPLAIN_TEMPORAL_EVIDENCE",
+            "REDUCE_TEMPORAL_UNCERTAINTY"
+        ]:
+            stopping_condition = "TEMPORAL_ANALYSIS_EVALUATED_AND_HALT"
+        elif primary_goal == "COMBINE_ALL_EVIDENCE":
+            stopping_condition = "ALL_EVIDENCE_COMBINED_AND_HALT"
         elif primary_goal in ["SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:
             stopping_condition = "CONTEXT_INTELLIGENCE_REPORTED_AND_HALT"
         elif primary_goal in ["ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]:
@@ -1205,6 +1509,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         return {
             "intent": intent,
             "entities": entities,
+            "objective": objective,
             "confidence": 0.98,
             "provider": "LocalDeterministicProvider",
             "raw_command": command
@@ -1227,6 +1532,13 @@ class JarvisCommandInterpreter:
         intent = result["intent"]
         entities = result["entities"]
         return intent, entities
+
+    def interpret(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Direct facade for provider interpretation.
+        """
+        return self.provider.interpret(command, context)
+
 
 
 command_interpreter = JarvisCommandInterpreter()

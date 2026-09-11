@@ -920,6 +920,18 @@ class InvestigationWorkspace(Base):
     context_uncertainty = Column(JSON, default=dict)
     context_observation_count = Column(Integer, default=0)
 
+    # Phase 9 Global Historical Baselines & Temporal Pattern Intelligence
+    temporal_sources = Column(JSON, default=list)
+    temporal_provenance = Column(JSON, default=list)
+    historical_baseline = Column(JSON, default=dict)
+    persistence_assessment = Column(JSON, default=dict)
+    recurrence_assessment = Column(JSON, default=dict)
+    temporal_patterns = Column(JSON, default=dict)
+    temporal_anomalies = Column(JSON, default=dict)
+    temporal_uncertainty = Column(JSON, default=dict)
+    temporal_coverage = Column(JSON, default=dict)
+    temporal_observation_count = Column(Integer, default=0)
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

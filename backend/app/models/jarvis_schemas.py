@@ -42,6 +42,7 @@ class JarvisCapability(str, Enum):
     REPORTING = "REPORTING"
     SYSTEM_GOVERNANCE = "SYSTEM_GOVERNANCE"
     CROSS_SOURCE_CORRELATION = "CROSS_SOURCE_CORRELATION"
+    TEMPORAL_ANALYSIS = "TEMPORAL_ANALYSIS"
 
 
 class AgentType(str, Enum):
@@ -214,6 +215,8 @@ class CategorizedSynthesis(BaseModel):
 
 
 class FusedEvidence(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     thermal_evidence: Optional[Dict[str, Any]] = None
     geospatial_evidence: Optional[Dict[str, Any]] = None
     classification: Optional[Dict[str, Any]] = None
@@ -224,6 +227,8 @@ class FusedEvidence(BaseModel):
     verification: Optional[Dict[str, Any]] = None
     satellite_observations: Optional[List[Dict[str, Any]]] = None
     categorized_synthesis: Optional[CategorizedSynthesis] = None
+    context_evidence: Optional[Dict[str, Any]] = None
+    temporal_evidence: Optional[Dict[str, Any]] = None
     evidence_quality: EvidenceQuality = Field(default_factory=EvidenceQuality)
 
 
@@ -282,6 +287,27 @@ class JarvisResponse(BaseModel):
     context_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     context_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
     context_observation_count: Optional[int] = 0
+
+    # Phase 9 Global Historical Baselines & Temporal Pattern Intelligence
+    temporal_sources: Optional[List[str]] = Field(default_factory=list)
+    temporal_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    historical_baseline: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    persistence_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    recurrence_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_patterns: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_anomalies: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_observation_count: Optional[int] = 0
+
+    @property
+    def temporal_anomaly(self) -> Optional[Dict[str, Any]]:
+        return self.temporal_anomalies
+
+    @property
+    def temporal_evidence(self) -> Optional[Dict[str, Any]]:
+        return self.temporal_uncertainty
+
 
 
 class JarvisToolInfo(BaseModel):
@@ -420,6 +446,19 @@ class InvestigationWorkspaceSchema(BaseModel):
     context_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     context_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
     context_observation_count: Optional[int] = 0
+
+    # Phase 9 Global Historical Baselines & Temporal Pattern Intelligence
+    temporal_sources: Optional[List[str]] = Field(default_factory=list)
+    temporal_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    historical_baseline: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    persistence_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    recurrence_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_patterns: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_anomalies: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    temporal_observation_count: Optional[int] = 0
+
 
 
 class SessionContext(BaseModel):

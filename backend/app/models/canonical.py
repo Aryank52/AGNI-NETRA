@@ -208,8 +208,25 @@ class HistoricalBaseline(BaseModel):
     p90_frp: float = Field(0.0, description="90th percentile FRP")
     p99_frp: float = Field(0.0, description="99th percentile FRP")
     observation_count: int = Field(0, description="Number of historical samples")
-    baseline_status: str = Field("STABLE", description="STABLE, HIGH_VOLATILITY, INSUFFICIENT_HISTORY")
+    baseline_status: str = Field("STABLE", description="STABLE, HIGH_VOLATILITY, INSUFFICIENT_HISTORY, ESTABLISHED, NO_BASELINE")
+    expected_frequency: float = Field(0.0, description="Expected monthly or annual detection frequency")
+    recent_frequency: float = Field(0.0, description="Recent 30-day detection frequency")
+    day_night_ratio: float = Field(1.0, description="Historical day-night ratio")
+    multi_scale_metrics: Dict[str, Any] = Field(default_factory=dict, description="Multi-scale temporal window metrics")
     provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+    def __init__(self, **data):
+        if "sample_count" in data and "observation_count" not in data:
+            data["observation_count"] = data["sample_count"]
+        if "sample_size" in data and "observation_count" not in data:
+            data["observation_count"] = data["sample_size"]
+        if "mean_frp_mw" in data and "mean_frp" not in data:
+            data["mean_frp"] = data["mean_frp_mw"]
+        if "std_frp_mw" in data and "std_frp" not in data:
+            data["std_frp"] = data["std_frp_mw"]
+        if "event_id" in data and "target_id" not in data:
+            data["target_id"] = str(data["event_id"])
+        super().__init__(**data)
 
 
 class RiskAssessment(BaseModel):
@@ -473,5 +490,142 @@ class ContextCoverage(BaseModel):
             object.__setattr__(self, "coverage_status", self.status)
         if self.geographic_scope is None:
             object.__setattr__(self, "geographic_scope", self.geographic_coverage)
+
+
+# =====================================================================
+# PHASE 9: CANONICAL TEMPORAL PATTERN & HISTORICAL BASELINE MODELS
+# =====================================================================
+
+class TemporalObservation(BaseModel):
+    """
+    Canonical normalized temporal observation record from a satellite or archive provider.
+    """
+    observation_id: str = Field(default_factory=lambda: f"TOBS-{uuid.uuid4().hex[:8].upper()}")
+    event_id: Optional[str] = Field(None, description="Associated event ID")
+    provider: str = Field(..., description="NASA_FIRMS, COPERNICUS_SLSTR, ISRO_MOSDAC, etc.")
+    dataset: str = Field(..., description="Archive or sensor dataset name")
+    source_record_id: Optional[str] = Field(None, description="Source provider detection ID")
+    country: str = Field("India", description="Country")
+    jurisdiction: Optional[str] = Field(None, description="Jurisdiction or state")
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation acquisition timestamp ISO8601")
+    effective_time: Optional[str] = Field(None, description="Effective processing timestamp ISO8601")
+    frp_mw: float = Field(0.0, description="Fire Radiative Power in MW")
+    brightness_k: Optional[float] = Field(None, description="Brightness temperature in Kelvin")
+    day_night: str = Field("D", description="D (Day) or N (Night)")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+    def __init__(self, **data):
+        if "timestamp" in data and "observation_time" not in data:
+            data["observation_time"] = data["timestamp"]
+        if "source" in data and "provider" not in data:
+            data["provider"] = data["source"]
+        if "satellite" in data and "dataset" not in data:
+            data["dataset"] = data["satellite"]
+        super().__init__(**data)
+
+
+class PersistenceAssessment(BaseModel):
+    """
+    Deterministic quantitative and qualitative persistence assessment.
+    5 Tiers: EPHEMERAL, SHORT_DURATION, PERSISTENT, REPEATED, LONG_TERM_RECURRENT.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    persistence_category: str = Field(..., description="EPHEMERAL, SHORT_DURATION, PERSISTENT, REPEATED, LONG_TERM_RECURRENT")
+    tier: Optional[str] = Field(None, description="Alias for persistence_category")
+    persistence_score: float = Field(..., description="Normalized persistence score 0.0 - 10.0")
+    active_time_span_hours: float = Field(0.0, description="Total active duration in hours")
+    active_days_count: int = Field(0, description="Distinct active calendar days")
+    observation_count: int = Field(0, description="Total observation passes")
+    observation_gaps_avg_hours: float = Field(0.0, description="Average gap between observations in hours")
+    temporal_density: float = Field(0.0, description="Observations per active day")
+    supporting_providers: List[str] = Field(default_factory=list, description="Providers confirming persistence")
+    confidence: float = Field(1.0, description="Confidence in persistence calculation")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+    def __init__(self, **data):
+        if "tier" in data and "persistence_category" not in data:
+            data["persistence_category"] = data["tier"]
+        elif "persistence_category" in data and ("tier" not in data or data["tier"] is None):
+            data["tier"] = data["persistence_category"]
+        super().__init__(**data)
+
+
+class RecurrenceAssessment(BaseModel):
+    """
+    Deterministic recurrence intelligence across multi-scale temporal windows.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    is_recurring: bool = Field(False, description="Whether thermal activity recurs at location")
+    recurrence_category: str = Field("NON_RECURRENT", description="NON_RECURRENT, RECURRENT, HIGHLY_RECURRENT, SEASONAL_RECURRENT")
+    recurrence_count: int = Field(0, description="Distinct recurrent episodes / clusters")
+    recurrence_interval_days: float = Field(0.0, description="Average recurrence interval in days")
+    recurrence_regularity: float = Field(0.0, description="Regularity score 0.0 to 1.0")
+    recent_recurrence_count: int = Field(0, description="Recurrence episodes in last 30 days")
+    historical_recurrence_count: int = Field(0, description="Recurrence episodes across historical archive")
+    seasonal_recurrence: bool = Field(False, description="Whether recurrence follows seasonal cadence")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class TemporalPattern(BaseModel):
+    """
+    Multi-scale temporal behavior pattern including seasonality and day/night split.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    seasonality: str = Field("INSUFFICIENT_DATA", description="SEASONAL, NON_SEASONAL, INSUFFICIENT_DATA")
+    seasonal_peak_months: List[str] = Field(default_factory=list, description="Peak activity months")
+    day_night_behavior: str = Field("MIXED", description="PREDOMINANTLY_DAYTIME, PREDOMINANTLY_NIGHTTIME, MIXED, INSUFFICIENT_OBSERVATIONS")
+    day_count: int = Field(0, description="Daytime pass count")
+    night_count: int = Field(0, description="Nighttime pass count")
+    day_night_ratio: float = Field(1.0, description="Night to Day ratio")
+    duration_pattern: str = Field("INTERMITTENT", description="CONTINUOUS, INTERMITTENT, TRANSIENT, CYCLIC")
+    clustering_over_time: str = Field("BURST", description="STEADY, BURST, SPORADIC")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class TemporalAnomaly(BaseModel):
+    """
+    Comparison against historical baseline distribution. Kept independent from model-based Isolation Forest.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    deviation_status: str = Field("NORMAL", description="NORMAL, ELEVATED, HIGHLY_ELEVATED, NOVEL, INSUFFICIENT_BASELINE")
+    z_score: float = Field(0.0, description="Statistical z-score against historical baseline mean")
+    deviation_ratio: float = Field(1.0, description="Ratio of observed FRP to baseline mean FRP")
+    model_anomaly_status: str = Field("NORMAL", description="Isolation Forest anomaly status")
+    is_temporal_anomaly: bool = Field(False, description="True if temporally elevated/abnormal")
+    explanation: str = Field("", description="Explainable diagnostic rationale")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class TemporalEvidence(BaseModel):
+    """
+    Comprehensive temporal evidence assessment with calibrated strength and uncertainty.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    evidence_strength: str = Field("MODERATE", description="STRONG, MODERATE, LIMITED, INSUFFICIENT")
+    temporal_uncertainty: str = Field("KNOWN", description="KNOWN, UNCERTAIN, MISSING, CONFLICTING")
+    observation_count: int = Field(0, description="Total observations analyzed")
+    baseline_sample_size: int = Field(0, description="Samples in historical baseline")
+    active_time_span: str = Field("", description="Human-readable duration description")
+    limiting_factors: List[str] = Field(default_factory=list, description="Factors creating temporal uncertainty")
+    what_could_reduce_uncertainty: List[str] = Field(default_factory=list, description="Actionable observations that would reduce uncertainty")
+    missing_historical_sources: List[str] = Field(default_factory=list, description="Unconfigured or missing historical archives")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class TemporalCoverage(BaseModel):
+    """
+    Deterministic disclosure of temporal provider archive availability.
+    """
+    provider: str = Field(..., description="Provider name")
+    dataset: str = Field(..., description="Dataset or archive name")
+    period_covered: str = Field(..., description="Historical range covered")
+    geographic_coverage: str = Field("GLOBAL", description="GLOBAL, REGIONAL, COUNTRY")
+    temporal_resolution: str = Field("12_HOURS", description="Nominal revisit rate")
+    observation_count: int = Field(0, description="Observations available in scope")
+    limitations: Optional[str] = Field(None, description="Known temporal limitations")
+    status: str = Field("AVAILABLE", description="AVAILABLE, PARTIAL, INSUFFICIENT, NOT_CONFIGURED")
+
 
 

@@ -225,6 +225,10 @@ def create_copernicus_slstr_provenance(
     )
 
 
+create_slstr_provenance = create_copernicus_slstr_provenance
+
+
+
 def create_mosdac_provenance(
     record_id: Optional[str] = None,
     observation_time: Optional[datetime] = None,

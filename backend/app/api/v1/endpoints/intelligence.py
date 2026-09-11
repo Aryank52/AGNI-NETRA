@@ -14,6 +14,7 @@ from backend.app.models.domain import User
 from backend.app.services.intelligence.provider_registry import provider_registry
 from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile, GlobalContextProfile
 from backend.app.services.intelligence.context_engine import context_engine
+from backend.app.services.intelligence.temporal_engine import temporal_baseline_engine
 
 router = APIRouter()
 
@@ -313,5 +314,200 @@ def get_event_context_provenance(
         "evidence_strength": correlation.get("evidence_strength", "LIMITED"),
         "missing_sources": correlation.get("missing_sources", []),
         "conflicting_evidence": correlation.get("conflicting_evidence", [])
+    }
+
+
+# =========================================================================
+# Phase 9: Global Historical Baselines & Temporal Pattern Intelligence Endpoints
+# =========================================================================
+
+@router.get("/temporal/providers")
+def get_temporal_providers(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[Dict[str, Any]]:
+    """
+    Lists registered temporal observation and baseline provider adapters.
+    """
+    return provider_registry.get_temporal_providers()
+
+
+@router.get("/temporal/coverage")
+def get_temporal_coverage(
+    region: Optional[str] = "GLOBAL",
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns multi-constellation temporal observation coverage breakdown across providers.
+    """
+    return provider_registry.get_temporal_coverage_summary(region=region or "GLOBAL")
+
+
+@router.get("/temporal/health")
+def get_temporal_health(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns operational health status across registered temporal intelligence provider adapters.
+    """
+    temporal_providers = provider_registry.get_temporal_providers()
+    statuses = {}
+    for p in temporal_providers:
+        prov_name = p.get("provider", "UNKNOWN").upper()
+        statuses[prov_name] = {
+            "health": "HEALTHY" if p.get("status") == "AVAILABLE" else "DEGRADED",
+            "availability": p.get("status", "AVAILABLE"),
+            "dataset": p.get("dataset"),
+            "temporal_depth": p.get("period_covered", "Multi-year"),
+            "resolution": p.get("temporal_resolution", "12_HOURS")
+        }
+    return {
+        "status": "OPERATIONAL",
+        "total_temporal_providers": len(temporal_providers),
+        "temporal_providers": statuses
+    }
+
+
+@router.get("/events/{event_id}/temporal")
+def get_event_temporal_intelligence(
+    event_id: str,
+    radius_km: Optional[float] = 3.0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Executes full longitudinal temporal intelligence analysis for a specific thermal event.
+    Evaluates persistence, recurrence, seasonality, day/night ratio, baseline deviation, and uncertainty.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    temporal_result = temporal_baseline_engine.analyze_event_temporal(
+        db=db,
+        event_ref=event_id,
+        radius_km=radius_km or 3.0
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "coordinates": [float(raw_event.get("latitude", 22.3542)), float(raw_event.get("longitude", 69.8644))],
+        "state": raw_event.get("state"),
+        "temporal_intelligence": temporal_result
+    }
+
+
+@router.get("/events/{event_id}/temporal/history")
+def get_event_temporal_history(
+    event_id: str,
+    radius_km: Optional[float] = 3.0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves historical baseline radiometric telemetry and multi-scale observation windows for an event.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    temporal_result = temporal_baseline_engine.analyze_event_temporal(
+        db=db,
+        event_ref=event_id,
+        radius_km=radius_km or 3.0
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "baseline": temporal_result.get("baseline", {}),
+        "multi_scale_windows": temporal_result.get("multi_scale_windows", {}),
+        "observation_count": temporal_result.get("observation_count", 0),
+        "provider_agreement": temporal_result.get("provider_agreement", {})
+    }
+
+
+@router.get("/events/{event_id}/temporal/patterns")
+def get_event_temporal_patterns(
+    event_id: str,
+    radius_km: Optional[float] = 3.0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves behavioral temporal patterns: persistence tiers, recurrence frequency, seasonality, and diurnal cycles.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    temporal_result = temporal_baseline_engine.analyze_event_temporal(
+        db=db,
+        event_ref=event_id,
+        radius_km=radius_km or 3.0
+    )
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "persistence": temporal_result.get("persistence", {}),
+        "recurrence": temporal_result.get("recurrence", {}),
+        "pattern": temporal_result.get("pattern", {}),
+        "anomaly": temporal_result.get("anomaly", {})
+    }
+
+
+@router.get("/events/{event_id}/temporal/provenance")
+def get_event_temporal_provenance(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves longitudinal temporal provenance records, uncertainty factors, and uncertainty reduction guidance.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    temporal_result = temporal_baseline_engine.analyze_event_temporal(
+        db=db,
+        event_ref=event_id,
+        radius_km=3.0
+    )
+    evid = temporal_result.get("evidence", {})
+
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "evidence_strength": evid.get("evidence_strength", "STRONG"),
+        "temporal_uncertainty": evid.get("temporal_uncertainty", "KNOWN"),
+        "observation_count": temporal_result.get("observation_count", 0),
+        "provenance": [evid.get("provenance", {})] if evid.get("provenance") else [],
+        "limiting_factors": evid.get("limiting_factors", []),
+        "what_could_reduce_uncertainty": evid.get("what_could_reduce_uncertainty", []),
+        "missing_historical_sources": evid.get("missing_historical_sources", [])
     }
 

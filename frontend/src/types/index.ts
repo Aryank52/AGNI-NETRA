@@ -489,6 +489,17 @@ export interface JarvisResponse {
   context_conflicts?: Array<Record<string, any>>;
   context_uncertainty?: string;
   context_observation_count?: number;
+  // Phase 9 Global Historical Baselines & Temporal Pattern Intelligence
+  temporal_sources?: string[];
+  temporal_provenance?: Array<Record<string, any>>;
+  historical_baseline?: Record<string, any>;
+  persistence_assessment?: Record<string, any>;
+  recurrence_assessment?: Record<string, any>;
+  temporal_patterns?: Record<string, any>;
+  temporal_anomalies?: Record<string, any>;
+  temporal_uncertainty?: Record<string, any>;
+  temporal_coverage?: Record<string, any>;
+  temporal_observation_count?: number;
 }
 
 export interface JarvisToolInfo {
@@ -688,6 +699,29 @@ export interface InvestigationWorkspace {
   context_conflicts?: Array<Record<string, any>>;
   context_uncertainty?: string;
   context_observation_count?: number;
+  // Phase 9 Global Historical Baselines & Temporal Pattern Intelligence
+  temporal_sources?: string[];
+  temporal_provenance?: Array<Record<string, any>>;
+  historical_baseline?: Record<string, any>;
+  persistence_assessment?: Record<string, any>;
+  recurrence_assessment?: Record<string, any>;
+  temporal_patterns?: Record<string, any>;
+  temporal_anomalies?: Record<string, any>;
+  temporal_uncertainty?: Record<string, any>;
+  temporal_coverage?: Record<string, any>;
+  temporal_observation_count?: number;
+  baseline_frp_mean?: number | null;
+  baseline_frp_std?: number | null;
+  baseline_sample_size?: number | null;
+  baseline_window_days?: number | null;
+  persistence_score?: number | null;
+  persistence_tier?: string | null;
+  recurrence_category?: string | null;
+  recurrence_count?: number | null;
+  seasonality_classification?: string | null;
+  temporal_deviation_zscore?: number | null;
+  temporal_anomaly_flag?: boolean | null;
+  temporal_evidence?: Array<Record<string, any>>;
 }
 
 
