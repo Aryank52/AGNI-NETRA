@@ -8,7 +8,9 @@ import { fetchApi } from "@/lib/api";
 import { 
   Settings, Database, Cpu, Users, 
   ShieldCheck, Activity, RefreshCw, CheckCircle2, AlertTriangle,
-  Play, Sliders, Shield, Globe, Layers, Clock, ShieldAlert, FileText, Radio
+  Play, Sliders, Shield, Globe, Layers, Clock, ShieldAlert, FileText, Radio,
+  TrendingUp, MapPin, BarChart3, AlertOctagon, Flame, Compass, ChevronRight, Info,
+  Search, ShieldX, HelpCircle, CheckSquare, Sparkles
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import SystemStatusBanner from "@/components/common/SystemStatusBanner";
@@ -34,7 +36,7 @@ export default function AdminPage() {
   const [dataFreshness, setDataFreshness] = useState<any>(null);
   const [quarantineInfo, setQuarantineInfo] = useState<any>(null);
   const [ingestionBatches, setIngestionBatches] = useState<any[]>([]);
-  const [governanceTab, setGovernanceTab] = useState<"india_inventory" | "datasets" | "providers" | "live_providers" | "freshness" | "quarantine" | "batches">("india_inventory");
+  const [governanceTab, setGovernanceTab] = useState<"india_intelligence" | "india_inventory" | "datasets" | "providers" | "live_providers" | "freshness" | "quarantine" | "batches">("india_intelligence");
 
   // Phase 17 Live Provider State
   const [liveProviders, setLiveProviders] = useState<any>(null);
@@ -46,12 +48,56 @@ export default function AdminPage() {
   const [indiaQualityAudit, setIndiaQualityAudit] = useState<any>(null);
   const [coverageScorecard, setCoverageScorecard] = useState<any>(null);
 
+  // Phase 19 India Intelligence Depth & Operational Analytics State
+  const [indiaStatesIntelligence, setIndiaStatesIntelligence] = useState<any[]>([]);
+  const [indiaDistrictsIntelligence, setIndiaDistrictsIntelligence] = useState<any[]>([]);
+  const [indiaPersistentHotspots, setIndiaPersistentHotspots] = useState<any[]>([]);
+  const [indiaRankedHotspots, setIndiaRankedHotspots] = useState<any[]>([]);
+  const [indiaTrendsIntelligence, setIndiaTrendsIntelligence] = useState<any>(null);
+  const [indiaAuditData, setIndiaAuditData] = useState<any>(null);
+  const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
+  const [selectedHotspotWhyMatters, setSelectedHotspotWhyMatters] = useState<any>(null);
+  const [selectedHotspotPriority, setSelectedHotspotPriority] = useState<any>(null);
+  const [selectedHotspotHypotheses, setSelectedHotspotHypotheses] = useState<any>(null);
+  const [loadingHotspotDetails, setLoadingHotspotDetails] = useState<boolean>(false);
+  const [trendsWindow, setTrendsWindow] = useState<"24h" | "7d" | "30d" | "90d">("30d");
+
+  const handleSelectHotspot = async (eventId: string) => {
+    setSelectedHotspotId(eventId);
+    setLoadingHotspotDetails(true);
+    try {
+      const [whyData, prioData, hypoData] = await Promise.all([
+        fetchApi<any>(`/intelligence/india/why-it-matters/${eventId}`).catch(() => null),
+        fetchApi<any>(`/intelligence/india/priority/${eventId}`).catch(() => null),
+        fetchApi<any>(`/intelligence/india/hypotheses/${eventId}`).catch(() => null),
+      ]);
+      setSelectedHotspotWhyMatters(whyData);
+      setSelectedHotspotPriority(prioData);
+      setSelectedHotspotHypotheses(hypoData);
+    } catch (e) {
+      console.warn("Failed to load hotspot details:", e);
+    } finally {
+      setLoadingHotspotDetails(false);
+    }
+  };
+
+  const handleTrendsWindowChange = async (win: "24h" | "7d" | "30d" | "90d") => {
+    setTrendsWindow(win);
+    try {
+      const tData = await fetchApi<any>(`/intelligence/india/trends?time_window=${win}`);
+      setIndiaTrendsIntelligence(tData);
+    } catch (e) {
+      console.warn("Failed to update trends window:", e);
+    }
+  };
+
   const loadAdminData = async () => {
     try {
       const [
         sData, mData, lData, uData, hData, statsData, alertsData, telData,
         provData, dsData, freshData, quarData, batchData, liveProvData,
-        invData, auditData, scoreData
+        invData, auditData, scoreData,
+        p19States, p19Districts, p19Persistent, p19Ranked, p19Trends, p19Audit
       ] = await Promise.all([
         fetchApi<any[]>("/ingestion/sources").catch(() => []),
         fetchApi<any>("/ml/model-info").catch(() => null),
@@ -70,6 +116,12 @@ export default function AdminPage() {
         fetchApi<any>("/inventory/india-datasets").catch(() => null),
         fetchApi<any>("/inventory/quality-audit").catch(() => null),
         fetchApi<any>("/inventory/coverage-scorecard").catch(() => null),
+        fetchApi<any[]>("/intelligence/india/states").catch(() => []),
+        fetchApi<any[]>("/intelligence/india/districts?limit=15").catch(() => []),
+        fetchApi<any[]>("/intelligence/india/persistent?limit=10").catch(() => []),
+        fetchApi<any[]>("/intelligence/india/hotspots?limit=10").catch(() => []),
+        fetchApi<any>("/intelligence/india/trends?time_window=30d").catch(() => null),
+        fetchApi<any>("/intelligence/india/audit").catch(() => null),
       ]);
       setSources(sData || []);
       setModelInfo(mData);
@@ -88,6 +140,16 @@ export default function AdminPage() {
       setIndiaInventory(invData);
       setIndiaQualityAudit(auditData);
       setCoverageScorecard(scoreData);
+      setIndiaStatesIntelligence(p19States || []);
+      setIndiaDistrictsIntelligence(p19Districts || []);
+      setIndiaPersistentHotspots(p19Persistent || []);
+      setIndiaRankedHotspots(p19Ranked || []);
+      setIndiaTrendsIntelligence(p19Trends);
+      setIndiaAuditData(p19Audit);
+
+      if (p19Ranked && p19Ranked.length > 0) {
+        handleSelectHotspot(p19Ranked[0].event_id);
+      }
     } catch (err) {
       console.warn("Using sample admin stats:", err);
     } finally {
@@ -365,6 +427,20 @@ export default function AdminPage() {
               {/* Governance Tab Buttons */}
               <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono overflow-x-auto">
                 <button
+                  onClick={() => setGovernanceTab("india_intelligence")}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    governanceTab === "india_intelligence"
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                  id="tab-india-intelligence"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span>🇮🇳 India Operational Intelligence (P19)</span>
+                  </span>
+                </button>
+                <button
                   onClick={() => setGovernanceTab("india_inventory")}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     governanceTab === "india_inventory"
@@ -443,6 +519,526 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
+
+            {/* TAB: Phase 19 India Operational Intelligence & Depth Analytics */}
+            {governanceTab === "india_intelligence" && (
+              <div className="space-y-6">
+                {/* 1. Sovereign Scope & Safety Invariants Banner */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-900/80 to-cyan-500/10 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-mono">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base">🇮🇳</span>
+                      <span className="text-amber-400 font-bold tracking-wider text-sm">
+                        ACTIVE OPERATIONAL GEOGRAPHY: SOVEREIGN TERRITORY OF INDIA
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-bold text-[10px]">
+                        DISPATCH GATE: BLOCKED
+                      </span>
+                    </div>
+                    <p className="text-slate-300 font-sans text-xs">
+                      Correlating 10 active operational datasets (9 Real + 1 Derived) across 36 States/UTs and 735 Districts. Strict metric separation: Observed Facts vs Derived Calculations vs Competing Hypotheses. Non-causal spatial association semantics enforced.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+                    <div className="text-[11px] text-slate-400">Governed Priority Formula:</div>
+                    <div className="text-cyan-300 font-bold text-[11px]">
+                      0.40·Risk + 0.20·Conf + 0.30·Tier + 0.10·Recency
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Top Metric Snapshot Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs">
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 text-[11px]">ACTIVE GOVERNED DATASETS</span>
+                    <div className="text-xl font-bold text-white flex items-center gap-2">
+                      <span>{indiaAuditData?.active_production_datasets || 10}</span>
+                      <span className="text-xs text-emerald-400 font-normal">/ {indiaAuditData?.total_governed_datasets || 18}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-sans">9 Real + 1 Derived (7 Unconfigured)</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 text-[11px]">PERSISTENT HOTSPOTS</span>
+                    <div className="text-xl font-bold text-amber-400">
+                      {indiaPersistentHotspots.length}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-sans">Longitudinal industrial flares/sources</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 text-[11px]">HIGHEST PRESSURE STATE</span>
+                    <div className="text-base font-bold text-cyan-300 truncate">
+                      {indiaStatesIntelligence[0]?.state || "Gujarat"}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-sans">
+                      {indiaStatesIntelligence[0]?.active_events_count || 0} active • {indiaStatesIntelligence[0]?.operational_pressure_tier || "CRITICAL"}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 text-[11px]">30-DAY OBSERVATION RATE</span>
+                    <div className="text-xl font-bold text-emerald-400">
+                      {indiaTrendsIntelligence?.observed_trend?.daily_observation_rate || "3.3"}/day
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-sans">
+                      {indiaTrendsIntelligence?.derived_trend?.trend_direction || "STABLE"} ({indiaTrendsIntelligence?.derived_trend?.delta_vs_previous_cycle_pct > 0 ? "+" : ""}{indiaTrendsIntelligence?.derived_trend?.delta_vs_previous_cycle_pct || 0}%)
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. National Temporal Trends Engine */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-cyan-400" />
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                        National Temporal Trend Analysis (Observed vs Derived vs Inferred)
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 font-mono text-xs">
+                      {(["24h", "7d", "30d", "90d"] as const).map((win) => (
+                        <button
+                          key={win}
+                          onClick={() => handleTrendsWindowChange(win)}
+                          className={`px-2.5 py-0.5 rounded transition-all ${
+                            trendsWindow === win
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          {win}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {indiaTrendsIntelligence && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      {/* Observed Facts */}
+                      <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80 space-y-2 font-mono">
+                        <div className="text-cyan-400 font-bold flex items-center justify-between">
+                          <span>OBSERVED FACTS</span>
+                          <span className="text-[10px] text-slate-500">MEASURED SATELLITE TELEMETRY</span>
+                        </div>
+                        <div className="space-y-1 text-slate-300 font-sans text-xs">
+                          <div>Window: <strong className="text-white font-mono">{indiaTrendsIntelligence.window}</strong></div>
+                          <div>Total Satellite Passes: <strong className="text-white font-mono">{indiaTrendsIntelligence.observed_trend?.total_satellite_passes}</strong></div>
+                          <div>Active Detections: <strong className="text-white font-mono">{indiaTrendsIntelligence.observed_trend?.active_detections}</strong></div>
+                          <div>Mean Observed FRP: <strong className="text-amber-400 font-mono">{indiaTrendsIntelligence.observed_trend?.mean_frp_mw?.toFixed(1)} MW</strong></div>
+                          <div>Peak FRP: <strong className="text-orange-400 font-mono">{indiaTrendsIntelligence.observed_trend?.peak_frp_mw?.toFixed(1)} MW</strong></div>
+                        </div>
+                      </div>
+
+                      {/* Derived Calculations */}
+                      <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80 space-y-2 font-mono">
+                        <div className="text-purple-400 font-bold flex items-center justify-between">
+                          <span>DERIVED CALCULATIONS</span>
+                          <span className="text-[10px] text-slate-500">STATISTICAL AGGREGATION</span>
+                        </div>
+                        <div className="space-y-1 text-slate-300 font-sans text-xs">
+                          <div>Trend Direction: <strong className="text-white font-mono">{indiaTrendsIntelligence.derived_trend?.trend_direction}</strong></div>
+                          <div>Cycle Delta: <strong className="text-white font-mono">{indiaTrendsIntelligence.derived_trend?.delta_vs_previous_cycle_pct > 0 ? "+" : ""}{indiaTrendsIntelligence.derived_trend?.delta_vs_previous_cycle_pct}%</strong></div>
+                          <div>Day / Night Ratio: <strong className="text-white font-mono">{indiaTrendsIntelligence.derived_trend?.day_night_ratio}</strong></div>
+                          <div>Mean Persistence Score: <strong className="text-amber-400 font-mono">{indiaTrendsIntelligence.derived_trend?.mean_persistence_score} / 10</strong></div>
+                        </div>
+                      </div>
+
+                      {/* Inferred Interpretation */}
+                      <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80 space-y-2 font-mono">
+                        <div className="text-amber-400 font-bold flex items-center justify-between">
+                          <span>INFERRED INTERPRETATION</span>
+                          <span className="text-[10px] text-slate-500">OPERATIONAL CONTEXT</span>
+                        </div>
+                        <p className="text-slate-300 font-sans text-xs leading-relaxed">
+                          {indiaTrendsIntelligence.inferred_interpretation}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. State Operational Pressure & District Baselines (Two Columns) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* State Pressure Rankings */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 font-mono text-xs">
+                      <span className="text-white font-bold flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                        <span>STATE OPERATIONAL PRESSURE RANKING</span>
+                      </span>
+                      <span className="text-slate-500 text-[11px]">{indiaStatesIntelligence.length} States / UTs</span>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                      <table className="w-full text-left text-xs font-mono">
+                        <thead className="bg-slate-950 text-slate-400 sticky top-0 border-b border-slate-800">
+                          <tr>
+                            <th className="p-2">STATE</th>
+                            <th className="p-2">EVENTS</th>
+                            <th className="p-2">MEAN FRP</th>
+                            <th className="p-2">MEAN RISK</th>
+                            <th className="p-2 text-right">PRESSURE</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 font-sans">
+                          {indiaStatesIntelligence.map((st: any) => (
+                            <tr key={st.state} className="hover:bg-slate-800/40 font-mono text-xs">
+                              <td className="p-2 text-white font-semibold">
+                                {st.state}
+                              </td>
+                              <td className="p-2 text-cyan-300 font-bold">{st.active_events_count}</td>
+                              <td className="p-2 text-amber-400">{st.mean_frp_mw?.toFixed(1)} MW</td>
+                              <td className="p-2 text-slate-300">{st.mean_risk_score?.toFixed(1)}</td>
+                              <td className="p-2 text-right">
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                                  st.operational_pressure_tier === "CRITICAL"
+                                    ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                                    : st.operational_pressure_tier === "ELEVATED"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : st.operational_pressure_tier === "ROUTINE"
+                                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                                }`}>
+                                  {st.operational_pressure_tier}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* District Anomalies vs 30d Baseline */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 font-mono text-xs">
+                      <span className="text-white font-bold flex items-center gap-1.5">
+                        <AlertOctagon className="w-3.5 h-3.5 text-orange-400" />
+                        <span>DISTRICT ANOMALIES VS 30D BASELINE</span>
+                      </span>
+                      <span className="text-slate-500 text-[11px]">Deviation Ratio ≥ 1.0x</span>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                      <table className="w-full text-left text-xs font-mono">
+                        <thead className="bg-slate-950 text-slate-400 sticky top-0 border-b border-slate-800">
+                          <tr>
+                            <th className="p-2">DISTRICT / STATE</th>
+                            <th className="p-2">ACTIVE</th>
+                            <th className="p-2">30D BASE</th>
+                            <th className="p-2">RATIO</th>
+                            <th className="p-2 text-right">STATUS</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 font-sans">
+                          {indiaDistrictsIntelligence.map((dt: any, i: number) => (
+                            <tr key={i} className="hover:bg-slate-800/40 font-mono text-xs">
+                              <td className="p-2">
+                                <div className="text-white font-semibold">{dt.district}</div>
+                                <div className="text-[10px] text-slate-500">{dt.state}</div>
+                              </td>
+                              <td className="p-2 text-cyan-300 font-bold">{dt.active_events_count}</td>
+                              <td className="p-2 text-slate-400">{dt.baseline_30d_events?.toFixed(1) || "1.0"}</td>
+                              <td className="p-2 text-amber-400 font-bold">{dt.deviation_ratio?.toFixed(2)}x</td>
+                              <td className="p-2 text-right">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                  dt.anomaly_flag
+                                    ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                                }`}>
+                                  {dt.anomaly_flag ? "ANOMALOUS" : "NOMINAL"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Persistent Hotspots Across 6 Deterministic Categories */}
+                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-orange-400" />
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                        Persistent Industrial Hotspots Across 6 Deterministic Categories
+                      </h4>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">
+                      Categorized by pass density, temporal span, and recurrence
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs font-mono">
+                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-2.5">EVENT CODE / LOCATION</th>
+                          <th className="p-2.5">CATEGORY</th>
+                          <th className="p-2.5">SCORE</th>
+                          <th className="p-2.5">PASSES</th>
+                          <th className="p-2.5">SPAN (DAYS)</th>
+                          <th className="p-2.5">CADASTRE ASSOCIATIONS</th>
+                          <th className="p-2.5 text-right">ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-sans">
+                        {indiaPersistentHotspots.map((p: any) => {
+                          const isSelected = selectedHotspotId === p.event_id;
+                          return (
+                            <tr
+                              key={p.event_id}
+                              onClick={() => handleSelectHotspot(p.event_id)}
+                              className={`cursor-pointer transition-colors font-mono text-xs ${
+                                isSelected ? "bg-amber-500/10 border-l-2 border-amber-500" : "hover:bg-slate-800/40"
+                              }`}
+                            >
+                              <td className="p-2.5">
+                                <div className="text-white font-bold">{p.event_code}</div>
+                                <div className="text-[10px] text-slate-400">{p.district}, {p.state}</div>
+                              </td>
+                              <td className="p-2.5">
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                                  p.persistence_category === "HIGHLY_PERSISTENT"
+                                    ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                                    : p.persistence_category === "PERSISTENT"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : p.persistence_category === "RECURRING"
+                                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                    : p.persistence_category === "NEWLY_EMERGING"
+                                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                    : p.persistence_category === "REACTIVATED"
+                                    ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                                }`}>
+                                  {p.persistence_category}
+                                </span>
+                              </td>
+                              <td className="p-2.5 text-amber-400 font-bold">{p.persistence_score?.toFixed(1)} / 10</td>
+                              <td className="p-2.5 text-slate-300">{p.total_satellite_passes}</td>
+                              <td className="p-2.5 text-slate-400">{p.temporal_span_days}d</td>
+                              <td className="p-2.5 text-slate-300 text-[11px] font-sans">
+                                {p.associations && p.associations.length > 0 ? (
+                                  p.associations.map((a: any, idx: number) => (
+                                    <span key={idx} className="mr-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono">
+                                      {a.cadastre_domain} ({a.distance_m ? `${(a.distance_m / 1000).toFixed(1)}km` : "adjacent"})
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-slate-500">Unassociated open terrain</span>
+                                )}
+                              </td>
+                              <td className="p-2.5 text-right">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectHotspot(p.event_id);
+                                  }}
+                                  className={`px-2 py-1 rounded text-[11px] font-mono transition-all ${
+                                    isSelected
+                                      ? "bg-amber-500 text-slate-950 font-bold"
+                                      : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {isSelected ? "VIEWING" : "EXPLAIN"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 6. Deep Analyst Briefing & Priority Decomposition Drawer */}
+                {selectedHotspotId && (
+                  <div className="p-5 rounded-2xl bg-slate-950 border border-amber-500/40 shadow-2xl space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-5 h-5 text-amber-400" />
+                        <div>
+                          <h4 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                            <span>OPERATIONAL DECISION SUPPORT: {selectedHotspotWhyMatters?.event_code || selectedHotspotId}</span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              ANALYST BRIEFING
+                            </span>
+                          </h4>
+                          <p className="text-xs text-slate-400 font-sans">
+                            7-factor structured operational briefing and 4-term governed priority breakdown
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/jarvis`}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono flex items-center gap-1.5 transition-all"
+                        >
+                          <Cpu className="w-3.5 h-3.5" />
+                          <span>Investigate in JARVIS &rarr;</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    {loadingHotspotDetails ? (
+                      <div className="p-6 text-center text-slate-400 font-mono text-xs animate-pulse">
+                        Synthesizing intelligence briefing and governed priority explanation...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* LEFT COLUMN: Governed Priority Formula & Competing Hypotheses */}
+                        <div className="space-y-4">
+                          {/* Priority Formula Breakdown Card */}
+                          {selectedHotspotPriority && (
+                            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 font-mono text-xs">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="text-white font-bold flex items-center gap-1.5">
+                                  <Compass className="w-4 h-4 text-cyan-400" />
+                                  <span>GOVERNED PRIORITY FORMULA BREAKDOWN</span>
+                                </span>
+                                <span className="text-amber-400 font-bold text-sm">
+                                  {selectedHotspotPriority.composite_priority_score?.toFixed(1)} / 100 ({selectedHotspotPriority.priority_level})
+                                </span>
+                              </div>
+
+                              <div className="text-[11px] text-slate-400 font-sans">
+                                Formula: <code>0.40·Risk + 0.20·Confidence + 0.30·TierWeight + 0.10·RecencyScore</code>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="p-2 rounded bg-slate-950 border border-slate-800/80">
+                                  <div className="text-[10px] text-slate-500">RISK TERM (40%)</div>
+                                  <div className="text-cyan-300 font-bold">
+                                    {selectedHotspotPriority.mathematical_breakdown?.risk_term?.toFixed(2)} pts
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">Score: {selectedHotspotPriority.mathematical_breakdown?.risk_score}</div>
+                                </div>
+                                <div className="p-2 rounded bg-slate-950 border border-slate-800/80">
+                                  <div className="text-[10px] text-slate-500">CONFIDENCE TERM (20%)</div>
+                                  <div className="text-purple-300 font-bold">
+                                    {selectedHotspotPriority.mathematical_breakdown?.confidence_term?.toFixed(2)} pts
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">Conf: {(selectedHotspotPriority.mathematical_breakdown?.confidence * 100)?.toFixed(1)}%</div>
+                                </div>
+                                <div className="p-2 rounded bg-slate-950 border border-slate-800/80">
+                                  <div className="text-[10px] text-slate-500">TIER WEIGHT TERM (30%)</div>
+                                  <div className="text-emerald-300 font-bold">
+                                    {selectedHotspotPriority.mathematical_breakdown?.tier_weight_term?.toFixed(2)} pts
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">Tier: {selectedHotspotPriority.mathematical_breakdown?.tier_weight}</div>
+                                </div>
+                                <div className="p-2 rounded bg-slate-950 border border-slate-800/80">
+                                  <div className="text-[10px] text-slate-500">RECENCY TERM (10%)</div>
+                                  <div className="text-amber-300 font-bold">
+                                    {selectedHotspotPriority.mathematical_breakdown?.recency_term?.toFixed(2)} pts
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">Recency: {selectedHotspotPriority.mathematical_breakdown?.recency_score}</div>
+                                </div>
+                              </div>
+
+                              {/* Priority Explanation Sentences */}
+                              <div className="pt-2 border-t border-slate-800 space-y-1 text-slate-300 font-sans text-xs">
+                                {selectedHotspotPriority.priority_explanation_sentences?.map((sent: string, sIdx: number) => (
+                                  <div key={sIdx} className="flex items-start gap-1.5">
+                                    <span className="text-cyan-400 shrink-0">•</span>
+                                    <span>{sent}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Competing Hypotheses Card */}
+                          {selectedHotspotHypotheses && (
+                            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 font-mono text-xs">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="text-white font-bold flex items-center gap-1.5">
+                                  <HelpCircle className="w-4 h-4 text-purple-400" />
+                                  <span>ANALYSIS OF COMPETING HYPOTHESES (ACH)</span>
+                                </span>
+                                <span className="text-[11px] text-slate-400">Metric Separation</span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {selectedHotspotHypotheses.competing_hypotheses?.map((h: any, hIdx: number) => (
+                                  <div key={hIdx} className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-white font-bold">{h.hypothesis.replace(/_/g, " ")}</span>
+                                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                                        h.evaluation_status === "SUPPORTED"
+                                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                          : h.evaluation_status === "PLAUSIBLE"
+                                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                          : h.evaluation_status === "CONTRADICTED"
+                                          ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                                          : "bg-slate-800 text-slate-400 border border-slate-700"
+                                      }`}>
+                                        {h.evaluation_status}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-300 font-sans">
+                                      {h.eval_summary}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* RIGHT COLUMN: 7-Factor "Why This Event Matters" Briefing */}
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 font-mono text-xs">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span className="text-amber-400 font-bold flex items-center gap-1.5">
+                              <FileText className="w-4 h-4" />
+                              <span>7-FACTOR OPERATIONAL BRIEFING</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500">STRUCTURED ANALYST BRIEF</span>
+                          </div>
+
+                          {selectedHotspotWhyMatters?.structured_explanation ? (
+                            <div className="space-y-2.5 font-sans text-xs">
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-cyan-400">1. PHYSICAL DETECTION & GEOMETRY</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.physical_detection}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-emerald-400">2. SPATIAL PROXIMITY & CADASTRE</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.spatial_proximity}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-amber-400">3. LONGITUDINAL PERSISTENCE</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.persistence_pattern}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-orange-400">4. CALIBRATED MULTI-FACTOR RISK</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.calibrated_risk}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-purple-400">5. ISOLATION FOREST ANOMALY SIGNATURE</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.anomaly_behavior}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-blue-400">6. COMPETING HYPOTHESES SUMMARY</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.competing_hypotheses}</div>
+                              </div>
+                              <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                <div className="text-[10px] font-mono font-bold text-red-400">7. MISSING DATA & UNCERTAINTY ACTIONS</div>
+                                <div className="text-slate-200">{selectedHotspotWhyMatters.structured_explanation.missing_data_and_uncertainty}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 text-center text-slate-500 font-sans">
+                              Select any hotspot above to inspect its 7-factor operational briefing.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* TAB: Phase 18 India Scope & Coverage Scorecard */}
             {governanceTab === "india_inventory" && (

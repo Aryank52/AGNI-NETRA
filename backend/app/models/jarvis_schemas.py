@@ -372,6 +372,14 @@ class JarvisResponse(BaseModel):
     def operational_dispatch_gate_blocked(self) -> bool:
         return self.dispatch_gate_blocked
 
+    @property
+    def message(self) -> str:
+        return self.summary or self.stopping_reason or ""
+
+    @property
+    def evidence_chain(self) -> Any:
+        return self.fused_evidence or self.execution_trace
+
 
 
 

@@ -1838,6 +1838,131 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["report_unavailable_dependencies"] = True
 
         # =========================================================================
+        # Phase 19: India Intelligence Depth & Operational Analytics Commands
+        # =========================================================================
+        is_phase19_persistent_hotspots = any(w in cmd for w in [
+            "show the most persistent thermal hotspots in india",
+            "most persistent thermal hotspots in india",
+            "most persistent hotspots in india",
+            "persistent thermal hotspots in india",
+            "persistent hotspots in india"
+        ])
+        if is_phase19_persistent_hotspots:
+            entities["is_phase19_persistent_hotspots"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_state_abnormal_activity = any(w in cmd for w in [
+            "which indian states have the highest abnormal thermal activity",
+            "indian states have the highest abnormal thermal activity",
+            "states have the highest abnormal thermal activity",
+            "highest abnormal thermal activity in india",
+            "highest abnormal thermal activity"
+        ])
+        if is_phase19_state_abnormal_activity:
+            entities["is_phase19_state_abnormal_activity"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_industrial_recurrence = any(w in cmd for w in [
+            "find industrial regions with recurring thermal activity",
+            "industrial regions with recurring thermal activity",
+            "industrial regions with recurring thermal",
+            "recurring thermal activity in industrial regions"
+        ])
+        if is_phase19_industrial_recurrence:
+            entities["is_phase19_industrial_recurrence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_power_plant_persistence = any(w in cmd for w in [
+            "which power plants have persistent nearby thermal events",
+            "power plants have persistent nearby thermal events",
+            "power plants have persistent nearby thermal",
+            "power plants with persistent nearby thermal events"
+        ])
+        if is_phase19_power_plant_persistence:
+            entities["is_phase19_power_plant_persistence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_mining_comparison = any(w in cmd for w in [
+            "compare mining-related thermal activity between states",
+            "compare mining thermal activity between states",
+            "compare mining-related thermal activity",
+            "mining-related thermal activity between states"
+        ])
+        if is_phase19_mining_comparison:
+            entities["is_phase19_mining_comparison"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_district_unusual_activity = any(w in cmd for w in [
+            "which districts show unusually high activity this month",
+            "districts show unusually high activity this month",
+            "districts show unusually high activity",
+            "unusually high activity this month"
+        ])
+        if is_phase19_district_unusual_activity:
+            entities["is_phase19_district_unusual_activity"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_priority_explanation = any(w in cmd for w in [
+            "explain why this event is high priority",
+            "why this event is high priority",
+            "why this event is priority",
+            "explain event priority",
+            "why is this event high priority"
+        ])
+        if is_phase19_priority_explanation:
+            entities["is_phase19_priority_explanation"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_why_this_event_matters = any(w in cmd for w in [
+            "explain why this event matters",
+            "explain why this india event matters",
+            "why this event matters",
+            "why this india event matters",
+            "why this event is important"
+        ])
+        if is_phase19_why_this_event_matters:
+            entities["is_phase19_why_this_event_matters"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_incident_evidence = any(w in cmd for w in [
+            "what evidence supports this incident",
+            "evidence supports this incident",
+            "what evidence supports the incident"
+        ])
+        if is_phase19_incident_evidence:
+            entities["is_phase19_incident_evidence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_hotspot_change_detection = any(w in cmd for w in [
+            "what changed around this hotspot",
+            "what changed around the hotspot",
+            "what changed around this thermal hotspot",
+            "what changed around this event"
+        ])
+        if is_phase19_hotspot_change_detection:
+            entities["is_phase19_hotspot_change_detection"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_next_best_evidence = any(w in cmd for w in [
+            "what should an analyst verify next",
+            "what to verify next",
+            "what should an analyst check next",
+            "analyst verify next"
+        ])
+        if is_phase19_next_best_evidence:
+            entities["is_phase19_next_best_evidence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase19_intelligence_report = any(w in cmd for w in [
+            "generate an india thermal intelligence report",
+            "generate india thermal intelligence report",
+            "india thermal intelligence report"
+        ])
+        if is_phase19_intelligence_report:
+            entities["is_phase19_intelligence_report"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # =========================================================================
         # Phase 18: India-First Data Intelligence & Sovereign Geographic Integrity
         # =========================================================================
         # 1. Out-of-Scope Country Rejection (Zero fabrication for foreign countries)
@@ -2454,7 +2579,43 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_phase18_out_of_scope_rejection:
+        if is_phase19_persistent_hotspots:
+            primary_goal = "PHASE19_PERSISTENT_HOTSPOTS"
+            intent = CommandIntent.RANK
+        elif is_phase19_state_abnormal_activity:
+            primary_goal = "PHASE19_STATE_ABNORMAL_ACTIVITY"
+            intent = CommandIntent.QUERY
+        elif is_phase19_industrial_recurrence:
+            primary_goal = "PHASE19_INDUSTRIAL_RECURRENCE"
+            intent = CommandIntent.QUERY
+        elif is_phase19_power_plant_persistence:
+            primary_goal = "PHASE19_POWER_PLANT_PERSISTENCE"
+            intent = CommandIntent.QUERY
+        elif is_phase19_mining_comparison:
+            primary_goal = "PHASE19_MINING_COMPARISON"
+            intent = CommandIntent.COMPARE
+        elif is_phase19_district_unusual_activity:
+            primary_goal = "PHASE19_DISTRICT_UNUSUAL_ACTIVITY"
+            intent = CommandIntent.QUERY
+        elif is_phase19_priority_explanation:
+            primary_goal = "PHASE19_PRIORITY_EXPLANATION"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase19_why_this_event_matters:
+            primary_goal = "PHASE19_WHY_THIS_EVENT_MATTERS"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase19_incident_evidence:
+            primary_goal = "PHASE19_INCIDENT_EVIDENCE"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase19_hotspot_change_detection:
+            primary_goal = "PHASE19_HOTSPOT_CHANGE_DETECTION"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase19_next_best_evidence:
+            primary_goal = "PHASE19_NEXT_BEST_EVIDENCE"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase19_intelligence_report:
+            primary_goal = "PHASE19_INTELLIGENCE_REPORT"
+            intent = CommandIntent.GENERATE_REPORT
+        elif is_phase18_out_of_scope_rejection:
             primary_goal = "PHASE18_OUT_OF_SCOPE_REJECTION"
             intent = CommandIntent.QUERY
         elif is_phase18_highest_risk_india:

@@ -40,6 +40,19 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    // Phase 19 India Intelligence Depth & Operational Analytics Commands
+    "JARVIS, audit India data intelligence.",
+    "JARVIS, which India thermal events deserve analyst attention first and why?",
+    "JARVIS, identify persistent industrial hotspots in Gujarat and Odisha.",
+    "JARVIS, rank India states by active thermal operational pressure.",
+    "JARVIS, find district anomalies where current activity exceeds the 30-day baseline.",
+    "JARVIS, evaluate competing hypotheses for the highest priority India event.",
+    "JARVIS, explain why this India event matters.",
+    "JARVIS, what next evidence would most reduce uncertainty for this India case?",
+    "JARVIS, correlate industrial cluster activity in Dahej corridor.",
+    "JARVIS, show India national thermal trend over 24h, 7d, and 30d windows.",
+    "JARVIS, what India datasets are operational, derived, or unconfigured?",
+
     // Phase 17 Global Live Provider Activation & Verification Commands
     "JARVIS, show current live external data provider capability and retrieve latest verified observations.",
     "JARVIS, compare live observations with historical baseline in Gujarat industrial corridor.",

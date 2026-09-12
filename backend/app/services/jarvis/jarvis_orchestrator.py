@@ -270,16 +270,33 @@ class JarvisMasterOrchestrator:
     @classmethod
     def execute_command(
         cls,
-        db: Session,
-        request: JarvisCommandRequest,
+        *args,
+        db: Optional[Session] = None,
+        request: Optional[JarvisCommandRequest] = None,
         user_role: str = "ANALYST",
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        **kwargs
     ) -> JarvisResponse:
         """
         Primary execution entry point for JARVIS commands.
         Implements the explicit True Agent Loop:
         IDLE -> UNDERSTANDING -> PLANNING -> EXECUTING -> EVALUATING -> COMPLETED / REQUIRES_APPROVAL -> IDLE
         """
+        # Flexible argument extraction to support execute_command(db, req) or execute_command(req, db=db)
+        if len(args) >= 2:
+            if hasattr(args[0], "execute"):
+                db, request = args[0], args[1]
+            else:
+                request, db = args[0], args[1]
+        elif len(args) == 1:
+            if hasattr(args[0], "execute"):
+                db = args[0]
+            else:
+                request = args[0]
+        if db is None and "db" in kwargs:
+            db = kwargs["db"]
+        if request is None and "request" in kwargs:
+            request = kwargs["request"]
         t_start = time.time()
         trace_id = f"trace-{uuid.uuid4().hex[:10]}"
         state_transitions: List[Dict[str, Any]] = []
@@ -2251,6 +2268,53 @@ class JarvisMasterOrchestrator:
                 f"Dispatch gate held BLOCKED. Returning master agent to IDLE."
             )
             requires_approval = True
+
+        # =========================================================================
+        # PHASE 19: INDIA INTELLIGENCE DEPTH & OPERATIONAL ANALYTICS
+        # =========================================================================
+        elif (
+            (objective and getattr(objective, "primary_goal", None) in [
+                "PHASE19_PERSISTENT_HOTSPOTS",
+                "PHASE19_STATE_ABNORMAL_ACTIVITY",
+                "PHASE19_INDUSTRIAL_RECURRENCE",
+                "PHASE19_POWER_PLANT_PERSISTENCE",
+                "PHASE19_MINING_COMPARISON",
+                "PHASE19_DISTRICT_UNUSUAL_ACTIVITY",
+                "PHASE19_PRIORITY_EXPLANATION",
+                "PHASE19_WHY_THIS_EVENT_MATTERS",
+                "PHASE19_INCIDENT_EVIDENCE",
+                "PHASE19_HOTSPOT_CHANGE_DETECTION",
+                "PHASE19_NEXT_BEST_EVIDENCE",
+                "PHASE19_INTELLIGENCE_REPORT"
+            ]) or
+            entities.get("is_phase19_persistent_hotspots") or
+            entities.get("is_phase19_state_abnormal_activity") or
+            entities.get("is_phase19_industrial_recurrence") or
+            entities.get("is_phase19_power_plant_persistence") or
+            entities.get("is_phase19_mining_comparison") or
+            entities.get("is_phase19_district_unusual_activity") or
+            entities.get("is_phase19_priority_explanation") or
+            entities.get("is_phase19_why_this_event_matters") or
+            entities.get("is_phase19_incident_evidence") or
+            entities.get("is_phase19_hotspot_change_detection") or
+            entities.get("is_phase19_next_best_evidence") or
+            entities.get("is_phase19_intelligence_report")
+        ):
+            log_state(JarvisState.EXECUTING, "Executing Phase 19 India Intelligence Depth & Operational Analytics")
+            from backend.app.services.jarvis.jarvis_phase19_service import jarvis_phase19_service
+            p19_res = jarvis_phase19_service.execute(
+                db=db,
+                command=request.command,
+                entities=entities,
+                objective=objective,
+                steps=steps,
+                step_idx=len(steps) + 1
+            )
+            summary_text = p19_res["summary_text"]
+            details.update(p19_res["details"])
+            recommendations.extend(p19_res["recommendations"])
+            stopping_reason = p19_res["stopping_reason"]
+            requires_approval = p19_res["requires_approval"]
 
         # =========================================================================
         # PHASE 18: INDIA-FIRST DATA INTELLIGENCE & SOVEREIGN GEOGRAPHIC INTEGRITY

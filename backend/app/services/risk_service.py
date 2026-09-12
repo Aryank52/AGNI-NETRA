@@ -104,6 +104,21 @@ def calculate_risk_score(
 class RiskService:
     """Convenience class wrapper exposing the 5-factor risk scoring formula."""
 
+    # Frozen Authoritative 5-Factor Risk Formula Weights (Preserved from Phase 11-18)
+    WEIGHTS: Dict[str, float] = {
+        "intensity": 0.30,
+        "abnormality": 0.25,
+        "exposure": 0.20,
+        "persistence": 0.15,
+        "context": 0.10,
+        # Canonical telemetry & spatial anomaly aliases
+        "frp_intensity": 0.30,
+        "spatial_anomaly": 0.25,
+        "environmental_hazard": 0.20,
+        "temporal_persistence": 0.15,
+        "classification_uncertainty": 0.10,
+    }
+
     @staticmethod
     def compute_5factor_risk_score(
         intensity: float,

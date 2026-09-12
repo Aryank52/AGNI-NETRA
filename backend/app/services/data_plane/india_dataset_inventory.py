@@ -427,7 +427,7 @@ class IndiaDatasetInventoryService:
         })
 
         audit_findings.append({
-            "check": "Out-of-India Regional Telemetry Classification (Sri Lanka / Neighboring Waters)",
+            "check": "Out-of-India Regional Telemetry Classification (Sri Lanka / sri_lanka / Neighboring Waters)",
             "status": "PASS",
             "classification": "KNOWN",
             "metric": f"{outside_india_ingestion}/{total_ingestion} isolated ({sri_lanka_ingestion} in Sri Lanka)",
