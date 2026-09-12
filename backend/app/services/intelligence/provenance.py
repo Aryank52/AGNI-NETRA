@@ -39,6 +39,11 @@ class SourceProvenance(BaseModel):
     source_version: Optional[str] = Field(None, description="Dataset/catalog version if known")
     limitations: Optional[str] = Field(None, description="Factual operational or sensor limitations")
     confidence_tier: Optional[str] = Field("HIGH", description="Confidence tier: HIGH, MEDIUM, LOW, PROVISIONAL")
+    ingestion_batch_id: Optional[str] = Field(None, description="Batch identifier in which this record was ingested")
+    normalization_version: Optional[str] = Field("1.0.0", description="Normalization specification version")
+    schema_version: Optional[str] = Field("1.0.0", description="Schema version of the canonical object")
+    calibration_status: Optional[str] = Field("OPERATIONAL_CALIBRATED", description="Calibration status of sensor / observation")
+    transformation_lineage: List[str] = Field(default_factory=list, description="Ordered transformation sequence: SOURCE -> RAW -> NORMALIZED -> DEDUP -> DERIVED")
     extra_metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional non-fabricated metadata")
 
     model_config = {

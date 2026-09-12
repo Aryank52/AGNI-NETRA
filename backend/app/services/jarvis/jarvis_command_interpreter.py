@@ -1837,6 +1837,115 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_report_unavailable_deps:
             entities["report_unavailable_dependencies"] = True
 
+        # Phase 16 Section 47 Primary Acceptance: Global Data Readiness Assessment
+        is_section_47_phase16_acceptance = (
+            ("global data readiness assessment" in cmd) or
+            ("global data readiness" in cmd) or
+            ("data readiness assessment" in cmd) or
+            ("current global data readiness" in cmd) or
+            ("data readiness" in cmd and "provider availability" in cmd)
+        )
+        if is_section_47_phase16_acceptance:
+            entities["is_section_47_phase16_acceptance"] = True
+
+        # Phase 16 Section 48 Second Acceptance: Complete Ingestion Provenance for Observation
+        is_section_48_phase16_acceptance = (
+            ("complete ingestion provenance for this observation" in cmd) or
+            ("complete ingestion provenance" in cmd) or
+            ("ingestion provenance for this observation" in cmd) or
+            ("how it moved from source record to canonical intelligence" in cmd) or
+            ("source record to canonical intelligence" in cmd)
+        )
+        if is_section_48_phase16_acceptance:
+            entities["is_section_48_phase16_acceptance"] = True
+
+        # Phase 16 Section 49 Third Acceptance: Identify Stale or Incomplete Datasets
+        is_section_49_phase16_acceptance = (
+            ("identify stale or incomplete datasets" in cmd) or
+            ("identify stale datasets" in cmd) or
+            ("stale or incomplete datasets" in cmd) or
+            ("reduce confidence in the current intelligence assessment" in cmd)
+        )
+        if is_section_49_phase16_acceptance:
+            entities["is_section_49_phase16_acceptance"] = True
+
+        # Phase 16 Section 36 Data Governance Queries
+        is_data_ingestion_status = (
+            ("current data ingestion status" in cmd) or
+            ("data ingestion status" in cmd) or
+            ("show the current data ingestion status" in cmd)
+        ) and not is_section_47_phase16_acceptance
+        if is_data_ingestion_status:
+            entities["is_data_ingestion_status"] = True
+
+        is_data_freshness_query = (
+            ("provider data freshness" in cmd) or
+            ("show provider data freshness" in cmd) or
+            ("data freshness" in cmd)
+        ) and not is_section_47_phase16_acceptance
+        if is_data_freshness_query:
+            entities["is_data_freshness_query"] = True
+
+        is_dataset_coverage_query = (
+            ("dataset coverage" in cmd) or
+            ("show dataset coverage" in cmd)
+        ) and not is_section_47_phase16_acceptance
+        if is_dataset_coverage_query:
+            entities["is_dataset_coverage_query"] = True
+
+        is_latest_ingestion_batches = (
+            ("latest ingestion batches" in cmd) or
+            ("show the latest ingestion batches" in cmd) or
+            ("ingestion batches" in cmd)
+        )
+        if is_latest_ingestion_batches:
+            entities["is_latest_ingestion_batches"] = True
+
+        is_explain_provider_unavailable = (
+            ("explain why this provider is unavailable" in cmd) or
+            ("why this provider is unavailable" in cmd) or
+            ("why provider is unavailable" in cmd)
+        )
+        if is_explain_provider_unavailable:
+            entities["is_explain_provider_unavailable"] = True
+
+        is_show_quarantined_records = (
+            ("show quarantined records" in cmd) or
+            ("quarantined records" in cmd) or
+            ("quarantine records" in cmd)
+        )
+        if is_show_quarantined_records:
+            entities["is_show_quarantined_records"] = True
+
+        is_observation_ingestion_provenance = (
+            ("provenance of this observation" in cmd) or
+            ("show the provenance of this observation" in cmd)
+        ) and not is_section_48_phase16_acceptance
+        if is_observation_ingestion_provenance:
+            entities["is_observation_ingestion_provenance"] = True
+
+        is_dataset_global_or_partial = (
+            ("whether this dataset is global or partial" in cmd) or
+            ("dataset is global or partial" in cmd) or
+            ("is this dataset global or partial" in cmd)
+        )
+        if is_dataset_global_or_partial:
+            entities["is_dataset_global_or_partial"] = True
+
+        is_latest_successful_ingestion = (
+            ("latest successful ingestion" in cmd) or
+            ("show the latest successful ingestion" in cmd)
+        )
+        if is_latest_successful_ingestion:
+            entities["is_latest_successful_ingestion"] = True
+
+        is_identify_stale_sources = (
+            ("identify stale intelligence sources" in cmd) or
+            ("stale intelligence sources" in cmd)
+        ) and not is_section_49_phase16_acceptance
+        if is_identify_stale_sources:
+            entities["is_identify_stale_sources"] = True
+
         # J. General Multi-Constraint Search Flag
         if any(w in cmd for w in ["persistent anomalies", "persistent anomaly", "abnormal thermal activity", "intensity is significantly above historical", "significantly above historical"]):
             entities["anomalous_only"] = True
@@ -1945,6 +2054,21 @@ class LocalDeterministicProvider(BaseLLMProvider):
         elif is_phase15_health_readiness:
             intent = CommandIntent.STATUS
             entities["status_type"] = "PHASE15_HEALTH_READINESS"
+        elif is_section_47_phase16_acceptance:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE16_DATA_READINESS"
+        elif is_section_48_phase16_acceptance or is_observation_ingestion_provenance:
+            intent = CommandIntent.TRACE
+            entities["status_type"] = "PHASE16_INGESTION_PROVENANCE"
+        elif is_section_49_phase16_acceptance:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE16_STALE_DATASETS"
+        elif is_data_ingestion_status or is_data_freshness_query or is_dataset_coverage_query or is_latest_ingestion_batches or is_show_quarantined_records or is_latest_successful_ingestion or is_identify_stale_sources:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE16_DATA_GOVERNANCE"
+        elif is_explain_provider_unavailable or is_dataset_global_or_partial:
+            intent = CommandIntent.EXPLAIN
+            entities["status_type"] = "PHASE16_DATA_GOVERNANCE"
         elif is_section_23_phase14_acceptance:
             intent = CommandIntent.VERIFY
             entities["is_phase14_case_management"] = True
@@ -2087,7 +2211,33 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_23_phase14_acceptance:
+        if is_section_47_phase16_acceptance:
+            primary_goal = "SECTION_47_PHASE16_DATA_READINESS"
+        elif is_section_48_phase16_acceptance:
+            primary_goal = "SECTION_48_PHASE16_INGESTION_PROVENANCE"
+        elif is_section_49_phase16_acceptance:
+            primary_goal = "SECTION_49_PHASE16_STALE_DATASETS"
+        elif is_data_ingestion_status:
+            primary_goal = "DATA_INGESTION_STATUS"
+        elif is_data_freshness_query:
+            primary_goal = "DATA_FRESHNESS_QUERY"
+        elif is_dataset_coverage_query:
+            primary_goal = "DATASET_COVERAGE_QUERY"
+        elif is_latest_ingestion_batches:
+            primary_goal = "LATEST_INGESTION_BATCHES"
+        elif is_explain_provider_unavailable:
+            primary_goal = "EXPLAIN_PROVIDER_UNAVAILABLE"
+        elif is_show_quarantined_records:
+            primary_goal = "SHOW_QUARANTINED_RECORDS"
+        elif is_observation_ingestion_provenance:
+            primary_goal = "OBSERVATION_INGESTION_PROVENANCE"
+        elif is_dataset_global_or_partial:
+            primary_goal = "DATASET_GLOBAL_OR_PARTIAL"
+        elif is_latest_successful_ingestion:
+            primary_goal = "LATEST_SUCCESSFUL_INGESTION"
+        elif is_identify_stale_sources:
+            primary_goal = "IDENTIFY_STALE_SOURCES"
+        elif is_section_23_phase14_acceptance:
             primary_goal = "SECTION_23_PHASE14_ACCEPTANCE"
         elif is_section_24_phase14_acceptance:
             primary_goal = "SECTION_24_PHASE14_ACCEPTANCE"
@@ -2448,6 +2598,19 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "REDUCE_TEMPORAL_UNCERTAINTY"
         ]:
             stopping_condition = "TEMPORAL_ANALYSIS_EVALUATED_AND_HALT"
+        elif primary_goal == "SECTION_47_PHASE16_DATA_READINESS":
+            stopping_condition = "GLOBAL_DATA_READINESS_EVALUATED_AND_HALT"
+        elif primary_goal == "SECTION_48_PHASE16_INGESTION_PROVENANCE":
+            stopping_condition = "INGESTION_PROVENANCE_TRACED_AND_HALT"
+        elif primary_goal == "SECTION_49_PHASE16_STALE_DATASETS":
+            stopping_condition = "STALE_DATASETS_IDENTIFIED_AND_HALT"
+        elif primary_goal in [
+            "DATA_INGESTION_STATUS", "DATA_FRESHNESS_QUERY", "DATASET_COVERAGE_QUERY",
+            "LATEST_INGESTION_BATCHES", "EXPLAIN_PROVIDER_UNAVAILABLE", "SHOW_QUARANTINED_RECORDS",
+            "OBSERVATION_INGESTION_PROVENANCE", "DATASET_GLOBAL_OR_PARTIAL",
+            "LATEST_SUCCESSFUL_INGESTION", "IDENTIFY_STALE_SOURCES"
+        ]:
+            stopping_condition = "DATA_GOVERNANCE_REPORTED_AND_HALT"
         elif primary_goal == "COMBINE_ALL_EVIDENCE":
             stopping_condition = "ALL_EVIDENCE_COMBINED_AND_HALT"
         elif primary_goal in ["SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:

@@ -3,11 +3,12 @@ from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
     ingestion, ml, admin, baselines, portals, model_registry,
-    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis, jarvis, intelligence, investigations
+    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis, jarvis, intelligence, investigations, data
 )
 
 api_router = APIRouter()
 
+api_router.include_router(data.router, prefix="/data", tags=["Global Data Ingestion & Governance"])
 api_router.include_router(health.router, prefix="/health", tags=["Health & Diagnostics"])
 api_router.include_router(gis.router, prefix="/gis", tags=["Spatial GIS Multi-Layer Engine"])
 api_router.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence Providers & Global Coverage"])
@@ -36,6 +37,7 @@ api_router.include_router(historical.router, prefix="/historical", tags=["Histor
 api_router.include_router(evidence.router, prefix="/evidence", tags=["Multimodal Evidence & Ground Verification"])
 api_router.include_router(jarvis.router, prefix="/jarvis", tags=["JARVIS Autonomous Intelligence & Command Layer"])
 api_router.include_router(investigations.router, prefix="/investigations", tags=["Investigation Case Management & Governance"])
+
 
 
 

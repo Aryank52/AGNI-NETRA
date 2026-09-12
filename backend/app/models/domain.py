@@ -1516,6 +1516,120 @@ class FacilityForestContext(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+# =================================================================================
+# PHASE 16 GLOBAL DATA INGESTION, NORMALIZATION & DATA GOVERNANCE MODELS
+# =================================================================================
+
+class IngestionBatchModel(Base):
+    __tablename__ = "ingestion_batches"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    batch_id = Column(String(64), unique=True, nullable=False, index=True)
+    provider = Column(String(100), nullable=False, index=True)
+    dataset = Column(String(100), nullable=False, index=True)
+    mode = Column(String(32), default="INCREMENTAL", nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    completed_at = Column(DateTime, nullable=True)
+    records_received = Column(Integer, default=0)
+    records_accepted = Column(Integer, default=0)
+    records_rejected = Column(Integer, default=0)
+    records_quarantined = Column(Integer, default=0)
+    records_duplicated = Column(Integer, default=0)
+    records_failed = Column(Integer, default=0)
+    schema_version = Column(String(32), default="1.0.0")
+    normalization_version = Column(String(32), default="1.0.0")
+    checksum = Column(String(64), nullable=True)
+    status = Column(String(32), default="RUNNING", index=True)
+    error_message = Column(Text, nullable=True)
+    checkpoint = Column(JSON, default=dict)
+    metadata_payload = Column(JSON, default=dict)
 
 
+class IngestionRecordModel(Base):
+    __tablename__ = "ingestion_records"
 
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    ingestion_id = Column(String(64), unique=True, nullable=False, index=True)
+    batch_id = Column(String(64), ForeignKey("ingestion_batches.batch_id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(100), nullable=False, index=True)
+    dataset = Column(String(100), nullable=False, index=True)
+    source_record_id = Column(String(255), nullable=True, index=True)
+    received_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    observation_time = Column(DateTime, nullable=True, index=True)
+    country = Column(String(100), default="GLOBAL", index=True)
+    jurisdiction = Column(String(100), nullable=True, index=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    geometry = Column(JSON, nullable=True)
+    schema_version = Column(String(32), default="1.0.0")
+    source_type = Column(String(50), default="REAL_PROVIDER")
+    quality_status = Column(String(32), default="PASS", index=True)
+    quality_reasons = Column(JSON, default=list)
+    dedup_status = Column(String(50), default="UNIQUE", index=True)
+    duplicate_of_id = Column(String(64), nullable=True, index=True)
+    provenance_id = Column(String(64), nullable=True, index=True)
+    processing_status = Column(String(32), default="RECEIVED", index=True)
+    lifecycle_state = Column(String(32), default="ORIGINAL", index=True)
+    error_code = Column(String(64), nullable=True)
+    error_message_safe = Column(Text, nullable=True)
+    raw_payload = Column(JSON, default=dict)
+    normalized_payload = Column(JSON, default=dict)
+
+
+class IngestionQuarantineModel(Base):
+    __tablename__ = "ingestion_quarantine"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    quarantine_id = Column(String(64), unique=True, nullable=False, index=True)
+    batch_id = Column(String(64), nullable=True, index=True)
+    provider = Column(String(100), nullable=False, index=True)
+    dataset = Column(String(100), nullable=False, index=True)
+    source_record_id = Column(String(255), nullable=True, index=True)
+    reason = Column(Text, nullable=False)
+    error_code = Column(String(64), default="VALIDATION_FAILURE", index=True)
+    raw_safe_reference = Column(JSON, default=dict)
+    detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    resolved_at = Column(DateTime, nullable=True)
+    resolution = Column(String(50), default="UNRESOLVED", index=True)
+    resolved_by = Column(String(64), nullable=True)
+
+
+class DatasetRegistryModel(Base):
+    __tablename__ = "governed_dataset_registry"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    dataset_id = Column(String(100), unique=True, nullable=False, index=True)
+    provider = Column(String(100), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    version = Column(String(50), default="v1.0")
+    license_reference = Column(String(255), default="LICENSE_INFO_UNVERIFIED")
+    coverage_scope = Column(String(50), default="GLOBAL", index=True)
+    country = Column(String(100), nullable=True, index=True)
+    spatial_resolution = Column(String(100), nullable=True)
+    temporal_resolution = Column(String(100), nullable=True)
+    retention_policy = Column(String(100), default="INDEFINITE")
+    schema_version = Column(String(32), default="1.0.0")
+    quality_policy = Column(String(255), default="STANDARD_RANGE_AND_GEO_VALIDATION")
+    provenance_policy = Column(String(255), default="IMMUTABLE_SOURCE_LINEAGE")
+    status = Column(String(50), default="AVAILABLE", index=True)
+    freshness_threshold_seconds = Column(Integer, default=86400)
+    last_observation_time = Column(DateTime, nullable=True)
+    last_ingestion_time = Column(DateTime, nullable=True)
+    record_count = Column(BigInteger, default=0)
+    spatial_extent = Column(JSON, default=dict)
+    temporal_extent = Column(JSON, default=dict)
+    metadata_info = Column(JSON, default=dict)
+
+
+class IngestionCheckpointModel(Base):
+    __tablename__ = "ingestion_checkpoints"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    checkpoint_key = Column(String(128), unique=True, nullable=False, index=True)
+    provider = Column(String(100), nullable=False, index=True)
+    dataset = Column(String(100), nullable=False, index=True)
+    last_successful_observation_time = Column(DateTime, nullable=True)
+    last_successful_source_record_id = Column(String(255), nullable=True)
+    last_successful_batch_id = Column(String(64), nullable=True)
+    cursor_state = Column(JSON, default=dict)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
