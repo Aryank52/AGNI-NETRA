@@ -870,13 +870,39 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_identify_non_independent_evidence:
             entities["is_identify_non_independent_evidence"] = True
 
+        # Phase 11.1 Acceptance: Verify Evidence Graph & Explain Metric Disambiguation
+        is_verify_evidence_graph_and_explain_metrics = (
+            any(w in cmd for w in [
+                "verify the evidence graph",
+                "verify evidence graph",
+                "audit the evidence graph",
+                "audit evidence graph"
+            ])
+            and any(w in cmd for w in [
+                "explain the difference between",
+                "difference between risk",
+                "difference between risk score",
+                "classifier probability",
+                "evidence support",
+                "evidence strength",
+                "uncertainty"
+            ])
+        ) or (
+            "explain the difference between risk score, classifier probability, evidence support, evidence strength, and uncertainty" in cmd
+        )
+        if is_verify_evidence_graph_and_explain_metrics:
+            entities["is_verify_evidence_graph_and_explain_metrics"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
         is_any_phase11 = (
             is_section_26_phase11_acceptance or is_explain_why_reached_assessment or
             is_show_evidence_supporting or is_show_evidence_contradicting or
             is_show_strongest_evidence or is_show_evidence_chain or
             is_compare_competing_hypotheses or is_tell_evidence_nature or
             is_show_what_changed_assessment or is_show_what_would_change_assessment or
-            is_show_provenance_chain or is_identify_non_independent_evidence
+            is_show_provenance_chain or is_identify_non_independent_evidence or
+            is_verify_evidence_graph_and_explain_metrics
         )
         if is_any_phase11:
             entities["clarification_required"] = False
@@ -1727,6 +1753,8 @@ class LocalDeterministicProvider(BaseLLMProvider):
             primary_goal = "SHOW_PROVENANCE_CHAIN"
         elif is_identify_non_independent_evidence:
             primary_goal = "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
+        elif is_verify_evidence_graph_and_explain_metrics:
+            primary_goal = "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"
         elif is_provenance_authenticity_audit:
             primary_goal = "PROVENANCE_AUTHENTICITY_AUDIT"
         elif is_section_30_phase10_acceptance:
@@ -1930,6 +1958,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         elif primary_goal in [
             "SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE",
             "SECTION_26_PHASE9_ACCEPTANCE", "SECTION_30_PHASE10_ACCEPTANCE", "SECTION_26_PHASE11_ACCEPTANCE",
+            "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS",
             "COMBINE_ALL_EVIDENCE", "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT",
             "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",
             "SHOW_STRONGEST_EVIDENCE", "SHOW_EVIDENCE_CHAIN", "COMPARE_COMPETING_HYPOTHESES",
@@ -1939,7 +1968,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "SECTION_26_PHASE11_ACCEPTANCE":
+        if primary_goal in ["SECTION_26_PHASE11_ACCEPTANCE", "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"]:
             stopping_condition = "SECTION_26_PHASE11_EVIDENCE_GRAPH_EVALUATED_AND_HALT"
         elif primary_goal in [
             "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",

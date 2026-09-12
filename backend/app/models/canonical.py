@@ -232,7 +232,7 @@ class HistoricalBaseline(BaseModel):
 class RiskAssessment(BaseModel):
     """
     Canonical authoritative 5-factor risk score assessment (0-100).
-    Preserves exact formula: Persistence(25%) + Radiative(25%) + Proximity(20%) + LandUse(15%) + History(15%).
+    Preserves exact production formula: 0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context.
     """
     assessment_id: str = Field(..., description="Risk assessment identifier")
     event_id: str = Field(..., description="Associated thermal event ID")

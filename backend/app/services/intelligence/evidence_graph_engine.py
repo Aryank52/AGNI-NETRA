@@ -231,7 +231,13 @@ class EvidenceGraphEngine:
             dataset="VIIRS_NOAA21_NRT",
             confidence=0.98,
             strength="STRONG",
-            properties={"mean_frp_mw": mean_frp, "observation_count": obs_count, "sensor": "VIIRS"},
+            properties={
+                "mean_frp_mw": mean_frp,
+                "observation_count": obs_count,
+                "sensor": "VIIRS",
+                "sampling_nature": "SAME_SOURCE_REPETITION",
+                "telemetry_type": "SPACEBORNE_RADIOMETRY"
+            },
             provenance=firms_prov,
             observation_time=temporal_data.get("persistence", {}).get("last_seen", now_iso)
         )
@@ -571,6 +577,9 @@ class EvidenceGraphEngine:
                 properties={
                     "hypothesis_id": h_id,
                     "support_score": support_score,
+                    "evidence_support_score": support_score,
+                    "metric_type": "EVIDENCE_SUPPORT_SCORE",
+                    "score_description": "Domain-specific heuristic support metric (0-100), distinct from ML classifier probability and risk score.",
                     "supporting_count": supp_count,
                     "contradicting_count": cont_count,
                     "uncertainty": uncertainty_val
@@ -609,12 +618,13 @@ class EvidenceGraphEngine:
             properties={
                 "risk_score": r_score,
                 "severity": sev,
+                "risk_formula": "0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context",
                 "winner_hypothesis": winner_hyp,
                 "dispatch_status": "BLOCKED",
                 "requires_hitl": True,
                 "verification_tier": "TRI_TIER_DESK"
             },
-            provenance=create_derived_provenance(provider="AGNI_NETRA", dataset="RISK_ENGINE_V3", derivation_method="Authoritative 5-Factor Weighted Score")
+            provenance=create_derived_provenance(provider="AGNI_NETRA", dataset="RISK_ENGINE_V3", derivation_method="Authoritative 5-Factor Weighted Score (0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context)")
         )
 
         # Connect Hypotheses -> Assessment

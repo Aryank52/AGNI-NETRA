@@ -13,7 +13,7 @@ Phase 11 implements the **Global Evidence Graph & Explainable Intelligence Engin
 - **Single Master Agent:** One unified JARVIS orchestrator; no subagents, no autonomous dispatch, and no chatbot architecture.
 - **Dispatch Gate BLOCKED:** The operational emergency dispatch gate remains permanently locked (`ENABLE_OPERATIONAL_DISPATCH_GATE = False`).
 - **Frozen Baselines Intact:** Phases 7, 8, 9, 10, and 10.1 remain 100% frozen and operational. All 190 regression tests pass cleanly.
-- **Model Stability:** XGBoost classifier champion (`xgb-v3.0-real-candidate`) weights, Platt calibrator, and 5-factor risk formula weights (`Persistence: 25%, Radiative: 25%, Proximity: 20%, LandUse: 15%, History: 15%`) remain mathematically identical.
+- **Model Stability:** XGBoost classifier champion (`xgb-v3.0-real-candidate`) weights, Platt calibrator, and 5-factor risk formula weights (`Intensity: 30%, Abnormality: 25%, Exposure: 20%, Persistence: 15%, Context: 10%`) remain mathematically identical.
 - **Data Authenticity:** Zero synthetic evidence or simulated observations are introduced as operational facts.
 
 ---

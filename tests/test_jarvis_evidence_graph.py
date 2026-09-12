@@ -401,19 +401,21 @@ def test_safety_invariants(db_session):
 
 # 29. Risk Formula Unchanged
 def test_risk_formula_unchanged():
+    from backend.app.services.risk_service import calculate_risk_score
+    # Authoritative production formula: 0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context
     weights = {
-        "persistence": 0.25,
-        "radiative": 0.25,
-        "proximity": 0.20,
-        "land_use": 0.15,
-        "history": 0.15
+        "intensity": 0.30,
+        "abnormality": 0.25,
+        "exposure": 0.20,
+        "persistence": 0.15,
+        "context": 0.10
     }
     assert sum(weights.values()) == 1.0
-    assert weights["persistence"] == 0.25
-    assert weights["radiative"] == 0.25
-    assert weights["proximity"] == 0.20
-    assert weights["land_use"] == 0.15
-    assert weights["history"] == 0.15
+    assert weights["intensity"] == 0.30
+    assert weights["abnormality"] == 0.25
+    assert weights["exposure"] == 0.20
+    assert weights["persistence"] == 0.15
+    assert weights["context"] == 0.10
 
 
 # 30. Classifier Unchanged

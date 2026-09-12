@@ -2908,13 +2908,37 @@ export default function JarvisCommandConsolePage() {
                           <span className="text-[10px] font-mono text-slate-400">DETERMINISTIC SUPPORT MATRIX</span>
                         </div>
 
+                        {/* Architectural Metrics Disambiguation Panel */}
+                        <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-lg grid grid-cols-1 md:grid-cols-5 gap-2.5 text-[10px]">
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-amber-400 uppercase font-mono">1. RISK SCORE (0–100)</span>
+                            <p className="text-slate-400 leading-tight">Authoritative 5-factor operational hazard index: 0.30 Intensity + 0.25 Abnormality + 0.20 Exposure + 0.15 Persistence + 0.10 Context.</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-cyan-400 uppercase font-mono">2. CLASSIFIER PROB</span>
+                            <p className="text-slate-400 leading-tight">Platt-calibrated XGBoost prediction confidence across 6 classes. Distinct from physical hazard.</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-indigo-400 uppercase font-mono">3. EVIDENCE SUPPORT</span>
+                            <p className="text-slate-400 leading-tight">Domain-specific heuristic support metric (0–100) decomposed into supporting vs contradicting observations.</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-emerald-400 uppercase font-mono">4. EVIDENCE STRENGTH</span>
+                            <p className="text-slate-400 leading-tight">Qualitative data quality and multi-pass sensor robustness tier (Strong / Moderate / Limited / Insufficient).</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-purple-400 uppercase font-mono">5. UNCERTAINTY</span>
+                            <p className="text-slate-400 leading-tight">Normalized Shannon entropy (H/ln 6) combined with missing telemetry and coverage gap penalties.</p>
+                          </div>
+                        </div>
+
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-xs">
                             <thead>
                               <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase font-mono">
                                 <th className="pb-2">HYPOTHESIS</th>
                                 <th className="pb-2">DESCRIPTION</th>
-                                <th className="pb-2">SUPPORT SCORE</th>
+                                <th className="pb-2">EVIDENCE SUPPORT SCORE</th>
                                 <th className="pb-2">SUPPORTING</th>
                                 <th className="pb-2">CONTRADICTING</th>
                                 <th className="pb-2">UNCERTAINTY</th>

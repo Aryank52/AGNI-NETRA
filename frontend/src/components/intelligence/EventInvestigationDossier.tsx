@@ -511,6 +511,10 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                   </span>
                 </div>
               )}
+              {/* Metric Disambiguation Note */}
+              <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-indigo-900/30">
+                <span className="text-amber-300 font-bold">METRICS:</span> Risk Score (5-factor 0–100) ≠ Classifier Prob (XGBoost %) ≠ Evidence Support Score (topological 0–100) ≠ Uncertainty (entropy).
+              </div>
             </div>
 
             {/* 2. Supporting Evidence */}

@@ -2451,8 +2451,8 @@ class JarvisWorkspaceManager:
             f"PRIMARY TARGET: {target_ref} | EVIDENCE TRACEABILITY AUDIT",
             "=====================================================\n",
             f"**1. EVENT:** Thermal Event `{target_ref}` | Location: Reliance Jamnagar Mega Refinery Complex (22.358°N, 69.870°E)",
-            f"**2. OPERATIONAL ASSESSMENT:** Industrial Facility Thermal Anomaly | Authoritative Risk Score: **{risk_score:.1f}/100** (`{severity}`)",
-            f"- **Dominant Candidate Explanation:** **`{winner_id}: {winner_name}`** (Deterministic Support Metric: **{winner_score:.1f}/100**)",
+            f"**2. OPERATIONAL ASSESSMENT:** Industrial Facility Thermal Anomaly | Authoritative Risk Score: **{risk_score:.1f}/100** (`{severity}`) [Formula: 0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context]",
+            f"- **Dominant Candidate Explanation:** **`{winner_id}: {winner_name}`** (Evidence Support Score: **{winner_score:.1f}/100**)",
             f"- **Graph Scale:** **{len(nodes)}** canonical epistemic nodes, **{len(edges)}** directed explainable relationships.",
             "",
             "### 3. CANDIDATE HYPOTHESES EVALUATED & EVIDENCE SUPPORT PROFILES"
@@ -2462,7 +2462,7 @@ class JarvisWorkspaceManager:
             is_winner = (h.get("hypothesis_id") == winner_id)
             prefix = "★ [DOMINANT]" if is_winner else "  [EVALUATED]"
             lines.append(
-                f"- **{prefix} {h.get('hypothesis_id')}: {h.get('name')}** | Support Score: **{h.get('support_score', 0.0):.1f}/100** | "
+                f"- **{prefix} {h.get('hypothesis_id')}: {h.get('name')}** | Evidence Support Score: **{h.get('support_score', 0.0):.1f}/100** | "
                 f"Supporting: {h.get('supporting_evidence_count', 0)} | Contradicting: {h.get('contradicting_evidence_count', 0)} | Uncertainty: `{h.get('uncertainty', 'LOW')}`"
             )
             if is_winner and h.get("strong_support"):
