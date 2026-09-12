@@ -18,6 +18,10 @@ from backend.app.services.intelligence.providers.base import (
     ProtectedAreaProvider,
     HistoricalBaselineProvider,
     EnvironmentalProvider,
+    WeatherProvider,
+    AtmosphericProvider,
+    OpticalProvider,
+    SARProvider,
     BaseIntelligenceProvider,
     ProviderMetadata,
     GeographicCoverage,
@@ -743,7 +747,7 @@ class AdministrativeBoundaryProvider(AdministrativeProvider):
 
 # Explicit Missing / Unconfigured Providers Scaffolding
 
-class WeatherProviderScaffold(BaseIntelligenceProvider):
+class WeatherProviderScaffold(WeatherProvider):
     """
     Explicit scaffold for meteorological/atmospheric intelligence (wind velocity, humidity, cloud cover).
     Status: NOT_CONFIGURED.
@@ -777,10 +781,208 @@ class WeatherProviderScaffold(BaseIntelligenceProvider):
     def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
         return ProviderHealth.NOT_CONFIGURED
 
+    def get_weather_at(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class ECMWFWeatherProvider(WeatherProvider):
+    """
+    ECMWF ERA5 / Integrated Forecasting System (IFS) atmospheric reanalysis adapter.
+    Status: NOT_CONFIGURED. Factual disclosure with zero synthetic data.
+    """
+
+    def get_metadata(self) -> ProviderMetadata:
+        return ProviderMetadata(
+            provider_name="ECMWF_WEATHER",
+            dataset_name="ECMWF_ERA5_ATMOSPHERIC_REANALYSIS",
+            capabilities=["surface_wind_vectors", "temperature_2m", "relative_humidity", "boundary_layer_height", "cloud_fraction"],
+            geographic_coverage=GeographicCoverage(
+                coverage_type=CoverageType.GLOBAL,
+                countries=["GLOBAL"],
+                description="Global atmospheric hourly reanalysis at 0.25 deg (~31km) horizontal resolution.",
+                is_global=True,
+            ),
+            temporal_coverage="1940 - Present",
+            update_frequency="Daily archive / 5-day latency",
+            availability=ProviderHealth.NOT_CONFIGURED,
+            source_provenance="European Centre for Medium-Range Weather Forecasts (ECMWF) Copernicus Climate Change Service",
+            limitations="[NOT CONFIGURED] ECMWF ERA5 reanalysis pipeline is not mounted in active local environment. Zero synthetic records fabricated.",
+            is_authoritative=False,
+        )
+
+    def get_coverage(self) -> GeographicCoverage:
+        return GeographicCoverage(
+            coverage_type=CoverageType.GLOBAL,
+            description="Global reanalysis coverage.",
+            is_global=True,
+        )
+
+    def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
+        return ProviderHealth.NOT_CONFIGURED
+
+    def get_weather_at(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class GFSWeatherProvider(WeatherProvider):
+    """
+    NOAA Global Forecast System (GFS) numerical weather prediction adapter.
+    Status: NOT_CONFIGURED. Factual disclosure with zero synthetic data.
+    """
+
+    def get_metadata(self) -> ProviderMetadata:
+        return ProviderMetadata(
+            provider_name="NOAA_GFS",
+            dataset_name="NOAA_GFS_GLOBAL_METEOROLOGY",
+            capabilities=["10m_wind_vectors", "surface_temperature", "accumulated_precipitation", "total_cloud_cover"],
+            geographic_coverage=GeographicCoverage(
+                coverage_type=CoverageType.GLOBAL,
+                countries=["GLOBAL"],
+                description="Global numerical weather prediction model at 0.25 deg grid.",
+                is_global=True,
+            ),
+            temporal_coverage="Real-time 6-hour cycles",
+            update_frequency="4 cycles daily (00, 06, 12, 18 UTC)",
+            availability=ProviderHealth.NOT_CONFIGURED,
+            source_provenance="National Oceanic and Atmospheric Administration (NOAA) / NCEP",
+            limitations="[NOT CONFIGURED] NOAA GFS live ingestion pipeline is not configured in active environment. Zero synthetic data fabricated.",
+            is_authoritative=False,
+        )
+
+    def get_coverage(self) -> GeographicCoverage:
+        return GeographicCoverage(
+            coverage_type=CoverageType.GLOBAL,
+            description="Global numerical weather prediction coverage.",
+            is_global=True,
+        )
+
+    def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
+        return ProviderHealth.NOT_CONFIGURED
+
+    def get_weather_at(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class CopernicusAtmosphericProvider(AtmosphericProvider):
+    """
+    Copernicus Atmosphere Monitoring Service (CAMS) atmospheric composition adapter.
+    Status: NOT_CONFIGURED. Factual disclosure with zero synthetic data.
+    """
+
+    def get_metadata(self) -> ProviderMetadata:
+        return ProviderMetadata(
+            provider_name="COPERNICUS_ATMOSPHERIC",
+            dataset_name="CAMS_GLOBAL_ATMOSPHERIC_COMPOSITION",
+            capabilities=["aerosol_optical_depth", "carbon_monoxide_total_column", "sulfur_dioxide_tropospheric", "nitrogen_dioxide_column"],
+            geographic_coverage=GeographicCoverage(
+                coverage_type=CoverageType.GLOBAL,
+                countries=["GLOBAL"],
+                description="Global atmospheric composition reanalysis and forecasts at 0.4 deg resolution.",
+                is_global=True,
+            ),
+            temporal_coverage="2003 - Present",
+            update_frequency="Daily",
+            availability=ProviderHealth.NOT_CONFIGURED,
+            source_provenance="Copernicus Atmosphere Monitoring Service (CAMS) / ECMWF",
+            limitations="[NOT CONFIGURED] CAMS atmospheric composition archive is not configured. Zero synthetic data fabricated.",
+            is_authoritative=False,
+        )
+
+    def get_coverage(self) -> GeographicCoverage:
+        return GeographicCoverage(
+            coverage_type=CoverageType.GLOBAL,
+            description="Global atmospheric composition coverage.",
+            is_global=True,
+        )
+
+    def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
+        return ProviderHealth.NOT_CONFIGURED
+
+    def get_atmospheric_at(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class Sentinel2OpticalProvider(OpticalProvider):
+    """
+    Copernicus Sentinel-2 Multi-Spectral Instrument (MSI) Level-2A optical surface reflectance.
+    Status: NOT_CONFIGURED. Factual disclosure with zero synthetic imagery.
+    """
+
+    def get_metadata(self) -> ProviderMetadata:
+        return ProviderMetadata(
+            provider_name="SENTINEL2_OPTICAL",
+            dataset_name="COPERNICUS_SENTINEL2_MSI_L2A",
+            capabilities=["10m_multispectral_surface_reflectance", "swir_flame_detection", "burn_severity_nbr", "scene_cloud_mask"],
+            geographic_coverage=GeographicCoverage(
+                coverage_type=CoverageType.GLOBAL,
+                countries=["GLOBAL"],
+                description="Global land surfaces and coastal waters every 5 days with twin satellites (2A/2B).",
+                is_global=True,
+            ),
+            temporal_coverage="2015 - Present",
+            update_frequency="5-day constellation revisit",
+            availability=ProviderHealth.NOT_CONFIGURED,
+            source_provenance="European Space Agency (ESA) Copernicus Sentinel-2",
+            limitations="[NOT CONFIGURED] Sentinel-2 Level-2A imagery access pipeline is not configured in local environment. Zero synthetic imagery fabricated.",
+            is_authoritative=False,
+        )
+
+    def get_coverage(self) -> GeographicCoverage:
+        return GeographicCoverage(
+            coverage_type=CoverageType.GLOBAL,
+            description="Global optical coverage.",
+            is_global=True,
+        )
+
+    def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
+        return ProviderHealth.NOT_CONFIGURED
+
+    def query_optical_imagery(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None, max_cloud_cover: float = 30.0) -> List[Dict[str, Any]]:
+        return []
+
+
+class Sentinel1SARProvider(SARProvider):
+    """
+    Copernicus Sentinel-1 C-Band Synthetic Aperture Radar (C-SAR) Level-1 GRD.
+    Status: NOT_CONFIGURED. Factual disclosure with zero synthetic radar data.
+    """
+
+    def get_metadata(self) -> ProviderMetadata:
+        return ProviderMetadata(
+            provider_name="SENTINEL1_SAR",
+            dataset_name="COPERNICUS_SENTINEL1_GRD_CSAR",
+            capabilities=["all_weather_cloud_penetrating_radar", "co_cross_polarization_vv_vh", "ground_surface_deformation", "nighttime_imaging"],
+            geographic_coverage=GeographicCoverage(
+                coverage_type=CoverageType.GLOBAL,
+                countries=["GLOBAL"],
+                description="Global land and sea radar imaging independent of solar illumination or weather conditions.",
+                is_global=True,
+            ),
+            temporal_coverage="2014 - Present",
+            update_frequency="6-12 day revisit",
+            availability=ProviderHealth.NOT_CONFIGURED,
+            source_provenance="European Space Agency (ESA) Copernicus Sentinel-1",
+            limitations="[NOT CONFIGURED] Sentinel-1 SAR radar processing pipeline is not configured in local environment. Zero synthetic SAR data fabricated.",
+            is_authoritative=False,
+        )
+
+    def get_coverage(self) -> GeographicCoverage:
+        return GeographicCoverage(
+            coverage_type=CoverageType.GLOBAL,
+            description="Global radar coverage.",
+            is_global=True,
+        )
+
+    def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
+        return ProviderHealth.NOT_CONFIGURED
+
+    def query_sar_passes(self, db: Session, lat: float, lon: float, timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
+        return []
+
 
 class HighResOpticalProviderScaffold(BaseIntelligenceProvider):
     """
-    Explicit scaffold for sub-meter optical / SAR satellite imagery (WorldView, PlanetScope, Sentinel-1 SAR).
+    Explicit scaffold for commercial sub-meter optical / SAR satellite imagery (WorldView, PlanetScope).
     Status: NOT_CONFIGURED.
     """
 
@@ -810,3 +1012,4 @@ class HighResOpticalProviderScaffold(BaseIntelligenceProvider):
 
     def get_health(self, db: Optional[Session] = None) -> ProviderHealth:
         return ProviderHealth.NOT_CONFIGURED
+

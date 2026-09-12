@@ -43,6 +43,8 @@ class JarvisCapability(str, Enum):
     SYSTEM_GOVERNANCE = "SYSTEM_GOVERNANCE"
     CROSS_SOURCE_CORRELATION = "CROSS_SOURCE_CORRELATION"
     TEMPORAL_ANALYSIS = "TEMPORAL_ANALYSIS"
+    ENVIRONMENTAL_INTELLIGENCE = "ENVIRONMENTAL_INTELLIGENCE"
+    CROSS_MODAL_VERIFICATION = "CROSS_MODAL_VERIFICATION"
 
 
 class AgentType(str, Enum):
@@ -229,6 +231,8 @@ class FusedEvidence(BaseModel):
     categorized_synthesis: Optional[CategorizedSynthesis] = None
     context_evidence: Optional[Dict[str, Any]] = None
     temporal_evidence: Optional[Dict[str, Any]] = None
+    environmental_evidence: Optional[Dict[str, Any]] = None
+    cross_modal_evidence: Optional[Dict[str, Any]] = None
     evidence_quality: EvidenceQuality = Field(default_factory=EvidenceQuality)
 
 
@@ -300,6 +304,20 @@ class JarvisResponse(BaseModel):
     temporal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
     temporal_observation_count: Optional[int] = 0
 
+    # Phase 10 Global Environmental Intelligence & Cross-Modal Verification
+    environmental_sources: Optional[List[str]] = Field(default_factory=list)
+    environmental_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    environmental_observations: Optional[Any] = Field(default_factory=dict)
+    environmental_relationships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    environmental_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    cross_modal_sources: Optional[List[str]] = Field(default_factory=list)
+    cross_modal_evidence: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    cross_modal_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_observation_count: Optional[int] = 0
+    cross_modal_observation_count: Optional[int] = 0
+
     @property
     def temporal_anomaly(self) -> Optional[Dict[str, Any]]:
         return self.temporal_anomalies
@@ -307,6 +325,19 @@ class JarvisResponse(BaseModel):
     @property
     def temporal_evidence(self) -> Optional[Dict[str, Any]]:
         return self.temporal_uncertainty
+
+    @property
+    def environmental_evidence(self) -> Optional[Dict[str, Any]]:
+        return self.details.get("environmental_evidence") or (self.fused_evidence.environmental_evidence if self.fused_evidence else None)
+
+    @property
+    def environmental_conditions(self) -> Optional[Dict[str, Any]]:
+        return self.details.get("environmental_conditions")
+
+    @property
+    def cross_modal_verification(self) -> Optional[Dict[str, Any]]:
+        return self.details.get("cross_modal_verification") or (self.details.get("cross_modal_evidence") or (self.fused_evidence.cross_modal_evidence if self.fused_evidence else None))
+
 
 
 
@@ -458,6 +489,21 @@ class InvestigationWorkspaceSchema(BaseModel):
     temporal_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
     temporal_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
     temporal_observation_count: Optional[int] = 0
+
+    # Phase 10 Global Environmental Intelligence & Cross-Modal Verification
+    environmental_sources: Optional[List[str]] = Field(default_factory=list)
+    environmental_provenance: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    environmental_observations: Optional[Any] = Field(default_factory=dict)
+    environmental_relationships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    environmental_coverage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    cross_modal_sources: Optional[List[str]] = Field(default_factory=list)
+    cross_modal_evidence: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    cross_modal_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    environmental_observation_count: Optional[int] = 0
+    cross_modal_observation_count: Optional[int] = 0
+
 
 
 

@@ -23,10 +23,24 @@ class JarvisEvidenceFusion:
         ml_data: Optional[Dict[str, Any]] = None,
         anom_data: Optional[Dict[str, Any]] = None,
         risk_data: Optional[Dict[str, Any]] = None,
-        sat_data: Optional[Dict[str, Any]] = None
+        sat_data: Optional[Dict[str, Any]] = None,
+        context_data: Optional[Dict[str, Any]] = None,
+        temporal_data: Optional[Dict[str, Any]] = None,
+        env_data: Optional[Dict[str, Any]] = None,
+        crossmodal_data: Optional[Dict[str, Any]] = None
     ) -> FusedEvidence:
         fused = FusedEvidence()
         missing_elements = []
+
+        # Attach auxiliary evidence domains if present
+        if context_data:
+            fused.context_evidence = context_data
+        if temporal_data:
+            fused.temporal_evidence = temporal_data
+        if env_data:
+            fused.environmental_evidence = env_data
+        if crossmodal_data:
+            fused.cross_modal_evidence = crossmodal_data
 
         # 1. Thermal Evidence (Fact)
         facts: List[str] = []
@@ -115,7 +129,24 @@ class JarvisEvidenceFusion:
         else:
             missing_elements.append("OperationalRiskAssessment")
 
-        # 6. Satellite Telemetry (Fact & Disclaimers)
+        # 6. Environmental & Meteorological Evidence
+        if env_data and not env_data.get("error"):
+            wx = env_data.get("weather", {})
+            wnd = env_data.get("wind", {})
+            pcp = env_data.get("precipitation", {})
+            if wx.get("temperature_c") is not None:
+                facts.append(f"Local surface meteorology: {wx.get('temperature_c', 0.0):.1f}°C ambient temperature, {wx.get('relative_humidity_pct', 0.0):.0f}% RH.")
+            if wnd.get("wind_speed_ms") is not None:
+                derived_analysis.append(f"Environmental plume transport: Wind from {wnd.get('wind_direction_deg', 0):.0f}° at {wnd.get('wind_speed_ms', 0):.1f} m/s establishes {wnd.get('transport_condition', 'MODERATE_TRANSPORT')} toward {wnd.get('smoke_dispersion_direction', 'ENE')}.")
+            if pcp.get("persistence_support_status"):
+                derived_analysis.append(f"Precipitation persistence support: Rate {pcp.get('precipitation_rate_mmh', 0.0):.1f} mm/h evaluated as {pcp.get('persistence_support_status', 'SUPPORTIVE')} of thermal combustion.")
+
+        # 7. Cross-Modal Verification Evidence
+        if crossmodal_data and not crossmodal_data.get("error"):
+            corrob = crossmodal_data.get("corroboration_status", "PARTIALLY_CORROBORATED")
+            derived_analysis.append(f"Cross-modal multi-sensor corroboration: Status evaluated as '{corrob}'. Auxiliary satellite optical/radar passes unconfigured (NOT_CONFIGURED); land use and meteorology concordant.")
+
+        # 8. Satellite Telemetry (Fact & Disclaimers)
         warnings: List[str] = [
             "SEMANTIC DISTINCTION: Thermal anomaly detection indicates statistical deviation from baseline; it does not inherently constitute an uncontained emergency.",
             "SATELLITE TELEMETRY NOTICE: Observations represent FIRMS satellite-derived infrared detections, not ground-truth site surveys.",

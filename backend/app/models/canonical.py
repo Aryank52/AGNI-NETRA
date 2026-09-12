@@ -628,4 +628,329 @@ class TemporalCoverage(BaseModel):
     status: str = Field("AVAILABLE", description="AVAILABLE, PARTIAL, INSUFFICIENT, NOT_CONFIGURED")
 
 
+# ==============================================================================
+# Phase 10 Canonical Environmental Intelligence & Cross-Modal Verification Models
+# ==============================================================================
+
+class EnvironmentalObservation(BaseModel):
+    """
+    Base canonical environmental observation supporting meteorological, atmospheric,
+    and ecological measurements with strict provenance lineage.
+    """
+    observation_id: str = Field(default_factory=lambda: f"ENV-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field(..., description="Provider identifier (e.g. ECMWF, GFS, IMD, NASA)")
+    dataset: str = Field(..., description="Dataset or model product name")
+    source_record_id: Optional[str] = Field(None, description="Native source record identifier")
+    country: str = Field("India", description="Country name")
+    jurisdiction: Optional[str] = Field(None, description="State/Province/Admin level 1")
+    latitude: float = Field(..., description="WGS84 latitude")
+    longitude: float = Field(..., description="WGS84 longitude")
+    geometry: Optional[Dict[str, Any]] = Field(None, description="GeoJSON Point representation")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    effective_time: Optional[str] = Field(None, description="Effective processing timestamp ISO8601")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution (e.g. 0.25 deg, 1 km, 10m)")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence (e.g. 1 hour, 3 hours, daily)")
+    measurement: Optional[Union[float, str, Dict[str, Any]]] = Field(None, description="Primary measurement value")
+    unit: Optional[str] = Field(None, description="Measurement unit")
+    quality: str = Field("HIGH", description="Data quality classification")
+    confidence: float = Field(1.0, description="Confidence score 0.0 - 1.0")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance lineage")
+    limitations: Optional[str] = Field(None, description="Known observation limitations")
+
+    def __init__(self, **data):
+        if "geometry" not in data or not data["geometry"]:
+            lat = data.get("latitude", 0.0)
+            lon = data.get("longitude", 0.0)
+            data["geometry"] = {"type": "Point", "coordinates": [lon, lat]}
+        super().__init__(**data)
+
+
+class WeatherObservation(BaseModel):
+    """
+    Canonical meteorological observation (surface temperature, humidity, wind vectors, precipitation).
+    """
+    observation_id: str = Field(default_factory=lambda: f"WX-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("ECMWF_ERA5", description="Meteorological provider")
+    dataset: str = Field("SURFACE_REANALYSIS", description="Dataset product name")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    temperature_c: Optional[float] = Field(None, description="2-meter ambient temperature in Celsius")
+    relative_humidity_pct: Optional[float] = Field(None, description="Relative humidity percentage (0 - 100)")
+    surface_pressure_hpa: Optional[float] = Field(None, description="Surface pressure in hPa")
+    wind_speed_ms: Optional[float] = Field(None, description="10-meter wind speed in m/s")
+    wind_direction_deg: Optional[float] = Field(None, description="10-meter wind direction in meteorological degrees (0-360)")
+    wind_gust_ms: Optional[float] = Field(None, description="Peak wind gust in m/s")
+    precipitation_rate_mmh: Optional[float] = Field(None, description="Precipitation rate in mm/hour")
+    cloud_cover_pct: Optional[float] = Field(None, description="Total cloud cover percentage (0 - 100)")
+    dew_point_c: Optional[float] = Field(None, description="Dew point temperature in Celsius")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Measurement limitations")
+
+
+class AtmosphericObservation(BaseModel):
+    """
+    Canonical atmospheric composition observation (Aerosol Optical Depth, CO, SO2, NO2).
+    """
+    observation_id: str = Field(default_factory=lambda: f"ATM-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("COPERNICUS_CAMS", description="Atmospheric provider")
+    dataset: str = Field("ATMOSPHERIC_COMPOSITION", description="Dataset product name")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    aod: Optional[float] = Field(None, description="Aerosol Optical Depth at 550nm")
+    co_ppm: Optional[float] = Field(None, description="Carbon Monoxide volume mixing ratio in ppm")
+    no2_umol_m2: Optional[float] = Field(None, description="Nitrogen Dioxide tropospheric column in umol/m2")
+    so2_umol_m2: Optional[float] = Field(None, description="Sulfur Dioxide total column in umol/m2")
+    aqi: Optional[int] = Field(None, description="Air Quality Index")
+    surface_visibility_km: Optional[float] = Field(None, description="Horizontal visibility in kilometers")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Measurement limitations")
+
+
+class CloudCondition(BaseModel):
+    """
+    Cloud condition & optical observability assessment.
+    Crucially separates ACTIVITY ABSENCE from OBSERVATION ABSENCE.
+    """
+    observation_id: str = Field(default_factory=lambda: f"CLD-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("METEOROLOGICAL_SATELLITE", description="Observing provider")
+    dataset: str = Field("CLOUD_MASK", description="Dataset product")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    cloud_cover_pct: float = Field(0.0, description="Total cloud fraction (0-100)")
+    cloud_type: Optional[str] = Field(None, description="Cirrus, Cumulus, Stratus, Deep Convective, Clear")
+    cloud_base_altitude_m: Optional[float] = Field(None, description="Base height above ground in meters")
+    optical_opacity: float = Field(0.0, description="Optical thickness/opacity (0.0 clear to 1.0 fully opaque)")
+    visibility_attenuation_factor: float = Field(1.0, description="Atmospheric transmissivity factor (0.0 - 1.0)")
+    limits_optical_observation: bool = Field(False, description="True if clouds obscure optical surface sensing")
+    limits_thermal_observation: bool = Field(False, description="True if thick clouds attenuate thermal infrared signals")
+    is_activity_absence: bool = Field(False, description="False indicates clouds cause observation absence, NOT thermal inactivity")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Limitations notes")
+
+
+class WindObservation(BaseModel):
+    """
+    Canonical surface wind conditions and smoke/heat plume dispersion direction.
+    """
+    observation_id: str = Field(default_factory=lambda: f"WND-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("METEOROLOGICAL_STATION", description="Wind observation provider")
+    dataset: str = Field("SURFACE_WIND", description="Dataset name")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    wind_speed_ms: float = Field(0.0, description="Wind speed in meters per second")
+    wind_direction_deg: float = Field(0.0, description="Wind direction in degrees from North (0-360)")
+    gust_speed_ms: Optional[float] = Field(None, description="Wind gust speed in m/s")
+    transport_condition: str = Field("LIGHT_DISPERSION", description="CALM, LIGHT_DISPERSION, MODERATE_TRANSPORT, STRONG_ADVECTION, SEVERE_DISPERSION")
+    smoke_dispersion_direction: Optional[str] = Field(None, description="Downwind bearing compass direction (e.g. ENE)")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Limitations")
+
+
+class PrecipitationObservation(BaseModel):
+    """
+    Canonical precipitation metrics and thermal persistence support analysis.
+    """
+    observation_id: str = Field(default_factory=lambda: f"PCP-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("METEOROLOGICAL_RADAR_GAUGE", description="Precipitation provider")
+    dataset: str = Field("PRECIPITATION_RATE", description="Dataset name")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    precipitation_rate_mmh: float = Field(0.0, description="Current rain rate in mm/hour")
+    accumulation_24h_mm: Optional[float] = Field(0.0, description="24-hour total accumulation in mm")
+    precipitation_type: str = Field("NONE", description="NONE, DRIZZLE, LIGHT_RAIN, MODERATE_RAIN, HEAVY_RAIN, THUNDERSTORM")
+    persistence_support_status: str = Field("SUPPORTIVE", description="SUPPORTIVE, NEUTRAL, INHIBITING, POTENTIALLY_INCONSISTENT")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Limitations")
+
+
+class TemperatureObservation(BaseModel):
+    """
+    Ambient surface temperature observation.
+    """
+    observation_id: str = Field(default_factory=lambda: f"TMP-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("SURFACE_MESONET", description="Temperature provider")
+    dataset: str = Field("2M_TEMPERATURE", description="Dataset name")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Observation timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("OBSERVED", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    temperature_c: float = Field(25.0, description="Ambient temperature in Celsius")
+    heat_index_c: Optional[float] = Field(None, description="Calculated heat index in Celsius")
+    quality: str = Field("HIGH", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Limitations")
+
+
+class OpticalObservation(BaseModel):
+    """
+    Satellite high-resolution optical imagery pass (Sentinel-2, PlanetScope, Landsat).
+    """
+    observation_id: str = Field(default_factory=lambda: f"OPT-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("COPERNICUS_SENTINEL2", description="Optical provider")
+    dataset: str = Field("SENTINEL2_MSI_L2A", description="Dataset or product")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Acquisition timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("UNAVAILABLE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("MISSING", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    sensor: str = Field("SENTINEL_2_MSI", description="Sensor name")
+    satellite: Optional[str] = Field("Sentinel-2B", description="Platform")
+    cloud_cover_pct: float = Field(0.0, description="Tile cloud cover percentage")
+    spatial_resolution_m: float = Field(10.0, description="Ground sampling distance in meters")
+    swir_anomaly_detected: bool = Field(False, description="Shortwave infrared thermal reflection detected")
+    surface_reflectance_change: Optional[float] = Field(None, description="Normalized burn ratio or delta index")
+    observation_status: str = Field("NOT_CONFIGURED", description="AVAILABLE, CLOUD_OBSCURED, NOT_CONFIGURED, UNAVAILABLE")
+    quality: str = Field("PROVISIONAL", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Known sensor limitations")
+
+
+class SARObservation(BaseModel):
+    """
+    Satellite Synthetic Aperture Radar pass (Sentinel-1 C-SAR).
+    Provides all-weather, day/night penetrating radar backscatter measurements.
+    """
+    observation_id: str = Field(default_factory=lambda: f"SAR-{uuid.uuid4().hex[:8].upper()}")
+    provider: str = Field("COPERNICUS_SENTINEL1", description="SAR provider")
+    dataset: str = Field("SENTINEL1_GRD_CSAR", description="Dataset or product")
+    source_record_id: Optional[str] = None
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    observation_time: str = Field(..., description="Acquisition timestamp ISO8601")
+    retrieval_time: Optional[str] = Field(None, description="Retrieval timestamp ISO8601")
+    source_type: str = Field("UNAVAILABLE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED")
+    evidence_nature: str = Field("MISSING", description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE")
+    spatial_resolution: Optional[str] = Field(None, description="Spatial resolution")
+    temporal_resolution: Optional[str] = Field(None, description="Temporal cadence")
+    sensor: str = Field("SENTINEL_1_CSAR", description="Sensor name")
+    satellite: Optional[str] = Field("Sentinel-1A", description="Platform")
+    polarization: str = Field("VV_VH", description="Polarization channels (e.g. VV, VH, HH, HV)")
+    spatial_resolution_m: float = Field(10.0, description="Spatial resolution in meters")
+    backscatter_anomaly_detected: bool = Field(False, description="Significant radar backscatter difference detected")
+    all_weather_penetration: bool = Field(True, description="True: C-band radar penetrates clouds, fog, and smoke")
+    observation_status: str = Field("NOT_CONFIGURED", description="AVAILABLE, NOT_CONFIGURED, UNAVAILABLE")
+    quality: str = Field("PROVISIONAL", description="Quality rating")
+    provenance: Optional[SourceProvenance] = Field(None, description="Provenance lineage")
+    limitations: Optional[str] = Field(None, description="Known SAR limitations")
+
+
+class EnvironmentalRelationship(BaseModel):
+    """
+    Deterministic supporting relationship between environmental conditions and a thermal event.
+    Explicitly labeled as SUPPORTING CONDITIONS or DERIVED RELATIONSHIPS, never absolute causality claims.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    relationship_type: str = Field(..., description="DERIVED_ENVIRONMENTAL_RELATIONSHIP, ATMOSPHERIC_TRANSPORT_CONDITION, METEOROLOGICAL_PERSISTENCE_SUPPORT, PRECIPITATION_BURNING_INHIBITION, CLOUD_OBSERVATION_ATTENUATION")
+    description: str = Field(..., description="Factual explanatory text")
+    confidence: float = Field(1.0, description="Confidence score 0.0 - 1.0")
+    is_supporting_condition: bool = Field(True, description="True indicates non-causal supporting environmental condition")
+    source_type: str = Field("DERIVED", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, DERIVED, INFERRED")
+    evidence_nature: str = Field("DERIVED", description="DERIVED, INFERRED, OBSERVED, TEST_FIXTURE")
+    derivation_details: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Derivation inputs and calculation details")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class CrossModalEvidence(BaseModel):
+    """
+    Multi-modal corroboration evaluation comparing independently sourced observations
+    (THERMAL, OPTICAL, SAR, WEATHER, ATMOSPHERIC, LAND COVER).
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    corroboration_status: str = Field("INSUFFICIENT_MODALITY", description="CORROBORATED, PARTIALLY_CORROBORATED, INCONCLUSIVE, CONFLICTING, INSUFFICIENT_MODALITY")
+    modalities_evaluated: List[str] = Field(default_factory=list, description="List of modalities cross-referenced")
+    source_type: str = Field("DERIVED", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, DERIVED, INFERRED")
+    evidence_nature: str = Field("INFERRED", description="INFERRED, DERIVED, OBSERVED, TEST_FIXTURE")
+    thermal_time: Optional[str] = Field(None, description="Observation timestamp of primary thermal event")
+    environment_time: Optional[str] = Field(None, description="Timestamp of auxiliary environmental or cross-modal observation")
+    time_delta_hours: Optional[float] = Field(None, description="Temporal delta between primary thermal and auxiliary pass in hours")
+    thermal_location: Optional[List[float]] = Field(None, description="[latitude, longitude] of thermal hotspot")
+    environment_location: Optional[List[float]] = Field(None, description="[latitude, longitude] of auxiliary observation")
+    spatial_distance_m: Optional[float] = Field(None, description="Spatial separation distance in meters")
+    alignment_quality: str = Field("PROXIMATE", description="CONCURRENT, PROXIMATE, EPISODIC, HISTORICAL_CONTEXT, INSUFFICIENT_ALIGNMENT")
+    evidence_strength: str = Field("LIMITED", description="STRONG, MODERATE, LIMITED, INSUFFICIENT")
+    cross_modal_uncertainty: str = Field("UNCERTAIN", description="KNOWN, UNCERTAIN, MISSING, CONFLICTING")
+    optical_corroboration: Dict[str, Any] = Field(default_factory=dict, description="Optical modality evaluation details")
+    sar_corroboration: Dict[str, Any] = Field(default_factory=dict, description="SAR modality evaluation details")
+    weather_corroboration: Dict[str, Any] = Field(default_factory=dict, description="Weather supporting condition details")
+    land_cover_corroboration: Dict[str, Any] = Field(default_factory=dict, description="Land cover thematic match details")
+    conflicts: List[str] = Field(default_factory=list, description="Genuine contradictions identified")
+    missing_modalities: List[str] = Field(default_factory=list, description="Modalities unavailable or unconfigured")
+    limiting_factors: List[str] = Field(default_factory=list, description="Factors creating cross-modal uncertainty")
+    what_could_reduce_uncertainty: List[str] = Field(default_factory=list, description="Observations that would reduce cross-modal uncertainty")
+    highest_value_observation: str = Field("", description="Single highest-value next observation to resolve ambiguity")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+class EnvironmentalEvidence(BaseModel):
+    """
+    Comprehensive environmental conditions and supporting context for a thermal event.
+    """
+    event_id: str = Field(..., description="Target thermal event ID")
+    evidence_strength: str = Field("MODERATE", description="STRONG, MODERATE, LIMITED, INSUFFICIENT")
+    environmental_uncertainty: str = Field("KNOWN", description="KNOWN, UNCERTAIN, MISSING, CONFLICTING")
+    source_type: str = Field("TEST_FIXTURE", description="REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, DERIVED, INFERRED")
+    evidence_nature: str = Field("DERIVED", description="DERIVED, INFERRED, OBSERVED, TEST_FIXTURE")
+    weather_observation: Optional[WeatherObservation] = Field(None, description="Normalized weather observation")
+    wind_observation: Optional[WindObservation] = Field(None, description="Wind vector observation")
+    precipitation_observation: Optional[PrecipitationObservation] = Field(None, description="Precipitation observation")
+    cloud_condition: Optional[CloudCondition] = Field(None, description="Cloud observability condition")
+    atmospheric_observation: Optional[AtmosphericObservation] = Field(None, description="Atmospheric composition")
+    relationships: List[EnvironmentalRelationship] = Field(default_factory=list, description="Supporting environmental relationships")
+    missing_sources: List[str] = Field(default_factory=list, description="Unconfigured or unavailable environmental providers")
+    conflicts: List[str] = Field(default_factory=list, description="Contradictions detected")
+    limiting_factors: List[str] = Field(default_factory=list, description="Factors creating environmental uncertainty")
+    what_could_reduce_uncertainty: List[str] = Field(default_factory=list, description="Actionable observations to reduce uncertainty")
+    provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
+
+
+
 

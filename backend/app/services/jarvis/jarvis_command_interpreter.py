@@ -699,28 +699,315 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_source_provenance:
             entities["is_source_provenance"] = True
 
+        # Phase 10.1 Provenance & Authenticity Audit Command (Command 1)
+        is_provenance_authenticity_audit = (
+            any(w in cmd for w in [
+                "show the provenance and authenticity status",
+                "provenance and authenticity status",
+                "provenance and authenticity",
+                "authenticity status",
+                "provenance audit of every environmental",
+                "provenance and authenticity of every environmental",
+                "authenticity of every environmental",
+                "authenticity status of every environmental and cross-modal observation",
+                "provenance and authenticity status of every environmental and cross-modal observation",
+                "provenance and authenticity status of every environmental and cross-modal"
+            ])
+            or (
+                "provenance" in cmd and "authenticity" in cmd
+            )
+        )
+        if is_provenance_authenticity_audit:
+            entities["is_provenance_authenticity_audit"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # Phase 10 Global Environmental Intelligence & Cross-Modal Verification Commands
+        # A. Section 30 Primary Acceptance Command & 5-Family Investigation (Command 2)
+        is_section_30_phase10_acceptance = (
+            (
+                any(w in cmd for w in [
+                    "complete thermal, contextual, temporal, environmental and cross-modal investigation",
+                    "complete thermal contextual temporal environmental and cross-modal",
+                    "thermal, contextual, temporal, environmental and cross-modal",
+                    "thermal contextual temporal environmental and cross-modal",
+                    "5-family investigation", "five-family investigation",
+                    "complete environmental and cross-modal investigation",
+                    "complete environmental and cross-modal assessment",
+                    "perform a complete environmental and cross-modal assessment",
+                    "perform a complete environmental and cross-modal",
+                    "perform a complete thermal, contextual, temporal, environmental and cross-modal"
+                ])
+                or (
+                    "cross-modal" in cmd and "environmental" in cmd
+                    and any(w in cmd for w in ["complete", "all available", "5-family", "five-family", "investigation for event", "plume transport", "distinguish", "assessment"])
+                )
+            )
+            and not is_provenance_authenticity_audit
+        )
+        if is_section_30_phase10_acceptance:
+            entities["is_section_30_phase10_acceptance"] = True
+            entities["is_complete_5_family_investigation"] = True
+            if any(w in cmd for w in ["distinguish observed evidence", "distinguish observed", "distinguish observed from derived", "distinguish"]):
+                entities["distinguish_observed_derived_inferred"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # B. Analyze Environmental Conditions
+        is_analyze_environmental_conditions = (
+            any(w in cmd for w in [
+                "analyze the environmental conditions for this event",
+                "analyze the environmental conditions",
+                "analyze environmental conditions",
+                "environmental conditions for this event",
+                "environmental conditions for",
+                "environmental conditions of",
+                "environmental conditions",
+                "analyze surface weather and plume transport",
+                "analyze surface weather and plume",
+                "analyze surface weather",
+                "surface weather and plume transport",
+                "surface weather and plume",
+                "plume transport"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_analyze_environmental_conditions:
+            entities["is_analyze_environmental_conditions"] = True
+
+        # C. Show Weather Context
+        is_show_weather_context = (
+            any(w in cmd for w in [
+                "show the weather context for this event",
+                "show the weather context",
+                "show weather context",
+                "weather context for this event",
+                "weather context for",
+                "weather context"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_show_weather_context:
+            entities["is_show_weather_context"] = True
+
+        # D. Determine Weather Effects on Interpretation
+        is_determine_weather_effects = (
+            any(w in cmd for w in [
+                "determine whether weather conditions affect the interpretation of this event",
+                "determine whether weather conditions affect the interpretation",
+                "whether weather conditions affect the interpretation",
+                "weather conditions affect the interpretation",
+                "weather affects interpretation",
+                "weather conditions affect this event",
+                "weather affect interpretation",
+                "weather affect this event"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_determine_weather_effects:
+            entities["is_determine_weather_effects"] = True
+
+        # E. Check Cross-Modal Corroboration
+        is_check_cross_modal_corroboration = (
+            any(w in cmd for w in [
+                "check whether cross-modal observations corroborate this event",
+                "check whether cross-modal observations corroborate",
+                "whether cross-modal observations corroborate this event",
+                "whether cross-modal observations corroborate",
+                "cross-modal observations corroborate this event",
+                "cross-modal observations corroborate",
+                "cross-modal corroboration for this event",
+                "cross-modal corroboration",
+                "cross modal corroboration",
+                "verify event 827 using optical and sar",
+                "using optical and sar cross-modal",
+                "optical and sar cross-modal observations",
+                "optical and sar cross-modal",
+                "optical and sar observations",
+                "cross-modal observations"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_check_cross_modal_corroboration:
+            entities["is_check_cross_modal_corroboration"] = True
+
+        # F. Compare Thermal Event with Optical Observations
+        is_compare_optical_observations = (
+            any(w in cmd for w in [
+                "compare the thermal event with available optical observations",
+                "compare the thermal event with optical observations",
+                "compare thermal event with available optical observations",
+                "compare thermal event with optical observations",
+                "compare with available optical observations",
+                "compare with optical observations",
+                "available optical observations",
+                "optical corroboration",
+                "optical observations"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_compare_optical_observations:
+            entities["is_compare_optical_observations"] = True
+
+        # G. Check Available SAR Corroboration
+        is_check_sar_corroboration = (
+            any(w in cmd for w in [
+                "check available sar corroboration for this event",
+                "check available sar corroboration",
+                "check sar corroboration for this event",
+                "check sar corroboration",
+                "available sar corroboration",
+                "sar corroboration for this event",
+                "sar corroboration",
+                "radar backscatter",
+                "evaluate radar backscatter",
+                "sar radar backscatter"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_check_sar_corroboration:
+            entities["is_check_sar_corroboration"] = True
+
+        # H. Identify Supporting Environmental Evidence
+        is_identify_supporting_environmental = (
+            any(w in cmd for w in [
+                "identify environmental evidence that supports the assessment",
+                "environmental evidence that supports the assessment",
+                "identify environmental evidence that supports",
+                "environmental evidence that supports",
+                "environmental evidence supporting the assessment",
+                "environmental evidence supporting",
+                "supporting environmental evidence"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_identify_supporting_environmental:
+            entities["is_identify_supporting_environmental"] = True
+
+        # I. Identify Environmental Conflicts or Discrepancies
+        is_identify_environmental_conflicts = (
+            any(w in cmd for w in [
+                "identify environmental conflicts or discrepancies for this event",
+                "identify environmental conflicts or discrepancies",
+                "identify environmental conflicts",
+                "environmental conflicts or discrepancies",
+                "environmental conflicts for this event",
+                "environmental conflicts",
+                "environmental discrepancies",
+                "identify whether any environmental or cross-modal evidence conflicts with the thermal detection",
+                "identify whether any environmental or cross-modal evidence conflicts",
+                "environmental or cross-modal evidence conflicts with the thermal detection",
+                "environmental or cross-modal evidence conflicts",
+                "evidence conflicts with the thermal detection",
+                "conflicts with the thermal detection",
+                "cross-modal evidence conflicts"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_identify_environmental_conflicts:
+            entities["is_identify_environmental_conflicts"] = True
+
+        # J. What Environmental Data Is Missing
+        is_missing_environmental_data = (
+            any(w in cmd for w in [
+                "tell me what environmental data is missing for this event",
+                "tell me what environmental data is missing",
+                "what environmental data is missing for this event",
+                "what environmental data is missing",
+                "environmental data is missing",
+                "missing environmental data",
+                "missing environmental sources",
+                "which environmental data is missing",
+                "disclose all missing or unconfigured providers",
+                "missing or unconfigured providers",
+                "unconfigured providers"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_missing_environmental_data:
+            entities["is_missing_environmental_data"] = True
+
+        # K. Highest-Value Next Observation
+        is_highest_value_observation = (
+            any(w in cmd for w in [
+                "tell me what additional observation would most reduce uncertainty for this event",
+                "tell me what additional observation would most reduce uncertainty",
+                "what additional observation would most reduce uncertainty for this event",
+                "what additional observation would most reduce uncertainty",
+                "what observation would most reduce uncertainty",
+                "additional observation would most reduce uncertainty",
+                "observation would most reduce uncertainty",
+                "most reduce remaining uncertainty",
+                "most reduce uncertainty",
+                "what additional observation would most reduce remaining uncertainty",
+                "reduce remaining uncertainty"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_highest_value_observation:
+            entities["is_highest_value_observation"] = True
+
+        # L. Environmental Provenance
+        is_environmental_provenance = (
+            any(w in cmd for w in [
+                "show the environmental evidence provenance",
+                "show environmental evidence provenance",
+                "show environmental provenance",
+                "environmental evidence provenance",
+                "environmental source provenance",
+                "environmental provenance",
+                "cross-modal provenance",
+                "cross modal provenance"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_environmental_provenance:
+            entities["is_environmental_provenance"] = True
+
+        # M. Environmental Coverage
+        is_environmental_coverage = (
+            any(w in cmd for w in [
+                "what environmental coverage is available for this event",
+                "what environmental coverage is available",
+                "environmental coverage is available",
+                "environmental coverage available",
+                "show environmental coverage",
+                "environmental coverage",
+                "cross-modal coverage",
+                "cross modal coverage"
+            ]) and not is_section_30_phase10_acceptance
+        )
+        if is_environmental_coverage:
+            entities["is_environmental_coverage"] = True
+
+        is_any_phase10 = (
+            is_provenance_authenticity_audit or
+            is_section_30_phase10_acceptance or is_analyze_environmental_conditions or
+            is_show_weather_context or is_determine_weather_effects or
+            is_check_cross_modal_corroboration or is_compare_optical_observations or
+            is_check_sar_corroboration or is_identify_supporting_environmental or
+            is_identify_environmental_conflicts or is_missing_environmental_data or
+            is_highest_value_observation or is_environmental_provenance or
+            is_environmental_coverage
+        )
+        if is_any_phase10:
+            entities["clarification_required"] = False
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or context.get("selected_candidate_ref") or "EVT-827"
+
         # Phase 9 Global Historical Baselines & Temporal Pattern Intelligence Commands
         # A. Section 26 Primary Acceptance Command
         is_section_26_phase9_acceptance = (
-            any(w in cmd for w in [
-                "analyze the historical baseline and temporal behavior",
-                "historical baseline and temporal behavior",
-                "historical thermal, contextual, and temporal behavior",
-                "historical thermal contextual and temporal",
-                "temporal behavior of event 827",
-                "temporal behavior of event",
-                "temporal behavior for evt-827",
-                "temporal behavior for event 827",
-                "all available thermal, contextual, and temporal",
-                "all available thermal contextual and temporal",
-                "thermal, contextual, and temporal sources",
-                "thermal contextual and temporal sources"
-            ])
-            or (
-                ("827" in cmd or "event" in cmd)
-                and "temporal" in cmd
-                and any(w in cmd for w in ["historical baseline", "persistent or recurring", "behavior for", "baseline and temporal"])
-            )
+            (
+                any(w in cmd for w in [
+                    "analyze the historical baseline and temporal behavior",
+                    "historical baseline and temporal behavior",
+                    "historical thermal, contextual, and temporal behavior",
+                    "historical thermal contextual and temporal",
+                    "temporal behavior of event 827",
+                    "temporal behavior of event",
+                    "temporal behavior for evt-827",
+                    "temporal behavior for event 827",
+                    "all available thermal, contextual, and temporal",
+                    "all available thermal contextual and temporal",
+                    "thermal, contextual, and temporal sources",
+                    "thermal contextual and temporal sources"
+                ])
+                or (
+                    ("827" in cmd or "event" in cmd)
+                    and "temporal" in cmd
+                    and any(w in cmd for w in ["historical baseline", "persistent or recurring", "behavior for", "baseline and temporal"])
+                )
+            ) and not is_section_30_phase10_acceptance
         )
         if is_section_26_phase9_acceptance:
             entities["is_section_26_phase9_acceptance"] = True
@@ -944,6 +1231,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             and any(w in cmd for w in ["agree", "disagree", "disagreement", "confidence", "observations agree"])
             and not any(w in cmd for w in ["contextual sources", "contextual evidence", "thermal and contextual", "and contextual"])
             and not is_section_26_phase9_acceptance
+            and not is_section_30_phase10_acceptance
         )
         if is_section_28_acceptance:
             entities["is_section_28_acceptance"] = True
@@ -953,16 +1241,19 @@ class LocalDeterministicProvider(BaseLLMProvider):
         # Phase 8 Global Context Intelligence & Cross-Domain Fusion Commands
         # A. Section 24 Phase 8 Primary Acceptance Command
         is_section_24_phase8_acceptance = (
-            any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate this event"])
-            and any(w in cmd for w in ["thermal and contextual", "contextual sources", "contextual evidence", "and contextual"])
-            and any(w in cmd for w in ["reduce uncertainty", "uncertainty", "contextual evidence conflicts", "sources are missing", "supports the event"])
-            and not is_section_26_phase9_acceptance
-        ) or (
-            any(w in cmd for w in [
-                "investigate event 827 using all available thermal and contextual sources",
-                "using all available thermal and contextual sources",
-                "what contextual evidence supports the event, what sources are missing"
-            ]) and not is_section_26_phase9_acceptance
+            (
+                any(w in cmd for w in ["investigate event 827", "investigate 827", "investigate evt-827", "investigate this event"])
+                and any(w in cmd for w in ["thermal and contextual", "contextual sources", "contextual evidence", "and contextual"])
+                and any(w in cmd for w in ["reduce uncertainty", "uncertainty", "contextual evidence conflicts", "sources are missing", "supports the event"])
+                and not is_section_26_phase9_acceptance
+                and not is_section_30_phase10_acceptance
+            ) or (
+                any(w in cmd for w in [
+                    "investigate event 827 using all available thermal and contextual sources",
+                    "using all available thermal and contextual sources",
+                    "what contextual evidence supports the event, what sources are missing"
+                ]) and not is_section_26_phase9_acceptance and not is_section_30_phase10_acceptance
+            )
         )
         if is_section_24_phase8_acceptance:
             entities["is_section_24_phase8_acceptance"] = True
@@ -1167,6 +1458,16 @@ class LocalDeterministicProvider(BaseLLMProvider):
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_provenance_authenticity_audit:
+            intent = CommandIntent.STATUS
+            entities["explain_type"] = "PROVENANCE_AUDIT"
+        elif is_section_30_phase10_acceptance:
+            intent = CommandIntent.INVESTIGATE
+        elif is_analyze_environmental_conditions or is_determine_weather_effects or is_check_cross_modal_corroboration or is_compare_optical_observations or is_check_sar_corroboration or is_identify_supporting_environmental or is_highest_value_observation:
+            intent = CommandIntent.EXPLAIN
+            entities["explain_type"] = "ENVIRONMENTAL"
+        elif is_show_weather_context or is_identify_environmental_conflicts or is_missing_environmental_data or is_environmental_provenance or is_environmental_coverage:
+            intent = CommandIntent.STATUS
         elif is_complex_acceptance:
             intent = CommandIntent.INVESTIGATE
         elif is_operator_summary:
@@ -1241,7 +1542,35 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_26_phase9_acceptance:
+        if is_provenance_authenticity_audit:
+            primary_goal = "PROVENANCE_AUTHENTICITY_AUDIT"
+        elif is_section_30_phase10_acceptance:
+            primary_goal = "SECTION_30_PHASE10_ACCEPTANCE"
+        elif is_analyze_environmental_conditions:
+            primary_goal = "ANALYZE_ENVIRONMENTAL_CONDITIONS"
+        elif is_show_weather_context:
+            primary_goal = "SHOW_WEATHER_CONTEXT"
+        elif is_determine_weather_effects:
+            primary_goal = "DETERMINE_WEATHER_EFFECTS"
+        elif is_check_cross_modal_corroboration:
+            primary_goal = "CHECK_CROSS_MODAL_CORROBORATION"
+        elif is_compare_optical_observations:
+            primary_goal = "COMPARE_OPTICAL_OBSERVATIONS"
+        elif is_check_sar_corroboration:
+            primary_goal = "CHECK_SAR_CORROBORATION"
+        elif is_identify_supporting_environmental:
+            primary_goal = "IDENTIFY_SUPPORTING_ENVIRONMENTAL"
+        elif is_identify_environmental_conflicts:
+            primary_goal = "IDENTIFY_ENVIRONMENTAL_CONFLICTS"
+        elif is_missing_environmental_data:
+            primary_goal = "MISSING_ENVIRONMENTAL_DATA"
+        elif is_highest_value_observation:
+            primary_goal = "HIGHEST_VALUE_OBSERVATION"
+        elif is_environmental_provenance:
+            primary_goal = "ENVIRONMENTAL_PROVENANCE"
+        elif is_environmental_coverage:
+            primary_goal = "ENVIRONMENTAL_COVERAGE"
+        elif is_section_26_phase9_acceptance:
             primary_goal = "SECTION_26_PHASE9_ACCEPTANCE"
         elif is_analyze_historical_behavior:
             primary_goal = "ANALYZE_HISTORICAL_BEHAVIOR"
@@ -1394,7 +1723,10 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SURGICAL_EXPLANATION", "ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT",
             "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT", "DETERMINE_PERSISTENCE",
             "DETERMINE_RECURRENCE", "COMPARE_HISTORICAL_BASELINE", "DETERMINE_TEMPORAL_ANOMALY",
-            "DETERMINE_SEASONALITY", "EXPLAIN_TEMPORAL_EVIDENCE", "REDUCE_TEMPORAL_UNCERTAINTY"
+            "DETERMINE_SEASONALITY", "EXPLAIN_TEMPORAL_EVIDENCE", "REDUCE_TEMPORAL_UNCERTAINTY",
+            "ANALYZE_ENVIRONMENTAL_CONDITIONS", "DETERMINE_WEATHER_EFFECTS", "CHECK_CROSS_MODAL_CORROBORATION",
+            "COMPARE_OPTICAL_OBSERVATIONS", "CHECK_SAR_CORROBORATION", "IDENTIFY_SUPPORTING_ENVIRONMENTAL",
+            "HIGHEST_VALUE_OBSERVATION"
         ]:
             requested_output = "EXPLANATION"
         elif primary_goal in [
@@ -1405,18 +1737,46 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES",
             "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE", "ANALYZE_HISTORICAL_BEHAVIOR",
             "SHOW_DAY_NIGHT_BEHAVIOR", "SHOW_MISSING_HISTORICAL_DATA", "TEMPORAL_PROVENANCE",
-            "TEMPORAL_COVERAGE"
+            "TEMPORAL_COVERAGE", "SHOW_WEATHER_CONTEXT", "IDENTIFY_ENVIRONMENTAL_CONFLICTS",
+            "MISSING_ENVIRONMENTAL_DATA", "ENVIRONMENTAL_PROVENANCE", "ENVIRONMENTAL_COVERAGE",
+            "PROVENANCE_AUTHENTICITY_AUDIT"
         ]:
             requested_output = "STATUS_REPORT"
         elif primary_goal in [
             "SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE",
-            "SECTION_26_PHASE9_ACCEPTANCE", "COMBINE_ALL_EVIDENCE", "INVESTIGATE_ALL_THERMAL_SOURCES",
-            "INVESTIGATE_INDUSTRIAL_CONTEXT"
+            "SECTION_26_PHASE9_ACCEPTANCE", "SECTION_30_PHASE10_ACCEPTANCE", "COMBINE_ALL_EVIDENCE",
+            "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT"
         ]:
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "SECTION_26_PHASE9_ACCEPTANCE":
+        if primary_goal == "PROVENANCE_AUTHENTICITY_AUDIT":
+            stopping_condition = "PROVENANCE_AUTHENTICITY_AUDITED_AND_HALT"
+        elif primary_goal == "SECTION_30_PHASE10_ACCEPTANCE":
+            stopping_condition = "SECTION_30_PHASE10_EVALUATED_AND_HALT"
+        elif primary_goal == "ANALYZE_ENVIRONMENTAL_CONDITIONS":
+            stopping_condition = "ENVIRONMENTAL_CONDITIONS_EVALUATED_AND_HALT"
+        elif primary_goal == "CHECK_CROSS_MODAL_CORROBORATION":
+            stopping_condition = "CROSS_MODAL_EVALUATED_AND_HALT"
+        elif primary_goal == "IDENTIFY_ENVIRONMENTAL_CONFLICTS":
+            stopping_condition = "ENVIRONMENTAL_CONFLICTS_EVALUATED_AND_HALT"
+        elif primary_goal == "SHOW_WEATHER_CONTEXT":
+            stopping_condition = "WEATHER_CONTEXT_REPORTED_AND_HALT"
+        elif primary_goal == "COMPARE_OPTICAL_OBSERVATIONS":
+            stopping_condition = "OPTICAL_OBSERVATIONS_EVALUATED_AND_HALT"
+        elif primary_goal == "CHECK_SAR_CORROBORATION":
+            stopping_condition = "SAR_CORROBORATION_EVALUATED_AND_HALT"
+        elif primary_goal == "MISSING_ENVIRONMENTAL_DATA":
+            stopping_condition = "MISSING_ENVIRONMENTAL_DATA_REPORTED_AND_HALT"
+        elif primary_goal in [
+            "DETERMINE_WEATHER_EFFECTS",
+            "IDENTIFY_SUPPORTING_ENVIRONMENTAL",
+            "ENVIRONMENTAL_PROVENANCE", "ENVIRONMENTAL_COVERAGE"
+        ]:
+            stopping_condition = "ENVIRONMENTAL_INTELLIGENCE_REPORTED_AND_HALT"
+        elif primary_goal == "HIGHEST_VALUE_OBSERVATION":
+            stopping_condition = "HIGHEST_VALUE_OBSERVATION_RECOMMENDED_AND_HALT"
+        elif primary_goal == "SECTION_26_PHASE9_ACCEPTANCE":
             stopping_condition = "SECTION_26_PHASE9_HISTORICAL_TEMPORAL_EVALUATED_AND_HALT"
         elif primary_goal == "SECTION_24_PHASE8_ACCEPTANCE":
             stopping_condition = "SECTION_24_PHASE8_CROSS_DOMAIN_EVALUATED_AND_HALT"

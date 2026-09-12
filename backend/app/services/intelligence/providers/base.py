@@ -173,3 +173,65 @@ class EnvironmentalProvider(BaseIntelligenceProvider):
     def get_clearance_by_proposal_id(self, db: Session, proposal_id: str) -> Optional[Any]:
         pass
 
+
+class WeatherProvider(BaseIntelligenceProvider):
+    """
+    Abstract contract for meteorological intelligence (surface temperature, wind vectors, humidity, precipitation).
+    """
+    @abstractmethod
+    def get_weather_at(
+        self,
+        db: Session,
+        lat: float,
+        lon: float,
+        timestamp: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        pass
+
+
+class AtmosphericProvider(BaseIntelligenceProvider):
+    """
+    Abstract contract for atmospheric composition and air quality intelligence (AOD, CO, NO2, SO2).
+    """
+    @abstractmethod
+    def get_atmospheric_at(
+        self,
+        db: Session,
+        lat: float,
+        lon: float,
+        timestamp: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        pass
+
+
+class OpticalProvider(BaseIntelligenceProvider):
+    """
+    Abstract contract for satellite optical imagery passes (Sentinel-2, PlanetScope, Landsat).
+    """
+    @abstractmethod
+    def query_optical_imagery(
+        self,
+        db: Session,
+        lat: float,
+        lon: float,
+        timestamp: Optional[str] = None,
+        max_cloud_cover: float = 30.0
+    ) -> List[Dict[str, Any]]:
+        pass
+
+
+class SARProvider(BaseIntelligenceProvider):
+    """
+    Abstract contract for Synthetic Aperture Radar passes (Sentinel-1 C-SAR).
+    """
+    @abstractmethod
+    def query_sar_passes(
+        self,
+        db: Session,
+        lat: float,
+        lon: float,
+        timestamp: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        pass
+
+

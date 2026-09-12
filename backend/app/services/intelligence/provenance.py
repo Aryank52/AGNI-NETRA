@@ -22,6 +22,17 @@ class SourceProvenance(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="ISO-8601 UTC timestamp of retrieval/ingestion into AGNI-NETRA"
     )
+    source_type: str = Field(
+        "REAL_PROVIDER",
+        description="Source classification: REAL_PROVIDER, LOCAL_DATASET, TEST_FIXTURE, SIMULATION, UNAVAILABLE, UNVERIFIED"
+    )
+    evidence_nature: str = Field(
+        "OBSERVED",
+        description="Evidence nature: OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION, UNAVAILABLE"
+    )
+    quality: str = Field("HIGH", description="Quality rating: HIGH, MEDIUM, LOW, PROVISIONAL, DEGRADED")
+    latitude: Optional[float] = Field(None, description="Spatial latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Spatial longitude coordinate")
     geographic_coverage: str = Field(..., description="Factual geographic reach (GLOBAL, COUNTRY:IN, STATE:GJ, etc.)")
     spatial_resolution: Optional[str] = Field(None, description="Spatial resolution if known (e.g., 375m, 10m, Polygon)")
     temporal_resolution: Optional[str] = Field(None, description="Temporal cadence if known (e.g., 12-hour, annual)")
@@ -44,6 +55,14 @@ class SourceProvenance(BaseModel):
             data["geographic_coverage"] = data.pop("geographic_coverage_type")
         if "authoritative_limitations" in data and "limitations" not in data:
             data["limitations"] = data.pop("authoritative_limitations")
+        if "collection_timestamp" in data and "observation_time" not in data:
+            cts = data.pop("collection_timestamp")
+            data["observation_time"] = cts.isoformat() if hasattr(cts, "isoformat") else str(cts)
+        if "processing_level" in data:
+            pl = data.pop("processing_level")
+            extra = data.get("extra_metadata", {})
+            extra["processing_level"] = pl
+            data["extra_metadata"] = extra
         super().__init__(**data)
 
 
@@ -271,4 +290,92 @@ def create_goes_provenance(
         limitations="Geostationary coverage restricted strictly to Western Hemisphere (Americas). Not configured for Indian subcontinent.",
         confidence_tier="HIGH",
         extra_metadata={"satellite": satellite}
+    )
+
+
+def create_environmental_fixture_provenance(
+    provider: str = "REGIONAL_SURFACE_METEOROLOGY",
+    dataset: str = "IMD_GROUND_MESONET_ARCHIVE",
+    record_id: Optional[str] = None,
+    observation_time: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    limitations: Optional[str] = None,
+    source_type: str = "TEST_FIXTURE",
+    evidence_nature: str = "TEST_FIXTURE",
+    quality: str = "HIGH"
+) -> SourceProvenance:
+    """Helper to construct explicit TEST_FIXTURE provenance for environmental demonstration data."""
+    return SourceProvenance(
+        provider=provider,
+        dataset=dataset,
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=observation_time or datetime.now(timezone.utc).isoformat(),
+        source_type=source_type,
+        evidence_nature=evidence_nature,
+        quality=quality,
+        latitude=lat,
+        longitude=lon,
+        geographic_coverage="REGION:GUJARAT_COASTAL",
+        spatial_resolution="POINT_STATION",
+        temporal_resolution="HOURLY",
+        source_version="DEMO_FIXTURE_v1.0",
+        limitations=limitations or "Deterministic demonstration fixture for local test suite and simulation.",
+        confidence_tier="HIGH"
+    )
+
+
+def create_derived_environmental_provenance(
+    derivation_name: str = "PLUME_DISPERSION_VECTOR",
+    input_providers: Optional[List[str]] = None,
+    record_id: Optional[str] = None,
+    observation_time: Optional[str] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    derivation_method: str = "Gaussian vector translation from 10m wind vector and boundary layer height"
+) -> SourceProvenance:
+    """Helper to construct explicit DERIVED provenance for non-directly-observed environmental properties."""
+    inputs = input_providers or ["REGIONAL_SURFACE_METEOROLOGY"]
+    return SourceProvenance(
+        provider="AGNI_NETRA_DERIVATION_ENGINE",
+        dataset=f"DERIVED_{derivation_name}",
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=observation_time or datetime.now(timezone.utc).isoformat(),
+        source_type="DERIVED",
+        evidence_nature="DERIVED",
+        quality="HIGH",
+        latitude=lat,
+        longitude=lon,
+        geographic_coverage="LOCAL_ANALYSIS_RADIUS",
+        spatial_resolution="Vector corridor",
+        temporal_resolution="EVENT_SYNCHRONIZED",
+        source_version="AN_DERIVATION_v1.0",
+        limitations=f"DERIVED ENVIRONMENTAL RELATIONSHIP: {derivation_method}. Not an observed plume or physical measurement.",
+        confidence_tier="HIGH",
+        extra_metadata={"derivation_inputs": inputs, "derivation_method": derivation_method}
+    )
+
+
+def create_unconfigured_provenance(
+    provider: str,
+    dataset: str,
+    modality: str,
+    limitations: Optional[str] = None
+) -> SourceProvenance:
+    """Helper to construct explicit UNAVAILABLE / NOT_CONFIGURED provenance."""
+    return SourceProvenance(
+        provider=provider,
+        dataset=dataset,
+        source_record_id=None,
+        observation_time=None,
+        source_type="UNAVAILABLE",
+        evidence_nature="MISSING",
+        quality="DEGRADED",
+        geographic_coverage="GLOBAL",
+        spatial_resolution="N/A",
+        temporal_resolution="N/A",
+        source_version="UNCONFIGURED",
+        limitations=limitations or f"[NOT CONFIGURED] {provider} data access pipeline is not configured in local environment. Zero synthetic records fabricated.",
+        confidence_tier="PROVISIONAL",
+        extra_metadata={"modality": modality, "status": "NOT_CONFIGURED"}
     )

@@ -932,6 +932,20 @@ class InvestigationWorkspace(Base):
     temporal_coverage = Column(JSON, default=dict)
     temporal_observation_count = Column(Integer, default=0)
 
+    # Phase 10 Global Environmental Intelligence & Cross-Modal Verification
+    environmental_sources = Column(JSON, default=list)
+    environmental_provenance = Column(JSON, default=list)
+    environmental_observations = Column(JSON, default=dict)
+    environmental_relationships = Column(JSON, default=list)
+    environmental_coverage = Column(JSON, default=dict)
+    environmental_uncertainty = Column(JSON, default=dict)
+    environmental_conflicts = Column(JSON, default=list)
+    cross_modal_sources = Column(JSON, default=list)
+    cross_modal_evidence = Column(JSON, default=dict)
+    cross_modal_uncertainty = Column(JSON, default=dict)
+    environmental_observation_count = Column(Integer, default=0)
+    cross_modal_observation_count = Column(Integer, default=0)
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

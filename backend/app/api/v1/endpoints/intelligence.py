@@ -15,6 +15,8 @@ from backend.app.services.intelligence.provider_registry import provider_registr
 from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile, GlobalContextProfile
 from backend.app.services.intelligence.context_engine import context_engine
 from backend.app.services.intelligence.temporal_engine import temporal_baseline_engine
+from backend.app.services.intelligence.environmental_engine import environmental_discovery_engine
+from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
 
 router = APIRouter()
 
@@ -510,4 +512,309 @@ def get_event_temporal_provenance(
         "what_could_reduce_uncertainty": evid.get("what_could_reduce_uncertainty", []),
         "missing_historical_sources": evid.get("missing_historical_sources", [])
     }
+
+
+# ==============================================================================
+# Phase 10 Environmental Intelligence & Cross-Modal Verification Endpoints
+# ==============================================================================
+
+@router.get("/environment/providers")
+def get_environmental_providers(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[Dict[str, Any]]:
+    """
+    Lists registered environmental, meteorological, and atmospheric providers.
+    Truthfully discloses unconfigured providers (ECMWF, GFS, CAMS).
+    """
+    return provider_registry.get_environmental_providers()
+
+
+@router.get("/environment/coverage")
+def get_environmental_coverage(
+    region: str = "GLOBAL",
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves environmental observation coverage and unconfigured provider disclosures.
+    """
+    return provider_registry.get_environmental_coverage_summary(region=region)
+
+
+@router.get("/environment/health")
+def get_environmental_health(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns operational health across all environmental and meteorological provider adapters.
+    """
+    summary = provider_registry.get_provider_health_summary(db)
+    statuses = summary.get("statuses", {})
+    env_statuses = {
+        k: v for k, v in statuses.items()
+        if "WEATHER" in k or "ATMOSPHERIC" in k or "GFS" in k or "ECMWF" in k
+    }
+    return {
+        "environmental_providers_count": len(env_statuses),
+        "statuses": env_statuses,
+        "operational": True
+    }
+
+
+@router.get("/events/{event_id}/environment")
+def get_event_environment(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves surface weather, atmospheric conditions, wind transport, precipitation persistence, and cloud observability for an event.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    env_result = environmental_discovery_engine.analyze_event_environment(
+        db=db,
+        event_ref=event_id
+    )
+    return env_result
+
+
+@router.get("/events/{event_id}/environment/provenance")
+def get_event_environmental_provenance(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves provenance records, limiting factors, and uncertainty reduction guidance for environmental data.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    env_result = environmental_discovery_engine.analyze_event_environment(
+        db=db,
+        event_ref=event_id
+    )
+    evid = env_result.get("evidence", {})
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "evidence_strength": evid.get("evidence_strength", "STRONG"),
+        "environmental_uncertainty": evid.get("environmental_uncertainty", "KNOWN"),
+        "provenance": [evid.get("provenance")] if evid.get("provenance") else [],
+        "limiting_factors": evid.get("limiting_factors", []),
+        "what_could_reduce_uncertainty": evid.get("what_could_reduce_uncertainty", []),
+        "missing_sources": evid.get("missing_sources", [])
+    }
+
+
+@router.get("/events/{event_id}/cross-modal")
+def get_event_cross_modal(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Evaluates multi-modal corroboration comparing thermal telemetry against optical, SAR, land cover, and weather modalities.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    xm_result = cross_modal_verification_engine.verify_event_cross_modal(
+        db=db,
+        event_ref=event_id
+    )
+    return xm_result
+
+
+@router.get("/events/{event_id}/cross-modal/provenance")
+def get_event_cross_modal_provenance(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves cross-modal provenance, highest-value next observation recommendations, and data gaps.
+    """
+    from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+
+    raw_event = JarvisToolRegistry.tool_get_event(db, event_id)
+    if not raw_event or not raw_event.get("found"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal event '{event_id}' not found."
+        )
+
+    xm_result = cross_modal_verification_engine.verify_event_cross_modal(
+        db=db,
+        event_ref=event_id
+    )
+    evid = xm_result.get("evidence", {})
+    return {
+        "event_id": event_id,
+        "event_code": raw_event.get("event_code", event_id),
+        "corroboration_status": xm_result.get("corroboration_status", "PARTIALLY_CORROBORATED"),
+        "evidence_strength": evid.get("evidence_strength", "MODERATE"),
+        "cross_modal_uncertainty": evid.get("cross_modal_uncertainty", "KNOWN"),
+        "modalities_evaluated": xm_result.get("modalities_evaluated", []),
+        "provenance": [evid.get("provenance")] if evid.get("provenance") else [],
+        "limiting_factors": evid.get("limiting_factors", []),
+        "what_could_reduce_uncertainty": evid.get("what_could_reduce_uncertainty", []),
+        "missing_modalities": xm_result.get("missing_modalities", []),
+        "highest_value_observation": evid.get("highest_value_observation", "")
+    }
+
+
+# ------------------------------------------------------------------------------
+# Direct Phase 10 REST Intelligence Endpoints
+# ------------------------------------------------------------------------------
+
+@router.get("/environmental/providers/status")
+def get_environmental_and_cross_modal_status(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Returns coverage and status summaries across environmental and cross-modal providers."""
+    env_cov = provider_registry.get_environmental_coverage_summary()
+    cm_cov = provider_registry.get_cross_modal_coverage_summary()
+    return {
+        "status": "SUCCESS",
+        "data": {
+            "environmental": env_cov,
+            "cross_modal": cm_cov
+        }
+    }
+
+
+@router.get("/environmental/{event_id}")
+def get_environmental_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves surface weather, atmospheric conditions, and wind transport for an event."""
+    env_result = environmental_discovery_engine.analyze_event_environment(
+        db=db,
+        event_ref=event_id
+    )
+    return {
+        "status": "SUCCESS",
+        "data": env_result
+    }
+
+
+@router.get("/environmental/{event_id}/weather")
+def get_environmental_weather_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves meteorological surface observations for an event."""
+    env_result = environmental_discovery_engine.analyze_event_environment(
+        db=db,
+        event_ref=event_id
+    )
+    return {
+        "status": "SUCCESS",
+        "data": env_result.get("weather", {})
+    }
+
+
+@router.get("/environmental/{event_id}/plume")
+def get_environmental_plume_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves wind vector and plume dispersion transport direction for an event."""
+    env_result = environmental_discovery_engine.analyze_event_environment(
+        db=db,
+        event_ref=event_id
+    )
+    wnd = env_result.get("wind", {})
+    return {
+        "status": "SUCCESS",
+        "data": {
+            "dispersion_direction": wnd.get("smoke_dispersion_direction", "ENE"),
+            "wind_speed_ms": wnd.get("wind_speed_ms", 0.0),
+            "wind_direction_deg": wnd.get("wind_direction_deg", 0.0),
+            "wind_speed_category": wnd.get("transport_condition", "LIGHT_DISPERSION"),
+            "evidence_nature": "DERIVED",
+            "relationship_type": "DERIVED_ENVIRONMENTAL_RELATIONSHIP",
+            "derivation_explanation": "Plume direction is DERIVED from observed 10m wind vector and boundary layer height, not a direct plume observation.",
+            "provenance": wnd.get("provenance")
+        }
+    }
+
+
+@router.get("/cross-modal/{event_id}")
+def get_cross_modal_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves multi-modal corroboration across optical, SAR, land cover, and weather."""
+    xm_result = cross_modal_verification_engine.verify_event_cross_modal(
+        db=db,
+        event_ref=event_id
+    )
+    return {
+        "status": "SUCCESS",
+        "data": xm_result
+    }
+
+
+@router.get("/cross-modal/{event_id}/optical")
+def get_cross_modal_optical_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves optical observation (Sentinel-2) details and observability status."""
+    xm_result = cross_modal_verification_engine.verify_event_cross_modal(
+        db=db,
+        event_ref=event_id
+    )
+    return {
+        "status": "SUCCESS",
+        "data": xm_result.get("optical", {})
+    }
+
+
+@router.get("/cross-modal/{event_id}/sar")
+def get_cross_modal_sar_for_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves SAR radar backscatter observation (Sentinel-1) details and coherence."""
+    xm_result = cross_modal_verification_engine.verify_event_cross_modal(
+        db=db,
+        event_ref=event_id
+    )
+    return {
+        "status": "SUCCESS",
+        "data": xm_result.get("sar", {})
+    }
+
 

@@ -500,6 +500,19 @@ export interface JarvisResponse {
   temporal_uncertainty?: Record<string, any>;
   temporal_coverage?: Record<string, any>;
   temporal_observation_count?: number;
+  // Phase 10 Global Environmental Intelligence & Cross-Modal Verification
+  environmental_sources?: string[];
+  environmental_provenance?: Array<Record<string, any>>;
+  environmental_observations?: Array<Record<string, any>>;
+  environmental_relationships?: Array<Record<string, any>>;
+  environmental_coverage?: Record<string, any>;
+  environmental_uncertainty?: Record<string, any>;
+  environmental_conflicts?: Array<Record<string, any>>;
+  cross_modal_sources?: string[];
+  cross_modal_evidence?: Record<string, any>;
+  cross_modal_uncertainty?: Record<string, any>;
+  environmental_observation_count?: number;
+  cross_modal_observation_count?: number;
 }
 
 export interface JarvisToolInfo {
@@ -721,7 +734,19 @@ export interface InvestigationWorkspace {
   seasonality_classification?: string | null;
   temporal_deviation_zscore?: number | null;
   temporal_anomaly_flag?: boolean | null;
-  temporal_evidence?: Array<Record<string, any>>;
+  // Phase 10 Global Environmental Intelligence & Cross-Modal Verification
+  environmental_sources?: string[];
+  environmental_provenance?: Array<Record<string, any>>;
+  environmental_observations?: Record<string, any> | Array<Record<string, any>>;
+  environmental_relationships?: Array<Record<string, any>>;
+  environmental_coverage?: Record<string, any>;
+  environmental_uncertainty?: Record<string, any>;
+  environmental_conflicts?: Array<Record<string, any>>;
+  environmental_observation_count?: number;
+  cross_modal_sources?: string[];
+  cross_modal_evidence?: Record<string, any>;
+  cross_modal_uncertainty?: Record<string, any>;
+  cross_modal_observation_count?: number;
 }
 
 
