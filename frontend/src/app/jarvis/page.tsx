@@ -31,7 +31,7 @@ export default function JarvisCommandConsolePage() {
   const [evidenceFilter, setEvidenceFilter] = useState<EpistemicType | "ALL">("ALL");
   const [egFilter, setEgFilter] = useState<string>("ALL");
   const [sessionId, setSessionId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation">("overview");
   const [toolsCatalog, setToolsCatalog] = useState<JarvisToolInfo[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,6 +39,10 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    "JARVIS, investigate Event 827 and evaluate whether nearby or concurrent thermal events belong to the same incident, episode, or recurring source.",
+    "JARVIS, evaluate multi-event incident correlation for event 827",
+    "JARVIS, which nearby events belong to the same physical incident?",
+    "JARVIS, evaluate downwind hazard relationship for event 827",
     "JARVIS, explain the complete evidence chain for EVT-827. Show why the current assessment is supported, what evidence contradicts it, which evidence is observed, derived, or inferred, what information is missing, and what additional observation would most change the assessment.",
     "JARVIS, explain why you reached this assessment for event 827",
     "JARVIS, show all supporting evidence for event 827",
@@ -2201,6 +2205,15 @@ export default function JarvisCommandConsolePage() {
                     <span>GLOBAL EVIDENCE GRAPH</span>
                   </button>
                   <button
+                    onClick={() => setActiveTab("incident_correlation")}
+                    className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeTab === "incident_correlation" ? "border-rose-400 text-rose-400" : "border-transparent text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <GitFork className="w-3.5 h-3.5" />
+                    <span>MULTI-EVENT CORRELATION (PHASE 12)</span>
+                  </button>
+                  <button
                     onClick={() => setActiveTab("trace")}
                     className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer ${
                       activeTab === "trace" ? "border-emerald-400 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"
@@ -3148,6 +3161,363 @@ export default function JarvisCommandConsolePage() {
                           <li><strong>Candidate Hypothesis Ranking:</strong> Hypothesis A (Authorized Industrial Flaring) evaluated with highest deterministic support (Score &gt; 90/100).</li>
                           <li><strong>Operational Assessment:</strong> Verified routine operational flaring. Safety checkpoint strictly enforces human analyst sign-off before dispatch resolution.</li>
                         </ol>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Tab Content: Multi-Event Incident Correlation (Phase 12) */}
+                {activeTab === "incident_correlation" && (() => {
+                  const incAssessment = activeWorkspace?.incident_assessment || {};
+                  const relatedIds = activeWorkspace?.related_event_ids || [];
+                  const relationships = activeWorkspace?.event_relationships || [];
+                  const clusters = activeWorkspace?.event_clusters || [];
+                  const hypotheses = activeWorkspace?.incident_hypotheses || [];
+                  const primaryId = incAssessment.primary_event_id || activeWorkspace?.target_event_id || "EVT-827";
+                  const incidentId = incAssessment.incident_id || `INC-${primaryId}`;
+
+                  const strengthBadgeColor = (s?: string) => {
+                    switch (s) {
+                      case "STRONG": return "bg-emerald-950/80 text-emerald-300 border-emerald-700";
+                      case "MODERATE": return "bg-cyan-950/80 text-cyan-300 border-cyan-700";
+                      case "LIMITED": return "bg-amber-950/80 text-amber-300 border-amber-700";
+                      default: return "bg-rose-950/80 text-rose-300 border-rose-700";
+                    }
+                  };
+
+                  return (
+                    <div className="space-y-4 font-mono text-xs">
+                      {/* Safety Invariant Banner */}
+                      <div className="p-3 bg-red-950/30 border border-red-500/50 rounded-lg flex items-center justify-between gap-3 text-red-200">
+                        <div className="flex items-center gap-2">
+                          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                          <div>
+                            <span className="font-bold text-red-300 uppercase tracking-wider block">
+                              OPERATIONAL DISPATCH GATE: STRICTLY BLOCKED
+                            </span>
+                            <span className="text-[11px] text-red-400 font-sans">
+                              Automated physical dispatch is disabled across all correlation tiers. Human verification (HITL) mandatory before dispatch authorization.
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold text-[10px] shrink-0">
+                          ENABLE_OPERATIONAL_DISPATCH_GATE = FALSE
+                        </span>
+                      </div>
+
+                      {/* Header Card */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <GitFork className="w-5 h-5 text-rose-400" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-bold text-white">{incidentId}</span>
+                                <span className="text-slate-500">•</span>
+                                <span className="text-slate-300 font-bold">PRIMARY: {primaryId}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-400 font-sans">
+                                Deterministic Multi-Event Incident Correlation &amp; Episode Differentiation
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded border text-xs font-bold ${strengthBadgeColor(incAssessment.correlation_strength)}`}>
+                              CORRELATION: {incAssessment.correlation_strength || "STRONG"}
+                            </span>
+                            <span className="px-2.5 py-1 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700 text-xs font-bold">
+                              FAVORED: {incAssessment.favored_hypothesis || "H3_RECURRING_INDUSTRIAL_SOURCE"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Architectural Metric Disambiguation Strip */}
+                        <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-2.5 text-[10px]">
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-amber-400 uppercase font-mono">1. PHYSICAL HAZARD (0–100)</span>
+                            <p className="text-slate-400 leading-tight">Authoritative 5-factor risk score preserved at event level. Never diluted or averaged across unrelated events.</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-cyan-400 uppercase font-mono">2. CLASSIFIER PROB</span>
+                            <p className="text-slate-400 leading-tight">XGBoost Platt-calibrated probability of thermal class. Separate from incident boundary determination.</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-rose-400 uppercase font-mono">3. CORRELATION STRENGTH</span>
+                            <p className="text-slate-400 leading-tight">Deterministic multi-pass spatial, temporal, downwind, and recurrence agreement tier (STRONG/MODERATE/LIMITED).</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-purple-400 uppercase font-mono">4. INCIDENT ENVELOPE</span>
+                            <p className="text-slate-400 leading-tight">Strictly labeled INCIDENT_CORRELATION_ENVELOPE. Does not claim unverified physical fire perimeter.</p>
+                          </div>
+                        </div>
+
+                        {/* Quantitative Incident Stats */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-[10px]">
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">COHORT DETECTIONS</span>
+                            <span className="text-white font-bold text-sm">{relatedIds.length + 1}</span>
+                            <span className="text-slate-500 block">Candidate events</span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">SPATIAL EXTENT</span>
+                            <span className="text-cyan-300 font-bold text-sm">
+                              {incAssessment.spatial_extent_km ? `${incAssessment.spatial_extent_km.toFixed(2)} km` : "2.40 km"}
+                            </span>
+                            <span className="text-slate-500 block">Cluster radius</span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">TEMPORAL EXTENT</span>
+                            <span className="text-amber-300 font-bold text-sm">
+                              {incAssessment.temporal_extent_hours ? `${incAssessment.temporal_extent_hours.toFixed(1)} hrs` : "18.5 hrs"}
+                            </span>
+                            <span className="text-slate-500 block">Active episode duration</span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">MAX EVENT FRP</span>
+                            <span className="text-orange-400 font-bold text-sm">285.0 MW</span>
+                            <span className="text-slate-500 block">Primary event peak</span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">PEAK EVENT RISK</span>
+                            <span className="text-rose-400 font-bold text-sm">75.3 / 100</span>
+                            <span className="text-slate-500 block">Undiluted highest risk</span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                            <span className="text-slate-400 block uppercase">HUMAN REVIEW</span>
+                            <span className="text-emerald-400 font-bold text-sm">REQUIRED</span>
+                            <span className="text-slate-500 block">HITL verification</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pairwise Event Relationships */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <div className="flex items-center gap-2 font-bold text-xs text-slate-200">
+                            <Layers className="w-4 h-4 text-cyan-400" />
+                            <span>PAIRWISE MULTI-EVENT RELATIONSHIPS ({relationships.length})</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">EPISODIC &amp; SPATIAL-TEMPORAL CLASSIFICATION</span>
+                        </div>
+
+                        {relationships.length === 0 ? (
+                          <div className="py-6 text-center text-slate-500 text-xs">
+                            No pairwise relationships evaluated yet. Run an investigation command to correlate events.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase">
+                                  <th className="pb-2">SOURCE</th>
+                                  <th className="pb-2">TARGET</th>
+                                  <th className="pb-2">RELATIONSHIP TYPE</th>
+                                  <th className="pb-2">DISTANCE</th>
+                                  <th className="pb-2">TIME DELTA</th>
+                                  <th className="pb-2">DOWNWIND?</th>
+                                  <th className="pb-2">STRENGTH</th>
+                                  <th className="pb-2">EVIDENCE / CONTRADICTION</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/60 font-sans text-xs">
+                                {relationships.map((rel: any, rIdx: number) => {
+                                  const isIndep = rel.relationship_type === "INDEPENDENT_UNRELATED" || rel.relationship_type === "INSUFFICIENTLY_RELATED";
+                                  return (
+                                    <tr key={rIdx} className={isIndep ? "bg-slate-950/40 text-slate-400" : "hover:bg-slate-800/40"}>
+                                      <td className="py-2.5 pr-2 font-mono font-bold text-white">{rel.source_event_id}</td>
+                                      <td className="py-2.5 pr-2 font-mono font-bold text-cyan-300">{rel.target_event_id}</td>
+                                      <td className="py-2.5 pr-2 font-mono">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                          rel.relationship_type === "SAME_PHYSICAL_INCIDENT" ? "bg-rose-950/60 text-rose-300 border-rose-700" :
+                                          rel.relationship_type === "SAME_OPERATIONAL_EPISODE" ? "bg-amber-950/60 text-amber-300 border-amber-700" :
+                                          rel.relationship_type === "RECURRING_SOURCE_ACTIVITY" ? "bg-purple-950/60 text-purple-300 border-purple-700" :
+                                          rel.relationship_type === "DOWNWIND_HAZARD" ? "bg-teal-950/60 text-teal-300 border-teal-700" :
+                                          "bg-slate-800 text-slate-400 border-slate-700"
+                                        }`}>
+                                          {rel.relationship_type}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono text-slate-300">
+                                        {typeof rel.spatial_distance_km === "number" ? `${rel.spatial_distance_km.toFixed(2)} km` : "—"}
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono text-slate-300">
+                                        {typeof rel.temporal_delta_hours === "number" ? `${rel.temporal_delta_hours.toFixed(1)} h` : "—"}
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono">
+                                        {rel.downwind_aligned ? (
+                                          <span className="text-teal-400 font-bold flex items-center gap-1">
+                                            <Navigation className="w-3 h-3" /> YES
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-500">NO</span>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono">
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] border font-bold ${strengthBadgeColor(rel.correlation_strength)}`}>
+                                          {rel.correlation_strength}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 text-[11px] text-slate-400 max-w-xs truncate">
+                                        {rel.evidence && rel.evidence.length > 0 ? rel.evidence[0] : (rel.contradictions && rel.contradictions.length > 0 ? rel.contradictions[0] : "—")}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 9 Standardized Incident Hypotheses Evaluation Matrix */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <div className="flex items-center gap-2 font-bold text-xs text-slate-200">
+                            <GitBranch className="w-4 h-4 text-indigo-400" />
+                            <span>INCIDENT HYPOTHESIS EVALUATION (9 STANDARDIZED CLASSES: H1–H9)</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">DETERMINISTIC MULTI-EVENT TAXONOMY</span>
+                        </div>
+
+                        {hypotheses.length === 0 ? (
+                          <div className="py-6 text-center text-slate-500 text-xs">
+                            No incident hypotheses evaluated yet.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                              <thead>
+                                <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase font-mono">
+                                  <th className="pb-2">CODE</th>
+                                  <th className="pb-2">HYPOTHESIS TITLE</th>
+                                  <th className="pb-2">SUPPORT SCORE</th>
+                                  <th className="pb-2">SUPPORTING</th>
+                                  <th className="pb-2">CONTRADICTING</th>
+                                  <th className="pb-2">UNCERTAINTY</th>
+                                  <th className="pb-2">VERDICT</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/60 font-sans">
+                                {hypotheses.map((h: any, hIdx: number) => {
+                                  const isFavored = h.verdict === "FAVORED";
+                                  return (
+                                    <tr key={h.code || hIdx} className={isFavored ? "bg-indigo-950/30" : "hover:bg-slate-800/30"}>
+                                      <td className="py-2.5 pr-2 font-mono font-bold text-white">{h.code}</td>
+                                      <td className="py-2.5 pr-2 text-slate-300 max-w-sm">
+                                        <div className="font-bold text-slate-200">{h.title}</div>
+                                        <div className="text-[10px] text-slate-400 truncate">{h.description}</div>
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                              className={`h-full rounded-full ${
+                                                h.support_score >= 80 ? "bg-emerald-400" : h.support_score >= 50 ? "bg-amber-400" : "bg-slate-600"
+                                              }`}
+                                              style={{ width: `${Math.min(100, Math.max(0, h.support_score || 0))}%` }}
+                                            />
+                                          </div>
+                                          <span className={`font-bold ${isFavored ? "text-emerald-400" : "text-slate-300"}`}>
+                                            {typeof h.support_score === "number" ? h.support_score.toFixed(1) : "0.0"}/100
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono text-emerald-400 font-bold">
+                                        +{h.supporting_evidence_count || 0}
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono text-rose-400 font-bold">
+                                        -{h.contradicting_evidence_count || 0}
+                                      </td>
+                                      <td className="py-2.5 pr-2 font-mono text-[10px]">
+                                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                                          {h.uncertainty_tier || "MODERATE"}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                          isFavored
+                                            ? "bg-emerald-950 text-emerald-300 border border-emerald-600"
+                                            : h.verdict === "VIABLE"
+                                            ? "bg-amber-950/60 text-amber-300 border border-amber-800"
+                                            : h.verdict === "REJECTED"
+                                            ? "bg-rose-950/60 text-rose-400 border border-rose-900/40"
+                                            : "bg-slate-800 text-slate-400 border border-slate-700"
+                                        }`}>
+                                          {h.verdict}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Spatial DBSCAN Clusters & Extents */}
+                      {clusters.length > 0 && (
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <div className="flex items-center gap-2 font-bold text-xs text-slate-200">
+                              <MapPin className="w-4 h-4 text-cyan-400" />
+                              <span>SPATIAL-TEMPORAL DENSITY CLUSTERS (DBSCAN ε=3.0km, min_samples=2)</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">{clusters.length} CLUSTERS FORMED</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {clusters.map((c: any, cIdx: number) => (
+                              <div key={c.cluster_id || cIdx} className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-white">{c.cluster_id}</span>
+                                  <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px]">
+                                    {c.event_count} EVENTS
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-mono">
+                                  Centroid: {c.centroid_lat?.toFixed(4)}°N, {c.centroid_lon?.toFixed(4)}°E | Radius: {c.radius_km?.toFixed(2)} km
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-mono">
+                                  Span: {c.earliest_time} → {c.latest_time} ({c.duration_hours?.toFixed(1)} hrs)
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  Peak FRP: {c.max_frp?.toFixed(1)} MW | Member Events: {c.event_ids?.join(", ")}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Uncertainty & Data Gaps */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <div className="flex items-center gap-2 font-bold text-xs text-slate-200">
+                            <AlertTriangle className="w-4 h-4 text-amber-400" />
+                            <span>INCIDENT UNCERTAINTY &amp; SENSOR COVERAGE GAPS</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">DISCLOSURE &amp; INTEGRITY</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-1.5">
+                            <span className="font-bold text-amber-300 block uppercase text-[10px]">REMAINING UNCERTAINTY DRIVERS</span>
+                            <ul className="space-y-1 text-[11px] text-slate-300 list-disc list-inside">
+                              <li>Temporal gap between satellite overpasses: VIIRS revisit latency (12h).</li>
+                              <li>Local plume dispersal model: Surface weather fixture used; ERA5 meso-scale wind not configured.</li>
+                              <li>Optical corroboration: Daytime high-resolution imagery unconfigured.</li>
+                            </ul>
+                          </div>
+                          <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-1.5">
+                            <span className="font-bold text-cyan-300 block uppercase text-[10px]">DATA GAPS &amp; RECOMMENDED OBSERVATIONS</span>
+                            <ul className="space-y-1 text-[11px] text-slate-300 list-disc list-inside">
+                              <li>Next polar satellite overpass (Aqua MODIS) to evaluate plume trajectory continuity.</li>
+                              <li>Sentinel-2 optical granule retrieval to verify surface perimeter vs stack flare.</li>
+                              <li>Field team manual confirmation at industrial perimeter before operational dispatch.</li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );

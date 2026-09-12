@@ -351,6 +351,10 @@ class JarvisResponse(BaseModel):
     def cross_modal_verification(self) -> Optional[Dict[str, Any]]:
         return self.details.get("cross_modal_verification") or (self.details.get("cross_modal_evidence") or (self.fused_evidence.cross_modal_evidence if self.fused_evidence else None))
 
+    @property
+    def operational_dispatch_gate_blocked(self) -> bool:
+        return self.dispatch_gate_blocked
+
 
 
 
@@ -529,8 +533,20 @@ class InvestigationWorkspaceSchema(BaseModel):
     assessment_lineage: Optional[Dict[str, Any]] = Field(default_factory=dict)
     data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
+    # Phase 12 Multi-Event Global Incident Correlation
+    related_event_ids: Optional[List[str]] = Field(default_factory=list)
+    event_relationships: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    event_clusters: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    incident_hypotheses: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    incident_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    incident_geometry: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    incident_evidence: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    incident_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    incident_data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+
 
 class SessionContext(BaseModel):
+
     session_id: str
     current_event_ref: Optional[str] = None
     current_region: Optional[str] = None

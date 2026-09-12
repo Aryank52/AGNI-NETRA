@@ -760,6 +760,107 @@ export interface InvestigationWorkspace {
   data_gaps?: Array<Record<string, any>>;
   winner_hypothesis?: string;
   what_would_change_assessment?: string[];
+  // Phase 12 Multi-Event Incident Correlation
+  related_event_ids?: string[];
+  event_relationships?: Array<Record<string, any>>;
+  event_clusters?: Array<Record<string, any>>;
+  incident_hypotheses?: Array<Record<string, any>>;
+  incident_assessment?: Record<string, any>;
+  incident_geometry?: Record<string, any>;
+  incident_evidence?: Array<Record<string, any>>;
+  incident_uncertainty?: Record<string, any>;
+  incident_data_gaps?: Array<Record<string, any>>;
 }
+
+// Phase 12 Canonical Interfaces
+export interface EventRelationship {
+  source_event_id: string;
+  target_event_id: string;
+  relationship_type:
+    | "SAME_PHYSICAL_INCIDENT"
+    | "SAME_OPERATIONAL_EPISODE"
+    | "RECURRING_SOURCE_ACTIVITY"
+    | "GEOGRAPHICALLY_RELATED"
+    | "TEMPORALLY_RELATED"
+    | "DOWNWIND_HAZARD"
+    | "COORDINATED_SYNCHRONIZED"
+    | "INDEPENDENT_UNRELATED"
+    | "INSUFFICIENTLY_RELATED";
+  spatial_distance_km: number;
+  temporal_delta_hours: number;
+  downwind_aligned: boolean;
+  correlation_strength: "STRONG" | "MODERATE" | "LIMITED" | "INSUFFICIENT";
+  evidence: string[];
+  contradictions: string[];
+}
+
+export interface EventCluster {
+  cluster_id: string;
+  event_ids: string[];
+  centroid_lat: number;
+  centroid_lon: number;
+  radius_km: number;
+  earliest_time: string;
+  latest_time: string;
+  duration_hours: number;
+  max_frp: number;
+  event_count: number;
+}
+
+export interface IncidentHypothesis {
+  hypothesis_id: string;
+  code: string;
+  title: string;
+  description: string;
+  support_score: number;
+  supporting_evidence_count: number;
+  contradicting_evidence_count: number;
+  uncertainty_tier: "LOW" | "MODERATE" | "HIGH";
+  verdict: "FAVORED" | "VIABLE" | "UNSUPPORTED" | "REJECTED";
+}
+
+export interface IncidentImpactProfile {
+  incident_id: string;
+  member_event_count: number;
+  highest_event_risk: number;
+  aggregate_frp_mw: number;
+  dispersion_area_km2: number;
+  aggregate_exposure: string;
+  active_spread_front_count: number;
+  critical_infrastructure_count: number;
+}
+
+export interface IncidentAssessment {
+  incident_id: string;
+  primary_event_id: string;
+  cluster_id?: string;
+  favored_hypothesis: string;
+  correlation_strength: "STRONG" | "MODERATE" | "LIMITED" | "INSUFFICIENT";
+  total_events: number;
+  temporal_extent_hours: number;
+  spatial_extent_km: number;
+  human_verification_recommended: boolean;
+  operational_dispatch_gate_blocked: boolean;
+}
+
+export interface MultiEventCorrelationResult {
+  status: string;
+  primary_event_id: string;
+  cohort_count: number;
+  related_event_ids: string[];
+  relationships: EventRelationship[];
+  clusters: EventCluster[];
+  hypotheses: IncidentHypothesis[];
+  impact_profile: IncidentImpactProfile;
+  incident_assessment: IncidentAssessment;
+  incident_geometry: Record<string, any>;
+  incident_evidence: Array<Record<string, any>>;
+  incident_uncertainty: Record<string, any>;
+  incident_data_gaps: Array<Record<string, any>>;
+  provenance: Record<string, any>;
+  model_id: string;
+  correlation_timestamp: string;
+}
+
 
 

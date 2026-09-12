@@ -958,7 +958,19 @@ class InvestigationWorkspace(Base):
     assessment_lineage = Column(JSON, default=dict)
     data_gaps = Column(JSON, default=list)
 
+    # Phase 12 Multi-Event Global Incident Correlation
+    related_event_ids = Column(JSON, default=list)
+    event_relationships = Column(JSON, default=list)
+    event_clusters = Column(JSON, default=list)
+    incident_hypotheses = Column(JSON, default=list)
+    incident_assessment = Column(JSON, default=dict)
+    incident_geometry = Column(JSON, default=dict)
+    incident_evidence = Column(JSON, default=dict)
+    incident_uncertainty = Column(JSON, default=dict)
+    incident_data_gaps = Column(JSON, default=list)
+
     report = relationship("Report", foreign_keys=[report_id])
+
 
 
 class ThermalHistory(Base):

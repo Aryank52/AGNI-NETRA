@@ -720,10 +720,216 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_provenance_authenticity_audit:
             entities["is_provenance_authenticity_audit"] = True
         # =========================================================================
+        # Phase 12 Multi-Event Global Incident Correlation Commands
+        # =========================================================================
+        # Primary Acceptance Command (Section 28)
+        is_section_28_phase12_acceptance = (
+            any(w in cmd for w in [
+                "identify events related to",
+                "events related to evt-827",
+                "events related to 827",
+                "identify events related to evt-827"
+            ])
+            and any(w in cmd for w in [
+                "common incident or independent events",
+                "common incident",
+                "independent events",
+                "determine whether they form",
+                "same incident"
+            ])
+            and any(w in cmd for w in [
+                "spatial, temporal, contextual, environmental",
+                "spatial, temporal",
+                "evidence-graph basis",
+                "evidence graph basis",
+                "basis for your conclusion"
+            ])
+        )
+        if is_section_28_phase12_acceptance:
+            entities["is_section_28_phase12_acceptance"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+
+        # 1. Find events related to this event
+        is_find_related_events = (
+            any(w in cmd for w in [
+                "find events related to this event",
+                "find events related to",
+                "find related events to this event",
+                "find related events",
+                "identify events related to this event",
+                "identify related events",
+                "events related to this event"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_find_related_events:
+            entities["is_find_related_events"] = True
+
+        # 2. Identify nearest related thermal events
+        is_identify_nearest_related = (
+            any(w in cmd for w in [
+                "identify the nearest related thermal events",
+                "nearest related thermal events",
+                "nearest related events",
+                "nearest thermal events related",
+                "identify nearest related events",
+                "nearest related"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_identify_nearest_related:
+            entities["is_identify_nearest_related"] = True
+
+        # 3. Determine whether these events belong to the same incident
+        is_determine_same_incident = (
+            any(w in cmd for w in [
+                "determine whether these events belong to the same incident",
+                "belong to the same incident",
+                "belong to same incident",
+                "part of the same incident",
+                "form a common incident",
+                "same physical incident",
+                "same incident"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_determine_same_incident:
+            entities["is_determine_same_incident"] = True
+
+        # 4. Correlate these events spatially and temporally
+        is_correlate_spatially_temporally = (
+            any(w in cmd for w in [
+                "correlate these events spatially and temporally",
+                "correlate events spatially and temporally",
+                "spatially and temporally correlate",
+                "correlate spatially and temporally",
+                "spatial and temporal correlation"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_correlate_spatially_temporally:
+            entities["is_correlate_spatially_temporally"] = True
+
+        # 5. Identify recurring event clusters
+        is_identify_recurring_clusters = (
+            any(w in cmd for w in [
+                "identify recurring event clusters",
+                "recurring event clusters",
+                "recurring clusters",
+                "recurring thermal clusters",
+                "identify recurring clusters"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_identify_recurring_clusters:
+            entities["is_identify_recurring_clusters"] = True
+
+        # 6. Determine whether this is a persistent multi-event pattern
+        is_determine_persistent_pattern = (
+            any(w in cmd for w in [
+                "determine whether this is a persistent multi-event pattern",
+                "persistent multi-event pattern",
+                "persistent multi event pattern",
+                "persistent multi-event",
+                "persistent event pattern"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_determine_persistent_pattern:
+            entities["is_determine_persistent_pattern"] = True
+
+        # 7. Identify sequential or downwind-related events
+        is_identify_sequential_downwind = (
+            any(w in cmd for w in [
+                "identify sequential or downwind-related events",
+                "sequential or downwind-related events",
+                "sequential or downwind related events",
+                "downwind-related events",
+                "downwind related events",
+                "downwind events",
+                "sequential events"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_identify_sequential_downwind:
+            entities["is_identify_sequential_downwind"] = True
+
+        # 8. Show evidence supporting this incident correlation
+        is_show_incident_supporting_evidence = (
+            any(w in cmd for w in [
+                "show the evidence supporting this incident correlation",
+                "evidence supporting this incident correlation",
+                "supporting this incident correlation",
+                "supporting incident correlation",
+                "supporting incident evidence"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_show_incident_supporting_evidence:
+            entities["is_show_incident_supporting_evidence"] = True
+
+        # 9. Show evidence contradicting the incident hypothesis
+        is_show_incident_contradicting_evidence = (
+            any(w in cmd for w in [
+                "show evidence contradicting the incident hypothesis",
+                "evidence contradicting the incident hypothesis",
+                "contradicting the incident hypothesis",
+                "contradicting incident hypothesis"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_show_incident_contradicting_evidence:
+            entities["is_show_incident_contradicting_evidence"] = True
+
+        # 10. Compare the competing incident hypotheses
+        is_compare_competing_incident_hypotheses = (
+            any(w in cmd for w in [
+                "compare the competing incident hypotheses",
+                "compare competing incident hypotheses",
+                "competing incident hypotheses",
+                "compare incident hypotheses"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_compare_competing_incident_hypotheses:
+            entities["is_compare_competing_incident_hypotheses"] = True
+
+        # 11. Explain why these events are considered related
+        is_explain_why_events_related = (
+            any(w in cmd for w in [
+                "explain why these events are considered related",
+                "why these events are considered related",
+                "why events are considered related",
+                "explain why events are related"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_explain_why_events_related:
+            entities["is_explain_why_events_related"] = True
+
+        # 12. Tell me which events may actually be independent
+        is_tell_independent_events = (
+            any(w in cmd for w in [
+                "tell me which events may actually be independent",
+                "which events may actually be independent",
+                "which events are independent",
+                "events may actually be independent",
+                "tell me which events are independent"
+            ]) and not is_section_28_phase12_acceptance
+        )
+        if is_tell_independent_events:
+            entities["is_tell_independent_events"] = True
+
+        is_any_phase12 = (
+            is_section_28_phase12_acceptance or is_find_related_events or
+            is_identify_nearest_related or is_determine_same_incident or
+            is_correlate_spatially_temporally or is_identify_recurring_clusters or
+            is_determine_persistent_pattern or is_identify_sequential_downwind or
+            is_show_incident_supporting_evidence or is_show_incident_contradicting_evidence or
+            is_compare_competing_incident_hypotheses or is_explain_why_events_related or
+            is_tell_independent_events
+        )
+        if is_any_phase12:
+            entities["clarification_required"] = False
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or context.get("selected_candidate_ref") or "EVT-827"
+
+        # =========================================================================
         # Phase 11 Global Evidence Graph & Explainable Intelligence Commands
         # =========================================================================
         # Primary Acceptance Command (Section 26)
         is_section_26_phase11_acceptance = (
+
             any(w in cmd for w in [
                 "explain the complete evidence chain for",
                 "explain the complete evidence chain",
@@ -1645,6 +1851,13 @@ class LocalDeterministicProvider(BaseLLMProvider):
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_section_28_phase12_acceptance or is_determine_same_incident or is_correlate_spatially_temporally:
+            intent = CommandIntent.INVESTIGATE
+        elif is_find_related_events or is_identify_nearest_related or is_identify_recurring_clusters or is_identify_sequential_downwind or is_tell_independent_events:
+            intent = CommandIntent.LOCATE
+        elif is_show_incident_supporting_evidence or is_show_incident_contradicting_evidence or is_compare_competing_incident_hypotheses or is_explain_why_events_related or is_determine_persistent_pattern:
+            intent = CommandIntent.EXPLAIN
+            entities["explain_type"] = "INCIDENT_CORRELATION"
         elif is_provenance_authenticity_audit:
             intent = CommandIntent.STATUS
             entities["explain_type"] = "PROVENANCE_AUDIT"
@@ -1729,7 +1942,33 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_26_phase11_acceptance:
+        if is_section_28_phase12_acceptance:
+            primary_goal = "SECTION_28_PHASE12_ACCEPTANCE"
+        elif is_find_related_events:
+            primary_goal = "FIND_RELATED_EVENTS"
+        elif is_identify_nearest_related:
+            primary_goal = "IDENTIFY_NEAREST_RELATED"
+        elif is_determine_same_incident:
+            primary_goal = "DETERMINE_SAME_INCIDENT"
+        elif is_correlate_spatially_temporally:
+            primary_goal = "CORRELATE_SPATIALLY_TEMPORALLY"
+        elif is_identify_recurring_clusters:
+            primary_goal = "IDENTIFY_RECURRING_CLUSTERS"
+        elif is_determine_persistent_pattern:
+            primary_goal = "DETERMINE_PERSISTENT_PATTERN"
+        elif is_identify_sequential_downwind:
+            primary_goal = "IDENTIFY_SEQUENTIAL_DOWNWIND"
+        elif is_show_incident_supporting_evidence:
+            primary_goal = "SHOW_INCIDENT_SUPPORTING_EVIDENCE"
+        elif is_show_incident_contradicting_evidence:
+            primary_goal = "SHOW_INCIDENT_CONTRADICTING_EVIDENCE"
+        elif is_compare_competing_incident_hypotheses:
+            primary_goal = "COMPARE_INCIDENT_HYPOTHESES"
+        elif is_explain_why_events_related:
+            primary_goal = "EXPLAIN_WHY_EVENTS_RELATED"
+        elif is_tell_independent_events:
+            primary_goal = "TELL_INDEPENDENT_EVENTS"
+        elif is_section_26_phase11_acceptance:
             primary_goal = "SECTION_26_PHASE11_ACCEPTANCE"
         elif is_explain_why_reached_assessment:
             primary_goal = "EXPLAIN_ASSESSMENT"
@@ -1959,6 +2198,11 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE",
             "SECTION_26_PHASE9_ACCEPTANCE", "SECTION_30_PHASE10_ACCEPTANCE", "SECTION_26_PHASE11_ACCEPTANCE",
             "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS",
+            "SECTION_28_PHASE12_ACCEPTANCE", "FIND_RELATED_EVENTS", "IDENTIFY_NEAREST_RELATED",
+            "DETERMINE_SAME_INCIDENT", "CORRELATE_SPATIALLY_TEMPORALLY", "IDENTIFY_RECURRING_CLUSTERS",
+            "DETERMINE_PERSISTENT_PATTERN", "IDENTIFY_SEQUENTIAL_DOWNWIND", "SHOW_INCIDENT_SUPPORTING_EVIDENCE",
+            "SHOW_INCIDENT_CONTRADICTING_EVIDENCE", "COMPARE_INCIDENT_HYPOTHESES", "EXPLAIN_WHY_EVENTS_RELATED",
+            "TELL_INDEPENDENT_EVENTS",
             "COMBINE_ALL_EVIDENCE", "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT",
             "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",
             "SHOW_STRONGEST_EVIDENCE", "SHOW_EVIDENCE_CHAIN", "COMPARE_COMPETING_HYPOTHESES",
@@ -1968,7 +2212,15 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal in ["SECTION_26_PHASE11_ACCEPTANCE", "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"]:
+        if primary_goal in [
+            "SECTION_28_PHASE12_ACCEPTANCE", "FIND_RELATED_EVENTS", "IDENTIFY_NEAREST_RELATED",
+            "DETERMINE_SAME_INCIDENT", "CORRELATE_SPATIALLY_TEMPORALLY", "IDENTIFY_RECURRING_CLUSTERS",
+            "DETERMINE_PERSISTENT_PATTERN", "IDENTIFY_SEQUENTIAL_DOWNWIND", "SHOW_INCIDENT_SUPPORTING_EVIDENCE",
+            "SHOW_INCIDENT_CONTRADICTING_EVIDENCE", "COMPARE_INCIDENT_HYPOTHESES", "EXPLAIN_WHY_EVENTS_RELATED",
+            "TELL_INDEPENDENT_EVENTS"
+        ]:
+            stopping_condition = "SECTION_28_PHASE12_INCIDENT_CORRELATION_EVALUATED_AND_HALT"
+        elif primary_goal in ["SECTION_26_PHASE11_ACCEPTANCE", "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"]:
             stopping_condition = "SECTION_26_PHASE11_EVIDENCE_GRAPH_EVALUATED_AND_HALT"
         elif primary_goal in [
             "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",

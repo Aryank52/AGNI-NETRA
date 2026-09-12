@@ -43,6 +43,7 @@ from backend.app.services.intelligence.temporal_engine import temporal_baseline_
 from backend.app.services.intelligence.environmental_engine import environmental_discovery_engine
 from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
+from backend.app.services.intelligence.multi_event_correlation import multi_event_correlation_engine
 
 
 
@@ -1459,6 +1460,60 @@ class JarvisMasterOrchestrator:
             (objective and getattr(objective, "primary_goal", None) == "CONTEXT_PROVENANCE")
         )
 
+        # Phase 12 Multi-Event Global Incident Correlation Flags
+        is_section_28_phase12_acceptance = (
+            entities.get("is_section_28_phase12_acceptance", False) or
+            (objective and getattr(objective, "primary_goal", None) == "SECTION_28_PHASE12_ACCEPTANCE")
+        )
+        is_find_related_events = (
+            entities.get("is_find_related_events", False) or
+            (objective and getattr(objective, "primary_goal", None) == "FIND_RELATED_EVENTS")
+        )
+        is_identify_nearest_related = (
+            entities.get("is_identify_nearest_related", False) or
+            (objective and getattr(objective, "primary_goal", None) == "IDENTIFY_NEAREST_RELATED")
+        )
+        is_determine_same_incident = (
+            entities.get("is_determine_same_incident", False) or
+            (objective and getattr(objective, "primary_goal", None) == "DETERMINE_SAME_INCIDENT")
+        )
+        is_correlate_spatially_temporally = (
+            entities.get("is_correlate_spatially_temporally", False) or
+            (objective and getattr(objective, "primary_goal", None) == "CORRELATE_SPATIALLY_TEMPORALLY")
+        )
+        is_identify_recurring_clusters = (
+            entities.get("is_identify_recurring_clusters", False) or
+            (objective and getattr(objective, "primary_goal", None) == "IDENTIFY_RECURRING_CLUSTERS")
+        )
+        is_determine_persistent_pattern = (
+            entities.get("is_determine_persistent_pattern", False) or
+            (objective and getattr(objective, "primary_goal", None) == "DETERMINE_PERSISTENT_PATTERN")
+        )
+        is_identify_sequential_downwind = (
+            entities.get("is_identify_sequential_downwind", False) or
+            (objective and getattr(objective, "primary_goal", None) == "IDENTIFY_SEQUENTIAL_DOWNWIND")
+        )
+        is_show_incident_supporting_evidence = (
+            entities.get("is_show_incident_supporting_evidence", False) or
+            (objective and getattr(objective, "primary_goal", None) == "SHOW_INCIDENT_SUPPORTING_EVIDENCE")
+        )
+        is_show_incident_contradicting_evidence = (
+            entities.get("is_show_incident_contradicting_evidence", False) or
+            (objective and getattr(objective, "primary_goal", None) == "SHOW_INCIDENT_CONTRADICTING_EVIDENCE")
+        )
+        is_compare_competing_incident_hypotheses = (
+            entities.get("is_compare_competing_incident_hypotheses", False) or
+            (objective and getattr(objective, "primary_goal", None) == "COMPARE_INCIDENT_HYPOTHESES")
+        )
+        is_explain_why_events_related = (
+            entities.get("is_explain_why_events_related", False) or
+            (objective and getattr(objective, "primary_goal", None) == "EXPLAIN_WHY_EVENTS_RELATED")
+        )
+        is_tell_independent_events = (
+            entities.get("is_tell_independent_events", False) or
+            (objective and getattr(objective, "primary_goal", None) == "TELL_INDEPENDENT_EVENTS")
+        )
+
         # Phase 11 Global Evidence Graph & Explainable Intelligence Flags
         is_section_26_phase11_acceptance = (
             entities.get("is_section_26_phase11_acceptance", False) or
@@ -2015,8 +2070,119 @@ class JarvisMasterOrchestrator:
                 "Cross-satellite provenance audit complete and human review recommended."
             )
         # =========================================================================
+        # PHASE 12: MULTI-EVENT GLOBAL INCIDENT CORRELATION HANDLERS
+        # =========================================================================
+        elif is_section_28_phase12_acceptance or (
+            objective and getattr(objective, "primary_goal", None) == "SECTION_28_PHASE12_ACCEPTANCE"
+        ) or is_find_related_events or is_identify_nearest_related or is_determine_same_incident or is_correlate_spatially_temporally or is_identify_recurring_clusters or is_determine_persistent_pattern or is_identify_sequential_downwind or is_show_incident_supporting_evidence or is_show_incident_contradicting_evidence or is_compare_competing_incident_hypotheses or is_explain_why_events_related or is_tell_independent_events or (
+            objective and getattr(objective, "primary_goal", None) in [
+                "FIND_RELATED_EVENTS", "IDENTIFY_NEAREST_RELATED", "DETERMINE_SAME_INCIDENT",
+                "CORRELATE_SPATIALLY_TEMPORALLY", "IDENTIFY_RECURRING_CLUSTERS", "DETERMINE_PERSISTENT_PATTERN",
+                "IDENTIFY_SEQUENTIAL_DOWNWIND", "SHOW_INCIDENT_SUPPORTING_EVIDENCE", "SHOW_INCIDENT_CONTRADICTING_EVIDENCE",
+                "COMPARE_INCIDENT_HYPOTHESES", "EXPLAIN_WHY_EVENTS_RELATED", "TELL_INDEPENDENT_EVENTS"
+            ]
+        ):
+            log_state(JarvisState.EXECUTING, "Synthesizing Multi-Event Global Incident Correlation & Episode Analysis")
+            target_event_code = event_ref or (active_ws.target_event_id if active_ws and active_ws.target_event_id else "EVT-827")
+            if target_event_code.isdigit():
+                target_event_code = f"EVT-{target_event_code}"
+
+            raw_event = JarvisToolRegistry.tool_get_event(db, target_event_code)
+            if not raw_event or not raw_event.get("found"):
+                raw_event = JarvisToolRegistry.tool_get_event(db, "EVT-827")
+                target_event_code = "EVT-827"
+
+            # Execute parallel baseline intelligence for target event
+            step_idx = len(steps) + 1
+            p_steps, p_results, p_caps = cls._execute_parallel_event_analysis(target_event_code, start_step_number=step_idx)
+            steps.extend(p_steps)
+            capabilities_used.extend(p_caps)
+            step_idx += len(p_steps)
+
+            # Step: Execute Multi-Event Incident Correlation
+            step_start_corr = time.time()
+            corr_result = multi_event_correlation_engine.correlate_incident(
+                db=db,
+                event_ref=target_event_code,
+                spatial_radius_m=5000.0,
+                temporal_window_hours=24.0
+            )
+            corr_dict = corr_result.model_dump()
+            assessment = corr_dict.get("incident_assessment") or {}
+            dominant_hyp = assessment.get("dominant_hypothesis") or {}
+
+            capabilities_used.append(JarvisCapability.EVALUATION.value)
+            steps.append(ExecutionStep(
+                step_number=step_idx,
+                agent="JARVIS",
+                capability=JarvisCapability.EVALUATION.value,
+                action="Execute Multi-Event Global Incident Correlation & Episode Analysis",
+                tool="multi_event_correlation_engine.correlate_incident",
+                parameters={"target_event": target_event_code, "spatial_radius_m": 5000.0, "temporal_window_hours": 24.0},
+                status=StepStatus.COMPLETED,
+                result_summary=(
+                    f"Correlated {len(corr_result.relationships) + 1} events across 5km radius. "
+                    f"Cluster ID: {assessment.get('cluster_id')}. "
+                    f"Dominant Incident Hypothesis: {dominant_hyp.get('hypothesis_type')} ({dominant_hyp.get('name')}) "
+                    f"with Support Score {dominant_hyp.get('support_score', 0.0):.1f}/100. "
+                    f"Identified {len(assessment.get('independent_event_ids', []))} independent events."
+                ),
+                duration_ms=round((time.time() - step_start_corr) * 1000.0, 2)
+            ))
+            step_idx += 1
+
+            # Workspace Persistence
+            active_ws = workspace_manager.update_workspace_incident_correlation(
+                db=db,
+                workspace=active_ws,
+                correlation_result=corr_dict
+            )
+            active_ws.status = InvestigationStatus.REQUIRES_HUMAN_REVIEW.value
+            active_ws.verification_status = "REQUIRES_HUMAN_REVIEW"
+            try:
+                db.commit()
+                db.refresh(active_ws)
+            except Exception:
+                db.rollback()
+
+            # Populate details
+            details["multi_event_correlation"] = corr_dict
+            details["incident_assessment"] = assessment
+            details["relationships"] = corr_dict.get("relationships", [])
+            details["clusters"] = corr_dict.get("clusters", [])
+            details["related_event_ids"] = corr_dict.get("related_event_ids", [])
+            details["independent_event_ids"] = assessment.get("independent_event_ids", [])
+            details["incident_geometry"] = assessment.get("incident_geometry", {})
+            details["impact_profile"] = assessment.get("impact_profile", {})
+            details["dominant_hypothesis"] = dominant_hyp
+            details["competing_hypotheses"] = assessment.get("competing_hypotheses", [])
+            details["data_gaps"] = assessment.get("data_gaps", [])
+            details["what_would_change_assessment"] = assessment.get("what_would_change_assessment", [])
+            details["event"] = raw_event
+            details["risk"] = p_results.get("risk", {})
+
+            summary_text = workspace_manager.format_section_28_multi_event_markdown(
+                target_ref=target_event_code,
+                correlation_result=corr_dict
+            )
+
+            recommendations = [
+                f"Transmit Multi-Event Incident Dossier {active_ws.investigation_id} to Tri-Tier Analyst Verification Desk.",
+                f"Actionable verification: {assessment.get('what_would_change_assessment', ['Task sub-meter optical satellite pass'])[0]}",
+                "Operational dispatch gate strictly held in BLOCKED state [SAFETY ENFORCED]."
+            ]
+            stopping_reason = (
+                f"SECTION_28_PHASE12_COMPLETE: Evaluated multi-event incident correlation for {target_event_code}. "
+                f"Identified {len(corr_result.relationships)} constituent relationships and cluster {assessment.get('cluster_id')}. "
+                f"Dominant incident hypothesis: {dominant_hyp.get('hypothesis_type')} ({dominant_hyp.get('name')}). "
+                f"Dispatch gate held BLOCKED. Returning master agent to IDLE."
+            )
+            requires_approval = True
+
+        # =========================================================================
         # PHASE 11: GLOBAL EVIDENCE GRAPH & EXPLAINABLE INTELLIGENCE HANDLERS
         # =========================================================================
+
 
         # PHASE 11.1 ACCEPTANCE: VERIFY EVIDENCE GRAPH & EXPLAIN METRICS DISAMBIGUATION
         elif is_verify_evidence_graph_and_explain_metrics or (

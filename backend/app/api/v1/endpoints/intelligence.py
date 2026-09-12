@@ -18,6 +18,7 @@ from backend.app.services.intelligence.temporal_engine import temporal_baseline_
 from backend.app.services.intelligence.environmental_engine import environmental_discovery_engine
 from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
+from backend.app.services.intelligence.multi_event_correlation import multi_event_correlation_engine
 
 router = APIRouter()
 
@@ -943,6 +944,171 @@ def get_event_provenance_chain_endpoint(
         "status": "SUCCESS",
         "provenance_chain": prov
     }
+
+
+# =====================================================================
+# Phase 12: Multi-Event Incident Correlation Endpoints (Section 21)
+# =====================================================================
+
+@router.get("/events/{event_id}/related")
+def get_event_related_events_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves related event IDs discovered via multi-event correlation."""
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "primary_event_id": event_id,
+        "related_event_ids": res.related_event_ids,
+        "total_related": len(res.related_event_ids),
+        "cohort_count": res.cohort_count
+    }
+
+
+@router.get("/events/{event_id}/relationships")
+def get_event_relationships_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves pairwise typed relationships between primary event and related events."""
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "primary_event_id": event_id,
+        "total_relationships": len(res.relationships),
+        "relationships": [r.model_dump() for r in res.relationships]
+    }
+
+
+@router.get("/events/{event_id}/cluster")
+def get_event_cluster_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves spatial-temporal DBSCAN clusters formed around event."""
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "primary_event_id": event_id,
+        "total_clusters": len(res.clusters),
+        "clusters": [c.model_dump() for c in res.clusters],
+        "primary_cluster": res.clusters[0].model_dump() if res.clusters else None
+    }
+
+
+@router.get("/events/{event_id}/incident")
+def get_event_incident_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves complete multi-event incident correlation result for event."""
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "primary_event_id": event_id,
+        "correlation_result": res.model_dump()
+    }
+
+
+@router.get("/incidents/{incident_id}")
+def get_incident_by_id_endpoint(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves incident assessment and impact profile by incident ID."""
+    primary_event_id = incident_id.replace("INC-", "")
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=primary_event_id)
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "primary_event_id": res.primary_event_id,
+        "incident_assessment": res.incident_assessment.model_dump() if res.incident_assessment else None,
+        "impact_profile": res.impact_profile.model_dump() if res.impact_profile else None,
+        "correlation_strength": res.incident_assessment.correlation_strength if res.incident_assessment else "UNKNOWN"
+    }
+
+
+@router.get("/incidents/{incident_id}/events")
+def get_incident_events_endpoint(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves member events associated with the correlated incident."""
+    primary_event_id = incident_id.replace("INC-", "")
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=primary_event_id)
+    all_events = [res.primary_event_id] + [eid for eid in res.related_event_ids if eid != res.primary_event_id]
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "primary_event_id": res.primary_event_id,
+        "total_events": len(all_events),
+        "events": all_events,
+        "related_event_ids": res.related_event_ids,
+        "cohort_count": res.cohort_count
+    }
+
+
+@router.get("/incidents/{incident_id}/evidence")
+def get_incident_evidence_endpoint(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves evidence nodes, uncertainty, and data gaps for the incident."""
+    primary_event_id = incident_id.replace("INC-", "")
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=primary_event_id)
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "total_evidence_nodes": len(res.incident_evidence),
+        "evidence_nodes": res.incident_evidence,
+        "uncertainty": res.incident_uncertainty,
+        "data_gaps": res.incident_data_gaps
+    }
+
+
+@router.get("/incidents/{incident_id}/hypotheses")
+def get_incident_hypotheses_endpoint(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves the 9 standardized incident hypotheses (H1-H9) for the incident."""
+    primary_event_id = incident_id.replace("INC-", "")
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=primary_event_id)
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "favored_hypothesis": res.incident_assessment.favored_hypothesis if res.incident_assessment else None,
+        "total_hypotheses": len(res.hypotheses),
+        "hypotheses": [h.model_dump() for h in res.hypotheses]
+    }
+
+
+@router.get("/incidents/{incident_id}/provenance")
+def get_incident_provenance_endpoint(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves provenance and audit trail for the incident correlation."""
+    primary_event_id = incident_id.replace("INC-", "")
+    res = multi_event_correlation_engine.correlate_incident(db, event_id=primary_event_id)
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "provenance": res.provenance,
+        "model_id": res.model_id,
+        "correlation_timestamp": res.correlation_timestamp
+    }
+
 
 
 
