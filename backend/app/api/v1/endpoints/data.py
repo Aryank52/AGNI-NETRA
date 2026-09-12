@@ -21,6 +21,7 @@ from backend.app.services.data_plane.freshness import freshness_engine
 from backend.app.services.data_plane.coverage import coverage_compiler
 from backend.app.services.data_plane.quarantine import quarantine_manager
 from backend.app.services.data_plane.engine import data_plane_engine
+from backend.app.services.data_plane.live_provider_service import live_provider_service
 from backend.app.services.data_plane.models import IngestionMode
 
 router = APIRouter()
@@ -334,3 +335,143 @@ def trigger_manual_batch(
         jurisdiction=req.jurisdiction
     )
     return res
+
+
+# =============================================================================
+# PHASE 17: LIVE DATA PROVIDER ACTIVATION ENDPOINTS (Section 23)
+# =============================================================================
+
+@router.get("/providers/live-status")
+def get_live_providers_status(
+    db: Session = Depends(get_db)
+) -> List[Dict[str, Any]]:
+    """
+    Returns verified live capability status across all 7 upstream providers:
+    NASA_FIRMS, ISRO_BHUVAN, CEA_REGISTRY, IBM_PORTAL, MOEFCC_PARIVESH,
+    COPERNICUS, COMMERCIAL_OPTICAL_SAR.
+    Strictly adheres to the 9 Provider Availability Rules.
+    """
+    capabilities = live_provider_service.audit_all_providers(db)
+    return [c.model_dump() for c in capabilities]
+
+
+@router.get("/providers/{provider}/status")
+def get_single_provider_status(
+    provider: str,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns detailed capability status and reachability diagnostics for a specific provider.
+    """
+    capabilities = live_provider_service.audit_all_providers(db)
+    match = [c for c in capabilities if c.provider.upper() == provider.upper()]
+    if not match:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Provider '{provider}' not found in governed registry."
+        )
+    return match[0].model_dump()
+
+
+@router.get("/providers/{provider}/sample")
+@router.post("/providers/{provider}/sample")
+def get_live_provider_sample(
+    provider: str,
+    dataset: str = Query("VIIRS_SNPP_NRT", description="Sensor/product dataset"),
+    limit: int = Query(20, ge=1, le=50, description="Bounded sample limit (max 50)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+) -> Dict[str, Any]:
+    """
+    RBAC-governed endpoint allowing authenticated analysts to execute an on-demand
+    bounded live retrieval from an active external provider through the Phase 16 Data-Plane.
+    """
+    result = live_provider_service.retrieve_and_ingest_live_sample(
+        db=db,
+        provider=provider,
+        dataset=dataset,
+        limit=limit
+    )
+    return result
+
+
+@router.get("/live/latest")
+def get_latest_live_observations(
+    limit: int = Query(20, ge=1, le=100, description="Maximum observations to return"),
+    provider: Optional[str] = Query(None, description="Optional provider filter"),
+    db: Session = Depends(get_db)
+) -> List[Dict[str, Any]]:
+    """
+    Returns latest successfully ingested real-time live observations (data_tier='LIVE').
+    Clearly distinguished from historical archives, backfill, or simulation data.
+    """
+    query = (
+        db.query(IngestionRecordModel)
+        .filter(IngestionRecordModel.source_type == "LIVE")
+    )
+    if provider:
+        query = query.filter(IngestionRecordModel.provider == provider.upper())
+
+    records = query.order_by(IngestionRecordModel.observation_time.desc()).limit(limit).all()
+
+    results = []
+    for r in records:
+        norm = r.normalized_payload or {}
+        results.append({
+            "source_record_id": r.source_record_id,
+            "ingestion_id": r.ingestion_id,
+            "provider": r.provider,
+            "dataset": r.dataset,
+            "source_type": r.source_type,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "observation_time": r.observation_time.isoformat() if r.observation_time else None,
+            "temperature_kelvin": norm.get("temperature"),
+            "frp_megawatts": norm.get("frp"),
+            "confidence": norm.get("confidence"),
+            "day_night": norm.get("day_night"),
+            "satellite": norm.get("satellite"),
+            "sensor": norm.get("sensor"),
+            "quality_status": r.quality_status,
+            "dedup_status": r.dedup_status,
+            "batch_id": r.batch_id
+        })
+    return results
+
+
+@router.get("/live/freshness")
+def get_live_stream_freshness(
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Calculates observation-time freshness for live feeds against SLA limits.
+    """
+    return live_provider_service.get_live_freshness(db)
+
+
+@router.get("/live/coverage")
+def get_live_stream_coverage(
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns actual observed spatial and temporal extent computed from real live records.
+    """
+    return live_provider_service.get_live_coverage(db)
+
+
+@router.get("/live/provenance/{source_record_id}")
+def get_live_record_provenance(
+    source_record_id: str,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns the complete end-to-end lineage for a live observation record.
+    """
+    prov = live_provider_service.get_live_provenance(db, source_record_id)
+    if not prov:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Live provenance record not found for '{source_record_id}'."
+        )
+    return prov
+

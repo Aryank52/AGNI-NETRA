@@ -40,6 +40,15 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    // Phase 17 Global Live Provider Activation & Verification Commands
+    "JARVIS, show current live external data provider capability and retrieve latest verified observations.",
+    "JARVIS, compare live observations with historical baseline in Gujarat industrial corridor.",
+    "JARVIS, what external data sources are operational, which are degraded or unavailable, and why?",
+    "JARVIS, retrieve a bounded live sample from NASA FIRMS.",
+    "JARVIS, what is the live status of NASA FIRMS?",
+    "JARVIS, show the latest real observations.",
+    "JARVIS, what is the data freshness across all providers?",
+    "JARVIS, why are Copernicus Sentinel-2 and commercial providers unavailable?",
     "JARVIS, prepare EVT-827 for human verification and show the complete case timeline, assessment history, unresolved evidence requests, latest assessment provenance, and recommended next evidence.",
     "JARVIS, show me exactly why the assessment changed between the previous and current versions.",
     "JARVIS, close the investigation.",

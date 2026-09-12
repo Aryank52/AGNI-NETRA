@@ -127,6 +127,12 @@ class FIRMSAdapter(ThermalSourceAdapter):
                 "records_processed": 0
             }
 
+    def health_check(self) -> Dict[str, Any]:
+        """Alias for validate_connection providing standard health check status."""
+        res = self.validate_connection()
+        res["provider"] = "NASA_FIRMS"
+        return res
+
     def validate_coordinates(self, lat: float, lon: float, strict_polygon: bool = False) -> bool:
         """
         Validates latitude/longitude bounds for India geographic scope.
@@ -181,11 +187,26 @@ class FIRMSAdapter(ThermalSourceAdapter):
         if not self.api_key:
             return []
 
-        active_sensor = sensor or "VIIRS_NOAA20_NRT"
+        raw_sensor = (sensor or "VIIRS_SNPP_NRT").upper()
+        if "SNPP" in raw_sensor:
+            active_sensor = "VIIRS_SNPP_NRT"
+        elif "MODIS" in raw_sensor:
+            active_sensor = "MODIS_NRT"
+        elif "NOAA20" in raw_sensor:
+            active_sensor = "VIIRS_NOAA20_NRT"
+        elif "NOAA21" in raw_sensor:
+            active_sensor = "VIIRS_NOAA21_NRT"
+        elif "VIIRS" in raw_sensor:
+            active_sensor = "VIIRS_SNPP_NRT"
+        else:
+            active_sensor = sensor or "VIIRS_SNPP_NRT"
         
         # Build URL for area bbox or country
         if bbox:
             min_lat, min_lon, max_lat, max_lon = bbox
+            url = f"{self.base_url}/area/csv/{self.api_key}/{active_sensor}/{min_lon},{min_lat},{max_lon},{max_lat}/{days}"
+        elif country == "IND":
+            min_lat, min_lon, max_lat, max_lon = INDIA_BBOX
             url = f"{self.base_url}/area/csv/{self.api_key}/{active_sensor}/{min_lon},{min_lat},{max_lon},{max_lat}/{days}"
         else:
             url = f"{self.base_url}/country/csv/{self.api_key}/{active_sensor}/{country}/{days}"

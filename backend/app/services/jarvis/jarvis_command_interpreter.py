@@ -1837,6 +1837,116 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_report_unavailable_deps:
             entities["report_unavailable_dependencies"] = True
 
+        # =========================================================================
+        # Phase 17: Global Provider Activation & Live Data Integration Commands
+        # =========================================================================
+        # Phase 17 Section 30 Primary Acceptance
+        is_section_30_phase17_acceptance = (
+            ("live external data provider capability and retrieve" in cmd) or
+            ("show current live external data provider capability and retrieve latest verified observations" in cmd) or
+            ("show current live external data provider capability" in cmd) or
+            ("live external data provider capability" in cmd) or
+            ("provider capability and retrieve" in cmd) or
+            ("show live external data provider capability" in cmd) or
+            ("live provider capability" in cmd and "retrieve" in cmd)
+        )
+        if is_section_30_phase17_acceptance:
+            entities["is_section_30_phase17_acceptance"] = True
+
+        # Phase 17 Section 31 Second Acceptance
+        is_section_31_phase17_acceptance = (
+            ("compare live observations with historical baseline" in cmd) or
+            ("compare live observations with historical" in cmd) or
+            ("compare live data with historical data in this area" in cmd) or
+            ("compare live data with historical" in cmd) or
+            ("live observations with historical baseline" in cmd)
+        )
+        if is_section_31_phase17_acceptance:
+            entities["is_section_31_phase17_acceptance"] = True
+
+        # Phase 17 Section 32 Third Acceptance
+        is_section_32_phase17_acceptance = (
+            ("what external data sources are operational, which are degraded or unavailable" in cmd) or
+            ("what external data sources are operational" in cmd) or
+            ("which are degraded or unavailable, and why" in cmd) or
+            ("which are degraded or unavailable" in cmd) or
+            ("external data sources are operational" in cmd)
+        )
+        if is_section_32_phase17_acceptance:
+            entities["is_section_32_phase17_acceptance"] = True
+
+        # Phase 17 Section 22 Individual NLP Commands
+        is_live_operational_providers_query = (
+            ("which external data providers are currently operational" in cmd) or
+            ("which external data providers are operational" in cmd) or
+            ("operational external data providers" in cmd) or
+            ("which providers are operational" in cmd)
+        ) and not is_section_32_phase17_acceptance
+        if is_live_operational_providers_query:
+            entities["is_live_operational_providers_query"] = True
+
+        is_live_nasa_firms_status_query = (
+            ("what is the live status of nasa firms" in cmd) or
+            ("live status of nasa firms" in cmd) or
+            ("nasa firms live status" in cmd)
+        )
+        if is_live_nasa_firms_status_query:
+            entities["is_live_nasa_firms_status_query"] = True
+
+        is_retrieve_live_sample_query = (
+            ("retrieve a bounded live sample from nasa firms" in cmd) or
+            ("retrieve a bounded live sample" in cmd) or
+            ("retrieve live sample from nasa firms" in cmd) or
+            ("retrieve live sample" in cmd) or
+            ("bounded live sample" in cmd)
+        ) and not is_section_30_phase17_acceptance
+        if is_retrieve_live_sample_query:
+            entities["is_retrieve_live_sample_query"] = True
+
+        is_latest_real_observations_query = (
+            ("show the latest real observations" in cmd) or
+            ("latest real observations" in cmd) or
+            ("show latest real observations" in cmd) or
+            ("latest verified observations" in cmd)
+        ) and not is_section_30_phase17_acceptance
+        if is_latest_real_observations_query:
+            entities["is_latest_real_observations_query"] = True
+
+        is_why_copernicus_commercial_unavailable = (
+            ("why are copernicus sentinel-2 and commercial providers unavailable" in cmd) or
+            ("why are copernicus sentinel-2 and commercial" in cmd) or
+            ("why are sentinel-2 and commercial providers unavailable" in cmd) or
+            ("copernicus sentinel-2 and commercial providers unavailable" in cmd)
+        )
+        if is_why_copernicus_commercial_unavailable:
+            entities["is_why_copernicus_commercial_unavailable"] = True
+
+        is_live_observation_provenance_query = (
+            ("trace provenance for this live observation" in cmd) or
+            ("provenance for this live observation" in cmd) or
+            ("live observation provenance" in cmd)
+        )
+        if is_live_observation_provenance_query:
+            entities["is_live_observation_provenance_query"] = True
+
+        is_live_data_freshness_query = (
+            ("what is the data freshness across all providers" in cmd) or
+            ("data freshness across all providers" in cmd) or
+            ("data freshness for all providers" in cmd) or
+            ("live data freshness" in cmd)
+        )
+        if is_live_data_freshness_query:
+            entities["is_live_data_freshness_query"] = True
+
+        is_sentinel2_imagery_query = (
+            ("has sentinel-2 acquired imagery over this event" in cmd) or
+            ("sentinel-2 acquired imagery" in cmd) or
+            ("sentinel 2 acquired imagery" in cmd) or
+            ("sentinel-2 imagery over this event" in cmd)
+        )
+        if is_sentinel2_imagery_query:
+            entities["is_sentinel2_imagery_query"] = True
+
         # Phase 16 Section 47 Primary Acceptance: Global Data Readiness Assessment
         is_section_47_phase16_acceptance = (
             ("global data readiness assessment" in cmd) or
@@ -2051,6 +2161,21 @@ class LocalDeterministicProvider(BaseLLMProvider):
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_section_30_phase17_acceptance or is_retrieve_live_sample_query:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE17_LIVE_CAPABILITY"
+        elif is_section_31_phase17_acceptance:
+            intent = CommandIntent.COMPARE
+            entities["status_type"] = "PHASE17_LIVE_COMPARISON"
+        elif is_section_32_phase17_acceptance or is_live_operational_providers_query or is_live_nasa_firms_status_query or is_latest_real_observations_query or is_live_data_freshness_query:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE17_LIVE_STATUS"
+        elif is_why_copernicus_commercial_unavailable or is_sentinel2_imagery_query:
+            intent = CommandIntent.EXPLAIN
+            entities["status_type"] = "PHASE17_LIVE_EXPLAIN"
+        elif is_live_observation_provenance_query:
+            intent = CommandIntent.TRACE
+            entities["status_type"] = "PHASE17_LIVE_PROVENANCE"
         elif is_phase15_health_readiness:
             intent = CommandIntent.STATUS
             entities["status_type"] = "PHASE15_HEALTH_READINESS"
@@ -2211,7 +2336,29 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_47_phase16_acceptance:
+        if is_section_30_phase17_acceptance:
+            primary_goal = "SECTION_30_PHASE17_PRIMARY_ACCEPTANCE"
+        elif is_section_31_phase17_acceptance:
+            primary_goal = "SECTION_31_PHASE17_SECOND_ACCEPTANCE"
+        elif is_section_32_phase17_acceptance:
+            primary_goal = "SECTION_32_PHASE17_THIRD_ACCEPTANCE"
+        elif is_live_operational_providers_query:
+            primary_goal = "LIVE_OPERATIONAL_PROVIDERS"
+        elif is_live_nasa_firms_status_query:
+            primary_goal = "LIVE_NASA_FIRMS_STATUS"
+        elif is_retrieve_live_sample_query:
+            primary_goal = "RETRIEVE_LIVE_SAMPLE"
+        elif is_latest_real_observations_query:
+            primary_goal = "LATEST_REAL_OBSERVATIONS"
+        elif is_why_copernicus_commercial_unavailable:
+            primary_goal = "EXPLAIN_COPERNICUS_COMMERCIAL_UNAVAILABLE"
+        elif is_live_observation_provenance_query:
+            primary_goal = "LIVE_OBSERVATION_PROVENANCE"
+        elif is_live_data_freshness_query:
+            primary_goal = "LIVE_DATA_FRESHNESS"
+        elif is_sentinel2_imagery_query:
+            primary_goal = "SENTINEL2_IMAGERY_CHECK"
+        elif is_section_47_phase16_acceptance:
             primary_goal = "SECTION_47_PHASE16_DATA_READINESS"
         elif is_section_48_phase16_acceptance:
             primary_goal = "SECTION_48_PHASE16_INGESTION_PROVENANCE"
@@ -2494,7 +2641,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         requested_output = "SYNTHESIS"
         if primary_goal == "GENERATE_DOSSIER":
             requested_output = "DOSSIER_PDF"
-        elif primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES"]:
+        elif primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES", "SECTION_31_PHASE17_SECOND_ACCEPTANCE"]:
             requested_output = "COMPARISON"
         elif primary_goal in [
             "EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS",
@@ -2504,10 +2651,13 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "DETERMINE_SEASONALITY", "EXPLAIN_TEMPORAL_EVIDENCE", "REDUCE_TEMPORAL_UNCERTAINTY",
             "ANALYZE_ENVIRONMENTAL_CONDITIONS", "DETERMINE_WEATHER_EFFECTS", "CHECK_CROSS_MODAL_CORROBORATION",
             "COMPARE_OPTICAL_OBSERVATIONS", "CHECK_SAR_CORROBORATION", "IDENTIFY_SUPPORTING_ENVIRONMENTAL",
-            "HIGHEST_VALUE_OBSERVATION"
+            "HIGHEST_VALUE_OBSERVATION", "EXPLAIN_COPERNICUS_COMMERCIAL_UNAVAILABLE", "SENTINEL2_IMAGERY_CHECK"
         ]:
             requested_output = "EXPLANATION"
         elif primary_goal in [
+            "SECTION_30_PHASE17_PRIMARY_ACCEPTANCE", "SECTION_32_PHASE17_THIRD_ACCEPTANCE",
+            "LIVE_OPERATIONAL_PROVIDERS", "LIVE_NASA_FIRMS_STATUS", "RETRIEVE_LIVE_SAMPLE",
+            "LATEST_REAL_OBSERVATIONS", "LIVE_DATA_FRESHNESS", "LIVE_OBSERVATION_PROVENANCE",
             "WHAT_REMAINS", "WHY_STOPPED", "WHAT_KNOWN", "SUMMARIZE_INVESTIGATION", "SOURCES_USED",
             "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE",
             "THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS",

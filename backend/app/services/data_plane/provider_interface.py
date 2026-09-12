@@ -8,10 +8,45 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional, Iterator, Tuple
 from sqlalchemy.orm import Session
 
+import enum
+from pydantic import BaseModel, Field
+
 from backend.app.services.data_plane.models import (
     IngestionRecordSchema, IngestionBatchSchema, CoverageScope
 )
 from backend.app.services.intelligence.providers.base import ProviderHealth
+
+
+class ProviderCapabilityStatus(str, enum.Enum):
+    """
+    Truthful capability states per Section 11 of Phase 17 specification.
+    """
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    CONFIGURED = "CONFIGURED"
+    REACHABLE = "REACHABLE"
+    VALIDATED = "VALIDATED"
+    AVAILABLE = "AVAILABLE"
+    DEGRADED = "DEGRADED"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class ProviderCapabilityRecord(BaseModel):
+    """
+    Truthful representation of a provider's verified capabilities.
+    """
+    provider: str
+    dataset: str
+    scope: str = "GLOBAL"
+    configured: bool = False
+    reachable: bool = False
+    validated: bool = False
+    operational: bool = False
+    status: ProviderCapabilityStatus = ProviderCapabilityStatus.NOT_CONFIGURED
+    freshness: Optional[str] = None
+    resolution: str = "Unknown"
+    limitations: str = "None reported"
+    latest_observation: Optional[str] = None
+    last_failure: Optional[str] = None
 
 
 class IngestionProvider(ABC):
