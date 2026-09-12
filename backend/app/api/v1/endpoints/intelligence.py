@@ -5,12 +5,12 @@ for all intelligence providers with RBAC masking for PUBLIC users.
 """
 
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.api.deps import get_optional_current_user
-from backend.app.models.domain import User
+from backend.app.models.domain import User, InvestigationWorkspace
 from backend.app.services.intelligence.provider_registry import provider_registry
 from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile, GlobalContextProfile
 from backend.app.services.intelligence.context_engine import context_engine
@@ -19,6 +19,9 @@ from backend.app.services.intelligence.environmental_engine import environmental
 from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
 from backend.app.services.intelligence.multi_event_correlation import multi_event_correlation_engine
+from backend.app.services.intelligence.global_intelligence_synthesis import global_intelligence_synthesis_engine
+from backend.app.services.intelligence.next_best_evidence import next_best_evidence_engine
+from backend.app.models.canonical import DecisionSupportMode
 
 router = APIRouter()
 
@@ -1108,6 +1111,213 @@ def get_incident_provenance_endpoint(
         "model_id": res.model_id,
         "correlation_timestamp": res.correlation_timestamp
     }
+
+
+# ------------------------------------------------------------------------------
+# Phase 13: Global Intelligence Fusion & Decision-Support Synthesis Endpoints
+# ------------------------------------------------------------------------------
+
+def _resolve_decision_support_mode(mode_str: str, current_user: Optional[User]) -> DecisionSupportMode:
+    """Helper to parse mode with RBAC fallback to PUBLIC_SAFE for unauthorized or public requests."""
+    user_role = current_user.role if current_user else "PUBLIC"
+    cleaned = str(mode_str or "ANALYST").strip().upper().replace("-", "_")
+    if user_role == "PUBLIC" or cleaned in ("PUBLIC_SAFE", "PUBLIC"):
+        return DecisionSupportMode.PUBLIC_SAFE
+    if cleaned == "AGENCY":
+        return DecisionSupportMode.AGENCY
+    if cleaned == "EXECUTIVE":
+        return DecisionSupportMode.EXECUTIVE
+    return DecisionSupportMode.ANALYST
+
+
+@router.get("/events/{event_id}/assessment")
+def get_event_intelligence_assessment(
+    event_id: str,
+    mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Synthesizes and retrieves the comprehensive UnifiedIntelligenceAssessment for an event
+    with strict separation of observation, classification, risk, evidence, and uncertainty.
+    """
+    mode_enum = _resolve_decision_support_mode(mode, current_user)
+    assessment = global_intelligence_synthesis_engine.synthesize_assessment(
+        db=db,
+        target_ref=event_id,
+        mode=mode_enum.value
+    )
+    return {
+        "status": "SUCCESS",
+        "event_id": event_id,
+        "mode": mode_enum.value,
+        "assessment": assessment.model_dump()
+    }
+
+
+@router.get("/events/{event_id}/assessment/history")
+def get_event_assessment_history(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves chronological assessment evolution history and delta changes for an event workspace.
+    """
+    ws = db.query(InvestigationWorkspace).filter(
+        (InvestigationWorkspace.primary_event_id == event_id) |
+        (InvestigationWorkspace.title.ilike(f"%{event_id}%"))
+    ).order_by(InvestigationWorkspace.updated_at.desc()).first()
+
+    history = ws.assessment_history if (ws and ws.assessment_history) else []
+    changes = ws.assessment_changes if (ws and ws.assessment_changes) else None
+    return {
+        "status": "SUCCESS",
+        "event_id": event_id,
+        "history": history,
+        "changes": changes
+    }
+
+
+@router.get("/events/{event_id}/decision-support")
+def get_event_decision_support(
+    event_id: str,
+    mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves tailored decision-support package for the requested stakeholder presentation mode.
+    """
+    mode_enum = _resolve_decision_support_mode(mode, current_user)
+    assessment = global_intelligence_synthesis_engine.synthesize_assessment(
+        db=db,
+        target_ref=event_id,
+        mode=mode_enum.value
+    )
+    pkg = assessment.decision_support_packages.get(mode_enum.value) or assessment.decision_support_packages.get("ANALYST")
+    return {
+        "status": "SUCCESS",
+        "event_id": event_id,
+        "mode": mode_enum.value,
+        "decision_support": pkg
+    }
+
+
+@router.get("/events/{event_id}/next-best-evidence")
+def get_event_next_best_evidence(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves prioritized Next-Best-Evidence recommendations to reduce epistemic uncertainty.
+    """
+    assessment = global_intelligence_synthesis_engine.synthesize_assessment(
+        db=db,
+        target_ref=event_id,
+        mode="ANALYST"
+    )
+    return {
+        "status": "SUCCESS",
+        "event_id": event_id,
+        "recommendations": [rec.model_dump() for rec in assessment.next_best_evidence]
+    }
+
+
+@router.get("/events/{event_id}/assessment/provenance")
+def get_event_assessment_provenance(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves auditable provenance and source integrity trail for the synthesized intelligence assessment.
+    """
+    assessment = global_intelligence_synthesis_engine.synthesize_assessment(
+        db=db,
+        target_ref=event_id,
+        mode="ANALYST"
+    )
+    return {
+        "status": "SUCCESS",
+        "event_id": event_id,
+        "provenance": assessment.provenance,
+        "evidence_ids": assessment.evidence_ids,
+        "synthesis_pipeline_version": assessment.synthesis_pipeline_version,
+        "synthesis_timestamp": assessment.synthesis_timestamp
+    }
+
+
+@router.get("/incidents/{incident_id}/assessment")
+def get_incident_intelligence_assessment(
+    incident_id: str,
+    mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Synthesizes and retrieves multi-event incident-level intelligence assessment.
+    """
+    mode_enum = _resolve_decision_support_mode(mode, current_user)
+    assessment = global_intelligence_synthesis_engine.synthesize_incident_assessment(
+        db=db,
+        incident_id=incident_id,
+        mode=mode_enum.value
+    )
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "mode": mode_enum.value,
+        "assessment": assessment.model_dump()
+    }
+
+
+@router.get("/incidents/{incident_id}/decision-support")
+def get_incident_decision_support(
+    incident_id: str,
+    mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves incident-level decision-support package for the requested stakeholder presentation mode.
+    """
+    mode_enum = _resolve_decision_support_mode(mode, current_user)
+    assessment = global_intelligence_synthesis_engine.synthesize_incident_assessment(
+        db=db,
+        incident_id=incident_id,
+        mode=mode_enum.value
+    )
+    pkg = assessment.decision_support_packages.get(mode_enum.value) or assessment.decision_support_packages.get("ANALYST")
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "mode": mode_enum.value,
+        "decision_support": pkg
+    }
+
+
+@router.get("/incidents/{incident_id}/next-best-evidence")
+def get_incident_next_best_evidence(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves incident-level Next-Best-Evidence recommendations.
+    """
+    assessment = global_intelligence_synthesis_engine.synthesize_incident_assessment(
+        db=db,
+        incident_id=incident_id,
+        mode="ANALYST"
+    )
+    return {
+        "status": "SUCCESS",
+        "incident_id": incident_id,
+        "recommendations": [rec.model_dump() for rec in assessment.next_best_evidence]
+    }
+
 
 
 

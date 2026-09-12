@@ -6,6 +6,7 @@ both Indian operational datasets and future global intelligence sources.
 
 import uuid
 import math
+from enum import Enum
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Union
 from pydantic import BaseModel, Field
@@ -1402,5 +1403,164 @@ class MultiEventCorrelationResult(BaseModel):
     @property
     def correlation_timestamp(self) -> str:
         return datetime.now(timezone.utc).isoformat()
+
+
+# =============================================================================
+# Phase 13: Global Intelligence Fusion & Decision-Support Synthesis Canonical Models
+# =============================================================================
+
+class AssessmentState(str, Enum):
+    UNASSESSED = "UNASSESSED"
+    SUPPORTED = "SUPPORTED"
+    PROVISIONALLY_SUPPORTED = "PROVISIONALLY_SUPPORTED"
+    CONTESTED = "CONTESTED"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+    REQUIRES_HUMAN_REVIEW = "REQUIRES_HUMAN_REVIEW"
+
+
+class AssessmentEvolution(str, Enum):
+    INITIAL = "INITIAL"
+    UPDATED = "UPDATED"
+    STABILIZED = "STABILIZED"
+    CONTESTED = "CONTESTED"
+    ESCALATING_UNCERTAINTY = "ESCALATING_UNCERTAINTY"
+    REDUCING_UNCERTAINTY = "REDUCING_UNCERTAINTY"
+
+
+class InformationValueCategory(str, Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    NOT_AVAILABLE = "NOT_AVAILABLE"
+
+
+class DecisionSupportMode(str, Enum):
+    ANALYST = "ANALYST"
+    AGENCY = "AGENCY"
+    EXECUTIVE = "EXECUTIVE"
+    PUBLIC_SAFE = "PUBLIC_SAFE"
+
+
+class AssessmentStatement(BaseModel):
+    statement_id: str = Field(default_factory=lambda: f"stmt-{uuid.uuid4().hex[:8]}")
+    statement_text: str
+    category: str = "OBSERVED"  # OBSERVED, PREDICTED, SUPPORTING, CONTRADICTING, UNCERTAINTY, RISK, RECOMMENDATION
+    evidence_ids: List[str] = Field(default_factory=list)
+    source_ids: List[str] = Field(default_factory=list)
+    provenance: Optional[Dict[str, Any]] = None
+
+
+class CompetingAssessmentHypothesis(BaseModel):
+    hypothesis_id: str
+    name: str
+    description: str = ""
+    category: str = "OPERATIONAL"
+    support_score: float = 0.0  # 0.0 to 100.0 (Evidence Support Score)
+    status: str = "PROVISIONALLY_SUPPORTED"  # SUPPORTED, PROVISIONALLY_SUPPORTED, VIABLE, UNSUPPORTED, REJECTED
+    supporting_evidence: List[str] = Field(default_factory=list)
+    contradicting_evidence: List[str] = Field(default_factory=list)
+    missing_evidence: List[str] = Field(default_factory=list)
+    evidence_strength: str = "MODERATE"  # STRONG, MODERATE, LIMITED, INSUFFICIENT
+    correlation_support: str = "MODERATE"  # STRONG, MODERATE, LIMITED, INSUFFICIENT
+
+
+class NextBestEvidenceRecommendation(BaseModel):
+    recommendation_id: str = Field(default_factory=lambda: f"rec-{uuid.uuid4().hex[:8]}")
+    target_source: str  # HIGH_RES_OPTICAL, ADDITIONAL_THERMAL_PASS, GROUND_SENSOR, SCADA_TELEMETRY, WEATHER_OBSERVATION, AIR_QUALITY_OBSERVATION, ADDITIONAL_SAR, MORE_HISTORY, FACILITY_REGISTRY_CHECK
+    reason: str
+    uncertainty_addressed: str
+    evidence_gap: str
+    expected_information_value: str = "HIGH"  # HIGH, MEDIUM, LOW, NOT_AVAILABLE
+    provider_status: str = "AVAILABLE"  # AVAILABLE, PARTIAL, UNCONFIGURED, UNAVAILABLE
+    availability: str = "NEXT_ORBITAL_PASS"
+    action_steps: List[str] = Field(default_factory=list)
+
+    @property
+    def information_value(self) -> str:
+        return self.expected_information_value
+
+    @property
+    def source_name(self) -> str:
+        return self.target_source
+
+
+class DecisionSupportPackage(BaseModel):
+    mode: str = "ANALYST"  # ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE
+    executive_summary: str = ""
+    significance: str = ""
+    current_assessment: str = ""
+    risk_status: str = ""
+    key_supporting_evidence: List[str] = Field(default_factory=list)
+    key_conflicts: List[str] = Field(default_factory=list)
+    uncertainty: str = ""
+    recommended_verification: List[str] = Field(default_factory=list)
+    disclaimer: str = ""
+    public_masked: bool = False
+
+
+class UnifiedIntelligenceAssessment(BaseModel):
+    """
+    Top-Level Synthesized Intelligence Assessment for AGNI-NETRA Phase 13.
+    Unifies observations, ML predictions, authoritative 5-factor risk, evidence graph lineage,
+    multi-event incident correlation, uncertainty, and decision-support recommendations.
+    """
+    assessment_id: str = Field(default_factory=lambda: f"uia-{uuid.uuid4().hex[:8]}")
+    event_id: str
+    incident_id: Optional[str] = None
+    assessment_version: str = "1.0"
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    assessment_status: str = AssessmentState.PROVISIONALLY_SUPPORTED.value
+    assessment_evolution: str = AssessmentEvolution.INITIAL.value
+    primary_assessment: CompetingAssessmentHypothesis
+    alternative_assessments: List[CompetingAssessmentHypothesis] = Field(default_factory=list)
+    statements: List[AssessmentStatement] = Field(default_factory=list)
+    why_this_assessment: List[str] = Field(default_factory=list)
+    what_contradicts_it: List[str] = Field(default_factory=list)
+    what_changed: Union[Dict[str, Any], str] = "NO_PRIOR_ASSESSMENT"
+    risk_reference: Dict[str, Any] = Field(default_factory=dict)
+    classifier_reference: Dict[str, Any] = Field(default_factory=dict)
+    evidence_summary: Dict[str, Any] = Field(default_factory=dict)
+    incident_summary: Dict[str, Any] = Field(default_factory=dict)
+    uncertainty_summary: Dict[str, Any] = Field(default_factory=dict)
+    data_gaps: List[Dict[str, Any]] = Field(default_factory=list)
+    next_best_evidence: List[NextBestEvidenceRecommendation] = Field(default_factory=list)
+    decision_support_packages: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Optional[SourceProvenance] = None
+    human_review_required: bool = True
+    dispatch_gate_blocked: bool = True
+    mode: str = "ANALYST"
+    explanation_markdown: str = ""
+
+    @property
+    def authoritative_risk_score(self) -> float:
+        return float(self.risk_reference.get("risk_score", 0.0))
+
+    @property
+    def classifier_probability(self) -> float:
+        return float(self.classifier_reference.get("probability", 0.0))
+
+    @property
+    def evidence_support_score(self) -> float:
+        return float(self.primary_assessment.support_score if self.primary_assessment else 0.0)
+
+    @property
+    def evidence_strength(self) -> str:
+        return self.primary_assessment.evidence_strength if self.primary_assessment else "MODERATE"
+
+    @property
+    def epistemic_uncertainty(self) -> str:
+        return self.uncertainty_summary.get("level", "KNOWN")
+
+    @property
+    def incident_correlation_strength(self) -> str:
+        return self.incident_summary.get("correlation_strength", "MODERATE")
+
+    @property
+    def operational_dispatch_gate_blocked(self) -> bool:
+        return self.dispatch_gate_blocked
+
+    @property
+    def human_verification_recommended(self) -> bool:
+        return self.human_review_required
 
 

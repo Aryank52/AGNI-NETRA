@@ -6,7 +6,7 @@ Evidence Fusion, Operating Policy, and Execution Traces.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -47,6 +47,7 @@ class JarvisCapability(str, Enum):
     CROSS_MODAL_VERIFICATION = "CROSS_MODAL_VERIFICATION"
     EVIDENCE_GRAPH = "EVIDENCE_GRAPH"
     EVALUATION = "EVALUATION"
+    SYNTHESIS = "SYNTHESIS"
 
 
 class AgentType(str, Enum):
@@ -97,6 +98,7 @@ class CommandIntent(str, Enum):
     TRACE = "TRACE"
     STATUS = "STATUS"
     DISPATCH_REQUEST = "DISPATCH_REQUEST"
+    SYNTHESIZE = "SYNTHESIZE"
     GENERAL = "GENERAL"
 
 
@@ -331,6 +333,14 @@ class JarvisResponse(BaseModel):
     data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     what_would_change_assessment: Optional[List[str]] = Field(default_factory=list)
 
+    # Phase 13 Global Intelligence Fusion & Decision-Support Synthesis
+    unified_assessment: Optional[Dict[str, Any]] = None
+    decision_support: Optional[Dict[str, Any]] = None
+    next_best_evidence: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    assessment_history: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    assessment_changes: Optional[Union[Dict[str, Any], str]] = None
+    decision_support_packages: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
     @property
     def temporal_anomaly(self) -> Optional[Dict[str, Any]]:
         return self.temporal_anomalies
@@ -543,6 +553,17 @@ class InvestigationWorkspaceSchema(BaseModel):
     incident_evidence: Optional[Dict[str, Any]] = Field(default_factory=dict)
     incident_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
     incident_data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+
+    # Phase 13 Global Intelligence Fusion & Decision-Support Synthesis
+    unified_assessment: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    assessment_history: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    assessment_changes: Optional[Union[Dict[str, Any], str]] = Field(default_factory=dict)
+    decision_support: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    recommended_verification: Optional[List[Union[str, Dict[str, Any]]]] = Field(default_factory=list)
+    assessment_provenance: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    assessment_evidence_ids: Optional[List[str]] = Field(default_factory=list)
+    assessment_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    assessment_mode: Optional[str] = "ANALYST"
 
 
 class SessionContext(BaseModel):

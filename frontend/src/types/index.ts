@@ -770,6 +770,16 @@ export interface InvestigationWorkspace {
   incident_evidence?: Array<Record<string, any>>;
   incident_uncertainty?: Record<string, any>;
   incident_data_gaps?: Array<Record<string, any>>;
+  // Phase 13 Global Intelligence Fusion & Decision-Support Synthesis
+  unified_assessment?: UnifiedIntelligenceAssessment;
+  assessment_history?: Array<Record<string, any>>;
+  assessment_changes?: Record<string, any> | string;
+  decision_support?: Record<string, any>;
+  recommended_verification?: string[];
+  assessment_provenance?: Record<string, any>;
+  assessment_evidence_ids?: string[];
+  assessment_uncertainty?: Record<string, any>;
+  assessment_mode?: string;
 }
 
 // Phase 12 Canonical Interfaces
@@ -861,6 +871,111 @@ export interface MultiEventCorrelationResult {
   model_id: string;
   correlation_timestamp: string;
 }
+
+// Phase 13 Global Intelligence Fusion & Decision-Support Synthesis Canonical Interfaces
+export type AssessmentState =
+  | "PROVISIONALLY_SUPPORTED"
+  | "CONFIRMED"
+  | "REVISED"
+  | "CONTRADICTED"
+  | "INSUFFICIENT_EVIDENCE";
+
+export type AssessmentEvolution =
+  | "INITIAL"
+  | "STABILIZED"
+  | "UPDATED"
+  | "SUPERSEDED"
+  | "ESCALATED";
+
+export type InformationValueCategory =
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "NOT_AVAILABLE";
+
+export type DecisionSupportMode =
+  | "ANALYST"
+  | "AGENCY"
+  | "EXECUTIVE"
+  | "PUBLIC_SAFE"
+  | "PUBLIC-SAFE";
+
+export interface AssessmentStatement {
+  statement_text: string;
+  category: "OBSERVED" | "PREDICTED" | "RISK" | "CORRELATION" | "SUPPORTING" | "CONTRADICTING" | "UNCERTAINTY";
+  evidence_ids: string[];
+  source_ids: string[];
+}
+
+export interface CompetingAssessmentHypothesis {
+  hypothesis_id: string;
+  name: string;
+  description: string;
+  category: string;
+  support_score: number;
+  status: string;
+  supporting_evidence: string[];
+  contradicting_evidence: string[];
+  missing_evidence: string[];
+  evidence_strength: string;
+  correlation_support: string;
+}
+
+export interface NextBestEvidenceRecommendation {
+  recommendation_id: string;
+  source_name: string;
+  description: string;
+  information_value: InformationValueCategory;
+  collection_modality: string;
+  estimated_latency: string;
+  target_hypotheses_addressed: string[];
+  reason: string;
+}
+
+export interface DecisionSupportPackage {
+  mode: DecisionSupportMode;
+  executive_summary: string;
+  significance: string;
+  current_assessment: string;
+  risk_status: string;
+  key_supporting_evidence: string[];
+  key_conflicts: string[];
+  uncertainty: string;
+  recommended_verification: string[];
+  disclaimer: string;
+  public_masked: boolean;
+}
+
+export interface UnifiedIntelligenceAssessment {
+  assessment_id: string;
+  event_id: string;
+  incident_id?: string;
+  generated_at: string;
+  assessment_version: string;
+  synthesis_pipeline_version: string;
+  assessment_status: AssessmentState;
+  assessment_evolution: AssessmentEvolution;
+  primary_assessment: CompetingAssessmentHypothesis;
+  alternative_assessments: CompetingAssessmentHypothesis[];
+  statements: AssessmentStatement[];
+  why_this_assessment: string[];
+  what_contradicts_it: string[];
+  what_changed: Record<string, any> | string;
+  risk_reference: Record<string, any>;
+  classifier_reference: Record<string, any>;
+  evidence_summary: Record<string, any>;
+  incident_summary: Record<string, any>;
+  uncertainty_summary: Record<string, any>;
+  data_gaps: Array<Record<string, any>>;
+  next_best_evidence: NextBestEvidenceRecommendation[];
+  decision_support_packages: Record<string, DecisionSupportPackage>;
+  provenance: Record<string, any>;
+  evidence_ids: string[];
+  human_review_required: boolean;
+  dispatch_gate_blocked: boolean;
+  mode: DecisionSupportMode;
+}
+
 
 
 

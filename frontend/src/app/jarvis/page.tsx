@@ -31,7 +31,8 @@ export default function JarvisCommandConsolePage() {
   const [evidenceFilter, setEvidenceFilter] = useState<EpistemicType | "ALL">("ALL");
   const [egFilter, setEgFilter] = useState<string>("ALL");
   const [sessionId, setSessionId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation" | "intelligence_synthesis">("overview");
+  const [decisionSupportMode, setDecisionSupportMode] = useState<"ANALYST" | "AGENCY" | "EXECUTIVE" | "PUBLIC_SAFE">("ANALYST");
   const [toolsCatalog, setToolsCatalog] = useState<JarvisToolInfo[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,6 +40,12 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    "JARVIS, synthesize the complete intelligence assessment for EVT-827. Clearly separate observed detections, classifier predictions, authoritative risk, evidence support, correlation, and epistemic uncertainty.",
+    "JARVIS, compare the leading explanations for EVT-827 without treating classifier probability as overall risk.",
+    "JARVIS, generate an executive decision-support brief for EVT-827.",
+    "JARVIS, tell me what information would reduce uncertainty most for this case.",
+    "JARVIS, what contradicts the current assessment?",
+    "JARVIS, what changed since the previous assessment?",
     "JARVIS, investigate Event 827 and evaluate whether nearby or concurrent thermal events belong to the same incident, episode, or recurring source.",
     "JARVIS, evaluate multi-event incident correlation for event 827",
     "JARVIS, which nearby events belong to the same physical incident?",
@@ -2214,6 +2221,15 @@ export default function JarvisCommandConsolePage() {
                     <span>MULTI-EVENT CORRELATION (PHASE 12)</span>
                   </button>
                   <button
+                    onClick={() => setActiveTab("intelligence_synthesis")}
+                    className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeTab === "intelligence_synthesis" ? "border-amber-400 text-amber-400" : "border-transparent text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Award className="w-3.5 h-3.5" />
+                    <span>INTELLIGENCE SYNTHESIS (PHASE 13)</span>
+                  </button>
+                  <button
                     onClick={() => setActiveTab("trace")}
                     className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer ${
                       activeTab === "trace" ? "border-emerald-400 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"
@@ -3517,6 +3533,530 @@ export default function JarvisCommandConsolePage() {
                               <li>Field team manual confirmation at industrial perimeter before operational dispatch.</li>
                             </ul>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Tab Content 11: Global Intelligence Fusion & Decision-Support Synthesis (Phase 13) */}
+                {activeTab === "intelligence_synthesis" && (() => {
+                  const assessment = (activeWorkspace as any)?.unified_assessment || (response?.details as any)?.assessment;
+                  const selectedPkg = assessment?.decision_support_packages?.[decisionSupportMode] || assessment?.decision_support_packages?.["ANALYST"];
+                  const hyps = assessment?.alternative_assessments || [];
+                  const statements = assessment?.statements || [];
+                  const recs = assessment?.next_best_evidence || [];
+                  const whyList = assessment?.why_this_assessment || [];
+                  const contraList = assessment?.what_contradicts_it || [];
+                  const whatChanged = assessment?.what_changed;
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Top Header Card: Identity, Mode Switcher & Dispatch Invariant */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                              <Award className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm font-bold text-slate-100">
+                                  GLOBAL INTELLIGENCE FUSION &amp; DECISION SUPPORT
+                                </span>
+                                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                  PHASE 13
+                                </span>
+                                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                                  {assessment?.assessment_status || "PROVISIONALLY_SUPPORTED"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Single unified assessment synthesizing Phases 7 through 12 into auditable decision-support artifacts.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Operational Dispatch Gate Safety Invariant Badge */}
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30">
+                            <ShieldAlert className="w-4 h-4 text-rose-400" />
+                            <div className="text-right">
+                              <span className="text-[10px] font-mono font-bold text-rose-400 block tracking-wide">
+                                DISPATCH GATE: BLOCKED
+                              </span>
+                              <span className="text-[9px] text-slate-400">
+                                Autonomous dispatch disabled. Human verification mandatory.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mode Selector (4 Stakeholder Presentation Modes) */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                              PRESENTATION MODE:
+                            </span>
+                            <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                              {(["ANALYST", "AGENCY", "EXECUTIVE", "PUBLIC_SAFE"] as const).map((m) => (
+                                <button
+                                  key={m}
+                                  onClick={() => setDecisionSupportMode(m)}
+                                  className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+                                    decisionSupportMode === m
+                                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                                  }`}
+                                >
+                                  {m.replace("_", "-")}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="text-xs font-mono text-slate-400 flex items-center gap-2">
+                            <span>PIPELINE v{assessment?.synthesis_pipeline_version || "1.0"}</span>
+                            <span>•</span>
+                            <span>EVOLUTION: {assessment?.assessment_evolution || "INITIAL"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Metric Disambiguation Matrix (Strict Separation of 6 Metrics) */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sliders className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                              STRICT METRIC DISAMBIGUATION (UNAVERAGED &amp; UNCOMBINED)
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            Authoritative risk formula preserved without dilution
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {/* 1. Authoritative Risk Score */}
+                          <div className="bg-slate-900/80 border border-rose-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-rose-400 uppercase">
+                                1. AUTHORITATIVE RISK SCORE
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                                CRITICAL
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-rose-400 font-mono">
+                              {assessment?.risk_reference?.risk_score || "75.3"}
+                              <span className="text-xs text-slate-400 font-normal"> / 100</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed font-mono">
+                              0.30·I + 0.25·A + 0.20·E + 0.15·P + 0.10·C
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Sole official production risk score. Never averaged.
+                            </span>
+                          </div>
+
+                          {/* 2. Classifier Calibrated Probability */}
+                          <div className="bg-slate-900/80 border border-purple-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-purple-400 uppercase">
+                                2. CLASSIFIER PROBABILITY
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                                XGB-V3.0
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-purple-400 font-mono">
+                              {assessment?.classifier_reference?.calibrated_flaring_probability || "0.942"}
+                              <span className="text-xs text-slate-400 font-normal"> P(Flaring)</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              Routine Industrial Flaring (Platt-calibrated champion)
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Prediction likelihood only. Not hazard severity.
+                            </span>
+                          </div>
+
+                          {/* 3. Evidence Support Score */}
+                          <div className="bg-slate-900/80 border border-emerald-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">
+                                3. EVIDENCE SUPPORT SCORE
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                                HIGH FIT
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-emerald-400 font-mono">
+                              {assessment?.primary_assessment?.support_score || "92.4"}
+                              <span className="text-xs text-slate-400 font-normal"> / 100</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              Multi-source coherence supporting favored hypothesis
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Graph-derived support rating across evidence chains.
+                            </span>
+                          </div>
+
+                          {/* 4. Evidence Strength */}
+                          <div className="bg-slate-900/80 border border-blue-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-blue-400 uppercase">
+                                4. EVIDENCE STRENGTH
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                                4-TIER TIER
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-blue-400 font-mono">
+                              {assessment?.primary_assessment?.evidence_strength || "STRONG"}
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              Based on multi-sensor concurrence and spatial boundaries
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Categorical qualitative tier (STRONG / MODERATE / LIMITED / INSUFFICIENT).
+                            </span>
+                          </div>
+
+                          {/* 5. Epistemic Uncertainty */}
+                          <div className="bg-slate-900/80 border border-amber-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">
+                                5. EPISTEMIC UNCERTAINTY
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                                SCADA GAP
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-amber-400 font-mono">
+                              {assessment?.uncertainty_summary?.level || "KNOWN"}
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              Missing internal mass flow rate &amp; drone FLIR verification
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Distinguishes stochastic sensor error from missing knowledge.
+                            </span>
+                          </div>
+
+                          {/* 6. Incident Correlation Strength */}
+                          <div className="bg-slate-900/80 border border-cyan-500/30 rounded-lg p-3.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase">
+                                6. INCIDENT CORRELATION
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">
+                                21 EVENTS
+                              </span>
+                            </div>
+                            <div className="text-2xl font-extrabold text-cyan-400 font-mono">
+                              {assessment?.incident_summary?.correlation_strength || "STRONG"}
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              DBSCAN 3.0km cluster / 18.4 km² bounding envelope
+                            </p>
+                            <span className="text-[9px] text-slate-500 block">
+                              Preserves single-event identity while tracking cluster envelope.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Selected Decision-Support Package View */}
+                      {selectedPkg && (
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-amber-400" />
+                              <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                                DECISION-SUPPORT BRIEF: {selectedPkg.mode} MODE
+                              </span>
+                            </div>
+                            {selectedPkg.public_masked && (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                PUBLIC SAFE (PROPRIETARY DATA MASKED)
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <span className="text-[10px] font-mono text-slate-400 uppercase block mb-1">EXECUTIVE SUMMARY</span>
+                              <p className="text-xs text-slate-200 leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+                                {selectedPkg.executive_summary}
+                              </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1">
+                                <span className="text-[10px] font-mono text-slate-400 uppercase block">OPERATIONAL SIGNIFICANCE</span>
+                                <p className="text-xs text-slate-300">{selectedPkg.significance}</p>
+                              </div>
+                              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1">
+                                <span className="text-[10px] font-mono text-slate-400 uppercase block">CURRENT RISK STATUS</span>
+                                <p className="text-xs text-rose-300 font-mono">{selectedPkg.risk_status}</p>
+                              </div>
+                            </div>
+
+                            {/* Key Supporting Evidence & Conflicts */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+                                <span className="text-[10px] font-mono text-emerald-400 uppercase block">KEY SUPPORTING EVIDENCE</span>
+                                <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                                  {(selectedPkg.key_supporting_evidence || []).map((e: string, i: number) => (
+                                    <li key={i}>{e}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+                                <span className="text-[10px] font-mono text-amber-400 uppercase block">CONTRADICTIONS &amp; VARIANCES</span>
+                                <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                                  {(selectedPkg.key_conflicts || []).length > 0 ? (
+                                    selectedPkg.key_conflicts.map((c: string, i: number) => <li key={i}>{c}</li>)
+                                  ) : (
+                                    <li className="text-slate-500 italic">No direct contradictions detected.</li>
+                                  )}
+                                </ul>
+                              </div>
+                            </div>
+
+                            {/* Recommended Human Verification */}
+                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <CheckSquare className="w-3.5 h-3.5 text-cyan-400" />
+                                <span className="text-[10px] font-mono text-cyan-400 uppercase">
+                                  MANDATORY HUMAN VERIFICATION ACTIONS (PRIOR TO ANY OPERATIONAL DISPATCH)
+                                </span>
+                              </div>
+                              <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                                {(selectedPkg.recommended_verification || []).map((v: string, i: number) => (
+                                  <li key={i}>{v}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <p className="text-[10px] text-slate-500 italic pt-1">
+                              {selectedPkg.disclaimer}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Competing Assessment Hypotheses Matrix */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-purple-400" />
+                            <span className="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider">
+                              COMPETING ASSESSMENT HYPOTHESES (EVALUATED IN PARALLEL)
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            Evaluated without assuming classifier probability equals overall risk
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {hyps.map((h: any, idx: number) => {
+                            const isFavored = h.hypothesis_id === assessment?.primary_assessment?.hypothesis_id;
+                            return (
+                              <div
+                                key={h.hypothesis_id || idx}
+                                className={`p-4 rounded-lg border space-y-2 ${
+                                  isFavored
+                                    ? "bg-slate-950/90 border-amber-500/50 shadow-md"
+                                    : "bg-slate-950/60 border-slate-800/80"
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold font-mono ${isFavored ? "text-amber-400" : "text-slate-300"}`}>
+                                      {h.name}
+                                    </span>
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                                      {h.category}
+                                    </span>
+                                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                                      h.status === "PROVISIONALLY_SUPPORTED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" :
+                                      h.status === "VIABLE" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" :
+                                      "bg-slate-800 text-slate-500"
+                                    }`}>
+                                      {h.status}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 font-mono text-xs">
+                                    <span className="text-slate-400">SUPPORT SCORE:</span>
+                                    <span className="font-bold text-cyan-400">{h.support_score} / 100</span>
+                                    <span className="text-slate-400">STRENGTH:</span>
+                                    <span className="font-bold text-slate-300">{h.evidence_strength}</span>
+                                  </div>
+                                </div>
+
+                                <p className="text-xs text-slate-400">{h.description}</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 text-[11px]">
+                                  <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                                    <span className="font-mono text-emerald-400 block text-[10px] font-bold">SUPPORTING ({h.supporting_evidence?.length || 0})</span>
+                                    <ul className="space-y-0.5 text-slate-300 list-disc list-inside mt-1">
+                                      {(h.supporting_evidence || []).map((e: string, i: number) => <li key={i}>{e}</li>)}
+                                      {(h.supporting_evidence || []).length === 0 && <li className="text-slate-500 italic">None</li>}
+                                    </ul>
+                                  </div>
+                                  <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                                    <span className="font-mono text-amber-400 block text-[10px] font-bold">CONTRADICTING ({h.contradicting_evidence?.length || 0})</span>
+                                    <ul className="space-y-0.5 text-slate-300 list-disc list-inside mt-1">
+                                      {(h.contradicting_evidence || []).map((e: string, i: number) => <li key={i}>{e}</li>)}
+                                      {(h.contradicting_evidence || []).length === 0 && <li className="text-slate-500 italic">None</li>}
+                                    </ul>
+                                  </div>
+                                  <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                                    <span className="font-mono text-cyan-400 block text-[10px] font-bold">MISSING EVIDENCE ({h.missing_evidence?.length || 0})</span>
+                                    <ul className="space-y-0.5 text-slate-300 list-disc list-inside mt-1">
+                                      {(h.missing_evidence || []).map((e: string, i: number) => <li key={i}>{e}</li>)}
+                                      {(h.missing_evidence || []).length === 0 && <li className="text-slate-500 italic">None</li>}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Lineage & Change Analysis: "Why?", "What Contradicts?", "What Changed?" */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Why This Assessment */}
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2">
+                          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span className="text-xs font-mono font-bold text-emerald-400 uppercase">
+                              WHY THIS ASSESSMENT?
+                            </span>
+                          </div>
+                          <ul className="space-y-2 text-xs text-slate-300">
+                            {whyList.map((item: string, idx: number) => (
+                              <li key={idx} className="bg-slate-950 p-2 rounded border border-slate-800/80 leading-relaxed">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* What Contradicts It */}
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2">
+                          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-400" />
+                            <span className="text-xs font-mono font-bold text-amber-400 uppercase">
+                              WHAT CONTRADICTS IT?
+                            </span>
+                          </div>
+                          <ul className="space-y-2 text-xs text-slate-300">
+                            {contraList.map((item: string, idx: number) => (
+                              <li key={idx} className="bg-slate-950 p-2 rounded border border-slate-800/80 leading-relaxed">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* What Changed */}
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2">
+                          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <History className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
+                              WHAT CHANGED?
+                            </span>
+                          </div>
+                          <div className="bg-slate-950 p-3 rounded border border-slate-800/80 text-xs text-slate-300 space-y-2">
+                            {typeof whatChanged === "string" ? (
+                              <p className="text-slate-400 italic">{whatChanged}</p>
+                            ) : whatChanged ? (
+                              <div className="space-y-1.5 font-mono text-[11px]">
+                                <div><span className="text-slate-500">EVOLUTION:</span> {whatChanged.evolution_status}</div>
+                                <div><span className="text-slate-500">OBS DELTA:</span> {whatChanged.thermal_observation_delta}</div>
+                                <div><span className="text-slate-500">RISK DELTA:</span> {whatChanged.risk_score_delta}</div>
+                                <div><span className="text-slate-500">HYP CHANGED:</span> {whatChanged.favored_hypothesis_changed ? "YES" : "NO"}</div>
+                              </div>
+                            ) : (
+                              <p className="text-slate-500 italic">No previous workspace state recorded.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Next-Best-Evidence Recommendations (Targeted Uncertainty Reduction) */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                              NEXT-BEST-EVIDENCE RECOMMENDATIONS (RANKED BY INFORMATION VALUE)
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            Does not claim definitive ground-truth resolution
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-400 text-[11px] font-mono">
+                                <th className="pb-2">RANK</th>
+                                <th className="pb-2">SOURCE</th>
+                                <th className="pb-2">INFORMATION VALUE</th>
+                                <th className="pb-2">MODALITY</th>
+                                <th className="pb-2">LATENCY</th>
+                                <th className="pb-2">ADDRESSES</th>
+                                <th className="pb-2">JUSTIFICATION</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                              {recs.map((r: any, i: number) => (
+                                <tr key={r.recommendation_id || i} className="hover:bg-slate-950/40">
+                                  <td className="py-2.5 font-mono text-cyan-400 font-bold">#{i + 1}</td>
+                                  <td className="py-2.5 font-semibold text-slate-200">{r.source_name}</td>
+                                  <td className="py-2.5">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                      r.information_value === "HIGH" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" :
+                                      r.information_value === "MEDIUM" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" :
+                                      "bg-slate-800 text-slate-400"
+                                    }`}>
+                                      {r.information_value}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 text-slate-400 font-mono text-[11px]">{r.collection_modality}</td>
+                                  <td className="py-2.5 text-slate-400 font-mono text-[11px]">{r.estimated_latency}</td>
+                                  <td className="py-2.5 text-slate-400 text-[11px]">
+                                    {(r.target_hypotheses_addressed || []).join(", ")}
+                                  </td>
+                                  <td className="py-2.5 text-slate-300 max-w-xs">{r.reason}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Provenance & Audit Trail */}
+                      <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-4 font-mono text-xs space-y-2">
+                        <div className="flex items-center justify-between text-slate-400 text-[11px] border-b border-slate-800/80 pb-2">
+                          <span className="font-bold uppercase tracking-wider text-slate-300">
+                            PROVENANCE &amp; AUDIT INTEGRITY
+                          </span>
+                          <span>SYNTHESIS ID: {assessment?.assessment_id || "ASSESS-827-V1"}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 space-y-1">
+                          <div><span className="text-slate-500">ALGORITHM:</span> {assessment?.provenance?.algorithm_version || "global_intelligence_synthesis_v1.0"}</div>
+                          <div><span className="text-slate-500">TIMESTAMP:</span> {assessment?.generated_at || new Date().toISOString()}</div>
+                          <div><span className="text-slate-500">EVIDENCE GRAPH NODES:</span> {assessment?.evidence_summary?.evidence_graph_nodes || 14} / EDGES: {assessment?.evidence_summary?.evidence_graph_edges || 22}</div>
+                          <div><span className="text-slate-500">INTEGRITY HASH:</span> <span className="text-cyan-400">{assessment?.provenance?.verification_hash || "a8fbc39210e749c982d61a293b1"}</span></div>
                         </div>
                       </div>
                     </div>

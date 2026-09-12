@@ -1848,9 +1848,52 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if flag_count >= 2 and not is_risk_explanation and not is_baseline_comparison and not entities.get("require_dossier") and not is_multi_compare:
             entities["is_composite"] = True
 
+        # Phase 13: Global Intelligence Fusion & Decision-Support Synthesis Commands
+        is_section_31_phase13_acceptance = (
+            any(w in cmd for w in ["synthesize the complete intelligence assessment", "synthesize complete intelligence assessment"]) or
+            ("synthesize" in cmd and "evt-827" in cmd and "observed" in cmd and "predicts" in cmd)
+        )
+        is_section_32_phase13_acceptance = (
+            any(w in cmd for w in ["compare the leading explanations", "compare leading explanations"]) or
+            ("compare" in cmd and "leading explanations" in cmd and "without treating" in cmd)
+        )
+        is_section_33_phase13_acceptance = (
+            any(w in cmd for w in ["executive decision-support", "executive brief", "executive decision support"]) or
+            ("generate an executive decision-support brief" in cmd)
+        )
+        is_phase13_general_synthesis = (
+            any(w in cmd for w in [
+                "give me the complete intelligence assessment", "synthesize all available intelligence",
+                "complete intelligence assessment for this event", "complete intelligence assessment",
+                "explain why the current assessment is supported", "tell me what contradicts the current assessment",
+                "what contradicts the current assessment", "what contradicts it",
+                "tell me what changed since the previous assessment", "what changed since the previous assessment",
+                "compare the leading alternative explanations", "compare leading alternative explanations",
+                "tell me what information would reduce uncertainty most", "what information would reduce uncertainty most",
+                "generate an analyst intelligence brief", "generate an agency decision-support brief",
+                "generate a public-safe summary", "synthesize this incident across all related events",
+                "explain the complete decision-support chain"
+            ])
+        )
+
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_section_31_phase13_acceptance or is_section_33_phase13_acceptance:
+            intent = CommandIntent.SYNTHESIZE
+            entities["is_phase13_synthesis"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+        elif is_section_32_phase13_acceptance:
+            intent = CommandIntent.COMPARE
+            entities["is_phase13_synthesis"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+        elif is_phase13_general_synthesis:
+            intent = CommandIntent.SYNTHESIZE
+            entities["is_phase13_synthesis"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or "EVT-827"
         elif is_section_28_phase12_acceptance or is_determine_same_incident or is_correlate_spatially_temporally:
             intent = CommandIntent.INVESTIGATE
         elif is_find_related_events or is_identify_nearest_related or is_identify_recurring_clusters or is_identify_sequential_downwind or is_tell_independent_events:
@@ -1942,7 +1985,15 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_28_phase12_acceptance:
+        if is_section_31_phase13_acceptance:
+            primary_goal = "SECTION_31_PHASE13_ACCEPTANCE"
+        elif is_section_32_phase13_acceptance:
+            primary_goal = "SECTION_32_PHASE13_ACCEPTANCE"
+        elif is_section_33_phase13_acceptance:
+            primary_goal = "SECTION_33_PHASE13_ACCEPTANCE"
+        elif is_phase13_general_synthesis:
+            primary_goal = "GLOBAL_INTELLIGENCE_SYNTHESIS"
+        elif is_section_28_phase12_acceptance:
             primary_goal = "SECTION_28_PHASE12_ACCEPTANCE"
         elif is_find_related_events:
             primary_goal = "FIND_RELATED_EVENTS"

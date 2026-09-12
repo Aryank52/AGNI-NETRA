@@ -969,6 +969,17 @@ class InvestigationWorkspace(Base):
     incident_uncertainty = Column(JSON, default=dict)
     incident_data_gaps = Column(JSON, default=list)
 
+    # Phase 13 Global Intelligence Fusion & Decision-Support Synthesis
+    unified_assessment = Column(JSON, default=dict)
+    assessment_history = Column(JSON, default=list)
+    assessment_changes = Column(JSON, default=dict)
+    decision_support = Column(JSON, default=dict)
+    recommended_verification = Column(JSON, default=list)
+    assessment_provenance = Column(JSON, default=dict)
+    assessment_evidence_ids = Column(JSON, default=list)
+    assessment_uncertainty = Column(JSON, default=dict)
+    assessment_mode = Column(String(50), default="ANALYST")
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

@@ -44,6 +44,8 @@ from backend.app.services.intelligence.environmental_engine import environmental
 from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
 from backend.app.services.intelligence.multi_event_correlation import multi_event_correlation_engine
+from backend.app.services.intelligence.global_intelligence_synthesis import global_intelligence_synthesis_engine
+from backend.app.services.intelligence.next_best_evidence import next_best_evidence_engine
 
 
 
@@ -2177,6 +2179,152 @@ class JarvisMasterOrchestrator:
                 f"Dominant incident hypothesis: {dominant_hyp.get('hypothesis_type')} ({dominant_hyp.get('name')}). "
                 f"Dispatch gate held BLOCKED. Returning master agent to IDLE."
             )
+            requires_approval = True
+
+        # =========================================================================
+        # PHASE 13: GLOBAL INTELLIGENCE FUSION & DECISION-SUPPORT SYNTHESIS
+        # =========================================================================
+        elif (
+            entities.get("is_phase13_synthesis", False) or
+            (objective and getattr(objective, "primary_goal", None) in [
+                "SECTION_31_PHASE13_ACCEPTANCE", "SECTION_32_PHASE13_ACCEPTANCE", "SECTION_33_PHASE13_ACCEPTANCE",
+                "GLOBAL_INTELLIGENCE_SYNTHESIS", "COMPARE_ALTERNATIVE_EXPLANATIONS", "EXECUTIVE_DECISION_BRIEF",
+                "AGENCY_DECISION_BRIEF", "PUBLIC_SAFE_SUMMARY", "EXPLAIN_WHY_SUPPORTED", "EXPLAIN_CONTRADICTIONS",
+                "EXPLAIN_WHAT_CHANGED", "REDUCE_UNCERTAINTY_SYNTHESIS", "SYNTHESIZE_INCIDENT_EVENTS",
+                "EXPLAIN_DECISION_SUPPORT_CHAIN"
+            ]) or
+            any(w in request.command.lower() for w in [
+                "synthesize the complete intelligence assessment", "synthesize all available intelligence",
+                "complete intelligence assessment", "explain why the current assessment is supported",
+                "what contradicts the current assessment", "what changed since the previous assessment",
+                "compare the leading alternative explanations", "compare the leading explanations",
+                "what information would reduce uncertainty most", "generate an analyst intelligence brief",
+                "generate an agency decision-support brief", "generate a public-safe summary",
+                "synthesize this incident across all related events", "explain the complete decision-support chain",
+                "executive decision-support brief"
+            ])
+        ):
+            log_state(JarvisState.EXECUTING, "Synthesizing Global Intelligence & Formulating Decision Support")
+            target_event_code = event_ref or (active_ws.target_event_id if active_ws and active_ws.target_event_id else "EVT-827")
+            if target_event_code.isdigit():
+                target_event_code = f"EVT-{target_event_code}"
+
+            cmd_lower = request.command.lower()
+
+            # Mode selection
+            mode = "ANALYST"
+            if "public" in cmd_lower or entities.get("synthesis_mode") == "PUBLIC_SAFE":
+                mode = "PUBLIC_SAFE"
+            elif "agency" in cmd_lower or entities.get("synthesis_mode") == "AGENCY":
+                mode = "AGENCY"
+            elif "executive" in cmd_lower or entities.get("synthesis_mode") == "EXECUTIVE":
+                mode = "EXECUTIVE"
+
+            # Check if incident synthesis requested
+            is_incident = "incident" in cmd_lower or entities.get("is_incident_synthesis", False)
+
+            # Retrieve prior assessment from active workspace if present
+            prior_assessment = active_ws.unified_assessment if active_ws and active_ws.unified_assessment else None
+
+            # Execute parallel baseline intelligence for target event
+            step_idx = len(steps) + 1
+            p_steps, p_results, p_caps = cls._execute_parallel_event_analysis(target_event_code, start_step_number=step_idx)
+            steps.extend(p_steps)
+            capabilities_used.extend(p_caps)
+            step_idx += len(p_steps)
+
+            # Step: Execute Global Intelligence Synthesis
+            step_start_synth = time.time()
+            synth_res = global_intelligence_synthesis_engine.synthesize_assessment(
+                db=db,
+                target_ref=target_event_code,
+                prior_assessment=prior_assessment,
+                mode=mode,
+                is_incident=is_incident
+            )
+            synth_dict = synth_res.model_dump()
+            capabilities_used.append(JarvisCapability.SYNTHESIS.value)
+
+            steps.append(ExecutionStep(
+                step_number=step_idx,
+                agent="JARVIS",
+                capability=JarvisCapability.SYNTHESIS.value,
+                action="Execute Global Intelligence Fusion & Decision-Support Synthesis",
+                tool="global_intelligence_synthesis_engine.synthesize_assessment",
+                parameters={"target_event": target_event_code, "mode": mode, "is_incident": is_incident},
+                status=StepStatus.COMPLETED,
+                result_summary=(
+                    f"Synthesized intelligence across 7 layers. Assessment Status: {synth_res.assessment_status}. "
+                    f"Primary: {synth_res.primary_assessment.name} (Support: {synth_res.primary_assessment.support_score:.1f}/100). "
+                    f"Authoritative Risk: {synth_res.authoritative_risk_score:.1f}/100. "
+                    f"Classifier P: {synth_res.classifier_probability:.3f}. "
+                    f"Next-Best Evidence options: {len(synth_res.next_best_evidence)}."
+                ),
+                duration_ms=round((time.time() - step_start_synth) * 1000.0, 2)
+            ))
+            step_idx += 1
+
+            # Workspace Persistence
+            active_ws = workspace_manager.update_workspace_intelligence_synthesis(
+                db=db,
+                workspace=active_ws,
+                assessment_result=synth_dict,
+                mode=mode
+            )
+            active_ws.status = InvestigationStatus.REQUIRES_HUMAN_REVIEW.value
+            active_ws.verification_status = "REQUIRES_HUMAN_REVIEW"
+            try:
+                db.commit()
+                db.refresh(active_ws)
+            except Exception:
+                db.rollback()
+
+            # Populate details
+            details["unified_assessment"] = synth_dict
+            details["decision_support"] = synth_dict.get("decision_support_packages", {})
+            details["next_best_evidence"] = synth_dict.get("next_best_evidence", [])
+            details["competing_hypotheses"] = synth_dict.get("alternative_assessments", [])
+            details["risk_reference"] = synth_dict.get("risk_reference", {})
+            details["classifier_reference"] = synth_dict.get("classifier_reference", {})
+            details["incident_summary"] = synth_dict.get("incident_summary", {})
+            details["what_changed"] = synth_dict.get("what_changed")
+
+            # Determine acceptance command format
+            is_sec32 = (
+                "compare the leading explanations" in cmd_lower or
+                "alternative explanations" in cmd_lower or
+                (objective and getattr(objective, "primary_goal", None) == "SECTION_32_PHASE13_ACCEPTANCE")
+            )
+            is_sec33 = (
+                "executive decision-support" in cmd_lower or
+                "executive brief" in cmd_lower or
+                (objective and getattr(objective, "primary_goal", None) == "SECTION_33_PHASE13_ACCEPTANCE")
+            )
+
+            if is_sec32:
+                summary_text = workspace_manager.format_section_32_competing_explanations_markdown(
+                    target_ref=target_event_code,
+                    assessment_dict=synth_dict
+                )
+                stopping_reason = f"SECTION_32_PHASE13_COMPLETE: Compared leading explanations for {target_event_code} with strict metric separation. Returning to IDLE."
+            elif is_sec33:
+                summary_text = workspace_manager.format_section_33_executive_brief_markdown(
+                    target_ref=target_event_code,
+                    assessment_dict=synth_dict
+                )
+                stopping_reason = f"SECTION_33_PHASE13_COMPLETE: Formulated executive decision-support brief for {target_event_code} with safe masking. Returning to IDLE."
+            else:
+                summary_text = workspace_manager.format_section_31_synthesis_markdown(
+                    target_ref=target_event_code,
+                    assessment_dict=synth_dict
+                )
+                stopping_reason = f"SECTION_31_PHASE13_COMPLETE: Synthesized comprehensive intelligence assessment for {target_event_code}. Returning to IDLE."
+
+            recommendations = [
+                f"Transmit Unified Intelligence Assessment {active_ws.investigation_id} to Tri-Tier Analyst Verification Desk.",
+                f"Recommended Information Acquisition: {synth_dict.get('next_best_evidence', [{}])[0].get('reason', 'Acquire ground SCADA flow logs')}",
+                "Operational emergency dispatch gate strictly held in BLOCKED state [SAFETY ENFORCED]."
+            ]
             requires_approval = True
 
         # =========================================================================
