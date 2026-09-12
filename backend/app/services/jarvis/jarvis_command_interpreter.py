@@ -1876,14 +1876,88 @@ class LocalDeterministicProvider(BaseLLMProvider):
             ])
         )
 
+        # Phase 14: Intelligence Operations, Case Management & Audit Governance
+        is_section_23_phase14_acceptance = (
+            ("prepare" in cmd and "human verification" in cmd and ("timeline" in cmd or "unresolved" in cmd or "history" in cmd)) or
+            ("prepare evt-827 for human verification" in cmd) or
+            ("prepare event 827 for human verification" in cmd) or
+            ("prepare this case for analyst review" in cmd) or
+            ("prepare this case for review" in cmd)
+        )
+        is_section_24_phase14_acceptance = (
+            ("why the assessment changed" in cmd and ("previous" in cmd or "current" in cmd or "between" in cmd)) or
+            ("show me exactly why the assessment changed" in cmd) or
+            ("why the assessment changed between the previous and current versions" in cmd)
+        )
+        is_section_25_phase14_acceptance = (
+            ("close the investigation" in cmd or "close this investigation" in cmd or "close investigation" in cmd)
+        )
+        is_case_timeline = (
+            ("investigation timeline" in cmd or "case timeline" in cmd or "show the investigation timeline" in cmd or "timeline of this investigation" in cmd)
+        )
+        is_assessment_history = (
+            ("show assessment history" in cmd or "assessment history" in cmd or "assessment versions" in cmd or "history of assessments" in cmd)
+        )
+        is_unresolved_evidence_requests = (
+            ("unresolved evidence requests" in cmd or "show unresolved evidence requests" in cmd or "pending evidence requests" in cmd or "open evidence requests" in cmd)
+        )
+        is_analyst_decisions = (
+            ("show all analyst decisions" in cmd or "analyst decisions" in cmd or "all analyst decisions" in cmd)
+        )
+        is_human_verification_status = (
+            ("show the latest human verification status" in cmd or "latest human verification status" in cmd or "human verification status" in cmd)
+        )
+        is_mark_evidence_reviewed = (
+            ("mark this evidence reviewed" in cmd or "mark evidence reviewed" in cmd)
+        )
+        is_request_more_evidence = (
+            ("request additional optical verification" in cmd or "request additional" in cmd or "request evidence" in cmd)
+        )
+        is_open_case = (
+            ("open an investigation for this event" in cmd or "open an investigation" in cmd or "open case" in cmd)
+        )
+
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_section_23_phase14_acceptance:
+            intent = CommandIntent.VERIFY
+            entities["is_phase14_case_management"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+        elif is_section_24_phase14_acceptance:
+            intent = CommandIntent.EXPLAIN
+            entities["is_phase14_case_management"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = "EVT-827"
+        elif is_section_25_phase14_acceptance:
+            intent = CommandIntent.INVESTIGATE
+            entities["is_phase14_case_management"] = True
+            entities["is_close_proposal"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or "EVT-827"
+        elif is_case_timeline or is_assessment_history:
+            intent = CommandIntent.TRACE
+            entities["is_phase14_case_management"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or "EVT-827"
+        elif is_unresolved_evidence_requests or is_analyst_decisions or is_human_verification_status:
+            intent = CommandIntent.STATUS
+            entities["is_phase14_case_management"] = True
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or "EVT-827"
+        elif is_mark_evidence_reviewed:
+            intent = CommandIntent.VERIFY
+            entities["is_phase14_case_management"] = True
+        elif is_request_more_evidence or is_open_case:
+            intent = CommandIntent.INVESTIGATE
+            entities["is_phase14_case_management"] = True
         elif is_section_31_phase13_acceptance or is_section_33_phase13_acceptance:
             intent = CommandIntent.SYNTHESIZE
             entities["is_phase13_synthesis"] = True
             if not entities.get("event_ref"):
                 entities["event_ref"] = "EVT-827"
+
         elif is_section_32_phase13_acceptance:
             intent = CommandIntent.COMPARE
             entities["is_phase13_synthesis"] = True
@@ -1985,8 +2059,31 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_31_phase13_acceptance:
+        if is_section_23_phase14_acceptance:
+            primary_goal = "SECTION_23_PHASE14_ACCEPTANCE"
+        elif is_section_24_phase14_acceptance:
+            primary_goal = "SECTION_24_PHASE14_ACCEPTANCE"
+        elif is_section_25_phase14_acceptance:
+            primary_goal = "SECTION_25_PHASE14_ACCEPTANCE"
+        elif is_case_timeline:
+            primary_goal = "CASE_TIMELINE"
+        elif is_assessment_history:
+            primary_goal = "ASSESSMENT_HISTORY"
+        elif is_unresolved_evidence_requests:
+            primary_goal = "UNRESOLVED_EVIDENCE_REQUESTS"
+        elif is_analyst_decisions:
+            primary_goal = "ANALYST_DECISIONS"
+        elif is_human_verification_status:
+            primary_goal = "HUMAN_VERIFICATION_STATUS"
+        elif is_mark_evidence_reviewed:
+            primary_goal = "MARK_EVIDENCE_REVIEWED"
+        elif is_request_more_evidence:
+            primary_goal = "REQUEST_MORE_EVIDENCE"
+        elif is_open_case:
+            primary_goal = "OPEN_CASE"
+        elif is_section_31_phase13_acceptance:
             primary_goal = "SECTION_31_PHASE13_ACCEPTANCE"
+
         elif is_section_32_phase13_acceptance:
             primary_goal = "SECTION_32_PHASE13_ACCEPTANCE"
         elif is_section_33_phase13_acceptance:

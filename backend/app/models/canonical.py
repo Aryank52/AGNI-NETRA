@@ -1564,3 +1564,176 @@ class UnifiedIntelligenceAssessment(BaseModel):
         return self.human_review_required
 
 
+# =================================================================================
+# PHASE 14 CASE MANAGEMENT, AUDIT GOVERNANCE & VERSIONING SCHEMAS
+# =================================================================================
+
+class CaseState(str, Enum):
+    CREATED = "CREATED"
+    ACTIVE = "ACTIVE"
+    INVESTIGATING = "INVESTIGATING"
+    REQUIRES_REVIEW = "REQUIRES_REVIEW"
+    VERIFIED = "VERIFIED"
+    CONTESTED = "CONTESTED"
+    RESOLVED = "RESOLVED"
+    CLOSED = "CLOSED"
+
+
+class CaseActionType(str, Enum):
+    OPEN_CASE = "OPEN_CASE"
+    START_INVESTIGATION = "START_INVESTIGATION"
+    REQUEST_REVIEW = "REQUEST_REVIEW"
+    VERIFY = "VERIFY"
+    REJECT = "REJECT"
+    MARK_INCONCLUSIVE = "MARK_INCONCLUSIVE"
+    REQUEST_MORE_EVIDENCE = "REQUEST_MORE_EVIDENCE"
+    ADD_NOTE = "ADD_NOTE"
+    ADD_EVIDENCE_REFERENCE = "ADD_EVIDENCE_REFERENCE"
+    ESCALATE = "ESCALATE"
+    RESOLVE = "RESOLVE"
+    CLOSE = "CLOSE"
+    REOPEN = "REOPEN"
+
+
+class EvidenceReviewStatus(str, Enum):
+    UNREVIEWED = "UNREVIEWED"
+    REVIEWED = "REVIEWED"
+    ACCEPTED = "ACCEPTED"
+    QUESTIONED = "QUESTIONED"
+    REJECTED = "REJECTED"
+
+
+class HumanVerificationDecision(str, Enum):
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+    NEEDS_MORE_EVIDENCE = "NEEDS_MORE_EVIDENCE"
+
+
+class EvidenceRequestStatus(str, Enum):
+    OPEN = "OPEN"
+    AVAILABLE = "AVAILABLE"
+    COMPLETED = "COMPLETED"
+    UNAVAILABLE = "UNAVAILABLE"
+    CANCELLED = "CANCELLED"
+
+
+class EvidenceRequestPriority(str, Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class CaseTimelineEventType(str, Enum):
+    EVENT = "EVENT"
+    INVESTIGATION = "INVESTIGATION"
+    EVIDENCE = "EVIDENCE"
+    ASSESSMENT = "ASSESSMENT"
+    CHANGE = "CHANGE"
+    REVIEW = "REVIEW"
+    VERIFICATION = "VERIFICATION"
+    REPORT = "REPORT"
+    CLOSURE = "CLOSURE"
+
+
+class CaseTimelineItem(BaseModel):
+    timeline_id: str
+    case_id: str
+    event_type: CaseTimelineEventType
+    timestamp: datetime
+    summary: str
+    actor_id: str
+    actor_role: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AssessmentVersionRecord(BaseModel):
+    version_id: str
+    case_id: str
+    version_number: int
+    assessment: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    created_by: str
+    trigger: str
+    evidence_delta: Dict[str, Any] = Field(default_factory=dict)
+    uncertainty_delta: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EvidenceReviewRecord(BaseModel):
+    review_id: str
+    case_id: str
+    evidence_id: str
+    status: EvidenceReviewStatus
+    reviewer_id: Optional[str] = None
+    reviewer_role: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class EvidenceRequestRecord(BaseModel):
+    request_id: str
+    case_id: str
+    requested_source: str
+    reason: str
+    uncertainty_target: Optional[str] = None
+    priority: EvidenceRequestPriority = EvidenceRequestPriority.MEDIUM
+    status: EvidenceRequestStatus = EvidenceRequestStatus.OPEN
+    requested_by: str
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+
+class CaseNoteRecord(BaseModel):
+    note_id: str
+    case_id: str
+    author: str
+    author_role: str
+    timestamp: datetime
+    content: str
+    case_version: int = 1
+
+
+class ReportVersionRecord(BaseModel):
+    report_id: str
+    case_id: str
+    report_version: int
+    presentation_mode: str
+    assessment_version: int
+    generated_at: datetime
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+    hash: str
+    file_path: Optional[str] = None
+    title: Optional[str] = None
+    content_markdown: Optional[str] = None
+
+
+class InvestigationAuditRecord(BaseModel):
+    audit_id: str
+    case_id: str
+    actor_id: str
+    actor_role: str
+    timestamp: datetime
+    action: str
+    previous_state: Optional[str] = None
+    new_state: Optional[str] = None
+    reason: Optional[str] = None
+    evidence_ids: List[str] = Field(default_factory=list)
+    assessment_version: int = 1
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+
+
+class CaseActionProposal(BaseModel):
+    proposal_id: str
+    case_id: str
+    recommended_action: CaseActionType
+    target_state: CaseState
+    reason: str
+    requires_human_approval: bool = True
+    authorized_roles: List[str] = Field(default_factory=lambda: ["ANALYST", "ADMIN", "AGENCY"])
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+

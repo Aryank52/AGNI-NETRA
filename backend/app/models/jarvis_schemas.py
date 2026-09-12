@@ -48,6 +48,7 @@ class JarvisCapability(str, Enum):
     EVIDENCE_GRAPH = "EVIDENCE_GRAPH"
     EVALUATION = "EVALUATION"
     SYNTHESIS = "SYNTHESIS"
+    INVESTIGATION = "INVESTIGATION"
 
 
 class AgentType(str, Enum):
@@ -130,10 +131,16 @@ class InvestigationStatus(str, Enum):
     CREATED = "CREATED"
     ACTIVE = "ACTIVE"
     ANALYZING = "ANALYZING"
+    INVESTIGATING = "INVESTIGATING"
     AWAITING_INPUT = "AWAITING_INPUT"
     REQUIRES_HUMAN_REVIEW = "REQUIRES_HUMAN_REVIEW"
+    REQUIRES_REVIEW = "REQUIRES_REVIEW"
+    VERIFIED = "VERIFIED"
+    CONTESTED = "CONTESTED"
+    RESOLVED = "RESOLVED"
     COMPLETED = "COMPLETED"
     CLOSED = "CLOSED"
+
 
 
 class EpistemicType(str, Enum):
@@ -580,3 +587,35 @@ class SessionContext(BaseModel):
     command_history: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# =================================================================================
+# PHASE 14 CASE ACTION & GOVERNANCE REQUEST SCHEMAS
+# =================================================================================
+
+class CaseActionExecutionRequest(BaseModel):
+    action: str = Field(..., description="Action name, e.g. OPEN_CASE, START_INVESTIGATION, REQUEST_REVIEW, VERIFY, REJECT, MARK_INCONCLUSIVE, REQUEST_MORE_EVIDENCE, ADD_NOTE, ADD_EVIDENCE_REFERENCE, ESCALATE, RESOLVE, CLOSE, REOPEN")
+    reason: Optional[str] = Field(None, description="Detailed justification or verification notes")
+    evidence_ids: Optional[List[str]] = Field(default_factory=list, description="Associated evidence identifiers")
+    supporting_evidence: Optional[List[str]] = Field(default_factory=list, description="Supporting evidence references")
+    verifier: Optional[str] = Field(None, description="Explicit human verifier identifier")
+    confirm_governed_action: bool = Field(False, description="Explicit human confirmation flag for protected write actions")
+
+
+class CaseNoteCreateRequest(BaseModel):
+    content: str = Field(..., description="Structured analyst note content")
+    case_version: Optional[int] = Field(None, description="Associated case or assessment version")
+
+
+class EvidenceReviewUpdateRequest(BaseModel):
+    evidence_id: str = Field(..., description="Target evidence item identifier")
+    status: str = Field(..., description="Review status: UNREVIEWED, REVIEWED, ACCEPTED, QUESTIONED, REJECTED")
+    notes: Optional[str] = Field(None, description="Analyst review notes or justification")
+
+
+class EvidenceRequestCreateRequest(BaseModel):
+    requested_source: str = Field(..., description="Requested source, e.g. HIGH_RESOLUTION_OPTICAL, SAR_RADAR, GROUND_TELEMETRY")
+    reason: str = Field(..., description="Rationale for requested telemetry")
+    uncertainty_target: Optional[str] = Field(None, description="Targeted epistemic uncertainty gap")
+    priority: Optional[str] = Field("MEDIUM", description="CRITICAL, HIGH, MEDIUM, LOW")
+

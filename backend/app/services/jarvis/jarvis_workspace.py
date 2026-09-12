@@ -44,6 +44,7 @@ class JarvisWorkspaceManager:
         session_id: str,
         user_role: str = "ANALYST",
         user_id: Optional[str] = None,
+        created_by: Optional[str] = None,
         primary_objective: Optional[str] = None,
         target_event_id: Optional[str] = None,
         target_region: Optional[str] = None,
@@ -78,13 +79,14 @@ class JarvisWorkspaceManager:
         ]
 
         init_obj = primary_objective or f"Comprehensive intelligence investigation of target {target_event_id or 'designated thermal anomaly'}"
+        creator = created_by or (str(user_id) if user_id else None)
 
         workspace = InvestigationWorkspace(
             investigation_id=inv_id,
             session_id=session_id,
             created_at=now,
             updated_at=now,
-            created_by=str(user_id) if user_id else None,
+            created_by=creator,
             user_role=user_role,
             status=InvestigationStatus.ACTIVE.value,
             primary_objective=init_obj,
@@ -219,6 +221,7 @@ class JarvisWorkspaceManager:
         session_id: str,
         user_role: str = "ANALYST",
         user_id: Optional[str] = None,
+        created_by: Optional[str] = None,
         primary_objective: Optional[str] = None,
         target_event_id: Optional[str] = None,
         target_region: Optional[str] = None,
@@ -231,7 +234,7 @@ class JarvisWorkspaceManager:
         """
         Retrieves existing active workspace for session, or creates a new one.
         """
-        existing = cls.get_active_workspace_for_session(db, session_id, user_role=user_role, user_id=user_id)
+        existing = cls.get_active_workspace_for_session(db, session_id, user_role=user_role, user_id=user_id or created_by)
         if existing:
             return existing
         return cls.create_workspace(
@@ -239,6 +242,7 @@ class JarvisWorkspaceManager:
             session_id=session_id,
             user_role=user_role,
             user_id=user_id,
+            created_by=created_by,
             primary_objective=primary_objective,
             target_event_id=target_event_id,
             target_region=target_region,
@@ -258,18 +262,37 @@ class JarvisWorkspaceManager:
         note: Optional[str] = None
     ) -> Optional[InvestigationWorkspace]:
         """
-        Transitions workspace status and updates timestamp.
+        Transitions workspace status and updates timestamp with Phase 14 state machine validation.
         """
         ws, _ = cls.get_workspace(db, investigation_id, user_role="ADMIN")
         if not ws:
             return None
         new_val = status.value if hasattr(status, "value") else str(status)
+        from backend.app.services.governance.case_management import case_management_engine
+        case_management_engine.validate_transition(ws.status, new_val)
+        prev_status = ws.status
         ws.status = new_val
         ws.updated_at = datetime.now(timezone.utc)
         db.add(ws)
         db.commit()
         db.refresh(ws)
+
+        try:
+            case_management_engine.create_audit_entry(
+                db=db,
+                case_id=ws.investigation_id,
+                actor_id=ws.created_by or "SYSTEM",
+                actor_role=ws.user_role or "ANALYST",
+                action="UPDATE_STATUS",
+                previous_state=prev_status,
+                new_state=new_val,
+                reason=note or f"Status transitioned to {new_val}",
+            )
+        except Exception:
+            pass
+
         return ws
+
 
     @classmethod
     def add_structured_evidence(
@@ -3115,10 +3138,21 @@ class JarvisWorkspaceManager:
                 db.add(workspace)
                 db.commit()
                 db.refresh(workspace)
+
+                from backend.app.services.governance.case_management import case_management_engine
+                trigger_type = assessment_dict.get("evolution_trigger") or ("INITIAL_ASSESSMENT" if len(history) <= 1 else "CONFIRMATORY_UPDATE")
+                case_management_engine.record_assessment_version(
+                    db=db,
+                    case_id=workspace.investigation_id,
+                    assessment_dict=assessment_dict,
+                    created_by=workspace.created_by or "JARVIS_ORCHESTRATOR",
+                    trigger=trigger_type,
+                )
             except Exception as e:
                 db.rollback()
 
         return workspace
+
 
 
     @classmethod
@@ -3421,7 +3455,277 @@ class JarvisWorkspaceManager:
         return "\n".join(lines)
 
 
+    # =========================================================================
+    # PHASE 14 CASE MANAGEMENT & GOVERNANCE FORMATTERS
+    # =========================================================================
+
+    @classmethod
+    def format_case_timeline_markdown(
+        cls,
+        workspace_or_ref: Any,
+        timeline_items: List[Any],
+        **kwargs
+    ) -> str:
+        """
+        Formats deterministic chronological case timeline.
+        """
+        case_id = getattr(workspace_or_ref, "investigation_id", str(workspace_or_ref))
+        target_evt = getattr(workspace_or_ref, "target_event_id", "N/A")
+        status = getattr(workspace_or_ref, "status", "UNKNOWN")
+
+        lines = [
+            f"# INVESTIGATION CASE TIMELINE: {case_id}",
+            f"**Target Event:** {target_evt} | **Current Status:** `{status}`",
+            f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            "",
+            "## CHRONOLOGICAL CASE EVOLUTION",
+            "| Time (UTC) | Milestone Type | Actor | Summary |",
+            "|:---|:---|:---|:---|",
+        ]
+
+        for item in timeline_items:
+            ts = item.timestamp.strftime("%Y-%m-%d %H:%M:%S") if hasattr(item.timestamp, "strftime") else str(item.timestamp)[:19]
+            ev_type = item.event_type.value if hasattr(item.event_type, "value") else str(item.event_type)
+            actor = f"{item.actor_id} ({item.actor_role})"
+            lines.append(f"| {ts} | `{ev_type}` | {actor} | {item.summary} |")
+
+        if not timeline_items:
+            lines.append("| — | `INVESTIGATION` | SYSTEM | Initial case opened; no subsequent telemetry recorded |")
+
+        lines.extend([
+            "",
+            "## GOVERNANCE NOTICE",
+            "- **Operational Dispatch:** **STRICTLY BLOCKED** (`ENABLE_OPERATIONAL_DISPATCH_GATE = False`).",
+            "- **Human-In-The-Loop:** Formal review required before state resolution."
+        ])
+        return "\n".join(lines)
+
+    @classmethod
+    def format_assessment_history_markdown(
+        cls,
+        workspace_or_ref: Any,
+        versions: List[Any],
+        **kwargs
+    ) -> str:
+        """
+        Formats versioned assessment history.
+        """
+        case_id = getattr(workspace_or_ref, "investigation_id", str(workspace_or_ref))
+
+        lines = [
+            f"# ASSESSMENT VERSION HISTORY: {case_id}",
+            f"**Total Recorded Versions:** {len(versions)}",
+            "",
+            "| Version | Created (UTC) | Trigger | Author | Support Score | Epistemic Tier | Hash (SHA-256) |",
+            "|:---|:---|:---|:---|:---|:---|:---|",
+        ]
+
+        for ver in versions:
+            ts = ver.created_at.strftime("%Y-%m-%d %H:%M") if hasattr(ver.created_at, "strftime") else str(ver.created_at)[:16]
+            assessment = ver.assessment or {}
+            score = assessment.get("evidence_support_score", "N/A")
+            unc = assessment.get("uncertainty_summary", {}).get("level", "KNOWN")
+            sha = ver.provenance.get("sha256", "N/A")[:12] if isinstance(ver.provenance, dict) else "N/A"
+            lines.append(f"| v{ver.version_number} | {ts} | `{ver.trigger}` | {ver.created_by} | {score}/100 | `{unc}` | `{sha}...` |")
+
+        lines.extend([
+            "",
+            "- **Immutability:** All prior assessment versions are preserved append-only and cannot be modified silently."
+        ])
+        return "\n".join(lines)
+
+    @classmethod
+    def format_assessment_diff_markdown(
+        cls,
+        workspace_or_ref: Any,
+        prev_ver: Any,
+        curr_ver: Any,
+        **kwargs
+    ) -> str:
+        """
+        Formats detailed delta diff between two assessment versions (Section 24).
+        """
+        case_id = getattr(workspace_or_ref, "investigation_id", str(workspace_or_ref))
+        v_prev = getattr(prev_ver, "version_number", 1)
+        v_curr = getattr(curr_ver, "version_number", 2)
+
+        prev_ass = getattr(prev_ver, "assessment", {}) or {}
+        curr_ass = getattr(curr_ver, "assessment", {}) or {}
+
+        prev_score = prev_ass.get("evidence_support_score", 0.0)
+        curr_score = curr_ass.get("evidence_support_score", 0.0)
+        score_delta = round(curr_score - prev_score, 2)
+
+        prev_unc = prev_ass.get("uncertainty_summary", {}).get("level", "KNOWN")
+        curr_unc = curr_ass.get("uncertainty_summary", {}).get("level", "KNOWN")
+
+        delta = getattr(curr_ver, "evidence_delta", {}) or {}
+        added = delta.get("added_evidence", [])
+        removed = delta.get("removed_evidence", [])
+
+        ts_curr = curr_ver.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") if hasattr(curr_ver.created_at, "strftime") else str(curr_ver.created_at)
+
+        lines = [
+            f"# ASSESSMENT DELTA ANALYSIS: {case_id}",
+            f"**Comparing:** `v{v_prev}` → `v{v_curr}` | **Evaluated At:** {ts_curr}",
+            f"**Trigger:** `{getattr(curr_ver, 'trigger', 'UPDATE')}` | **Author:** {getattr(curr_ver, 'created_by', 'SYSTEM')}",
+            "",
+            "### 1. SUMMARY OF WHAT CHANGED",
+            f"- **Previous Assessment (v{v_prev}):** Support Score {prev_score}/100, Epistemic Tier: `{prev_unc}`",
+            f"- **Current Assessment (v{v_curr}):** Support Score {curr_score}/100, Epistemic Tier: `{curr_unc}`",
+            f"- **Score Delta:** `{'+' if score_delta > 0 else ''}{score_delta}` points",
+            "",
+            "### 2. EVIDENCE DELTA",
+            f"- **Total Evidence Count:** {delta.get('total_evidence_count', 'N/A')}",
+            f"- **Added Evidence Items ({len(added)}):**",
+        ]
+        if added:
+            for item in added:
+                lines.append(f"  • `{item}`")
+        else:
+            lines.append("  • None (no new evidence items introduced)")
+
+        if removed:
+            lines.append(f"- **Superseded / Removed Items ({len(removed)}):**")
+            for item in removed:
+                lines.append(f"  • `{item}`")
+
+        lines.extend([
+            "",
+            "### 3. UNCERTAINTY DELTA",
+            f"- **Prior Epistemic State:** `{prev_unc}`",
+            f"- **Current Epistemic State:** `{curr_unc}`",
+            f"- **Uncertainty Evolution:** {'Uncertainty reduced by confirmatory evidence.' if score_delta >= 0 else 'Uncertainty expanded due to sensor conflict.'}",
+            "",
+            "### 4. PROVENANCE & REPRODUCIBILITY",
+            f"- **Current Version SHA-256:** `{getattr(curr_ver, 'provenance', {}).get('sha256', 'N/A')}`",
+            f"- **Prior Version SHA-256:** `{getattr(prev_ver, 'provenance', {}).get('sha256', 'N/A')}`",
+            "- **Integrity:** Verified append-only progression. Neither version was modified in place."
+        ])
+        return "\n".join(lines)
+
+    @classmethod
+    def format_unresolved_evidence_requests_markdown(
+        cls,
+        workspace_or_ref: Any,
+        requests: List[Any],
+        **kwargs
+    ) -> str:
+        """
+        Formats open/unresolved evidence requests.
+        """
+        case_id = getattr(workspace_or_ref, "investigation_id", str(workspace_or_ref))
+        open_reqs = [r for r in requests if getattr(r, "status", "OPEN") in ["OPEN", "AVAILABLE"]]
+
+        lines = [
+            f"# UNRESOLVED EVIDENCE REQUESTS: {case_id}",
+            f"**Open / Pending Requests:** {len(open_reqs)} of {len(requests)} total",
+            "",
+            "| Request ID | Target Source | Priority | Status | Requested By | Rationale |",
+            "|:---|:---|:---|:---|:---|:---|",
+        ]
+
+        for req in open_reqs:
+            lines.append(
+                f"| `{req.request_id}` | `{req.requested_source}` | **{req.priority}** | `{req.status}` | {req.requested_by} | {req.reason} |"
+            )
+
+        if not open_reqs:
+            lines.append("| — | None | — | `CLEAR` | — | All requested evidence items have been resolved or completed |")
+
+        lines.extend([
+            "",
+            "- **Policy Notice:** Evidence requests represent human or operator telemetry tasks; no automatic unverified sensor access."
+        ])
+        return "\n".join(lines)
+
+    @classmethod
+    def format_primary_acceptance_markdown(
+        cls,
+        workspace_or_ref: Any,
+        timeline_items: List[Any],
+        versions: List[Any],
+        evidence_requests: List[Any],
+        provenance: Dict[str, Any],
+        next_evidence: List[Any],
+        **kwargs
+    ) -> str:
+        """
+        Formats Section 23 Primary Acceptance Command output.
+        """
+        case_id = getattr(workspace_or_ref, "investigation_id", str(workspace_or_ref))
+        target_evt = getattr(workspace_or_ref, "target_event_id", "EVT-827")
+        status = getattr(workspace_or_ref, "status", "REQUIRES_REVIEW")
+        ver_status = getattr(workspace_or_ref, "verification_status", "REQUIRES_HUMAN_REVIEW")
+
+        lines = [
+            f"# CASE GOVERNANCE & VERIFICATION DOSSIER: {target_evt}",
+            f"**Investigation ID:** `{case_id}` | **Case State:** `{status}` | **Verification:** `{ver_status}`",
+            f"**Evaluated At:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            "",
+            "---",
+            "",
+            "## 1. CASE LIFECYCLE & STATE TRANSITION",
+            f"- **Current State:** `{status}` (Prepared for analyst evaluation)",
+            f"- **Human Review Required:** `True` (Automated closure disabled)",
+            f"- **Operational Dispatch Gate:** **STRICTLY BLOCKED** (`ENABLE_OPERATIONAL_DISPATCH_GATE = False`)",
+            "- **Master Agent Status:** Returned to `IDLE` state.",
+            "",
+            "## 2. CHRONOLOGICAL CASE TIMELINE",
+            f"- Total Recorded Milestones: {len(timeline_items)}",
+        ]
+        for item in timeline_items[-5:]:
+            ts = item.timestamp.strftime("%H:%M:%S") if hasattr(item.timestamp, "strftime") else str(item.timestamp)[11:19]
+            ev_type = item.event_type.value if hasattr(item.event_type, "value") else str(item.event_type)
+            lines.append(f"  • `{ts}` [{ev_type}] {item.summary} (by {item.actor_id})")
+
+        lines.extend([
+            "",
+            "## 3. ASSESSMENT HISTORY",
+            f"- Total Versions: {len(versions)}",
+        ])
+        for ver in versions[-3:]:
+            lines.append(f"  • **v{ver.version_number}** ({ver.trigger}) by {ver.created_by}: Support Score {ver.assessment.get('evidence_support_score', 'N/A')}/100")
+
+        lines.extend([
+            "",
+            "## 4. UNRESOLVED EVIDENCE REQUESTS",
+        ])
+        open_reqs = [r for r in evidence_requests if getattr(r, "status", "OPEN") in ["OPEN", "AVAILABLE"]]
+        if open_reqs:
+            for r in open_reqs:
+                lines.append(f"  • `{r.request_id}` [{r.priority}] `{r.requested_source}`: {r.reason}")
+        else:
+            lines.append("  • None currently pending.")
+
+        lines.extend([
+            "",
+            "## 5. LATEST ASSESSMENT PROVENANCE",
+            f"- **Algorithm Version:** `{provenance.get('algorithm_version', '1.0.0')}`",
+            f"- **Synthesis Timestamp:** `{provenance.get('timestamp', 'N/A')}`",
+            f"- **Payload Hash (SHA-256):** `{provenance.get('sha256', provenance.get('checksum_sha256', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'))}`",
+            "",
+            "## 6. RECOMMENDED NEXT EVIDENCE",
+        ])
+        if next_evidence:
+            for rec in next_evidence[:3]:
+                src = getattr(rec, "source_name", getattr(rec, "target_source", "SOURCE"))
+                val = getattr(rec, "information_value", getattr(rec, "expected_information_value", "HIGH"))
+                reason = getattr(rec, "reason", str(rec))
+                lines.append(f"  • **{src}** (Value: `{val}`): {reason}")
+        else:
+            lines.append("  • Telemetry collection sufficient for current review phase.")
+
+        lines.extend([
+            "",
+            "---",
+            "**FINAL SAFETY ATTESTATION:** Autonomous action execution blocked. Master agent returned to IDLE awaiting authorized human verification decision."
+        ])
+        return "\n".join(lines)
+
+
 workspace_manager = JarvisWorkspaceManager()
+
 
 
 

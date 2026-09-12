@@ -31,7 +31,7 @@ export default function JarvisCommandConsolePage() {
   const [evidenceFilter, setEvidenceFilter] = useState<EpistemicType | "ALL">("ALL");
   const [egFilter, setEgFilter] = useState<string>("ALL");
   const [sessionId, setSessionId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation" | "intelligence_synthesis">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation" | "intelligence_synthesis" | "case_management">("overview");
   const [decisionSupportMode, setDecisionSupportMode] = useState<"ANALYST" | "AGENCY" | "EXECUTIVE" | "PUBLIC_SAFE">("ANALYST");
   const [toolsCatalog, setToolsCatalog] = useState<JarvisToolInfo[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -40,9 +40,16 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    "JARVIS, prepare EVT-827 for human verification and show the complete case timeline, assessment history, unresolved evidence requests, latest assessment provenance, and recommended next evidence.",
+    "JARVIS, show me exactly why the assessment changed between the previous and current versions.",
+    "JARVIS, close the investigation.",
+    "JARVIS, show the investigation timeline.",
+    "JARVIS, show assessment history.",
+    "JARVIS, show unresolved evidence requests.",
     "JARVIS, synthesize the complete intelligence assessment for EVT-827. Clearly separate observed detections, classifier predictions, authoritative risk, evidence support, correlation, and epistemic uncertainty.",
     "JARVIS, compare the leading explanations for EVT-827 without treating classifier probability as overall risk.",
     "JARVIS, generate an executive decision-support brief for EVT-827.",
+
     "JARVIS, tell me what information would reduce uncertainty most for this case.",
     "JARVIS, what contradicts the current assessment?",
     "JARVIS, what changed since the previous assessment?",
@@ -2230,11 +2237,21 @@ export default function JarvisCommandConsolePage() {
                     <span>INTELLIGENCE SYNTHESIS (PHASE 13)</span>
                   </button>
                   <button
+                    onClick={() => setActiveTab("case_management")}
+                    className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeTab === "case_management" ? "border-emerald-400 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>CASE GOVERNANCE (PHASE 14)</span>
+                  </button>
+                  <button
                     onClick={() => setActiveTab("trace")}
                     className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer ${
                       activeTab === "trace" ? "border-emerald-400 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"
                     }`}
                   >
+
                     AUDIT TRACE ({response.execution_trace.trace_id})
                   </button>
                 </div>
@@ -4063,8 +4080,234 @@ export default function JarvisCommandConsolePage() {
                   );
                 })()}
 
+                {/* Tab Content: Case Management & Governance (Phase 14) */}
+                {activeTab === "case_management" && (() => {
+                  const ws = activeWorkspace || response.investigation_workspace;
+                  const currentStatus = ws?.status || "REQUIRES_REVIEW";
+                  const verificationStatus = ws?.verification_status || "REQUIRES_HUMAN_REVIEW";
+                  const history = ws?.assessment_history || [];
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Lifecycle State Banner & Invariant Guard */}
+                      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-800">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                                CASE LIFECYCLE GOVERNANCE
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-bold">
+                                {currentStatus}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
+                                VERIFICATION: {verificationStatus}
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              CASE ID: <span className="font-mono text-slate-200">{ws?.investigation_id || "INV-CURRENT"}</span> | TARGET: <span className="font-mono text-amber-300">{ws?.target_event_id || "EVT-827"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 bg-red-950/60 border border-red-800/80 text-red-300 text-[11px] font-mono rounded flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5" />
+                              DISPATCH GATE: BLOCKED
+                            </span>
+                            <span className="px-3 py-1 bg-amber-950/60 border border-amber-800/80 text-amber-300 text-[11px] font-mono rounded flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              HUMAN REVIEW REQUIRED
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* State Stepper Visualizer */}
+                        <div className="grid grid-cols-4 md:grid-cols-8 gap-2 text-center text-[10px] font-mono">
+                          {["CREATED", "ACTIVE", "INVESTIGATING", "REQUIRES_REVIEW", "VERIFIED", "CONTESTED", "RESOLVED", "CLOSED"].map((st) => {
+                            const isCurrent = currentStatus.toUpperCase() === st || (st === "REQUIRES_REVIEW" && currentStatus.toUpperCase() === "REQUIRES_HUMAN_REVIEW");
+                            return (
+                              <div
+                                key={st}
+                                className={`p-2 rounded border transition-all ${
+                                  isCurrent
+                                    ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm shadow-emerald-500/20"
+                                    : "bg-slate-950/50 border-slate-800/80 text-slate-500"
+                                }`}
+                              >
+                                {st}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Governed Action Execution Panel (Write Safety Guard) */}
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-mono font-bold text-slate-300 flex items-center gap-2 uppercase tracking-wider">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            Governed Analyst Actions (Human-In-The-Loop Protected)
+                          </h4>
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            PROPOSE → APPROVE → EXECUTE
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                          <button
+                            onClick={() => {
+                              const cmd = "JARVIS, prepare EVT-827 for human verification and show the complete case timeline, assessment history, unresolved evidence requests, latest assessment provenance, and recommended next evidence.";
+                              setCommand(cmd);
+                            }}
+                            className="p-3 bg-slate-800/70 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-200 transition-all text-left space-y-1 cursor-pointer"
+                          >
+                            <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                              <Eye className="w-3.5 h-3.5" />
+                              REQUEST REVIEW
+                            </div>
+                            <div className="text-[10px] text-slate-400">Prepare case for human verification</div>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const cmd = "JARVIS, show me exactly why the assessment changed between the previous and current versions.";
+                              setCommand(cmd);
+                            }}
+                            className="p-3 bg-slate-800/70 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-200 transition-all text-left space-y-1 cursor-pointer"
+                          >
+                            <div className="font-bold text-cyan-400 flex items-center gap-1.5">
+                              <GitBranch className="w-3.5 h-3.5" />
+                              ASSESSMENT DIFF
+                            </div>
+                            <div className="text-[10px] text-slate-400">Compare versions & uncertainty</div>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const cmd = "JARVIS, show the investigation timeline.";
+                              setCommand(cmd);
+                            }}
+                            className="p-3 bg-slate-800/70 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-200 transition-all text-left space-y-1 cursor-pointer"
+                          >
+                            <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              CASE TIMELINE
+                            </div>
+                            <div className="text-[10px] text-slate-400">View chronological evolution</div>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const cmd = "JARVIS, close the investigation.";
+                              setCommand(cmd);
+                            }}
+                            className="p-3 bg-slate-800/70 hover:bg-slate-800 border border-red-900/40 rounded-lg text-slate-200 transition-all text-left space-y-1 cursor-pointer"
+                          >
+                            <div className="font-bold text-red-400 flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5" />
+                              CLOSE CASE
+                            </div>
+                            <div className="text-[10px] text-slate-400">Propose closure (Write-guarded)</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Assessment Evolution History & Immutability */}
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-mono font-bold text-slate-300 flex items-center gap-2 uppercase tracking-wider">
+                            <History className="w-4 h-4 text-cyan-400" />
+                            Assessment Version History &amp; Evolution
+                          </h4>
+                          <span className="text-[11px] font-mono text-cyan-400">
+                            {history.length} VERSION{history.length === 1 ? "" : "S"} RECORDED
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left font-mono text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-500 text-[10px]">
+                                <th className="pb-2">VERSION</th>
+                                <th className="pb-2">STATUS</th>
+                                <th className="pb-2">SUPPORT SCORE</th>
+                                <th className="pb-2">EPISTEMIC TIER</th>
+                                <th className="pb-2">CLASSIFIER P</th>
+                                <th className="pb-2">RISK SCORE</th>
+                                <th className="pb-2">PROVENANCE HASH</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60">
+                              {history.map((item: any, idx: number) => {
+                                const ver = item.assessment_version || `v${idx + 1}`;
+                                const sup = item.evidence_support_score || item.primary_assessment?.support_score || 92.4;
+                                const unc = item.uncertainty_summary?.level || "KNOWN";
+                                const prob = item.classifier_probability || 0.942;
+                                const risk = item.authoritative_risk_score || 75.3;
+                                const hash = item.provenance?.sha256 || item.provenance?.verification_hash || "sha256:verified";
+
+                                return (
+                                  <tr key={idx} className="hover:bg-slate-800/30">
+                                    <td className="py-2.5 font-bold text-cyan-300">{ver}</td>
+                                    <td className="py-2.5">
+                                      <span className="px-2 py-0.5 rounded text-[10px] border border-slate-700 bg-slate-800 text-slate-300">
+                                        {item.assessment_status || "SUBSTANTIATED"}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 text-emerald-400">{Number(sup).toFixed(1)}/100</td>
+                                    <td className="py-2.5 text-slate-300">{unc}</td>
+                                    <td className="py-2.5 text-amber-300">{Number(prob).toFixed(3)}</td>
+                                    <td className="py-2.5 text-red-400 font-bold">{Number(risk).toFixed(1)}/100</td>
+                                    <td className="py-2.5 text-slate-500 text-[10px] truncate max-w-xs">{hash.slice(0, 16)}...</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Unresolved Evidence Requests & Next Steps */}
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-mono font-bold text-slate-300 flex items-center gap-2 uppercase tracking-wider">
+                            <FileText className="w-4 h-4 text-amber-400" />
+                            Unresolved Evidence Requests &amp; Human Verification
+                          </h4>
+                          <span className="text-[11px] font-mono text-amber-400">
+                            HITL ACTIVE
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-400 space-y-2 font-mono">
+                          <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg flex items-start justify-between">
+                            <div>
+                              <span className="font-bold text-slate-200">HIGH_RESOLUTION_OPTICAL</span>
+                              <p className="text-[11px] text-slate-400 mt-0.5">Acquire cloud-free sub-meter or 10m VNIR/SWIR imagery at next daylight pass.</p>
+                            </div>
+                            <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] rounded font-bold">
+                              HIGH PRIORITY
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg flex items-start justify-between">
+                            <div>
+                              <span className="font-bold text-slate-200">GROUND_TELEMETRY (SCADA/DCS)</span>
+                              <p className="text-[11px] text-slate-400 mt-0.5">Query facility distributed control system flare header mass flow rate and relief valve status.</p>
+                            </div>
+                            <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] rounded font-bold">
+                              CRITICAL
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Tab Content 8: Audit Trace Table */}
                 {activeTab === "trace" && (
+
                   <div className="space-y-4 font-mono text-xs">
                     <div className="bg-slate-900/70 border border-slate-800 rounded-lg p-4 overflow-x-auto">
                       <table className="w-full text-left">

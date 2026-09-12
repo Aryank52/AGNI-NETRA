@@ -982,6 +982,126 @@ class InvestigationWorkspace(Base):
 
     report = relationship("Report", foreign_keys=[report_id])
 
+    # Phase 14 Governance & Case Management Relationships
+    audit_logs = relationship("InvestigationAuditLog", back_populates="workspace", cascade="all, delete-orphan")
+    assessment_versions = relationship("AssessmentVersion", back_populates="workspace", cascade="all, delete-orphan")
+    evidence_reviews = relationship("EvidenceReview", back_populates="workspace", cascade="all, delete-orphan")
+    evidence_requests = relationship("EvidenceRequest", back_populates="workspace", cascade="all, delete-orphan")
+    case_notes = relationship("CaseNote", back_populates="workspace", cascade="all, delete-orphan")
+    report_versions = relationship("ReportVersion", back_populates="workspace", cascade="all, delete-orphan")
+
+
+# =================================================================================
+# PHASE 14 CASE MANAGEMENT, AUDIT GOVERNANCE & VERSIONING MODELS
+# =================================================================================
+
+class InvestigationAuditLog(Base):
+    __tablename__ = "investigation_audit_log"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    audit_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    actor_id = Column(String(64), nullable=False)
+    actor_role = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    action = Column(String(64), nullable=False)
+    previous_state = Column(String(50), nullable=True)
+    new_state = Column(String(50), nullable=True)
+    reason = Column(Text, nullable=True)
+    evidence_ids = Column(JSON, default=list)
+    assessment_version = Column(Integer, default=1)
+    provenance = Column(JSON, default=dict)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="audit_logs")
+
+
+class AssessmentVersion(Base):
+    __tablename__ = "assessment_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    version_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    assessment = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_by = Column(String(64), nullable=False)
+    trigger = Column(String(100), nullable=False)
+    evidence_delta = Column(JSON, default=dict)
+    uncertainty_delta = Column(JSON, default=dict)
+    provenance = Column(JSON, default=dict)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="assessment_versions")
+
+
+class EvidenceReview(Base):
+    __tablename__ = "evidence_reviews"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    review_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    evidence_id = Column(String(64), nullable=False, index=True)
+    status = Column(String(50), default="UNREVIEWED", nullable=False)  # UNREVIEWED, REVIEWED, ACCEPTED, QUESTIONED, REJECTED
+    reviewer_id = Column(String(64), nullable=True)
+    reviewer_role = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="evidence_reviews")
+
+
+class EvidenceRequest(Base):
+    __tablename__ = "evidence_requests"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    request_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    requested_source = Column(String(100), nullable=False)
+    reason = Column(Text, nullable=False)
+    uncertainty_target = Column(String(100), nullable=True)
+    priority = Column(String(50), default="MEDIUM", nullable=False)  # CRITICAL, HIGH, MEDIUM, LOW
+    status = Column(String(50), default="OPEN", nullable=False)  # OPEN, AVAILABLE, COMPLETED, UNAVAILABLE, CANCELLED
+    requested_by = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="evidence_requests")
+
+
+class CaseNote(Base):
+    __tablename__ = "case_notes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    note_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    author = Column(String(64), nullable=False)
+    author_role = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    content = Column(Text, nullable=False)
+    case_version = Column(Integer, default=1)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="case_notes")
+
+
+class ReportVersion(Base):
+    __tablename__ = "report_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    report_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), ForeignKey("investigation_workspaces.investigation_id", ondelete="CASCADE"), nullable=False, index=True)
+    report_version = Column(Integer, nullable=False)
+    presentation_mode = Column(String(50), default="ANALYST", nullable=False)
+    assessment_version = Column(Integer, nullable=False)
+    generated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    provenance = Column(JSON, default=dict)
+    hash = Column(String(64), nullable=False)
+    file_path = Column(String(500), nullable=True)
+    title = Column(String(255), nullable=True)
+    content_markdown = Column(Text, nullable=True)
+
+    workspace = relationship("InvestigationWorkspace", back_populates="report_versions")
+
+
 
 
 class ThermalHistory(Base):

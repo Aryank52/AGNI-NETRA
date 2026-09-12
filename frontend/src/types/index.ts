@@ -976,6 +976,165 @@ export interface UnifiedIntelligenceAssessment {
   mode: DecisionSupportMode;
 }
 
+// Phase 14: Intelligence Operations, Case Management & Audit Governance Types
+export type CaseState =
+  | 'CREATED'
+  | 'ACTIVE'
+  | 'INVESTIGATING'
+  | 'REQUIRES_REVIEW'
+  | 'VERIFIED'
+  | 'CONTESTED'
+  | 'RESOLVED'
+  | 'CLOSED';
+
+export type CaseActionType =
+  | 'OPEN_CASE'
+  | 'START_INVESTIGATION'
+  | 'REQUEST_REVIEW'
+  | 'VERIFY'
+  | 'REJECT'
+  | 'MARK_INCONCLUSIVE'
+  | 'REQUEST_MORE_EVIDENCE'
+  | 'ADD_NOTE'
+  | 'ADD_EVIDENCE_REFERENCE'
+  | 'ESCALATE'
+  | 'RESOLVE'
+  | 'CLOSE'
+  | 'REOPEN';
+
+export type EvidenceReviewStatus =
+  | 'UNREVIEWED'
+  | 'REVIEWED'
+  | 'ACCEPTED'
+  | 'QUESTIONED'
+  | 'REJECTED';
+
+export type HumanVerificationDecision =
+  | 'VERIFIED'
+  | 'REJECTED'
+  | 'INCONCLUSIVE'
+  | 'NEEDS_MORE_EVIDENCE';
+
+export type EvidenceRequestStatus =
+  | 'OPEN'
+  | 'AVAILABLE'
+  | 'COMPLETED'
+  | 'UNAVAILABLE'
+  | 'CANCELLED';
+
+export type EvidenceRequestPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export type CaseTimelineEventType =
+  | 'EVENT'
+  | 'INVESTIGATION'
+  | 'EVIDENCE'
+  | 'ASSESSMENT'
+  | 'CHANGE'
+  | 'REVIEW'
+  | 'VERIFICATION'
+  | 'REPORT'
+  | 'CLOSURE';
+
+export interface CaseTimelineItem {
+  timeline_id: string;
+  case_id: string;
+  event_type: CaseTimelineEventType;
+  timestamp: string;
+  summary: string;
+  actor_id: string;
+  actor_role: string;
+  details: Record<string, any>;
+}
+
+export interface AssessmentVersionRecord {
+  version_id: string;
+  case_id: string;
+  version_number: number;
+  assessment: Record<string, any>;
+  created_at: string;
+  created_by: string;
+  trigger: string;
+  evidence_delta: Record<string, any>;
+  uncertainty_delta: Record<string, any>;
+  provenance: Record<string, any>;
+}
+
+export interface EvidenceReviewRecord {
+  review_id: string;
+  case_id: string;
+  evidence_id: string;
+  status: EvidenceReviewStatus;
+  reviewer_id?: string;
+  reviewer_role?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvidenceRequestRecord {
+  request_id: string;
+  case_id: string;
+  requested_source: string;
+  reason: string;
+  uncertainty_target?: string;
+  priority: EvidenceRequestPriority;
+  status: EvidenceRequestStatus;
+  requested_by: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface CaseNoteRecord {
+  note_id: string;
+  case_id: string;
+  author: string;
+  author_role: string;
+  timestamp: string;
+  content: string;
+  case_version: number;
+}
+
+export interface ReportVersionRecord {
+  report_id: string;
+  case_id: string;
+  report_version: number;
+  presentation_mode: string;
+  assessment_version: number;
+  generated_at: string;
+  provenance: Record<string, any>;
+  hash: string;
+  file_path?: string;
+  title?: string;
+  content_markdown?: string;
+}
+
+export interface InvestigationAuditRecord {
+  audit_id: string;
+  case_id: string;
+  actor_id: string;
+  actor_role: string;
+  timestamp: string;
+  action: string;
+  previous_state?: string;
+  new_state?: string;
+  reason?: string;
+  evidence_ids: string[];
+  assessment_version: number;
+  provenance: Record<string, any>;
+}
+
+export interface CaseActionProposal {
+  proposal_id: string;
+  case_id: string;
+  recommended_action: CaseActionType;
+  target_state: CaseState;
+  reason: string;
+  requires_human_approval: boolean;
+  authorized_roles: string[];
+  created_at: string;
+}
+
+
 
 
 
