@@ -952,5 +952,156 @@ class EnvironmentalEvidence(BaseModel):
     provenance: Optional[SourceProvenance] = Field(None, description="Source provenance metadata")
 
 
+# ==============================================================================
+# Phase 11: Canonical Evidence Graph & Explainable Intelligence Models
+# ==============================================================================
+
+class EvidenceGraphNode(BaseModel):
+    """
+    Canonical node representing a discrete epistemic entity within the AGNI-NETRA Evidence Graph.
+    Connects raw physical telemetry to high-level operational assessments with strict provenance.
+    """
+    node_id: str = Field(default_factory=lambda: f"node-{uuid.uuid4().hex[:8]}", description="Unique graph node identifier")
+    node_type: str = Field(
+        ...,
+        description="OBSERVATION, EVENT, CONTEXT, TEMPORAL_PATTERN, ENVIRONMENTAL_CONDITION, "
+                    "CROSS_MODAL_OBSERVATION, RELATIONSHIP, HYPOTHESIS, EVIDENCE, ASSESSMENT, "
+                    "UNCERTAINTY, DATA_GAP, SOURCE"
+    )
+    label: str = Field(..., description="Short human-readable title or designation")
+    description: str = Field(..., description="Detailed epistemic description of this node")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Domain-specific attributes and telemetry")
+    evidence_nature: str = Field(
+        "OBSERVED",
+        description="OBSERVED, DERIVED, INFERRED, MISSING, CONFLICTING, TEST_FIXTURE, SIMULATION"
+    )
+    source: str = Field("SYSTEM", description="Primary source or provider key")
+    dataset: Optional[str] = Field(None, description="Originating catalog, layer, or product")
+    provenance: Optional[SourceProvenance] = Field(None, description="Full canonical source provenance metadata")
+    confidence: Optional[float] = Field(None, description="Epistemic confidence [0.0 - 1.0]")
+    strength: str = Field("MODERATE", description="STRONG, MODERATE, LIMITED, INSUFFICIENT")
+    limitations: List[str] = Field(default_factory=list, description="Epistemic limitations or caveats")
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="Timestamp when node was created in the graph"
+    )
+    observation_time: Optional[str] = Field(None, description="Original physical sensor or observation timestamp")
+
+    def __init__(self, **data):
+        if "id" in data and "node_id" not in data:
+            data["node_id"] = data["id"]
+        if "domain" in data and "node_type" not in data:
+            data["node_type"] = data["domain"]
+        if "reliability_score" in data and "confidence" not in data:
+            data["confidence"] = data["reliability_score"]
+        super().__init__(**data)
+
+    @property
+    def id(self) -> str:
+        return self.node_id
+
+    @property
+    def domain(self) -> str:
+        return self.node_type
+
+    @property
+    def reliability_score(self) -> float:
+        return self.confidence if self.confidence is not None else 0.85
 
 
+class EvidenceGraphEdge(BaseModel):
+    """
+    Canonical directed edge representing an explainable, deterministic relationship between two nodes.
+    """
+    edge_id: str = Field(default_factory=lambda: f"edge-{uuid.uuid4().hex[:8]}", description="Unique edge identifier")
+    source_node_id: str = Field(..., description="Tail node ID (origin)")
+    target_node_id: str = Field(..., description="Head node ID (destination)")
+    relationship_type: str = Field(
+        ...,
+        description="SUPPORTS, CONTRADICTS, DERIVED_FROM, INFERRED_FROM, ASSOCIATED_WITH, "
+                    "OCCURS_NEAR, OCCURS_DURING, CORROBORATES, LIMITS, MISSING, DEPENDS_ON, "
+                    "EXPLAINS, CHANGES_CONFIDENCE"
+    )
+    weight: float = Field(1.0, description="Deterministic relationship strength or weight [0.0 - 1.0]")
+    explanation: str = Field(..., description="Human-readable rationale for this edge connection")
+    provenance: Optional[SourceProvenance] = Field(None, description="Edge derivation provenance")
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="Timestamp when edge was instantiated"
+    )
+
+    def __init__(self, **data):
+        if "source" in data and "source_node_id" not in data:
+            data["source_node_id"] = data["source"]
+        if "target" in data and "target_node_id" not in data:
+            data["target_node_id"] = data["target"]
+        if "edge_type" in data and "relationship_type" not in data:
+            data["relationship_type"] = data["edge_type"]
+        super().__init__(**data)
+
+    @property
+    def source(self) -> str:
+        return self.source_node_id
+
+    @property
+    def target(self) -> str:
+        return self.target_node_id
+
+    @property
+    def edge_type(self) -> str:
+        return self.relationship_type
+
+    @property
+    def bidirectional(self) -> bool:
+        return False
+
+
+class Hypothesis(BaseModel):
+    """
+    Canonical candidate explanation model with an explainable, deterministic Evidence Support Profile.
+    Independent of and separate from authoritative XGBoost classifier probabilities.
+    """
+    hypothesis_id: str = Field(..., description="Identifier (e.g., HYPOTHESIS_A, HYPOTHESIS_B)")
+    name: str = Field(..., description="Name (e.g., Industrial Activity, Agricultural Burning, Forest Fire)")
+    description: str = Field(..., description="Domain definition of this candidate hypothesis")
+    supporting_evidence_count: int = Field(0, description="Total number of supporting evidence items")
+    contradicting_evidence_count: int = Field(0, description="Total number of contradicting evidence items")
+    strong_support: List[str] = Field(default_factory=list, description="Descriptions of strong supporting evidence")
+    moderate_support: List[str] = Field(default_factory=list, description="Descriptions of moderate supporting evidence")
+    limited_support: List[str] = Field(default_factory=list, description="Descriptions of limited supporting evidence")
+    missing_information: List[str] = Field(default_factory=list, description="Information gaps that limit confidence")
+    uncertainty: str = Field("LOW", description="Uncertainty level: LOW, MEDIUM, HIGH")
+    support_score: float = Field(
+        0.0,
+        description="Deterministic, versioned support metric [0.0 - 100.0]; NOT a classifier probability"
+    )
+
+
+class EvidenceGraph(BaseModel):
+    """
+    Provider-neutral, provenance-aware Global Evidence Graph synthesizing all intelligence domains.
+    Provides complete backward traceability from operational conclusions to raw physical observations.
+    """
+    graph_id: str = Field(default_factory=lambda: f"eg-{uuid.uuid4().hex[:8]}", description="Graph instance ID")
+    event_id: str = Field(..., description="Target thermal event ID or code")
+    nodes: List[EvidenceGraphNode] = Field(default_factory=list, description="All epistemic nodes in the graph")
+    edges: List[EvidenceGraphEdge] = Field(default_factory=list, description="All explainable directed edges")
+    hypotheses: List[Hypothesis] = Field(default_factory=list, description="Competing candidate hypotheses evaluated")
+    competing_hypotheses_ranking: List[str] = Field(default_factory=list, description="Ordered ranking of hypotheses")
+    winner_hypothesis: Optional[str] = Field(None, description="Dominant hypothesis based on evidence")
+    evidence_nature_counts: Dict[str, int] = Field(
+        default_factory=lambda: {
+            "OBSERVED": 0, "DERIVED": 0, "INFERRED": 0,
+            "MISSING": 0, "CONFLICTING": 0, "TEST_FIXTURE": 0, "SIMULATION": 0
+        },
+        description="Breakdown of evidence items by nature"
+    )
+    conflict_summary: List[Dict[str, Any]] = Field(default_factory=list, description="Detected genuine conflicts")
+    uncertainty_propagation: Dict[str, Any] = Field(default_factory=dict, description="Uncertainty propagation tree")
+    data_gaps: List[Dict[str, Any]] = Field(default_factory=list, description="Identified data gaps and missing sources")
+    what_would_change_assessment: List[str] = Field(
+        default_factory=list,
+        description="Evidence-driven actionable observations that would alter the assessment"
+    )
+    provenance: Optional[SourceProvenance] = Field(None, description="Graph creation provenance")
+    graph_version: str = Field("1.0", description="Schema version")

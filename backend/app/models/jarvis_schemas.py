@@ -45,6 +45,8 @@ class JarvisCapability(str, Enum):
     TEMPORAL_ANALYSIS = "TEMPORAL_ANALYSIS"
     ENVIRONMENTAL_INTELLIGENCE = "ENVIRONMENTAL_INTELLIGENCE"
     CROSS_MODAL_VERIFICATION = "CROSS_MODAL_VERIFICATION"
+    EVIDENCE_GRAPH = "EVIDENCE_GRAPH"
+    EVALUATION = "EVALUATION"
 
 
 class AgentType(str, Enum):
@@ -318,6 +320,17 @@ class JarvisResponse(BaseModel):
     environmental_observation_count: Optional[int] = 0
     cross_modal_observation_count: Optional[int] = 0
 
+    # Phase 11 Global Evidence Graph & Explainable Intelligence
+    evidence_graph: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    hypotheses: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    evidence_nodes: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    evidence_edges: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    evidence_lineage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    evidence_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    assessment_lineage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    what_would_change_assessment: Optional[List[str]] = Field(default_factory=list)
+
     @property
     def temporal_anomaly(self) -> Optional[Dict[str, Any]]:
         return self.temporal_anomalies
@@ -504,7 +517,17 @@ class InvestigationWorkspaceSchema(BaseModel):
     environmental_observation_count: Optional[int] = 0
     cross_modal_observation_count: Optional[int] = 0
 
-
+    # Phase 11 Global Evidence Graph & Explainable Intelligence
+    evidence_graph: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    evidence_nodes: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    evidence_edges: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    hypotheses: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    hypothesis_support: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    hypothesis_conflicts: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    evidence_lineage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    evidence_uncertainty: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    assessment_lineage: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    data_gaps: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 
 class SessionContext(BaseModel):

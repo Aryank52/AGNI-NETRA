@@ -62,8 +62,13 @@ class SourceProvenance(BaseModel):
             pl = data.pop("processing_level")
             extra = data.get("extra_metadata", {})
             extra["processing_level"] = pl
-            data["extra_metadata"] = extra
+        if "data_authenticity" in data and "source_type" not in data:
+            data["source_type"] = data.pop("data_authenticity")
         super().__init__(**data)
+
+    @property
+    def data_authenticity(self) -> str:
+        return self.source_type
 
 
 def create_firms_provenance(
@@ -353,6 +358,33 @@ def create_derived_environmental_provenance(
         limitations=f"DERIVED ENVIRONMENTAL RELATIONSHIP: {derivation_method}. Not an observed plume or physical measurement.",
         confidence_tier="HIGH",
         extra_metadata={"derivation_inputs": inputs, "derivation_method": derivation_method}
+    )
+
+
+def create_derived_provenance(
+    provider: str = "AGNI_NETRA",
+    dataset: str = "DERIVED_INTELLIGENCE",
+    derivation_method: str = "Deterministic Domain Synthesis",
+    record_id: Optional[str] = None,
+    observation_time: Optional[str] = None,
+    **kwargs: Any
+) -> SourceProvenance:
+    """Helper to construct explicit DERIVED provenance for synthesized intelligence artifacts."""
+    return SourceProvenance(
+        provider=provider,
+        dataset=dataset,
+        source_record_id=str(record_id) if record_id else None,
+        observation_time=observation_time or datetime.now(timezone.utc).isoformat(),
+        source_type="DERIVED",
+        evidence_nature="DERIVED",
+        quality="HIGH",
+        geographic_coverage="LOCAL_ANALYSIS_RADIUS",
+        spatial_resolution=kwargs.get("spatial_resolution", "Point / Region"),
+        temporal_resolution="EVENT_SYNCHRONIZED",
+        source_version="AN_DERIVATION_v1.0",
+        limitations=f"DERIVED EVIDENCE: {derivation_method}.",
+        confidence_tier="HIGH",
+        extra_metadata={"derivation_method": derivation_method, **kwargs}
     )
 
 

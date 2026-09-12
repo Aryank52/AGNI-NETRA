@@ -747,6 +747,19 @@ export interface InvestigationWorkspace {
   cross_modal_evidence?: Record<string, any>;
   cross_modal_uncertainty?: Record<string, any>;
   cross_modal_observation_count?: number;
+  // Phase 11 Global Evidence Graph & Explainable Intelligence
+  evidence_graph?: Record<string, any>;
+  evidence_nodes?: Array<Record<string, any>>;
+  evidence_edges?: Array<Record<string, any>>;
+  hypotheses?: Array<Record<string, any>>;
+  hypothesis_support?: Record<string, any>;
+  hypothesis_conflicts?: Record<string, any>;
+  evidence_lineage?: Record<string, any>;
+  evidence_uncertainty?: Record<string, any>;
+  assessment_lineage?: Record<string, any>;
+  data_gaps?: Array<Record<string, any>>;
+  winner_hypothesis?: string;
+  what_would_change_assessment?: string[];
 }
 
 

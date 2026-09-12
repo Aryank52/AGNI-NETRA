@@ -719,8 +719,169 @@ class LocalDeterministicProvider(BaseLLMProvider):
         )
         if is_provenance_authenticity_audit:
             entities["is_provenance_authenticity_audit"] = True
+        # =========================================================================
+        # Phase 11 Global Evidence Graph & Explainable Intelligence Commands
+        # =========================================================================
+        # Primary Acceptance Command (Section 26)
+        is_section_26_phase11_acceptance = (
+            any(w in cmd for w in [
+                "explain the complete evidence chain for",
+                "explain the complete evidence chain",
+                "complete evidence chain for",
+                "complete evidence chain"
+            ])
+            and any(w in cmd for w in [
+                "why the current assessment is supported",
+                "assessment is supported",
+                "supports",
+                "what evidence contradicts it",
+                "contradicts",
+                "what additional observation would most change the assessment",
+                "change the assessment"
+            ])
+        )
+        if is_section_26_phase11_acceptance:
+            entities["is_section_26_phase11_acceptance"] = True
             if not entities.get("event_ref"):
                 entities["event_ref"] = "EVT-827"
+
+        # Explain why you reached this assessment
+        is_explain_why_reached_assessment = any(w in cmd for w in [
+            "explain why you reached this assessment",
+            "why did you reach this assessment",
+            "why you reached this assessment",
+            "explain how you reached this assessment"
+        ])
+        if is_explain_why_reached_assessment:
+            entities["is_explain_why_reached_assessment"] = True
+
+        # Show evidence supporting this conclusion
+        is_show_evidence_supporting = any(w in cmd for w in [
+            "show the evidence supporting this conclusion",
+            "show evidence supporting this conclusion",
+            "evidence supporting this conclusion",
+            "what evidence supports this conclusion",
+            "show supporting evidence for this conclusion",
+            "show the evidence supporting this"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_evidence_supporting:
+            entities["is_show_evidence_supporting"] = True
+
+        # Show evidence contradicting this conclusion
+        is_show_evidence_contradicting = any(w in cmd for w in [
+            "show the evidence contradicting this conclusion",
+            "show evidence contradicting this conclusion",
+            "evidence contradicting this conclusion",
+            "what evidence contradicts this conclusion",
+            "show contradicting evidence for this conclusion",
+            "show the evidence contradicting this"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_evidence_contradicting:
+            entities["is_show_evidence_contradicting"] = True
+
+        # Show the strongest evidence
+        is_show_strongest_evidence = any(w in cmd for w in [
+            "show the strongest evidence",
+            "show strongest evidence",
+            "what is the strongest evidence",
+            "strongest evidence for this event"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_strongest_evidence:
+            entities["is_show_strongest_evidence"] = True
+
+        # Show the evidence chain for this event
+        is_show_evidence_chain = any(w in cmd for w in [
+            "show the evidence chain for this event",
+            "show the evidence chain",
+            "show evidence chain for this event",
+            "show evidence chain",
+            "evidence chain for this event"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_evidence_chain:
+            entities["is_show_evidence_chain"] = True
+
+        # Compare competing hypotheses
+        is_compare_competing_hypotheses = any(w in cmd for w in [
+            "compare the competing hypotheses",
+            "compare competing hypotheses",
+            "competing hypotheses for this event",
+            "evaluate competing hypotheses",
+            "show competing hypotheses",
+            "compare hypotheses"
+        ]) and not is_section_26_phase11_acceptance
+        if is_compare_competing_hypotheses:
+            entities["is_compare_competing_hypotheses"] = True
+
+        # Tell me which evidence is observed, derived, inferred, or missing
+        is_tell_evidence_nature = any(w in cmd for w in [
+            "tell me which evidence is observed, derived, inferred, or missing",
+            "which evidence is observed, derived, inferred, or missing",
+            "which evidence is observed derived inferred or missing",
+            "tell me which evidence is observed",
+            "observed, derived, inferred, or missing",
+            "observed derived inferred or missing",
+            "observed, derived, or inferred",
+            "observed derived or inferred"
+        ]) and not is_section_26_phase11_acceptance
+        if is_tell_evidence_nature:
+            entities["is_tell_evidence_nature"] = True
+
+        # Show what changed the assessment
+        is_show_what_changed_assessment = any(w in cmd for w in [
+            "show what changed the assessment",
+            "what changed the assessment",
+            "what changed your assessment"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_what_changed_assessment:
+            entities["is_show_what_changed_assessment"] = True
+
+        # Show what evidence would change the assessment
+        is_show_what_would_change_assessment = any(w in cmd for w in [
+            "show what evidence would change the assessment",
+            "what evidence would change the assessment",
+            "what would change the assessment",
+            "show what would change the assessment",
+            "what observations would change the assessment"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_what_would_change_assessment:
+            entities["is_show_what_would_change_assessment"] = True
+
+        # Show the provenance chain for this conclusion
+        is_show_provenance_chain = any(w in cmd for w in [
+            "show the provenance chain for this conclusion",
+            "show provenance chain for this conclusion",
+            "provenance chain for this conclusion",
+            "show the complete provenance chain",
+            "show provenance chain",
+            "provenance chain for this event"
+        ]) and not is_section_26_phase11_acceptance
+        if is_show_provenance_chain:
+            entities["is_show_provenance_chain"] = True
+
+        # Identify duplicate or non-independent evidence
+        is_identify_non_independent_evidence = any(w in cmd for w in [
+            "identify duplicate or non-independent evidence",
+            "identify duplicate evidence",
+            "identify non-independent evidence",
+            "duplicate or non-independent evidence",
+            "non-independent evidence",
+            "duplicate evidence"
+        ]) and not is_section_26_phase11_acceptance
+        if is_identify_non_independent_evidence:
+            entities["is_identify_non_independent_evidence"] = True
+
+        is_any_phase11 = (
+            is_section_26_phase11_acceptance or is_explain_why_reached_assessment or
+            is_show_evidence_supporting or is_show_evidence_contradicting or
+            is_show_strongest_evidence or is_show_evidence_chain or
+            is_compare_competing_hypotheses or is_tell_evidence_nature or
+            is_show_what_changed_assessment or is_show_what_would_change_assessment or
+            is_show_provenance_chain or is_identify_non_independent_evidence
+        )
+        if is_any_phase11:
+            entities["clarification_required"] = False
+            if not entities.get("event_ref"):
+                entities["event_ref"] = context.get("current_event_ref") or context.get("selected_candidate_ref") or "EVT-827"
 
         # Phase 10 Global Environmental Intelligence & Cross-Modal Verification Commands
         # A. Section 30 Primary Acceptance Command & 5-Family Investigation (Command 2)
@@ -1542,7 +1703,31 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_provenance_authenticity_audit:
+        if is_section_26_phase11_acceptance:
+            primary_goal = "SECTION_26_PHASE11_ACCEPTANCE"
+        elif is_explain_why_reached_assessment:
+            primary_goal = "EXPLAIN_ASSESSMENT"
+        elif is_show_evidence_supporting:
+            primary_goal = "SHOW_SUPPORTING_EVIDENCE"
+        elif is_show_evidence_contradicting:
+            primary_goal = "SHOW_CONTRADICTING_EVIDENCE"
+        elif is_show_strongest_evidence:
+            primary_goal = "SHOW_STRONGEST_EVIDENCE"
+        elif is_show_evidence_chain:
+            primary_goal = "SHOW_EVIDENCE_CHAIN"
+        elif is_compare_competing_hypotheses:
+            primary_goal = "COMPARE_COMPETING_HYPOTHESES"
+        elif is_tell_evidence_nature:
+            primary_goal = "SHOW_EVIDENCE_NATURE"
+        elif is_show_what_changed_assessment:
+            primary_goal = "SHOW_WHAT_CHANGED_ASSESSMENT"
+        elif is_show_what_would_change_assessment:
+            primary_goal = "SHOW_WHAT_WOULD_CHANGE_ASSESSMENT"
+        elif is_show_provenance_chain:
+            primary_goal = "SHOW_PROVENANCE_CHAIN"
+        elif is_identify_non_independent_evidence:
+            primary_goal = "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
+        elif is_provenance_authenticity_audit:
             primary_goal = "PROVENANCE_AUTHENTICITY_AUDIT"
         elif is_section_30_phase10_acceptance:
             primary_goal = "SECTION_30_PHASE10_ACCEPTANCE"
@@ -1744,13 +1929,26 @@ class LocalDeterministicProvider(BaseLLMProvider):
             requested_output = "STATUS_REPORT"
         elif primary_goal in [
             "SECTION_24_ACCEPTANCE", "SECTION_28_ACCEPTANCE", "SECTION_24_PHASE8_ACCEPTANCE",
-            "SECTION_26_PHASE9_ACCEPTANCE", "SECTION_30_PHASE10_ACCEPTANCE", "COMBINE_ALL_EVIDENCE",
-            "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT"
+            "SECTION_26_PHASE9_ACCEPTANCE", "SECTION_30_PHASE10_ACCEPTANCE", "SECTION_26_PHASE11_ACCEPTANCE",
+            "COMBINE_ALL_EVIDENCE", "INVESTIGATE_ALL_THERMAL_SOURCES", "INVESTIGATE_INDUSTRIAL_CONTEXT",
+            "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",
+            "SHOW_STRONGEST_EVIDENCE", "SHOW_EVIDENCE_CHAIN", "COMPARE_COMPETING_HYPOTHESES",
+            "SHOW_EVIDENCE_NATURE", "SHOW_WHAT_CHANGED_ASSESSMENT", "SHOW_WHAT_WOULD_CHANGE_ASSESSMENT",
+            "SHOW_PROVENANCE_CHAIN", "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
         ]:
             requested_output = "SYNTHESIS"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "PROVENANCE_AUTHENTICITY_AUDIT":
+        if primary_goal == "SECTION_26_PHASE11_ACCEPTANCE":
+            stopping_condition = "SECTION_26_PHASE11_EVIDENCE_GRAPH_EVALUATED_AND_HALT"
+        elif primary_goal in [
+            "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",
+            "SHOW_STRONGEST_EVIDENCE", "SHOW_EVIDENCE_CHAIN", "COMPARE_COMPETING_HYPOTHESES",
+            "SHOW_EVIDENCE_NATURE", "SHOW_WHAT_CHANGED_ASSESSMENT", "SHOW_WHAT_WOULD_CHANGE_ASSESSMENT",
+            "SHOW_PROVENANCE_CHAIN", "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
+        ]:
+            stopping_condition = "EVIDENCE_GRAPH_INTELLIGENCE_REPORTED_AND_HALT"
+        elif primary_goal == "PROVENANCE_AUTHENTICITY_AUDIT":
             stopping_condition = "PROVENANCE_AUTHENTICITY_AUDITED_AND_HALT"
         elif primary_goal == "SECTION_30_PHASE10_ACCEPTANCE":
             stopping_condition = "SECTION_30_PHASE10_EVALUATED_AND_HALT"
@@ -1899,6 +2097,11 @@ class JarvisCommandInterpreter:
         """
         return self.provider.interpret(command, context)
 
+    def interpret_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Direct alias for interpret.
+        """
+        return self.interpret(command, context)
 
 
 command_interpreter = JarvisCommandInterpreter()

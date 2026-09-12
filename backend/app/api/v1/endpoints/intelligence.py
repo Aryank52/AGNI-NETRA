@@ -17,6 +17,7 @@ from backend.app.services.intelligence.context_engine import context_engine
 from backend.app.services.intelligence.temporal_engine import temporal_baseline_engine
 from backend.app.services.intelligence.environmental_engine import environmental_discovery_engine
 from backend.app.services.intelligence.cross_modal_engine import cross_modal_verification_engine
+from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
 
 router = APIRouter()
 
@@ -816,5 +817,132 @@ def get_cross_modal_sar_for_event(
         "status": "SUCCESS",
         "data": xm_result.get("sar", {})
     }
+
+
+# ==============================================================================
+# Phase 11 Evidence Graph & Explainable Intelligence Endpoints
+# ==============================================================================
+
+@router.get("/events/{event_id}/evidence-graph")
+def get_event_evidence_graph_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves full canonical evidence graph for an event with support profiles and epistemic nature breakdown."""
+    user_role = current_user.role if current_user else "PUBLIC"
+    graph_obj = evidence_graph_engine.build_event_evidence_graph(db=db, event_ref=event_id)
+    graph_dict = graph_obj.model_dump()
+    if user_role == "PUBLIC":
+        # RBAC masking for public: retain full explainability while sanitizing internal debug flags
+        graph_dict["internal_audit"] = False
+    return {
+        "status": "SUCCESS",
+        "data": graph_dict
+    }
+
+
+@router.get("/events/{event_id}/evidence")
+def get_event_evidence_nodes_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves all evidence nodes for an event with nature and uncertainty."""
+    graph_obj = evidence_graph_engine.build_event_evidence_graph(db=db, event_ref=event_id)
+    return {
+        "status": "SUCCESS",
+        "total_nodes": len(graph_obj.nodes),
+        "evidence_nature_counts": graph_obj.evidence_nature_counts,
+        "nodes": [n.model_dump() for n in graph_obj.nodes]
+    }
+
+
+@router.get("/events/{event_id}/evidence/supporting")
+def get_event_supporting_evidence_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves supporting evidence items directly substantiating the operational assessment."""
+    supp = evidence_graph_engine.get_supporting_evidence(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "total_supporting": len(supp),
+        "supporting_evidence": supp
+    }
+
+
+@router.get("/events/{event_id}/evidence/conflicting")
+def get_event_conflicting_evidence_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves contradicting/limiting evidence items and conflicting hypotheses."""
+    conf = evidence_graph_engine.get_conflicting_evidence(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "total_conflicting": len(conf),
+        "conflicting_evidence": conf
+    }
+
+
+@router.get("/events/{event_id}/hypotheses")
+def get_event_hypotheses_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves standardized candidate hypotheses (A through G) with support profiles."""
+    hyps = evidence_graph_engine.get_hypotheses(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "total_hypotheses": len(hyps),
+        "hypotheses": hyps
+    }
+
+
+@router.get("/events/{event_id}/assessment-lineage")
+def get_event_assessment_lineage_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves assessment lineage tracing conclusion from root observations to final synthesis."""
+    lineage = evidence_graph_engine.get_assessment_lineage(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "assessment_lineage": lineage
+    }
+
+
+@router.get("/events/{event_id}/data-gaps")
+def get_event_data_gaps_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves identified missing evidence, unconfigured feeds, and recommendations to reduce uncertainty."""
+    gaps = evidence_graph_engine.get_data_gaps(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "data_gaps": gaps
+    }
+
+
+@router.get("/events/{event_id}/provenance-chain")
+def get_event_provenance_chain_endpoint(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """Retrieves complete provenance chain for all evidence nodes in the graph."""
+    prov = evidence_graph_engine.get_provenance_chain(db=db, event_id=event_id)
+    return {
+        "status": "SUCCESS",
+        "provenance_chain": prov
+    }
+
 
 

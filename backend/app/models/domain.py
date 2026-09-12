@@ -946,6 +946,18 @@ class InvestigationWorkspace(Base):
     environmental_observation_count = Column(Integer, default=0)
     cross_modal_observation_count = Column(Integer, default=0)
 
+    # Phase 11 Global Evidence Graph & Explainable Intelligence
+    evidence_graph = Column(JSON, default=dict)
+    evidence_nodes = Column(JSON, default=list)
+    evidence_edges = Column(JSON, default=list)
+    hypotheses = Column(JSON, default=list)
+    hypothesis_support = Column(JSON, default=dict)
+    hypothesis_conflicts = Column(JSON, default=list)
+    evidence_lineage = Column(JSON, default=dict)
+    evidence_uncertainty = Column(JSON, default=dict)
+    assessment_lineage = Column(JSON, default=dict)
+    data_gaps = Column(JSON, default=list)
+
     report = relationship("Report", foreign_keys=[report_id])
 
 

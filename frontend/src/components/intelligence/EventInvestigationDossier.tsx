@@ -7,7 +7,8 @@ import {
   Layers, MapPin, Factory, Zap, Pickaxe, 
   Trees, Clock, ChevronRight, CheckCircle2, 
   AlertTriangle, Radio, BarChart3, Database,
-  ArrowUpRight, Info, ShieldCheck, FileText
+  ArrowUpRight, Info, ShieldCheck, FileText,
+  Network, HelpCircle, ShieldX
 } from "lucide-react";
 import RiskBadge from "./RiskBadge";
 import IntelligenceCoveragePanel from "./IntelligenceCoveragePanel";
@@ -89,10 +90,19 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
     spatial_context_enrichment,
     intelligence_coverage,
     alert_workflow,
+    why_this_assessment,
+    what_supports_it,
+    what_contradicts_it,
+    what_is_unknown,
+    what_is_derived,
+    what_is_inferred,
+    what_would_change_it,
+    explainability,
   } = dossier;
 
   const tabs = [
     { id: "summary", label: "Overview & AI" },
+    { id: "explainability", label: "Evidence & Explainability" },
     { id: "proximity", label: "Proximity & Energy" },
     { id: "ecology", label: "Forest & LULC" },
     { id: "firms", label: `Observations (${telemetry?.detection_count || 0})` },
@@ -461,6 +471,142 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* TAB 2: EXPLAINABILITY & EVIDENCE GRAPH CASCADE */}
+        {activeTab === "explainability" && (
+          <div className="space-y-3.5">
+            {/* 1. Why this assessment */}
+            <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+                  <Network className="w-4 h-4" />
+                  <span>OPERATIONAL ASSESSMENT EXPLANATION</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                  PHASE 11 AUDIT
+                </span>
+              </div>
+              <p className="text-xs text-slate-200 leading-relaxed font-sans">
+                {why_this_assessment || "Operational assessment derived from multi-sensor thermal telemetry fused with spatial infrastructure proximity."}
+              </p>
+              {/* Epistemic Nature Breakdown Pills */}
+              {explainability?.evidence_nature_breakdown && (
+                <div className="pt-1 flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-700/60 text-emerald-300">
+                    OBSERVED: {explainability.evidence_nature_breakdown.OBSERVED}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-700/60 text-blue-300">
+                    DERIVED: {explainability.evidence_nature_breakdown.DERIVED}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-700/60 text-purple-300">
+                    INFERRED: {explainability.evidence_nature_breakdown.INFERRED}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-700/60 text-amber-300">
+                    MISSING: {explainability.evidence_nature_breakdown.MISSING}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-rose-950/60 border border-rose-700/60 text-rose-300">
+                    CONFLICTING: {explainability.evidence_nature_breakdown.CONFLICTING}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Supporting Evidence */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 border-b border-slate-800 pb-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>WHAT SUPPORTS THIS ASSESSMENT ({safeArray(what_supports_it).length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {safeArray(what_supports_it).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2 rounded bg-slate-950/80 border border-emerald-900/30 text-xs text-slate-200 flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                    <span>{typeof item === "string" ? item : item.label || JSON.stringify(item)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Contradicting Evidence & Rejected Hypotheses */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-400 border-b border-slate-800 pb-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>WHAT CONTRADICTS IT / LIMITS CERTAINTY ({safeArray(what_contradicts_it).length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {safeArray(what_contradicts_it).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2 rounded bg-slate-950/80 border border-amber-900/30 text-xs text-slate-200 flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                    <span>{typeof item === "string" ? item : item.label || JSON.stringify(item)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. What is Unknown / Data Gaps */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-400 border-b border-slate-800 pb-1.5">
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>WHAT IS CURRENTLY UNKNOWN / DATA GAPS ({safeArray(what_is_unknown).length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {safeArray(what_is_unknown).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2 rounded bg-slate-950/80 border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 shrink-0" />
+                    <span>{typeof item === "string" ? item : item.gap_description || JSON.stringify(item)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. What is Derived vs Inferred */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-lg bg-slate-950/80 border border-blue-900/40 space-y-1.5">
+                <div className="text-[11px] font-bold text-blue-400">WHAT IS DERIVED (Algorithmic)</div>
+                <div className="space-y-1">
+                  {safeArray(what_is_derived).map((d: any, idx: number) => (
+                    <div key={idx} className="text-[11px] text-slate-300">• {typeof d === "string" ? d : JSON.stringify(d)}</div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/80 border border-purple-900/40 space-y-1.5">
+                <div className="text-[11px] font-bold text-purple-400">WHAT IS INFERRED (Hypothesis/Model)</div>
+                <div className="space-y-1">
+                  {safeArray(what_is_inferred).map((inf: any, idx: number) => (
+                    <div key={idx} className="text-[11px] text-slate-300">• {typeof inf === "string" ? inf : JSON.stringify(inf)}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 6. What Would Change the Assessment */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 border-b border-slate-800 pb-1.5">
+                <Network className="w-3.5 h-3.5" />
+                <span>WHAT WOULD MOST CHANGE THIS ASSESSMENT ({safeArray(what_would_change_it).length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {safeArray(what_would_change_it).map((action: any, idx: number) => (
+                  <div key={idx} className="p-2 rounded bg-slate-950/80 border border-cyan-900/30 text-xs text-cyan-200 flex items-start gap-2">
+                    <span className="font-mono text-cyan-400 font-bold">#{idx + 1}</span>
+                    <span>{typeof action === "string" ? action : JSON.stringify(action)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Safety Dispatch Gate Notice */}
+            <div className="p-2.5 rounded-lg bg-rose-950/30 border border-rose-500/40 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-rose-300 font-bold">
+                <ShieldX className="w-4 h-4 text-rose-400" />
+                <span>AUTONOMOUS DISPATCH GATE</span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-rose-900/60 border border-rose-600 font-mono text-[10px] font-bold text-rose-200">
+                STRICTLY BLOCKED
+              </span>
+            </div>
           </div>
         )}
 
