@@ -9,6 +9,7 @@ from backend.app.core.config import settings
 from backend.app.core.database import get_db, get_database_mode, check_postgis_available, get_connection_pool_stats, get_database_diagnostics
 from backend.app.services.model_integrity_service import model_integrity_service
 from backend.app.services.worker_manager import worker_manager
+from backend.app.services.intelligence.provider_registry import provider_registry
 
 router = APIRouter()
 
@@ -76,6 +77,100 @@ def readiness_probe(response: Response, db: Session = Depends(get_db)):
             "supervised_workers_active": workers_ok
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@router.get("/db", summary="Database Connectivity & Spatial Engine Health")
+def database_health_check(db: Session = Depends(get_db)):
+    """
+    Validates live database connection, response latency, and engine dialect.
+    """
+    start_time = time.time()
+    try:
+        db.execute(text("SELECT 1;"))
+        latency_ms = round((time.time() - start_time) * 1000, 2)
+        dialect = db.bind.dialect.name if db.bind else "sqlite"
+        if dialect == "postgresql":
+            has_postgis, postgis_ver = check_postgis_available(db)
+            return {
+                "status": "HEALTHY",
+                "database": "CONNECTED",
+                "engine": "PostgreSQL",
+                "spatial": "PostGIS" if has_postgis else "UNAVAILABLE",
+                "mode": "POSTGRESQL",
+                "postgis_version": postgis_ver,
+                "latency_ms": latency_ms
+            }
+        else:
+            return {
+                "status": "HEALTHY",
+                "database": "CONNECTED",
+                "engine": "SQLite",
+                "spatial": "SHAPELY_FALLBACK",
+                "mode": "TEST/DEMO",
+                "latency_ms": latency_ms
+            }
+    except Exception as e:
+        return {
+            "status": "UNHEALTHY",
+            "database": "FAILED",
+            "mode": get_database_mode(),
+            "detail": str(e)
+        }
+
+
+@router.get("/providers", summary="Truthful External Provider Health Breakdown")
+def providers_health_check(db: Session = Depends(get_db)):
+    """
+    Returns operational health status across all registered intelligence providers.
+    Does not fabricate provider health.
+    """
+    return provider_registry.get_provider_health_summary(db)
+
+
+@router.get("/application", summary="Composite Platform Health & Dependency Separation")
+def application_health_check(response: Response, db: Session = Depends(get_db)):
+    """
+    Truthful composite health check separating critical core services from optional external feeds.
+    Optional provider degradation does not report the entire core system as failed.
+    """
+    db_ok = False
+    try:
+        db.execute(text("SELECT 1;"))
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    checksums = model_integrity_service.get_artifact_checksums()
+    model_ok = all(c["status"] == "VERIFIED_PRESENT" for c in checksums.values())
+
+    critical_ok = db_ok and model_ok
+
+    provider_health = provider_registry.get_provider_health_summary(db)
+    statuses = provider_health.get("statuses", {})
+    degraded_or_down = {k: v for k, v in statuses.items() if v in ("UNAVAILABLE", "DEGRADED")}
+
+    if not critical_ok:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        overall_status = "CRITICAL_DEPENDENCY_FAILED"
+    elif degraded_or_down:
+        overall_status = "OPERATIONAL_WITH_DEGRADED_FEEDS"
+    else:
+        overall_status = "HEALTHY"
+
+    return {
+        "status": overall_status,
+        "critical_subsystems": {
+            "database": "HEALTHY" if db_ok else "FAILED",
+            "model_governance": "HEALTHY" if model_ok else "FAILED",
+            "dispatch_gate_blocked": not settings.ENABLE_OPERATIONAL_DISPATCH_GATE
+        },
+        "optional_providers": {
+            "total_providers": provider_health.get("provider_count", 0),
+            "all_available": len(degraded_or_down) == 0,
+            "degraded_or_unavailable": degraded_or_down
+        },
+        "timestamp_utc": datetime.now(timezone.utc).isoformat()
     }
 
 

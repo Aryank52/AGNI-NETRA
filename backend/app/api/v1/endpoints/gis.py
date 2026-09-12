@@ -32,32 +32,38 @@ def parse_bbox(bbox_str: Optional[str]) -> Optional[Dict[str, float]]:
         return None
     try:
         parts = [float(x.strip()) for x in bbox_str.split(",")]
-        if len(parts) == 4:
-            raw_min_lon = min(parts[0], parts[2])
-            raw_min_lat = min(parts[1], parts[3])
-            raw_max_lon = max(parts[0], parts[2])
-            raw_max_lat = max(parts[1], parts[3])
-
-            # Clamp to canonical geographic boundaries
-            min_lon = max(-180.0, min(180.0, raw_min_lon))
-            min_lat = max(-90.0, min(90.0, raw_min_lat))
-            max_lon = max(-180.0, min(180.0, raw_max_lon))
-            max_lat = max(-90.0, min(90.0, raw_max_lat))
-
-            if min_lon > max_lon:
-                min_lon, max_lon = max_lon, min_lon
-            if min_lat > max_lat:
-                min_lat, max_lat = max_lat, min_lat
-
-            return {
-                "min_lon": min_lon,
-                "min_lat": min_lat,
-                "max_lon": max_lon,
-                "max_lat": max_lat
-            }
     except Exception:
-        pass
-    return None
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Malformed BBOX parameter '{bbox_str}'. Expected 4 comma-separated numeric coordinates: min_lon,min_lat,max_lon,max_lat"
+        )
+    if len(parts) != 4:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid BBOX dimension. Expected exactly 4 values (min_lon,min_lat,max_lon,max_lat), received {len(parts)}"
+        )
+    min_lon, min_lat, max_lon, max_lat = parts[0], parts[1], parts[2], parts[3]
+    if not (-180.0 <= min_lon <= 180.0 and -180.0 <= max_lon <= 180.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Longitude values must be between -180.0 and 180.0 (received min_lon={min_lon}, max_lon={max_lon})"
+        )
+    if not (-90.0 <= min_lat <= 90.0 and -90.0 <= max_lat <= 90.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Latitude values must be between -90.0 and 90.0 (received min_lat={min_lat}, max_lat={max_lat})"
+        )
+    if min_lon > max_lon:
+        min_lon, max_lon = max_lon, min_lon
+    if min_lat > max_lat:
+        min_lat, max_lat = max_lat, min_lat
+
+    return {
+        "min_lon": min_lon,
+        "min_lat": min_lat,
+        "max_lon": max_lon,
+        "max_lat": max_lat
+    }
 
 
 # =====================================================================================

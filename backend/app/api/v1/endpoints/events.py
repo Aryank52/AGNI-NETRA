@@ -67,6 +67,11 @@ def get_thermal_events(
     if offset is not None and not isinstance(offset, int):
         offset = getattr(offset, "default", 0)
 
+    if limit < 1 or limit > 1000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page size limit must be between 1 and 1000.")
+    if offset < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Offset cannot be negative.")
+
     query = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),
         joinedload(ThermalEvent.risk),

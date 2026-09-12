@@ -41,6 +41,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; frame-ancestors 'none';"
         return response
 
 
@@ -72,6 +74,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=429,
                 content={
                     "status": "RATE_LIMIT_EXCEEDED",
+                    "error_code": "RATE_LIMIT_EXCEEDED",
                     "detail": f"Rate limit of {self.max_requests} requests per minute exceeded. Please try again later.",
                     "correlation_id": get_correlation_id()
                 },
@@ -103,6 +106,7 @@ class SafeExceptionMiddleware(BaseHTTPMiddleware):
                 status_code=500,
                 content={
                     "status": "INTERNAL_SERVER_ERROR",
+                    "error_code": "INTERNAL_SERVER_ERROR",
                     "detail": safe_message,
                     "correlation_id": cid
                 },

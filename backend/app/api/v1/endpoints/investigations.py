@@ -65,7 +65,7 @@ def get_investigation_case(
     """
     Retrieves investigation workspace case details with strict RBAC enforcement.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     user_id = current_user.id if current_user else None
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
@@ -83,7 +83,7 @@ def get_investigation_timeline(
     """
     Returns deterministic chronological case timeline across all operational milestones.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     user_id = current_user.id if current_user else None
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
@@ -103,7 +103,7 @@ def get_investigation_audit_trail(
     """
     Returns immutable append-only audit trail records for this investigation.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     if user_role == "PUBLIC":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role 'PUBLIC' is not authorized to access internal audit logs.")
 
@@ -126,7 +126,7 @@ def get_assessment_versions(
     """
     Returns versioned assessment history with evidence and uncertainty deltas.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     if user_role == "PUBLIC":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role 'PUBLIC' cannot view detailed assessment version lineage.")
 
@@ -148,7 +148,7 @@ def get_evidence_reviews(
     """
     Returns analyst review decisions across individual evidence items.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     if user_role == "PUBLIC":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role 'PUBLIC' cannot view internal evidence reviews.")
 
@@ -164,7 +164,7 @@ def get_evidence_requests(
     """
     Returns open and resolved formal evidence requests for this case.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     if user_role == "PUBLIC":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role 'PUBLIC' cannot view evidence requests.")
 
@@ -180,7 +180,7 @@ def get_report_versions(
     """
     Returns versioned reproducible reports generated for this investigation.
     """
-    user_role = current_user.role if current_user else "ANALYST"
+    user_role = current_user.role if current_user else "PUBLIC"
     reports = db.query(ReportVersion).filter(ReportVersion.case_id == investigation_id).order_by(ReportVersion.report_version.desc()).all()
     if user_role == "PUBLIC":
         # Mask non-public-safe reports
@@ -198,8 +198,15 @@ def execute_case_action(
     """
     Executes or proposes a governed case action with strict RBAC and write safety validation.
     """
-    user_role = current_user.role if current_user else "ANALYST"
-    user_id = current_user.id if current_user else "ANALYST_HUMAN"
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required for governed case actions.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    user_role = current_user.role
+    user_id = current_user.id
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
     if not ws:
@@ -238,8 +245,15 @@ def add_case_note(
     """
     Adds a structured analyst note. Prohibits JARVIS autonomous impersonation.
     """
-    user_role = current_user.role if current_user else "ANALYST"
-    user_id = current_user.id if current_user else "ANALYST_HUMAN"
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to add case notes.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    user_role = current_user.role
+    user_id = current_user.id
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
     if not ws:
@@ -271,8 +285,15 @@ def review_evidence_item(
     """
     Records an analyst review decision for an evidence item.
     """
-    user_role = current_user.role if current_user else "ANALYST"
-    user_id = current_user.id if current_user else "ANALYST_HUMAN"
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to review evidence.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    user_role = current_user.role
+    user_id = current_user.id
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
     if not ws:
@@ -305,8 +326,15 @@ def create_evidence_request(
     """
     Creates a formal evidence request for additional sensor or external data.
     """
-    user_role = current_user.role if current_user else "ANALYST"
-    user_id = current_user.id if current_user else "ANALYST_HUMAN"
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to request evidence.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    user_role = current_user.role
+    user_id = current_user.id
 
     ws, err = workspace_manager.get_workspace(db, investigation_id, user_role=user_role, user_id=user_id)
     if not ws:

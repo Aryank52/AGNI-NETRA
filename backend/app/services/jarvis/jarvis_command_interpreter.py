@@ -1815,6 +1815,28 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_weather_requested:
             entities["weather_requested"] = True
 
+        # Phase 15 Section 31 Acceptance: Complete Health & Readiness Assessment
+        is_phase15_health_readiness = any(w in cmd for w in [
+            "health and readiness assessment of the intelligence platform",
+            "complete health and readiness assessment",
+            "health and readiness assessment",
+            "readiness assessment of the intelligence platform",
+            "perform a complete health and readiness",
+            "health and readiness"
+        ]) and ("platform" in cmd or "intelligence" in cmd or "complete" in cmd or "assessment" in cmd)
+        if is_phase15_health_readiness:
+            entities["is_phase15_health_readiness"] = True
+
+        # Phase 15 Section 32 Acceptance: Report Unavailable Dependencies
+        is_report_unavailable_deps = any(w in cmd for w in [
+            "report any unavailable dependencies",
+            "report unavailable dependencies",
+            "unavailable dependencies",
+            "report any unavailable"
+        ])
+        if is_report_unavailable_deps:
+            entities["report_unavailable_dependencies"] = True
+
         # J. General Multi-Constraint Search Flag
         if any(w in cmd for w in ["persistent anomalies", "persistent anomaly", "abnormal thermal activity", "intensity is significantly above historical", "significantly above historical"]):
             entities["anomalous_only"] = True
@@ -1900,7 +1922,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
         )
         is_unresolved_evidence_requests = (
             ("unresolved evidence requests" in cmd or "show unresolved evidence requests" in cmd or "pending evidence requests" in cmd or "open evidence requests" in cmd)
-        )
+        ) and not is_phase15_health_readiness
         is_analyst_decisions = (
             ("show all analyst decisions" in cmd or "analyst decisions" in cmd or "all analyst decisions" in cmd)
         )
@@ -1920,6 +1942,9 @@ class LocalDeterministicProvider(BaseLLMProvider):
         # 9. Intent Classification (Objective-First Hierarchy)
         if any(w in cmd for w in ["dispatch", "emergency send", "send team", "call fire department", "deploy responders"]):
             intent = CommandIntent.DISPATCH_REQUEST
+        elif is_phase15_health_readiness:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE15_HEALTH_READINESS"
         elif is_section_23_phase14_acceptance:
             intent = CommandIntent.VERIFY
             entities["is_phase14_case_management"] = True
@@ -2020,6 +2045,9 @@ class LocalDeterministicProvider(BaseLLMProvider):
         elif is_target_verification and not entities.get("is_composite"):
             intent = CommandIntent.VERIFY
             entities["explain_type"] = "VERIFICATION"
+        elif is_phase15_health_readiness:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "PHASE15_HEALTH_READINESS"
         elif any(w in cmd for w in ["system status", "intelligence status", "health", "system intelligence status"]):
             intent = CommandIntent.STATUS
         elif (

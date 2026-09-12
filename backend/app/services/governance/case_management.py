@@ -14,6 +14,7 @@ Implements:
 """
 
 import hashlib
+import hmac
 import json
 import uuid
 from datetime import datetime, timezone
@@ -261,6 +262,7 @@ class CaseManagementEngine:
         evidence_ids: Optional[List[str]] = None,
         assessment_version: int = 1,
         provenance_metadata: Optional[Dict[str, Any]] = None,
+        commit: bool = True,
     ) -> InvestigationAuditLog:
         """
         Appends an immutable audit log entry.
@@ -311,9 +313,68 @@ class CaseManagementEngine:
             provenance=provenance,
         )
         db.add(entry)
-        db.commit()
-        db.refresh(entry)
+        if commit:
+            db.commit()
+            db.refresh(entry)
         return entry
+
+    @classmethod
+    def verify_audit_entry_integrity(cls, entry: InvestigationAuditLog) -> bool:
+        """
+        Recomputes SHA-256 hash across canonical fields and verifies against provenance checksum.
+        Detects any out-of-band or direct database tampering.
+        """
+        if not entry or not entry.provenance:
+            return False
+        stored_hash = entry.provenance.get("checksum_sha256")
+        if not stored_hash:
+            return False
+
+        logged_at = entry.provenance.get("logged_at")
+        if not logged_at:
+            if hasattr(entry.timestamp, "isoformat"):
+                logged_at = entry.timestamp.isoformat()
+            else:
+                logged_at = str(entry.timestamp)
+
+        audit_payload = {
+            "audit_id": entry.audit_id,
+            "case_id": entry.case_id,
+            "actor_id": entry.actor_id,
+            "actor_role": entry.actor_role,
+            "timestamp": logged_at,
+            "action": entry.action,
+            "previous_state": entry.previous_state,
+            "new_state": entry.new_state,
+            "reason": entry.reason,
+            "evidence_ids": entry.evidence_ids or [],
+            "assessment_version": entry.assessment_version,
+        }
+        recomputed_hash = hashlib.sha256(
+            json.dumps(audit_payload, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        return hmac.compare_digest(recomputed_hash, stored_hash)
+
+    @classmethod
+    def verify_case_audit_integrity(cls, db: Session, case_id: str) -> Dict[str, Any]:
+        """
+        Verifies the cryptographic integrity of all audit entries for a case.
+        """
+        entries = db.query(InvestigationAuditLog).filter(InvestigationAuditLog.case_id == case_id).all()
+        tampered = []
+        verified_count = 0
+        for e in entries:
+            if cls.verify_audit_entry_integrity(e):
+                verified_count += 1
+            else:
+                tampered.append(e.audit_id)
+        return {
+            "case_id": case_id,
+            "total_entries": len(entries),
+            "verified_entries": verified_count,
+            "is_tamper_free": len(tampered) == 0,
+            "tampered_audit_ids": tampered
+        }
 
     @classmethod
     def propose_or_execute_action(
@@ -397,10 +458,6 @@ class CaseManagementEngine:
         elif act == CaseActionType.REQUEST_MORE_EVIDENCE.value:
             workspace.verification_status = HumanVerificationDecision.NEEDS_MORE_EVIDENCE.value
 
-        db.add(workspace)
-        db.commit()
-        db.refresh(workspace)
-
         # Retrieve current assessment version
         curr_ver = (
             db.query(AssessmentVersion)
@@ -408,20 +465,29 @@ class CaseManagementEngine:
             .count()
         ) or 1
 
-        # Create immutable audit record
-        audit_entry = cls.create_audit_entry(
-            db=db,
-            case_id=workspace.investigation_id,
-            actor_id=actor_id,
-            actor_role=actor_role,
-            action=act,
-            previous_state=prev_state,
-            new_state=workspace.status,
-            reason=reason,
-            evidence_ids=evidence_ids or [],
-            assessment_version=curr_ver,
-            provenance_metadata={"supporting_evidence": supporting_evidence or []},
-        )
+        try:
+            db.add(workspace)
+            # Create immutable audit record atomically
+            audit_entry = cls.create_audit_entry(
+                db=db,
+                case_id=workspace.investigation_id,
+                actor_id=actor_id,
+                actor_role=actor_role,
+                action=act,
+                previous_state=prev_state,
+                new_state=workspace.status,
+                reason=reason,
+                evidence_ids=evidence_ids or [],
+                assessment_version=curr_ver,
+                provenance_metadata={"supporting_evidence": supporting_evidence or []},
+                commit=False,
+            )
+            db.commit()
+            db.refresh(workspace)
+            db.refresh(audit_entry)
+        except Exception:
+            db.rollback()
+            raise
 
         return {
             "status": "EXECUTED",
@@ -899,3 +965,13 @@ class CaseManagementEngine:
 
 
 case_management_engine = CaseManagementEngine()
+
+
+def verify_audit_entry_integrity(entry: InvestigationAuditLog) -> bool:
+    """Verifies cryptographic SHA-256 integrity of an audit log entry."""
+    return CaseManagementEngine.verify_audit_entry_integrity(entry)
+
+
+def verify_case_audit_integrity(db: Session, case_id: str) -> Dict[str, Any]:
+    """Verifies cryptographic SHA-256 integrity of all audit entries for a case."""
+    return CaseManagementEngine.verify_case_audit_integrity(db, case_id)

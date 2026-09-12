@@ -25,6 +25,7 @@ class ProviderHealth(str, Enum):
     DEGRADED = "DEGRADED"
     UNAVAILABLE = "UNAVAILABLE"
     NOT_CONFIGURED = "NOT_CONFIGURED"
+    PARTIAL = "PARTIAL"
 
 
 class EvidenceAvailability(str, Enum):

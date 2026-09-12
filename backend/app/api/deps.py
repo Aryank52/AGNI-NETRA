@@ -5,7 +5,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
-from backend.app.core.security import ALGORITHM
+from backend.app.core.security import ALGORITHM, AUTH_ISSUER, decode_access_token
 from backend.app.models.domain import User
 from backend.app.models.schemas import TokenPayload
 
@@ -24,10 +24,10 @@ def get_optional_current_user(
     if not token:
         return None
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[ALGORITHM]
-        )
+        payload = decode_access_token(token)
         token_data = TokenPayload(**payload)
+        if not token_data.sub:
+            return None
         return db.query(User).filter(User.id == token_data.sub).first()
     except Exception:
         return None
@@ -42,10 +42,16 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[ALGORITHM]
-        )
+        payload = decode_access_token(token)
         token_data = TokenPayload(**payload)
+        if not token_data.sub:
+            raise credentials_exception
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except (JWTError, Exception):
         raise credentials_exception
     

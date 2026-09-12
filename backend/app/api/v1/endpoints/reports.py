@@ -3,7 +3,7 @@ import csv
 import json
 from typing import Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, Response, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
@@ -23,6 +23,9 @@ def download_event_pdf_report(
     """
     Generates and downloads a formal AGNI-NETRA Intelligence Dossier PDF for a thermal event.
     """
+    if not event_id or ".." in event_id or "/" in event_id or "\\" in event_id or "\x00" in event_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event identifier format.")
+
     event = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),
         joinedload(ThermalEvent.risk),

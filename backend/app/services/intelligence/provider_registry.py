@@ -106,8 +106,8 @@ class ProviderRegistry:
             if is_public:
                 # Mask sensitive internal notes / URLs / diagnostic details for public tier
                 item["source_provenance"] = "Authoritative Satellite / Official Public Catalog"
-                if meta.availability == ProviderHealth.DEGRADED:
-                    item["availability"] = ProviderHealth.AVAILABLE
+            # Truthful availability reporting across all tiers
+            item["availability"] = meta.availability.value
             results.append(item)
         return results
 
@@ -152,7 +152,12 @@ class ProviderRegistry:
         """Returns lightweight operational health of all registered providers."""
         statuses = {}
         for name, p in self._providers.items():
-            health = p.get_health(db)
+            try:
+                health = p.get_health(db)
+            except TimeoutError:
+                health = ProviderHealth.DEGRADED
+            except Exception:
+                health = ProviderHealth.DEGRADED
             statuses[name] = health.value
         return {
             "provider_count": len(self._providers),
