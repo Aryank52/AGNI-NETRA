@@ -99,3 +99,28 @@ def calculate_risk_score(
     }
 
     return total_risk, risk_level, subscores, risk_reasons
+
+
+class RiskService:
+    """Convenience class wrapper exposing the 5-factor risk scoring formula."""
+
+    @staticmethod
+    def compute_5factor_risk_score(
+        intensity: float,
+        proximity: float,
+        environmental: float,
+        persistence: float,
+        confidence: float
+    ) -> float:
+        """
+        Computes the canonical 5-factor risk score:
+        0.30 * intensity + 0.25 * proximity + 0.20 * environmental + 0.15 * persistence + 0.10 * confidence
+        """
+        raw = (
+            0.30 * intensity +
+            0.25 * proximity +
+            0.20 * environmental +
+            0.15 * persistence +
+            0.10 * confidence
+        )
+        return round(min(100.0, max(0.0, raw)), 1)

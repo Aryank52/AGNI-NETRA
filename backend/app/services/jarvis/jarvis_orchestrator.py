@@ -2253,6 +2253,47 @@ class JarvisMasterOrchestrator:
             requires_approval = True
 
         # =========================================================================
+        # PHASE 18: INDIA-FIRST DATA INTELLIGENCE & SOVEREIGN GEOGRAPHIC INTEGRITY
+        # =========================================================================
+        elif (
+            (objective and getattr(objective, "primary_goal", None) in [
+                "PHASE18_HIGHEST_RISK_INDUSTRIAL_INDIA",
+                "PHASE18_POWER_PLANTS_PERSISTENCE",
+                "PHASE18_STATE_INVESTIGATION",
+                "PHASE18_STATE_COMPARISON",
+                "PHASE18_MINING_PERSISTENCE",
+                "PHASE18_RISK_EXPLANATION",
+                "PHASE18_EVIDENCE_DOSSIER",
+                "PHASE18_INTELLIGENCE_REPORT",
+                "PHASE18_OUT_OF_SCOPE_REJECTION"
+            ]) or
+            entities.get("is_phase18_highest_risk_india") or
+            entities.get("is_phase18_power_plants_persistence") or
+            entities.get("is_phase18_state_investigation") or
+            entities.get("is_phase18_state_comparison") or
+            entities.get("is_phase18_mining_persistence") or
+            entities.get("is_phase18_risk_explanation") or
+            entities.get("is_phase18_evidence_dossier") or
+            entities.get("is_phase18_intelligence_report") or
+            entities.get("is_phase18_out_of_scope_rejection")
+        ):
+            log_state(JarvisState.EXECUTING, "Executing Phase 18 India-First Intelligence & Sovereign Geographic Integrity")
+            from backend.app.services.jarvis.jarvis_phase18_service import jarvis_phase18_service
+            p18_res = jarvis_phase18_service.execute(
+                db=db,
+                command=request.command,
+                entities=entities,
+                objective=objective,
+                steps=steps,
+                step_idx=len(steps) + 1
+            )
+            summary_text = p18_res["summary_text"]
+            details.update(p18_res["details"])
+            recommendations.extend(p18_res["recommendations"])
+            stopping_reason = p18_res["stopping_reason"]
+            requires_approval = p18_res["requires_approval"]
+
+        # =========================================================================
         # PHASE 17: GLOBAL PROVIDER ACTIVATION & LIVE DATA INTEGRATION
         # =========================================================================
         elif (
@@ -8717,3 +8758,4 @@ class JarvisMasterOrchestrator:
 
 
 master_orchestrator = JarvisMasterOrchestrator()
+jarvis_orchestrator = master_orchestrator

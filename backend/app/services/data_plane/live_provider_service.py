@@ -367,9 +367,35 @@ class LiveProviderService:
         # 2. Bound sample size
         bounded_obs = raw_observations[:limit]
 
-        # 3. Convert adapter NormalizedThermalObservation objects to DataPlane raw dicts
+        # 3. Convert adapter NormalizedThermalObservation objects to DataPlane raw dicts with India sovereign boundary tagging
+        from backend.app.services.india_boundary_service import india_boundary_service
         raw_dicts = []
         for o in bounded_obs:
+            is_inside, st_name, dt_name, sub_name = india_boundary_service.is_point_inside_india(o.latitude, o.longitude, db=db)
+            if is_inside:
+                rec_country = "India"
+                rec_jurisdiction = st_name or "India"
+                rec_scope = "INDIA"
+                rec_filter = "PASS_SOVEREIGN_INDIA"
+                q_reasons = []
+            else:
+                detected_neighbor = india_boundary_service.detect_neighboring_country(o.latitude, o.longitude)
+                rec_country = "OUTSIDE_INDIA"
+                rec_jurisdiction = detected_neighbor
+                rec_scope = "OUTSIDE_INDIA"
+                rec_filter = "EXCLUDED_OUTSIDE_INDIA"
+                q_reasons = [f"GEOGRAPHIC_SCOPE: Outside sovereign territory of India ({detected_neighbor})"]
+
+            meta = dict(o.metadata or {})
+            meta.update({
+                "geographic_scope": rec_scope,
+                "sovereign_filter": rec_filter,
+                "detected_country": rec_jurisdiction if not is_inside else "India",
+                "admin_state": st_name,
+                "admin_district": dt_name,
+                "admin_subdistrict": sub_name
+            })
+
             obs_dict = {
                 "provider": "NASA_FIRMS",
                 "dataset": dataset,
@@ -384,7 +410,10 @@ class LiveProviderService:
                 "satellite": o.satellite,
                 "sensor": o.sensor,
                 "data_tier": "LIVE",  # Strict live tag
-                "raw_metadata": o.metadata or {}
+                "country": rec_country,
+                "jurisdiction": rec_jurisdiction,
+                "quality_reasons": q_reasons,
+                "raw_metadata": meta
             }
             raw_dicts.append(obs_dict)
 
@@ -489,11 +518,13 @@ class LiveProviderService:
             "overall_status": "OPERATIONAL" if fresh_cnt > 0 else "DEGRADED"
         }
 
-    def get_live_coverage(self, db: Session) -> Dict[str, Any]:
+    def get_live_coverage(self, db: Session, india_only: bool = True) -> Dict[str, Any]:
         """
         Computes actual observed spatial & temporal coverage from real records.
+        Defaults to strict India operational scope (india_only=True).
         """
-        row = db.execute(text("""
+        filter_sql = "WHERE source_type = 'LIVE' AND country = 'India'" if india_only else "WHERE source_type = 'LIVE'"
+        row = db.execute(text(f"""
             SELECT 
                 MIN(latitude) as min_lat,
                 MAX(latitude) as max_lat,
@@ -503,19 +534,26 @@ class LiveProviderService:
                 MAX(observation_time) as max_time,
                 COUNT(*) as count
             FROM ingestion_records
-            WHERE source_type = 'LIVE';
+            {filter_sql};
         """)).fetchone()
+
+        total_cnt = db.execute(text("SELECT COUNT(*) FROM ingestion_records WHERE source_type = 'LIVE';")).scalar() or 0
+        india_cnt = db.execute(text("SELECT COUNT(*) FROM ingestion_records WHERE source_type = 'LIVE' AND country = 'India';")).scalar() or 0
+        outside_cnt = db.execute(text("SELECT COUNT(*) FROM ingestion_records WHERE source_type = 'LIVE' AND country = 'OUTSIDE_INDIA';")).scalar() or 0
 
         if not row or row[6] == 0:
             return {
                 "has_live_records": False,
+                "operational_scope": "INDIA" if india_only else "ALL",
                 "record_count": 0,
-                "total_records": 0,
+                "total_records": total_cnt,
+                "india_record_count": india_cnt,
+                "outside_india_record_count": outside_cnt,
                 "observed_bbox": None,
                 "spatial_bbox": [6.0, 68.0, 37.5, 97.5],
                 "temporal_extent": None,
                 "temporal_window": {"start": None, "end": None},
-                "coverage_description": "No live observations currently ingested."
+                "coverage_description": "No live observations currently ingested in operational scope."
             }
 
         min_lat, max_lat, min_lon, max_lon, min_time, max_time, count = row
@@ -526,25 +564,32 @@ class LiveProviderService:
         }
         return {
             "has_live_records": True,
+            "operational_scope": "INDIA" if india_only else "ALL",
             "record_count": count,
-            "total_records": count,
+            "total_records": total_cnt,
+            "india_record_count": india_cnt,
+            "outside_india_record_count": outside_cnt,
             "observed_bbox": bbox,
             "spatial_bbox": bbox,
             "temporal_extent": temporal,
             "temporal_window": temporal,
-            "coverage_description": f"Live coverage bounding box observed over India territory ({count} active points)."
+            "coverage_description": f"Live coverage observed over {'India sovereign territory' if india_only else 'regional acquisition extent'} ({count} active points)."
         }
 
     # =========================================================================
     # 4. Provenance Lookup & Latest Observations (Section 14)
     # =========================================================================
-    def get_latest_live_observations(self, db: Session, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_latest_live_observations(self, db: Session, limit: int = 10, india_only: bool = True) -> List[Dict[str, Any]]:
         """
         Queries the most recent live records ingested into the governed ledger.
+        Defaults to strict India operational scope (india_only=True).
         """
+        query = db.query(IngestionRecordModel).filter(IngestionRecordModel.source_type == "LIVE")
+        if india_only:
+            query = query.filter(IngestionRecordModel.country == "India")
+
         records = (
-            db.query(IngestionRecordModel)
-            .filter(IngestionRecordModel.source_type == "LIVE")
+            query
             .order_by(IngestionRecordModel.observation_time.desc())
             .limit(limit)
             .all()
@@ -569,6 +614,9 @@ class LiveProviderService:
                 "source_record_id": r.source_record_id,
                 "provider": r.provider,
                 "dataset": r.dataset,
+                "country": r.country,
+                "jurisdiction": r.jurisdiction,
+                "geographic_scope": norm.get("geographic_scope") or ("INDIA" if r.country == "India" else "OUTSIDE_INDIA"),
                 "satellite_or_sensor": sat_val,
                 "latitude": float(r.latitude) if r.latitude is not None else 0.0,
                 "longitude": float(r.longitude) if r.longitude is not None else 0.0,

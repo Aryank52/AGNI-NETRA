@@ -452,6 +452,16 @@ export default function Header() {
           <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-normal">AI OPS</span>
         </Link>
 
+        <div 
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-orange-500/10 border border-orange-500/30 text-orange-300 text-[11px] font-mono font-bold tracking-wider shadow-sm"
+          title="Active Operational Geography: Sovereign Territory of India (Authoritative PostGIS Boundary Containment)"
+          id="india-scope-badge"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+          <span>SCOPE: INDIA</span>
+          <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/20 text-orange-300 font-normal">36 STATES/UTS</span>
+        </div>
+
         <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="font-bold tracking-wider">FIRMS STREAM ACTIVE</span>

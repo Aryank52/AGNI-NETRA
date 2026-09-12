@@ -1838,6 +1838,124 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["report_unavailable_dependencies"] = True
 
         # =========================================================================
+        # Phase 18: India-First Data Intelligence & Sovereign Geographic Integrity
+        # =========================================================================
+        # 1. Out-of-Scope Country Rejection (Zero fabrication for foreign countries)
+        non_india_countries = ["sri lanka", "pakistan", "bangladesh", "nepal", "bhutan", "myanmar", "china", "afghanistan"]
+        detected_foreign_target = None
+        for c_name in non_india_countries:
+            if c_name in cmd and not any(w in cmd for w in ["exclude", "exclusion", "leakage", "boundary", "isolation", "remediated"]):
+                detected_foreign_target = c_name.title()
+                break
+
+        is_phase18_out_of_scope_rejection = (detected_foreign_target is not None)
+        if is_phase18_out_of_scope_rejection:
+            entities["is_phase18_out_of_scope_rejection"] = True
+            entities["target_foreign_country"] = detected_foreign_target
+
+        # 2. Highest-Risk Industrial Thermal Events in India
+        is_phase18_highest_risk_india = any(w in cmd for w in [
+            "highest-risk industrial thermal events in india",
+            "highest risk industrial thermal events in india",
+            "highest-risk industrial events in india",
+            "highest risk industrial events in india",
+            "highest-risk thermal events in india",
+            "highest risk thermal events in india"
+        ])
+        if is_phase18_highest_risk_india:
+            entities["is_phase18_highest_risk_india"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 3. Persistent Thermal Activity around Indian Power Plants
+        is_phase18_power_plants_persistence = any(w in cmd for w in [
+            "persistent thermal activity around indian power plants",
+            "persistent thermal activity around power plants",
+            "thermal activity around indian power plants",
+            "thermal activity around power plants",
+            "persistent thermal around power plants"
+        ])
+        if is_phase18_power_plants_persistence:
+            entities["is_phase18_power_plants_persistence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 4. Investigate Abnormal Thermal Activity in State (e.g. Maharashtra, Gujarat, Odisha)
+        is_phase18_state_investigation = (
+            ("investigate abnormal thermal activity in" in cmd) or
+            ("abnormal thermal activity in maharashtra" in cmd) or
+            ("investigate abnormal thermal activity" in cmd and any(st in cmd for st in self.INDIAN_STATES))
+        )
+        if is_phase18_state_investigation:
+            entities["is_phase18_state_investigation"] = True
+            entities["geographic_scope"] = "INDIA"
+            for st in self.INDIAN_STATES:
+                if st in cmd:
+                    entities["target_state"] = st.title()
+                    break
+
+        # 5. Compare Industrial Thermal Activity in State A and State B (e.g. Gujarat and Odisha)
+        is_phase18_state_comparison = (
+            ("compare industrial thermal activity in" in cmd) or
+            ("compare industrial thermal activity between" in cmd) or
+            ("compare industrial thermal activity" in cmd and " and " in cmd)
+        )
+        if is_phase18_state_comparison:
+            entities["is_phase18_state_comparison"] = True
+            entities["geographic_scope"] = "INDIA"
+            found_states = [st.title() for st in self.INDIAN_STATES if st in cmd]
+            if len(found_states) >= 2:
+                entities["comparison_states"] = found_states[:2]
+            elif "gujarat" in cmd and "odisha" in cmd:
+                entities["comparison_states"] = ["Gujarat", "Odisha"]
+            else:
+                entities["comparison_states"] = found_states if found_states else ["Gujarat", "Odisha"]
+
+        # 6. Mining Regions Persistent Thermal Activity
+        is_phase18_mining_persistence = any(w in cmd for w in [
+            "mining regions show persistent thermal activity",
+            "which mining regions show persistent thermal activity",
+            "which mining regions show persistent",
+            "mining regions show persistent",
+            "persistent thermal activity in mining"
+        ])
+        if is_phase18_mining_persistence:
+            entities["is_phase18_mining_persistence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 7. Explain Risk Score for Indian Event
+        is_phase18_risk_explanation = any(w in cmd for w in [
+            "why this indian event received a high risk score",
+            "explain why this indian event received a high risk score",
+            "why this indian event received a high risk",
+            "why this indian event received"
+        ])
+        if is_phase18_risk_explanation:
+            entities["is_phase18_risk_explanation"] = True
+            entities["geographic_scope"] = "INDIA"
+            entities["clarification_required"] = False
+
+        # 8. Evidence Dossier for Event
+        is_phase18_evidence_dossier = any(w in cmd for w in [
+            "what evidence supports this event",
+            "evidence supports this event",
+            "what evidence supports this"
+        ]) and not any(w in cmd for w in ["incident", "claim", "hypothesis"])
+        if is_phase18_evidence_dossier:
+            entities["is_phase18_evidence_dossier"] = True
+            entities["geographic_scope"] = "INDIA"
+            entities["clarification_required"] = False
+
+        # 9. India Industrial Thermal Intelligence Report
+        is_phase18_intelligence_report = any(w in cmd for w in [
+            "generate an india industrial thermal intelligence report",
+            "generate india industrial thermal intelligence report",
+            "india industrial thermal intelligence report",
+            "india industrial thermal report"
+        ])
+        if is_phase18_intelligence_report:
+            entities["is_phase18_intelligence_report"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # =========================================================================
         # Phase 17: Global Provider Activation & Live Data Integration Commands
         # =========================================================================
         # Phase 17 Section 30 Primary Acceptance
@@ -2336,7 +2454,34 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_section_30_phase17_acceptance:
+        if is_phase18_out_of_scope_rejection:
+            primary_goal = "PHASE18_OUT_OF_SCOPE_REJECTION"
+            intent = CommandIntent.QUERY
+        elif is_phase18_highest_risk_india:
+            primary_goal = "PHASE18_HIGHEST_RISK_INDUSTRIAL_INDIA"
+            intent = CommandIntent.RANK
+        elif is_phase18_power_plants_persistence:
+            primary_goal = "PHASE18_POWER_PLANTS_PERSISTENCE"
+            intent = CommandIntent.QUERY
+        elif is_phase18_state_investigation:
+            primary_goal = "PHASE18_STATE_INVESTIGATION"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase18_state_comparison:
+            primary_goal = "PHASE18_STATE_COMPARISON"
+            intent = CommandIntent.COMPARE
+        elif is_phase18_mining_persistence:
+            primary_goal = "PHASE18_MINING_PERSISTENCE"
+            intent = CommandIntent.QUERY
+        elif is_phase18_risk_explanation:
+            primary_goal = "PHASE18_RISK_EXPLANATION"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase18_evidence_dossier:
+            primary_goal = "PHASE18_EVIDENCE_DOSSIER"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase18_intelligence_report:
+            primary_goal = "PHASE18_INTELLIGENCE_REPORT"
+            intent = CommandIntent.GENERATE_REPORT
+        elif is_section_30_phase17_acceptance:
             primary_goal = "SECTION_30_PHASE17_PRIMARY_ACCEPTANCE"
         elif is_section_31_phase17_acceptance:
             primary_goal = "SECTION_31_PHASE17_SECOND_ACCEPTANCE"

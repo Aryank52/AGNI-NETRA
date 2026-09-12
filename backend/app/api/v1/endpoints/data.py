@@ -399,16 +399,20 @@ def get_live_provider_sample(
 def get_latest_live_observations(
     limit: int = Query(20, ge=1, le=100, description="Maximum observations to return"),
     provider: Optional[str] = Query(None, description="Optional provider filter"),
+    india_only: bool = Query(True, description="Enforce strict India sovereign boundary scope (excludes foreign observations e.g. Sri Lanka)"),
     db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Returns latest successfully ingested real-time live observations (data_tier='LIVE').
     Clearly distinguished from historical archives, backfill, or simulation data.
+    Defaults to strict India sovereign operational scope (india_only=True).
     """
     query = (
         db.query(IngestionRecordModel)
         .filter(IngestionRecordModel.source_type == "LIVE")
     )
+    if india_only:
+        query = query.filter(IngestionRecordModel.country == "India")
     if provider:
         query = query.filter(IngestionRecordModel.provider == provider.upper())
 
@@ -422,6 +426,9 @@ def get_latest_live_observations(
             "ingestion_id": r.ingestion_id,
             "provider": r.provider,
             "dataset": r.dataset,
+            "country": r.country,
+            "jurisdiction": r.jurisdiction,
+            "geographic_scope": norm.get("geographic_scope") or ("INDIA" if r.country == "India" else "OUTSIDE_INDIA"),
             "source_type": r.source_type,
             "latitude": r.latitude,
             "longitude": r.longitude,
@@ -451,12 +458,14 @@ def get_live_stream_freshness(
 
 @router.get("/live/coverage")
 def get_live_stream_coverage(
+    india_only: bool = Query(True, description="Compute coverage strictly over sovereign India territory"),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Returns actual observed spatial and temporal extent computed from real live records.
+    Defaults to strict India operational scope.
     """
-    return live_provider_service.get_live_coverage(db)
+    return live_provider_service.get_live_coverage(db, india_only=india_only)
 
 
 @router.get("/live/provenance/{source_record_id}")
@@ -474,4 +483,30 @@ def get_live_record_provenance(
             detail=f"Live provenance record not found for '{source_record_id}'."
         )
     return prov
+
+
+@router.get("/geography/india-boundary")
+def get_india_boundary_geojson(
+    simplified: bool = Query(True, description="Return simplified polygon geometry for web GIS rendering"),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Returns authoritative Survey of India / LGD administrative boundary GeoJSON FeatureCollection
+    for client-side GIS rendering and boundary enforcement visualization.
+    """
+    from backend.app.services.india_boundary_service import india_boundary_service
+    return india_boundary_service.get_authoritative_india_geojson(db=db, simplified=simplified)
+
+
+@router.post("/geography/remediate-scope")
+def remediate_geographic_scope(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+) -> Dict[str, Any]:
+    """
+    Runs non-destructive classification and remediation of ingestion_records
+    tagging foreign observations as OUTSIDE_INDIA while preserving raw provenance.
+    """
+    from backend.app.services.india_boundary_service import india_boundary_service
+    return india_boundary_service.classify_and_remediate_ingestion_records(db=db)
 

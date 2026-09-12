@@ -591,10 +591,33 @@ class ContextDiscoveryEngine:
         return contexts, relationships
 
     def _discover_administrative(self, db: Session, event_id: str, lat: float, lon: float, state: Optional[str], district: Optional[str]) -> Tuple[Optional[AdministrativeContext], Optional[ContextRelationship]]:
+        from backend.app.services.india_boundary_service import india_boundary_service
+        is_inside, st_name, dt_name, sub_name = india_boundary_service.is_point_inside_india(lat, lon, db=db)
+
+        if is_inside:
+            resolved_state = st_name or state or "India"
+            resolved_district = dt_name or district or "Unknown District"
+            is_conflicting = False
+            is_supporting = True
+            rec_country = "India"
+            spatial_rel = "DIRECT_OVERLAP"
+            relevance = "HIGH"
+            coverage_stat = "AVAILABLE"
+        else:
+            neighbor = india_boundary_service.detect_neighboring_country(lat, lon)
+            resolved_state = neighbor
+            resolved_district = None
+            is_conflicting = True
+            is_supporting = False
+            rec_country = "OUTSIDE_INDIA"
+            spatial_rel = "OUTSIDE_BOUNDARY"
+            relevance = "NEGLIGIBLE"
+            coverage_stat = "OUTSIDE_SCOPE"
+
         prov = SourceProvenance(
             provider="ADMIN_BOUNDARIES",
             dataset="SURVEY_OF_INDIA_ADMIN_BOUNDARIES",
-            geographic_coverage="COUNTRY:IN",
+            geographic_coverage="COUNTRY:IN" if is_inside else f"OUTSIDE_INDIA:{resolved_state}",
             spatial_resolution="Level 2 / District Boundary",
             limitations="Survey of India Delimitation"
         )
@@ -602,30 +625,30 @@ class ContextDiscoveryEngine:
             context_id=f"CTX-ADM-{uuid.uuid4().hex[:8].upper()}",
             provider="ADMIN_BOUNDARIES",
             dataset="SURVEY_OF_INDIA_ADMIN_BOUNDARIES",
-            country="India",
-            jurisdiction=state or "Gujarat",
+            country=rec_country,
+            jurisdiction=resolved_state,
             latitude=lat,
             longitude=lon,
             distance_meters=0.0,
-            spatial_relationship="DIRECT_OVERLAP",
-            spatial_relevance="HIGH",
-            admin_level=2,
-            admin_name=district or "Jamnagar",
-            state=state or "Gujarat",
-            district=district or "Jamnagar",
+            spatial_relationship=spatial_rel,
+            spatial_relevance=relevance,
+            admin_level=2 if is_inside else 0,
+            admin_name=resolved_district or resolved_state,
+            state=resolved_state if is_inside else None,
+            district=resolved_district,
             provenance=prov,
-            coverage_status="AVAILABLE"
+            coverage_status=coverage_stat
         )
         rel = ContextRelationship(
             event_id=event_id,
             context_id=ctx.context_id,
             domain="ADMINISTRATIVE",
-            category="DIRECT_OVERLAP",
+            category=spatial_rel,
             distance_m=0.0,
-            spatial_relevance="HIGH",
-            is_supporting=True,
-            is_conflicting=False,
-            details={"state": ctx.state, "district": ctx.district}
+            spatial_relevance=relevance,
+            is_supporting=is_supporting,
+            is_conflicting=is_conflicting,
+            details={"state": resolved_state, "district": resolved_district, "is_inside_india": is_inside}
         )
         return ctx, rel
 
