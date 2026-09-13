@@ -467,6 +467,7 @@ export interface JarvisResponse {
   uncertainty_assessment?: Record<string, any>;
   what_could_change?: string[];
   operator_summary?: Record<string, any>;
+  mission?: any;
   // Phase 6 Global Intelligence & Provider Abstraction
   sources_used?: string[];
   coverage_profile?: string;
@@ -1133,6 +1134,140 @@ export interface CaseActionProposal {
   authorized_roles: string[];
   created_at: string;
 }
+
+// =========================================================================
+// Phase 22: Mission Mode & Governed Epistemic Intelligence
+// =========================================================================
+
+export type EpistemicEvidenceType = "OBSERVED" | "DERIVED" | "INFERRED" | "UNKNOWN";
+
+export type MissionState =
+  | "CREATED"
+  | "UNDERSTANDING"
+  | "PLANNING"
+  | "EXECUTING"
+  | "EVALUATING"
+  | "REQUIRES_HUMAN_VERIFICATION"
+  | "COMPLETED"
+  | "FAILED"
+  | "IDLE";
+
+export interface EvidenceCitation {
+  citation_id: string;
+  epistemic_type: EpistemicEvidenceType;
+  title: string;
+  source: string;
+  record_id?: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface MissionTraceStep {
+  step_number: number;
+  phase: string;
+  capability: string;
+  tool: string;
+  input_parameters?: Record<string, any>;
+  output_summary: string;
+  evidence_citations: string[];
+  decision: string;
+  governance_check: string;
+  duration_ms: number;
+  status: string;
+}
+
+export interface CanonicalAssessment {
+  assessment_id: string;
+  mission_id: string;
+  event_or_incident_id?: string;
+  event_code?: string;
+  conclusion: string;
+  classification: string;
+  risk_score: number;
+  priority_score: number;
+  model_calibrated_confidence: number;
+  evidence_strength: string;
+  analyst_confidence: string;
+  epistemic_uncertainty: string;
+  supporting_evidence: string[];
+  contradicting_evidence: string[];
+  missing_evidence: string[];
+  competing_hypotheses: Array<Record<string, any>>;
+  recommended_next_evidence: string[];
+  assessment_timestamp: string;
+  model_version: string;
+  calibration_version: string;
+  version: number;
+}
+
+export interface AssessmentChange {
+  previous_assessment_ref?: string;
+  has_prior_assessment: boolean;
+  risk_change: number;
+  priority_change: number;
+  confidence_change: number;
+  classification_change?: string;
+  persistence_change?: string;
+  evidence_change?: string;
+  context_change?: string;
+  uncertainty_change?: string;
+  change_drivers: string[];
+  summary_explanation: string;
+}
+
+export interface NormalizedObjective {
+  raw_objective: string;
+  intent: string;
+  sovereign_scope: string;
+  is_valid_sovereign_scope: boolean;
+  rejection_reason?: string;
+  state?: string;
+  district?: string;
+  temporal_window: string;
+  primary_focus: string;
+  entities: string[];
+  requires_reassessment: boolean;
+  requires_contradiction_analysis: boolean;
+  requires_uncertainty_explanation: boolean;
+  requires_next_best_evidence: boolean;
+  requires_change_explanation: boolean;
+}
+
+export interface JarvisMission {
+  mission_id: string;
+  user_id: string;
+  user_role: string;
+  objective: string;
+  normalized_objective: NormalizedObjective;
+  execution_status: MissionState;
+  current_phase: string;
+  plan: string[];
+  execution_trace: MissionTraceStep[];
+  evidence_citations: EvidenceCitation[];
+  assessment?: CanonicalAssessment;
+  assessment_change?: AssessmentChange;
+  uncertainty_breakdown: Record<string, any>;
+  sensitivity_conditions: string[];
+  next_best_evidence: Array<Record<string, any>>;
+  target_map_coordinates?: [number, number];
+  target_event_id?: string;
+  target_case_id?: string;
+  operational_dispatch_gate: string;
+  automated_model_activation: string;
+  summary_markdown: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface JarvisMissionRequest {
+  objective: string;
+  user_role?: string;
+  user_id?: string;
+  session_id?: string;
+  target_event_id?: string;
+  context?: Record<string, any>;
+}
+
 
 
 

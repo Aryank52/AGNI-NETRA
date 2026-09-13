@@ -8,7 +8,8 @@ import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
 import { 
   JarvisResponse, ExecutionStep, ExecutionTrace, JarvisToolInfo,
-  InvestigationWorkspace, StructuredEvidenceItem, InvestigationStatus, EpistemicType 
+  InvestigationWorkspace, StructuredEvidenceItem, InvestigationStatus, EpistemicType,
+  JarvisMission, EvidenceCitation, MissionTraceStep, CanonicalAssessment, AssessmentChange
 } from "@/types";
 import {
   Terminal, Cpu, ShieldAlert, CheckCircle2, AlertTriangle, Layers,
@@ -18,7 +19,7 @@ import {
   XCircle, BarChart3, AlertOctagon, CornerDownLeft, FolderKanban,
   HelpCircle, RotateCcw, FileDown, Tag, Compass, Award, FileCode, Globe,
   History, Calendar, Sun, Moon, Wind, Cloud, CloudRain, Navigation, Radar,
-  Network, GitBranch, GitFork, ShieldX
+  Network, GitBranch, GitFork, ShieldX, Target, Scale, BookmarkCheck
 } from "lucide-react";
 
 export default function JarvisCommandConsolePage() {
@@ -31,7 +32,7 @@ export default function JarvisCommandConsolePage() {
   const [evidenceFilter, setEvidenceFilter] = useState<EpistemicType | "ALL">("ALL");
   const [egFilter, setEgFilter] = useState<string>("ALL");
   const [sessionId, setSessionId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation" | "intelligence_synthesis" | "case_management">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "mission" | "workspace" | "geospatial" | "ml_shap" | "anomaly" | "risk" | "satellite" | "trace" | "environmental" | "evidence_graph" | "incident_correlation" | "intelligence_synthesis" | "case_management">("overview");
   const [decisionSupportMode, setDecisionSupportMode] = useState<"ANALYST" | "AGENCY" | "EXECUTIVE" | "PUBLIC_SAFE">("ANALYST");
   const [toolsCatalog, setToolsCatalog] = useState<JarvisToolInfo[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -40,6 +41,20 @@ export default function JarvisCommandConsolePage() {
 
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    // Phase 22 Intelligence Mission Orchestrator Commands (Sovereign India)
+    "Investigate unusual industrial thermal activity in Gujarat.",
+    "Investigate thermal activity near Mundra within the last 48 hours.",
+    "Investigate event EVT-GJ-2025-001 and explain why it is classified as industrial.",
+    "Why did the assessment for EVT-GJ-2025-001 change from moderate to critical?",
+    "What evidence contradicts the industrial fire hypothesis for this event?",
+    "Explain what remains uncertain about this event.",
+    "What next evidence should be collected to resolve this uncertainty?",
+    "Assess thermal activity in Punjab and explain the primary risk drivers.",
+    "Investigate offshore thermal anomaly in the Arabian Sea.",
+    "Assess thermal activity in Lahore.",
+    "Investigate high-temperature hotspot near Korba thermal power plant.",
+    "Re-evaluate event EVT-GJ-2025-001 with latest persistence evidence.",
+
     // Phase 19 India Intelligence Depth & Operational Analytics Commands
     "JARVIS, audit India data intelligence.",
     "JARVIS, which India thermal events deserve analyst attention first and why?",
@@ -221,7 +236,11 @@ export default function JarvisCommandConsolePage() {
         }
       }
       setCommandHistory((prev) => [targetCmd, ...prev.filter((c) => c !== targetCmd)].slice(0, 10));
-      setActiveTab("overview");
+      if (res.mission || res.details?.mission) {
+        setActiveTab("mission");
+      } else {
+        setActiveTab("overview");
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to execute JARVIS command.");
     } finally {
@@ -2178,6 +2197,20 @@ export default function JarvisCommandConsolePage() {
                 {/* Tabbed Inspector Navigation */}
                 <div className="flex border-b border-slate-800 gap-2 overflow-x-auto text-xs font-mono">
                   <button
+                    onClick={() => setActiveTab("mission")}
+                    className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeTab === "mission" ? "border-amber-400 text-amber-400 bg-amber-950/20" : "border-transparent text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                    <span>MISSION MODE (PHASE 22)</span>
+                    {Boolean(response.mission || response.details?.mission) && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold ml-1">
+                        ACTIVE
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setActiveTab("overview")}
                     className={`px-4 py-2 border-b-2 font-semibold transition-all cursor-pointer ${
                       activeTab === "overview" ? "border-amber-400 text-amber-400" : "border-transparent text-slate-400 hover:text-slate-200"
@@ -2288,6 +2321,380 @@ export default function JarvisCommandConsolePage() {
                     AUDIT TRACE ({response.execution_trace.trace_id})
                   </button>
                 </div>
+
+                {/* Tab Content 0: Phase 22 Mission Mode & Governed Epistemic Intelligence */}
+                {activeTab === "mission" && (() => {
+                  const mission: JarvisMission | null = (response.mission || response.details?.mission) as JarvisMission | null;
+                  const assessment = mission?.assessment;
+                  const change = mission?.assessment_change;
+                  const trace = mission?.execution_trace || [];
+                  const citations = mission?.evidence_citations || [];
+
+                  if (!mission) {
+                    return (
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-8 text-center space-y-6">
+                        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                          <Target className="w-8 h-8" />
+                        </div>
+                        <div className="space-y-2 max-w-xl mx-auto">
+                          <h3 className="text-base font-mono font-bold text-slate-100 uppercase tracking-wider">
+                            JARVIS Mission Mode Orchestrator (Phase 22)
+                          </h3>
+                          <p className="text-xs text-slate-400 leading-relaxed">
+                            Transform natural language operational directives into controlled, multi-capability intelligence missions grounded strictly in Sovereign Indian PostGIS boundaries, deterministic tools, and explicit epistemic citations.
+                          </p>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-800/80 max-w-2xl mx-auto text-left space-y-3">
+                          <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block font-bold">
+                            Select a Sovereign Mission to Orchestrate:
+                          </span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {[
+                              "Investigate unusual industrial thermal activity in Gujarat.",
+                              "Investigate thermal activity near Mundra within the last 48 hours.",
+                              "Investigate event EVT-GJ-2025-001 and explain why it is classified as industrial.",
+                              "Why did the assessment for EVT-GJ-2025-001 change from moderate to critical?",
+                              "What evidence contradicts the industrial fire hypothesis for this event?",
+                              "Explain what remains uncertain about this event.",
+                              "What next evidence should be collected to resolve this uncertainty?",
+                              "Assess thermal activity in Punjab and explain the primary risk drivers.",
+                              "Investigate high-temperature hotspot near Korba thermal power plant.",
+                              "Re-evaluate event EVT-GJ-2025-001 with latest persistence evidence."
+                            ].map((mCmd, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleExecuteCommand(mCmd)}
+                                className="text-xs font-mono p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 hover:border-amber-500/40 text-slate-300 hover:text-amber-300 transition-all text-left flex items-start gap-2"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                                <span>{mCmd}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Mission Header Banner */}
+                      <div className="bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/30 rounded-xl p-5 shadow-lg relative overflow-hidden">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              MISSION {mission.mission_id}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              SOVEREIGN SCOPE: {mission.normalized_objective.sovereign_scope}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-blue-500/10 text-blue-300 border border-blue-500/30">
+                              STATE: {mission.execution_status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                              DISPATCH GATE: BLOCKED
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                              AUTONOMY: SINGLE AGENT (IDLE)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Operational Directive</span>
+                          <p className="text-sm font-semibold text-slate-100 font-mono">
+                            "{mission.objective}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Controlled Agent Loop Stepper */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                        <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold mb-3 flex items-center justify-between">
+                          <span>Autonomous Execution Stepper (Deterministic Loop)</span>
+                          <span className="text-slate-400">Halts and Returns to IDLE</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 font-mono text-xs">
+                          {[
+                            { stage: "UNDERSTANDING", desc: "Normalized Intent & Scope" },
+                            { stage: "PLANNING", desc: "12 Deterministic Stages" },
+                            { stage: "EXECUTING", desc: "Governed Tools Invoked" },
+                            { stage: "EVALUATING", desc: "Decoupled Epistemics" },
+                            { stage: mission.execution_status === "REQUIRES_HUMAN_VERIFICATION" ? "HUMAN REVIEW" : "COMPLETED", desc: "Returned to IDLE" },
+                          ].map((st, i) => (
+                            <div key={i} className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-slate-400 text-[10px]">STEP 0{i + 1}</span>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              </div>
+                              <span className="font-bold text-slate-200 text-xs">{st.stage}</span>
+                              <span className="text-[10px] text-slate-400 mt-1 leading-tight">{st.desc}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Canonical Assessment Card (If Generated) */}
+                      {assessment && (
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-mono text-slate-400">Canonical Assessment:</span>
+                                <span className="text-sm font-mono font-bold text-amber-400 uppercase">
+                                  {assessment.assessment_id}
+                                </span>
+                                {assessment.event_code && (
+                                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-200">
+                                    {assessment.event_code}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-300 font-mono italic">
+                                "{assessment.conclusion}"
+                              </p>
+                            </div>
+                            <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                              Class: {assessment.classification}
+                            </span>
+                          </div>
+
+                          {/* Decoupled Epistemic Metrics Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">5-Factor Risk</span>
+                              <span className="text-base font-bold text-rose-400 font-mono">
+                                {assessment.risk_score.toFixed(1)} <span className="text-xs text-slate-400 font-normal">/ 100</span>
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Formula: 0.30, 0.25, 0.20, 0.15, 0.10</span>
+                            </div>
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">Governed Priority</span>
+                              <span className="text-base font-bold text-amber-400 font-mono">
+                                {assessment.priority_score.toFixed(1)} <span className="text-xs text-slate-400 font-normal">/ 100</span>
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Formula: 0.40R + 0.20C + 0.30T + 0.10Rec</span>
+                            </div>
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">Calibrated Conf</span>
+                              <span className="text-base font-bold text-cyan-400 font-mono">
+                                {(assessment.model_calibrated_confidence * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Isotonic Calibrated</span>
+                            </div>
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">Evidence Strength</span>
+                              <span className="text-sm font-bold text-purple-400 font-mono mt-1 block">
+                                {assessment.evidence_strength}
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Multi-source support</span>
+                            </div>
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">Uncertainty</span>
+                              <span className="text-sm font-bold text-teal-400 font-mono mt-1 block">
+                                {assessment.epistemic_uncertainty}
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Epistemic boundary</span>
+                            </div>
+                            <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                              <span className="text-[10px] font-mono text-slate-400 block uppercase">Analyst Review</span>
+                              <span className="text-[11px] font-bold text-amber-300 font-mono mt-1 block">
+                                REQUIRED
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block mt-0.5">Human Verification</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Governed Tool Execution Trace Table */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <div className="flex items-center gap-2">
+                            <Cpu className="w-4 h-4 text-amber-400" />
+                            <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
+                              Governed Capability Execution Trace ({trace.length} Steps)
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            Zero Adversarial Injections Detected
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left font-mono text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-400 text-[11px]">
+                                <th className="py-2 px-2">#</th>
+                                <th className="py-2 px-2">PHASE</th>
+                                <th className="py-2 px-2">CAPABILITY</th>
+                                <th className="py-2 px-2">GOVERNED TOOL</th>
+                                <th className="py-2 px-2">OUTPUT SUMMARY</th>
+                                <th className="py-2 px-2">CITATIONS</th>
+                                <th className="py-2 px-2 text-right">TIME</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60">
+                              {trace.map((step, idx) => (
+                                <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                                  <td className="py-2.5 px-2 text-slate-400 font-bold">{step.step_number}</td>
+                                  <td className="py-2.5 px-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 font-bold">
+                                      {step.phase}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-2 text-cyan-300">{step.capability}</td>
+                                  <td className="py-2.5 px-2 text-amber-300 font-semibold">{step.tool}</td>
+                                  <td className="py-2.5 px-2 text-slate-300 max-w-md truncate" title={step.output_summary}>
+                                    {step.output_summary}
+                                  </td>
+                                  <td className="py-2.5 px-2">
+                                    <div className="flex flex-wrap gap-1">
+                                      {step.evidence_citations.map((cId, cIdx) => (
+                                        <span key={cIdx} className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">
+                                          {cId}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-2 text-right text-slate-400">{step.duration_ms}ms</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Evidence Citations Grounding Matrix */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <div className="flex items-center gap-2">
+                            <BookmarkCheck className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
+                              Authoritative Epistemic Grounding ({citations.length} Citations)
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-400">
+                            Distinguishes OBSERVED vs DERIVED vs INFERRED
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {citations.map((cit, idx) => {
+                            const badgeColor =
+                              cit.epistemic_type === "OBSERVED"
+                                ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/30"
+                                : cit.epistemic_type === "DERIVED"
+                                ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
+                                : "bg-amber-500/10 text-amber-300 border-amber-500/30";
+
+                            return (
+                              <div key={idx} className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-amber-300 border border-amber-500/20">
+                                      {cit.citation_id}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${badgeColor}`}>
+                                      [{cit.epistemic_type}]
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-slate-400">{cit.source}</span>
+                                </div>
+                                <h4 className="text-xs font-mono font-bold text-slate-200">{cit.title}</h4>
+                                <p className="text-xs text-slate-400 font-mono leading-relaxed">{cit.description}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Epistemic Reasoning: Support, Contradiction, Sensitivity, and What Changed */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* What Supports & What Contradicts */}
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-mono font-bold uppercase tracking-wider">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Supporting Factors</span>
+                            </div>
+                            <ul className="space-y-1.5 text-xs font-mono text-slate-300">
+                              {(assessment?.supporting_evidence || []).map((s, i) => (
+                                <li key={i} className="flex items-start gap-2 bg-emerald-950/10 border border-emerald-900/30 p-2 rounded">
+                                  <ChevronRight className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                  <span>{s}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="space-y-2 pt-3 border-t border-slate-800">
+                            <div className="flex items-center gap-1.5 text-rose-400 text-xs font-mono font-bold uppercase tracking-wider">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span>Contradicting / Inconsistent Factors</span>
+                            </div>
+                            <ul className="space-y-1.5 text-xs font-mono text-slate-300">
+                              {(assessment?.contradicting_evidence || []).map((c, i) => (
+                                <li key={i} className="flex items-start gap-2 bg-rose-950/10 border border-rose-900/30 p-2 rounded">
+                                  <ChevronRight className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                                  <span>{c}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* What Changed & Next Best Evidence */}
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-blue-400 text-xs font-mono font-bold uppercase tracking-wider">
+                                <History className="w-4 h-4" />
+                                <span>Assessment Change Tracking</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {change?.has_prior_assessment ? "Delta Computed" : "Baseline V1"}
+                              </span>
+                            </div>
+                            <p className="text-xs font-mono text-slate-300 bg-slate-950/70 p-2.5 rounded border border-slate-800">
+                              {change?.summary_explanation}
+                            </p>
+                            {change?.change_drivers && change.change_drivers.length > 0 && (
+                              <ul className="space-y-1 text-xs font-mono text-slate-400">
+                                {change.change_drivers.map((d, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <span className="text-blue-400 font-bold">•</span>
+                                    <span>{d}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 pt-3 border-t border-slate-800">
+                            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-mono font-bold uppercase tracking-wider">
+                              <Sparkles className="w-4 h-4" />
+                              <span>Recommended Next-Best-Evidence</span>
+                            </div>
+                            <ul className="space-y-1.5 text-xs font-mono text-slate-300">
+                              {(assessment?.recommended_next_evidence || []).map((rec, i) => (
+                                <li key={i} className="flex items-start gap-2 bg-amber-950/10 border border-amber-900/30 p-2 rounded">
+                                  <span className="text-amber-400 font-bold">#{i + 1}</span>
+                                  <span>{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Tab Content 1: Overview & Epistemic Synthesis */}
                 {activeTab === "overview" && (

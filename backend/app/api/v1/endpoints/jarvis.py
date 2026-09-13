@@ -13,7 +13,7 @@ from backend.app.api.deps import get_current_active_user, get_optional_current_u
 from backend.app.models.domain import User, InvestigationWorkspace
 from backend.app.models.jarvis_schemas import (
     JarvisCommandRequest, JarvisResponse, ExecutionTrace, JarvisToolInfo, SessionContext,
-    InvestigationWorkspaceSchema
+    InvestigationWorkspaceSchema, JarvisMission, JarvisMissionRequest
 )
 from backend.app.services.jarvis.jarvis_orchestrator import (
     master_orchestrator, WORKING_MEMORY_CACHE
@@ -362,4 +362,55 @@ def get_investigation_sources(
         "source_availability_matrix": workspace.source_availability_matrix or {},
         "provenance_records": workspace.provenance_records or []
     }
+
+
+# =========================================================================
+# Phase 22: Mission Mode & Governed Intelligence Endpoints
+# =========================================================================
+
+@router.post("/mission", response_model=JarvisMission)
+def execute_intelligence_mission(
+    req: JarvisMissionRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> JarvisMission:
+    """
+    Phase 22 Governed Intelligence Mission Orchestration Endpoint.
+    Executes controlled, evidence-grounded intelligence missions for sovereign India.
+    """
+    from backend.app.services.jarvis.jarvis_mission_service import jarvis_mission_service
+    user_role = current_user.role if current_user else req.user_role
+    user_id = current_user.id if current_user else (req.user_id or "ANALYST")
+    return jarvis_mission_service.execute_mission(
+        db=db,
+        request=req,
+        user_id=user_id,
+        user_role=user_role,
+        session_id=req.session_id
+    )
+
+
+@router.get("/governed-tools")
+def list_governed_mission_tools(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[Dict[str, Any]]:
+    """
+    Returns the Phase 22 catalog of registered, typed, governed intelligence tools.
+    """
+    from backend.app.services.jarvis.jarvis_mission_service import JarvisGovernedToolRegistry
+    return JarvisGovernedToolRegistry.list_tools()
+
+
+@router.get("/mission/active")
+def get_active_mission(
+    session_id: Optional[str] = Query(None),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Optional[Dict[str, Any]]:
+    """
+    Retrieves the most recent mission executed in the current session.
+    """
+    from backend.app.services.jarvis.jarvis_mission_service import mission_memory
+    m = mission_memory.get_current_mission()
+    return m.model_dump() if m else None
+
 

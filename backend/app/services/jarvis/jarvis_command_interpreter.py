@@ -152,16 +152,24 @@ class LocalDeterministicProvider(BaseLLMProvider):
         
         explicit_event_found = False
 
+        # Pattern 0: Direct full code "EVT-..." (e.g. EVT-GJ-2025-001, EVT-2026-08-0001)
+        evt_code_match = re.search(r"\b(evt-[a-z0-9\-]+)(?:['’]s)?\b", cmd, re.IGNORECASE)
+        if evt_code_match:
+            entities["event_ref"] = evt_code_match.group(1).upper()
+            explicit_event_found = True
+            entities["explicit_event_provided"] = True
+
         # Pattern A: "Event 827", "Event 827's", "Event-827", "EVT-827"
-        evt_match = re.search(r"(?:event|evt)[\s\-_#:]*([a-z0-9\-]+)(?:['’]s)?", cmd, re.IGNORECASE)
-        if evt_match:
-            candidate = evt_match.group(1).upper()
-            candidate = re.sub(r"['’]S$", "", candidate)
-            cand_lower = candidate.lower()
-            if cand_lower not in common_words and (re.search(r"\d", candidate) or candidate.startswith("EVT-")):
-                entities["event_ref"] = candidate
-                explicit_event_found = True
-                entities["explicit_event_provided"] = True
+        if not explicit_event_found:
+            evt_match = re.search(r"(?:event|evt)[\s\-_#:]*([a-z0-9\-]+)(?:['’]s)?", cmd, re.IGNORECASE)
+            if evt_match:
+                candidate = evt_match.group(1).upper()
+                candidate = re.sub(r"['’]S$", "", candidate)
+                cand_lower = candidate.lower()
+                if cand_lower not in common_words and (re.search(r"\d", candidate) or candidate.startswith("EVT-")):
+                    entities["event_ref"] = candidate
+                    explicit_event_found = True
+                    entities["explicit_event_provided"] = True
 
         # Pattern B: Prepositional "risk of Event 827", "classification of 827"
         if not explicit_event_found:
@@ -1838,6 +1846,56 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["report_unavailable_dependencies"] = True
 
         # =========================================================================
+        # Phase 22: JARVIS Mission Mode, Evidence-Grounded Intelligence & Assessment Change
+        # =========================================================================
+        is_phase22_mission = (
+            context.get("is_phase22_mission", False)
+            or cmd.startswith("mission:")
+            or cmd.startswith("mission ")
+            or any(w in cmd for w in [
+                "launch mission", "execute mission", "orchestrate mission", "run mission", "mission mode",
+                "investigate unusual industrial thermal activity in gujarat",
+                "investigate thermal activity near mundra within the last 48 hours",
+                "investigate thermal activity near mundra",
+                "investigate event evt-gj-2025-001 and explain why it is classified as industrial",
+                "why did the assessment for evt-gj-2025-001 change from moderate to critical",
+                "what evidence contradicts the industrial fire hypothesis for this event",
+                "what evidence contradicts the industrial fire hypothesis",
+                "what next evidence should be collected to resolve this uncertainty",
+                "what next evidence should be collected",
+                "assess thermal activity in punjab and explain the primary risk drivers",
+                "investigate offshore thermal anomaly in the arabian sea",
+                "assess thermal activity in lahore",
+                "investigate high-temperature hotspot near korba thermal power plant",
+                "re-evaluate event evt-gj-2025-001 with latest persistence evidence"
+            ])
+            or (
+                "assessment" in cmd and any(w in cmd for w in ["change from", "changed from", "moderate to critical", "low to high", "why did the assessment"])
+            )
+            or (
+                "contradicts" in cmd and "hypothesis" in cmd
+            )
+            or (
+                "resolve this uncertainty" in cmd or "resolve uncertainty" in cmd
+            )
+            or (
+                "re-evaluate event" in cmd or ("re-evaluate" in cmd and "persistence" in cmd)
+            )
+            or (
+                "unusual industrial thermal activity" in cmd
+            )
+            or (
+                "near korba thermal power plant" in cmd or "korba thermal power plant" in cmd
+            )
+            or (
+                "offshore thermal anomaly" in cmd and "arabian sea" in cmd
+            )
+        )
+        if is_phase22_mission:
+            entities["is_phase22_mission"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # =========================================================================
         # Phase 20: India Operational Validation & Analyst Workflow Commands
         # =========================================================================
         is_phase20_triage_queue = any(w in cmd for w in [
@@ -2691,7 +2749,10 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_phase20_triage_queue:
+        if is_phase22_mission:
+            primary_goal = "PHASE22_MISSION_ORCHESTRATION"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase20_triage_queue:
             primary_goal = "PHASE20_TRIAGE_QUEUE"
             intent = CommandIntent.RANK
         elif is_phase20_explain_triage:
@@ -3134,9 +3195,13 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SHOW_PROVENANCE_CHAIN", "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
         ]:
             requested_output = "SYNTHESIS"
+        elif primary_goal == "PHASE22_MISSION_ORCHESTRATION":
+            requested_output = "MISSION_INTELLIGENCE_REPORT"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal in [
+        if primary_goal == "PHASE22_MISSION_ORCHESTRATION":
+            stopping_condition = "MISSION_COMPLETED_AND_HALT_TO_IDLE"
+        elif primary_goal in [
             "SECTION_28_PHASE12_ACCEPTANCE", "FIND_RELATED_EVENTS", "IDENTIFY_NEAREST_RELATED",
             "DETERMINE_SAME_INCIDENT", "CORRELATE_SPATIALLY_TEMPORALLY", "IDENTIFY_RECURRING_CLUSTERS",
             "DETERMINE_PERSISTENT_PATTERN", "IDENTIFY_SEQUENTIAL_DOWNWIND", "SHOW_INCIDENT_SUPPORTING_EVIDENCE",
