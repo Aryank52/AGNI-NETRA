@@ -76,7 +76,6 @@ class JarvisMasterOrchestrator:
     JARVIS Master Agent orchestrating multi-step adaptive investigations as ONE cohesive system.
     """
     state: JarvisState = JarvisState.IDLE
-    subagents: List[Any] = []
 
     @classmethod
     def _execute_parallel_event_analysis(
