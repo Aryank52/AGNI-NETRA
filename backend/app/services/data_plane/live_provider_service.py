@@ -359,9 +359,15 @@ class LiveProviderService:
                 "provider": prov_upper,
                 "message": "NASA FIRMS API returned 0 observations for the specified window.",
                 "status": ProviderCapabilityStatus.AVAILABLE.value,
+                "batch_id": None,
                 "records_retrieved": 0,
+                "records_bounded": 0,
+                "records_accepted": 0,
+                "records_ingested": 0,
+                "records_duplicated": 0,
+                "records_quarantined": 0,
                 "retrieval_latency_ms": round(retrieval_latency_ms, 2),
-                "batch_id": None
+                "ingestion_latency_ms": round(retrieval_latency_ms, 2),
             }
 
         # 2. Bound sample size

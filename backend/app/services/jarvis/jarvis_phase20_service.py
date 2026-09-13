@@ -94,8 +94,10 @@ class JarvisPhase20Service:
                     f"| `{ev['event_code']}` | **{ev['governed_priority_score']}** | {ev['risk_score']} | {ev['calibrated_confidence']:.2f} | {ev['state']} | `{ev['verification_status']}` |"
                 )
 
+            triage_res["information_status"] = "REQUIRES_HUMAN_VERIFICATION"
             summary_lines.extend([
                 "",
+                "- **Information Status**: `REQUIRES_HUMAN_VERIFICATION`",
                 "**Operational Dispatch Gate**: `BLOCKED` (Autonomous dispatch is strictly disabled).",
                 "**Recommended Action**: Initiate guided investigation workflow for the top-ranked event."
             ])
@@ -163,7 +165,9 @@ class JarvisPhase20Service:
                 "",
                 "#### Epistemic Separation Guarantee:",
                 "- Model Confidence (ML classification probability) != Evidence Strength (empirical coverage) != Analyst Confidence (human domain judgment).",
+                "- **Information Status**: `AVAILABLE`",
             ]
+            explanation["information_status"] = "AVAILABLE"
 
             return {
                 "summary_text": "\n".join(summary_lines),
@@ -217,12 +221,13 @@ class JarvisPhase20Service:
                 )
 
             summary_lines.extend([
+                "- **Information Status**: `INSUFFICIENT`",
                 "**Governed Policy**: Unconfigured feeds declared `NOT_CONFIGURED`. Zero synthetic data substitution."
             ])
 
             return {
                 "summary_text": "\n".join(summary_lines),
-                "details": {"event_id": event_ref, "missing_evidence": missing},
+                "details": {"event_id": event_ref, "missing_evidence": missing, "information_status": "INSUFFICIENT"},
                 "recommendations": [
                     "Request Sentinel-2 optical imagery if cloud cover permits.",
                     "Review facility operating logs and state pollution clearance records."
@@ -272,8 +277,10 @@ class JarvisPhase20Service:
                 f"- **ML Classification**: `{clf['predicted_class']}` (Calibrated Confidence: {clf['calibrated_confidence']:.2f})",
                 f"- **Spatial Association**: {ctx['spatial_association_phrase']}",
                 f"- **Governed Priority**: **{dec['governed_priority_score']} / 100**",
+                f"- **Information Status**: `AVAILABLE`",
                 f"- **Operational Dispatch Gate**: `BLOCKED` (Strictly maintained)",
             ]
+            dossier["information_status"] = "AVAILABLE"
 
             return {
                 "summary_text": "\n".join(summary_lines),
@@ -336,6 +343,7 @@ class JarvisPhase20Service:
                     f"- **Status**: Baseline assessment version established (v1).",
                     f"- **Delta Note**: Only one assessment snapshot currently recorded for this case. No prior version delta available.",
                 ]
+            summary_lines.append("- **Information Status**: `AVAILABLE`")
 
             return {
                 "summary_text": "\n".join(summary_lines),
@@ -343,6 +351,7 @@ class JarvisPhase20Service:
                     "case_id": target_case_id,
                     "versions_count": len(versions),
                     "latest_version": versions[0].version_number if versions else 1,
+                    "information_status": "AVAILABLE",
                 },
                 "recommendations": ["Ingest additional satellite or context observations to generate version 2."],
                 "stopping_reason": "PHASE20_INVESTIGATION_DIFF_COMPLETE: Assessment delta computed. Master agent returning to IDLE.",
@@ -392,8 +401,10 @@ class JarvisPhase20Service:
 
             summary_lines.extend([
                 "",
+                "- **Information Status**: `AVAILABLE`",
                 "**Analyst Governance**: Human analysts may submit explicit assessment overrides with required rationale."
             ])
+            hypo_res["information_status"] = "AVAILABLE"
 
             return {
                 "summary_text": "\n".join(summary_lines),
@@ -449,12 +460,13 @@ class JarvisPhase20Service:
 
             summary_lines.extend([
                 "",
+                "- **Information Status**: `AVAILABLE`",
                 "**Epistemic Governance**: Negative results and contradictions are preserved without suppression."
             ])
 
             return {
                 "summary_text": "\n".join(summary_lines),
-                "details": {"event_id": event_ref, "contradictory_signals": conflicts},
+                "details": {"event_id": event_ref, "contradictory_signals": conflicts, "information_status": "AVAILABLE"},
                 "recommendations": ["Review multi-modal satellite observations to confirm absence of false positives."],
                 "stopping_reason": "PHASE20_CONTRADICTING_EVIDENCE_COMPLETE: Contradicting evidence evaluated. Master agent returning to IDLE.",
                 "requires_approval": False
@@ -500,9 +512,11 @@ class JarvisPhase20Service:
                     f"   - **Target**: {item.get('description', item.get('reason'))}\n"
                 )
 
+            summary_lines.append("- **Information Status**: `REQUIRES_HUMAN_VERIFICATION`")
+
             return {
                 "summary_text": "\n".join(summary_lines),
-                "details": {"event_id": event_ref, "recommendations": next_items},
+                "details": {"event_id": event_ref, "recommendations": next_items, "information_status": "REQUIRES_HUMAN_VERIFICATION"},
                 "recommendations": ["Execute the top verification step to advance the investigation to VERIFY stage."],
                 "stopping_reason": "PHASE20_NEXT_VERIFICATION_COMPLETE: Next verification actions recommended. Master agent returning to IDLE.",
                 "requires_approval": False
@@ -555,7 +569,7 @@ class JarvisPhase20Service:
 
             return {
                 "summary_text": "\n".join(summary_lines),
-                "details": {"incident_a": prio1, "incident_b": prio2},
+                "details": {"incident_a": prio1, "incident_b": prio2, "information_status": "AVAILABLE"},
                 "recommendations": ["Prioritize Incident A for formal human verification first."],
                 "stopping_reason": "PHASE20_COMPARE_INCIDENTS_COMPLETE: Comparative incident analysis finished. Master agent returning to IDLE.",
                 "requires_approval": False
@@ -591,8 +605,10 @@ class JarvisPhase20Service:
                 duration_ms=round((time.time() - t0) * 1000.0, 2)
             ))
 
+            report_res["information_status"] = "AVAILABLE"
             summary_lines = [
                 f"### AGNI-NETRA Authoritative Operational Case Report Generated",
+                f"- **Information Status**: `AVAILABLE`",
                 f"- **Report ID**: `{report_res['report_id']}`",
                 f"- **Target Event / Case**: `{report_res['event_id']}`",
                 f"- **Standardized Sections**: 17 complete operational sections included.",

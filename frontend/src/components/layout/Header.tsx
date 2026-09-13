@@ -12,7 +12,7 @@ import {
   Layers, LogOut, ChevronDown, CheckCircle2, AlertTriangle,
   Search, X, MapPin, Factory, Zap, Pickaxe, Trees, Shield, Loader2,
   Clock, Menu, Bell, BarChart3, Globe, Cpu, Eye, Building2, GraduationCap,
-  Map as MapIcon, Settings, Sparkles
+  Map as MapIcon, Settings, Sparkles, Info
 } from "lucide-react";
 
 export interface PortalOption {
@@ -76,6 +76,7 @@ export default function Header() {
   const router = useRouter();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [releaseModalOpen, setReleaseModalOpen] = useState(false);
   const [missionClock, setMissionClock] = useState({ utc: "", ist: "" });
 
   useEffect(() => {
@@ -462,6 +463,16 @@ export default function Header() {
           <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/20 text-orange-300 font-normal">36 STATES/UTS</span>
         </div>
 
+        <button
+          onClick={() => setReleaseModalOpen(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 text-[11px] font-mono font-bold transition-all shadow-sm group"
+          title="View AGNI-NETRA Phase 21 Release Candidate Specifications"
+          id="release-info-btn"
+        >
+          <Info className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+          <span>V1.0-RC</span>
+        </button>
+
         <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="font-bold tracking-wider">FIRMS STREAM ACTIVE</span>
@@ -736,6 +747,107 @@ export default function Header() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Phase 21 Release Information Modal */}
+      {releaseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative font-sans text-slate-100">
+            <button
+              onClick={() => setReleaseModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
+              aria-label="Close Release Modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-wide">AGNI-NETRA — Release Candidate</h2>
+                <p className="text-xs font-mono text-blue-400">Phase 21: India-First Product Readiness & Operational Hardening</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Product Name & Version</div>
+                  <div className="font-semibold text-white">AGNI-NETRA (v1.0-RC)</div>
+                  <div className="text-[11px] text-slate-400">Geospatial Thermal Intelligence & Decision Support</div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Operating Scope</div>
+                  <div className="font-semibold text-orange-400">Sovereign Territory of India</div>
+                  <div className="text-[11px] text-slate-400">36 States/UTs, 735 Districts (Survey of India / LGD Cadastre)</div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Agent Architecture</div>
+                  <div className="font-semibold text-amber-400">JARVIS (Single Master Agent)</div>
+                  <div className="text-[11px] text-slate-400">Zero subagents, zero background swarms, returns to IDLE</div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Safety Gates</div>
+                  <div className="flex items-center gap-2 font-mono">
+                    <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-bold">DISPATCH: BLOCKED</span>
+                    <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] font-bold">MODEL AUTO-ACT: DISABLED</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">Zero autonomous dispatch; models remain strictly frozen</div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-2">
+                <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">External Data Providers & Coverage</div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-emerald-400 font-semibold">● CONFIGURED:</span>
+                    <ul className="list-disc list-inside text-slate-300 ml-1 mt-0.5 space-y-0.5">
+                      <li>NASA FIRMS (VIIRS 375m NRT)</li>
+                      <li>ISRO Bhuvan (LULC 10m)</li>
+                      <li>CEA Power Stations (1,633)</li>
+                      <li>IBM Mining Leases (414)</li>
+                      <li>MoEFCC PARIVESH (622)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold">○ NOT_CONFIGURED (Factual):</span>
+                    <ul className="list-disc list-inside text-slate-400 ml-1 mt-0.5 space-y-0.5">
+                      <li>Copernicus Sentinel-2</li>
+                      <li>Commercial Optical (Planet/Maxar)</li>
+                      <li>Commercial High-Res SAR</li>
+                      <li>ECMWF High-Res Weather</li>
+                    </ul>
+                    <p className="text-[10px] text-slate-500 mt-1 italic">Zero synthetic substitutions for unconfigured feeds.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
+                <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Governed Data Types</div>
+                <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">REAL: NASA FIRMS, CEA, IBM, LGD</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">DERIVED: 5-Factor Risk, Priority, Persistence</span>
+                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">FIXTURE: Candidates for Evaluation</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">UNAVAILABLE: Global SAR/Weather</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  onClick={() => setReleaseModalOpen(false)}
+                  className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

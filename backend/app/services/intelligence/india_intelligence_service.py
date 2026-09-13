@@ -35,6 +35,7 @@ from backend.app.services.india_boundary_service import india_boundary_service
 from backend.app.services.data_plane.india_dataset_inventory import india_dataset_inventory
 from backend.app.services.risk_service import RiskService
 from backend.app.services.alert_workflow_service import ROUTING_TIER_WEIGHTS
+from backend.app.core.config import settings
 
 logger = logging.getLogger("agni_netra.india_intelligence")
 
@@ -142,9 +143,13 @@ class IndiaIntelligenceService:
             "overall_coverage_score_percent": scorecard.get("average_score_percent", 96.8),
             "quality_audit_status": quality.get("overall_status", "PASS"),
             "quality_checks_passed": f"{quality.get('checks_passed', 10)}/{quality.get('total_checks', 10)}",
+            "zero_synthetic_guarantee": True,
+            "operational_dispatch_gate": "BLOCKED" if not settings.ENABLE_OPERATIONAL_DISPATCH_GATE else "ENABLED",
+            "automated_model_activation": "DISABLED" if not getattr(settings, "ENABLE_AUTOMATED_MODEL_ACTIVATION", False) else "ENABLED",
             "operational_dimensions": dimensions,
             "dimension_coverage": dim_map,
-            "active_datasets": active_summary
+            "active_datasets": active_summary,
+            "governed_datasets_inventory": items,
         }
 
     # =========================================================================

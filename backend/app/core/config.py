@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     # Machine Learning Governance & Models
     MODEL_DIR: str = os.path.join(ROOT_DIR, "ml", "models")
     DEFAULT_MODEL_VERSION: str = "xgb-v3.0-real-candidate"
+    ENABLE_AUTOMATED_MODEL_ACTIVATION: bool = False  # Strictly disabled: models remain frozen
     
     # Security, Rate Limiting & Tracing
     RATE_LIMIT_PER_MINUTE: int = 600

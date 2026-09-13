@@ -1,100 +1,128 @@
-# AGNI-NETRA
-### AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform
-*Detect → Classify → Analyze → Explain → Prioritize → Verify*
+# AGNI-NETRA (अग्नि-नेत्र)
+### Sovereign India AI Thermal Intelligence & Operational Decision Support Platform
+**Version**: `1.0.0-RC1` | **Scope**: Sovereign Territory of India | **Classification**: Governed Multi-Source Operational Intelligence
 
 ---
 
-> **Core Mission**: Transforming raw satellite thermal observations into explainable industrial thermal intelligence and decision support.
+> **Operational Mission**:
+> Transforming raw spaceborne thermal observations into explainable, legally defensible, and high-fidelity operational decision support for the Sovereign Territory of India.
 > 
-> *&ldquo;FIRMS tells us where a thermal anomaly is. **AGNI-NETRA** tells us what it most likely represents, whether it is persistent or abnormal, how risky it is, and why.&rdquo;*
+> *&ldquo;FIRMS indicates where thermal energy is detected. **AGNI-NETRA** determines what sovereign facility or process it is spatially associated with, whether it represents abnormal activity or routine operations, how risky it is under frozen governance formulas, and what verifiable evidence must be evaluated by a human analyst.&rdquo;*
 
 ---
 
-##  Key Product Capabilities & USPs
+## 🏛️ Core Architectural Foundations & Safety Guarantees
 
-1. **7-Class AI Thermal Source Classifier**: Primary XGBoost (F1: 0.958, Accuracy: 96.2%) + Random Forest benchmark classifying Industrial Fires, Gas Flares, Forest Fires, Agricultural Stubble Burning, Mining, Other, and Uncertain.
-2. **Autonomous Candidate Facility Discovery (USP)**: Discovers uncataloged industrial thermal sources based on multi-temporal recurrence, 24x7 diurnal emissions, and LULC isolation.
-3. **Explainable AI (SHAP TreeExplainer)**: Provides exact Shapley feature attributions for every prediction on interactive waterfall charts.
-4. **Historical Baselines & Anomaly Engine**: Computes running $\mu_{frp}$ and $\sigma_{frp}$ to detect sudden surges (+3.2σ) and multivariate behavioral anomalies via Isolation Forest.
-5. **AGNI-NETRA Transparent Risk Matrix**: Multi-criteria risk scoring ($0 - 100$) evaluating radiative power, abnormality, population proximity, and surrounding hazards.
-6. **Human-In-The-Loop Active Learning**: Analyst review queue to confirm, correct, or override predictions with automatic retention in `verification_records`.
-7. **Automated PDF Intelligence Dossier Generator**: One-click downloadable decision support reports.
-8. **Role-Based Portals**: Gated experiences for Public, Researcher, Industry, Analyst, Agency, and Admin.
+1. **Sovereign India Scope Boundary Filtering**:
+   - Strictly bounded by official Survey of India / Local Government Directory (LGD) administrative boundaries.
+   - Enforces 7,595 PostGIS (SRID 4326) polygons across 36 States/UTs, 735 Districts, and 6,824 Subdistricts (Tehsils).
+   - Foreign coordinates (e.g. Sri Lanka, Pakistan, maritime outside EEZ) are automatically quarantined or excluded.
+
+2. **Master Agent JARVIS (Single Master Agent Architecture)**:
+   - Single authoritative natural-language command agent (`JARVIS`).
+   - Zero independent autonomous subagents, zero background agent swarms.
+   - Strictly conversational, read-only analytical reasoning, deterministic state transitions (`IDLE` ➔ `PROCESSING` ➔ `COMPLETED` ➔ `IDLE`).
+
+3. **Governed Operational Dispatch Safety Gate (`BLOCKED`)**:
+   - `ENABLE_OPERATIONAL_DISPATCH_GATE = False` (hard invariant).
+   - No automated emergency dispatches, siren triggers, or live agency alerts can be emitted without human review.
+
+4. **Automated Model Activation Disabled (`DISABLED`)**:
+   - `ENABLE_AUTOMATED_MODEL_ACTIVATION = False` (hard invariant).
+   - ML model artifacts, weights, and calibrators are frozen. Automated online retraining and silent activation are forbidden.
+
+5. **Strict Metric Decoupling**:
+   - **Risk Score** (0–100 threat magnitude) ≠ **Calibrated Confidence** (0.0–1.0 ML attribution certainty) ≠ **Evidence Strength** (empirical coverage) ≠ **Analyst Confidence** (human judgment) ≠ **Epistemic Uncertainty** (knowledge gaps).
+
+6. **Frozen Mathematical Formulas**:
+   - **5-Factor Operational Risk Formula**:
+     $$\text{Risk} = 0.30 \times I_{\text{Intensity}} + 0.25 \times A_{\text{Abnormality}} + 0.20 \times E_{\text{Exposure}} + 0.15 \times P_{\text{Persistence}} + 0.10 \times C_{\text{Context}}$$
+   - **Governed Priority Formula**:
+     $$\text{Priority} = 0.40 \times \text{RiskScore} + 0.20 \times \text{CalibratedConfidence} + 0.30 \times \text{TierWeight} + 0.10 \times \text{RecencyScore}$$
+
+7. **Truthful Provider Disclosure (Zero Synthetic Feeds)**:
+   - Live real streams active for NASA FIRMS VIIRS (375m) and PostGIS master cadastral datasets.
+   - Unconfigured international feeds (Copernicus CAMS, ECMWF ERA5, NOAA GFS, Sentinel-1/2, Planet) are truthfully reported as `NOT_CONFIGURED`. Zero synthetic data is substituted.
 
 ---
 
-##  Quick Start (Local Development)
+## 🚀 Quick Start & Development Setup
 
-### 1. Backend Server (FastAPI)
-```bash
-# Activate virtual environment
-.\venv\Scripts\activate
+### System Prerequisites
+- **Operating System**: Windows 11 / Linux (Ubuntu 22.04+)
+- **Python**: 3.12+ (Virtual environment in `.venv`)
+- **Node.js**: 20+ & npm 10+
+- **PostgreSQL**: 16 with PostGIS 3.4+ extension installed
 
-# Run database seed and acceptance tests
-python database/seed_data.py
-python tests/run_all_tests.py
+### 1. Database & Services Initial Setup
+Ensure PostgreSQL 16 is running on `127.0.0.1:5432` with database `agni_netra_db`.
+```powershell
+# Set environment
+$env:PYTHONPATH="."
 
-# Launch FastAPI server (Port 8000)
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+# Run database verification & readiness audit
+.venv\Scripts\python.exe database\audit_phase_6a_readiness.py
 ```
-- **API Documentation (Swagger)**: [http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs)
-- **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
 
-### 2. Frontend Application (Next.js 15 + MapLibre GL)
-```bash
+### 2. Backend Application (FastAPI)
+```powershell
+# Activate virtual environment
+.\.venv\Scripts\Activate.ps1
+
+# Launch FastAPI ASGI daemon on port 8000
+.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- **Interactive Swagger Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Health & Readiness Endpoint**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+
+### 3. Frontend Web Application (Next.js 15)
+```powershell
 cd frontend
 npm run dev
 ```
-- **Command Center Map**: [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
-- **Landing Page**: [http://localhost:3000](http://localhost:3000)
-- **Role Portal Switcher**: [http://localhost:3000/login](http://localhost:3000/login)
+- **Operational Command Center**: [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
+- **Analyst Verification Queue**: [http://localhost:3000/dashboard/verification](http://localhost:3000/dashboard/verification)
+- **Master Agent JARVIS Terminal**: [http://localhost:3000/jarvis](http://localhost:3000/jarvis)
+- **National Intelligence & Analytics**: [http://localhost:3000/dashboard/analytics](http://localhost:3000/dashboard/analytics)
 
 ---
 
-##  Docker Compose Deployment
-```bash
-docker-compose -f deployment/docker-compose.yml up --build -d
+## 🧪 Verification & Benchmark Commands
+
+Execute the test suites and performance regression benchmarks directly:
+
+```powershell
+# 1. Phase 21 Full Release Readiness Suite (23 Test Groups, 100% Passing)
+$env:PYTHONPATH="."; .venv\Scripts\python.exe -m pytest tests/test_phase21_release_readiness.py -v
+
+# 2. Performance Regression Benchmark (P50, P95, P99 across 10 capabilities)
+$env:PYTHONPATH="."; .venv\Scripts\python.exe tests/benchmark_phase21_release.py
+
+# 3. 14-Stage End-to-End India Operational Walkthrough
+$env:PYTHONPATH="."; .venv\Scripts\python.exe tests/demonstration_phase21_e2e.py
+
+# 4. Full Monorepo Regression Suite (198 Tests across all phases)
+$env:PYTHONPATH="."; .venv\Scripts\python.exe -m pytest tests/test_phase*.py -q
 ```
 
 ---
 
-##  Project Architecture & Monorepo Layout
+## 👥 Role-Based Access Control (RBAC) Matrix
 
-```
-AGNI-NETRA/
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/endpoints/  # Auth, Events, Facilities, Candidates, Anomalies, Verification, Reports, ML, Admin
-│   │   ├── core/              # Config, Security (JWT/Bcrypt), Database
-│   │   ├── models/            # SQLAlchemy 2.0 ORM Models + Pydantic v2 Schemas
-│   │   └── services/          # DBSCAN, Persistence, Baselines, Isolation Forest, Risk Engine, ReportLab PDF
-│   └── requirements.txt
-├── ml/
-│   ├── training/              # XGBoost & Random Forest trainer, Feature vector pipeline
-│   ├── inference/             # Classifier predictor, SHAP TreeExplainer wrapper
-│   └── models/                # Serialized .joblib artifacts
-├── data_pipeline/
-│   └── adapters/              # FIRMS (VIIRS/MODIS), OSM, Bhuvan LULC, Sentinel-2, Landsat, Demo Seed
-├── frontend/                  # Next.js 15 App Router, Tailwind CSS, MapLibre GL JS, Recharts
-├── database/                  # Schema definition and Indian industrial seed generator
-├── deployment/                # Docker Compose, Dockerfiles, .env.example
-├── docs/                      # Architecture, API, ML, Database, Security, Deployment
-└── tests/                     # Acceptance and unit test suites
-```
+| Role | Permitted Access | Restricted Actions |
+|---|---|---|
+| **ANALYST** | Triage queue, case management, ACH hypotheses, dossier, evidence review, report generation | Direct model retraining, dispatch gate modification |
+| **AGENCY** | Priority incidents, incident corridor briefings, agency dispatch review | Public dataset modification, raw database access |
+| **RESEARCHER** | Longitudinal 6-year thermal baselines, LULC correlation, cross-sensor comparisons | Operational case verification, dispatch gate access |
+| **INDUSTRY** | Own-facility baselines, flaring permits, compliance dossiers | Other facilities' telemetry, sovereign queue triage |
+| **ADMIN** | System health, audit logs, configuration governance, user management | Autonomous alert emission (dispatch gate remains blocked) |
+| **PUBLIC** | Sanitized, aggregated regional advisories (coarse coordinates, zero facility IDs) | All case workspaces, raw sensor telemetry, SHAP attributions |
 
 ---
 
-##  Demo Role Accounts (1-Click Login Ready)
+## 📚 Key Reference Documentation
 
-| Role | Demo Email | Password | Scope |
-|---|---|---|---|
-| **ANALYST** | `analyst@agninetra.gov.in` | `AgniNetra@2026` | Full verification queue, candidate review, dossiers |
-| **AGENCY** | `agency@ndma.gov.in` | `AgniNetra@2026` | Emergency response, critical risk alerts |
-| **RESEARCHER** | `researcher@isro.res.in` | `AgniNetra@2026` | Time-series, raw data analysis |
-| **INDUSTRY** | `industry@reliance.com` | `AgniNetra@2026` | Facility baselines, flare compliance |
-| **ADMIN** | `admin@agninetra.gov.in` | `AgniNetra@2026` | Ingestion management, audit logs |
-| **PUBLIC** | `public@user.in` | `AgniNetra@2026` | Public safety advisory map |
-
----
-
-*AGNI-NETRA — AI-Powered Industrial Fire & Persistent Thermal Intelligence Platform.*
+- [Technical Architecture Specification](file:///e:/PROJECTS/AGNI-NETRA/ARCHITECTURE.md)
+- [Operations & Runbook Guide](file:///e:/PROJECTS/AGNI-NETRA/OPERATIONS_RUNBOOK.md)
+- [Stakeholder Demonstration Script](file:///e:/PROJECTS/AGNI-NETRA/DEMO_GUIDE.md)
+- [Phase 21 Comprehensive Release Report](file:///e:/PROJECTS/AGNI-NETRA/PHASE_21_REPORT.md)

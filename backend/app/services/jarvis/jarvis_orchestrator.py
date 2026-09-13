@@ -8839,6 +8839,7 @@ class JarvisMasterOrchestrator:
             uncertainty_assessment=details.get("uncertainty_assessment") or (active_ws.uncertainty if active_ws else None),
             what_could_change=details.get("what_could_change") or (active_ws.uncertainty.get("what_could_change") if active_ws and isinstance(active_ws.uncertainty, dict) else None),
             operator_summary=details.get("operator_summary"),
+            information_status=details.get("information_status") or "AVAILABLE",
             # Phase 6 Global Intelligence & Provider Abstraction
             sources_used=details.get("sources_used") or (active_ws.sources_used if active_ws and active_ws.sources_used else ["FIRMS", "OSM", "CEA", "PARIVESH", "IBM_MINING", "ISRO_BHUVAN", "FSI", "ADMIN_BOUNDARIES"]),
             coverage_profile=details.get("coverage_profile") or (active_ws.coverage_profile if active_ws and active_ws.coverage_profile else "INDIA"),

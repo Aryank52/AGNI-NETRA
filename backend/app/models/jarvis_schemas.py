@@ -282,6 +282,7 @@ class JarvisResponse(BaseModel):
     what_could_change: Optional[List[str]] = None
     analyst_ranking: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     operator_summary: Optional[Dict[str, Any]] = None
+    information_status: Optional[str] = "AVAILABLE"  # AVAILABLE, INSUFFICIENT, NOT_CONFIGURED, OUT_OF_SCOPE, REQUIRES_HUMAN_VERIFICATION
 
     # Phase 6 Global Intelligence & Provider Abstraction
     sources_used: Optional[List[str]] = Field(default_factory=list)
