@@ -122,7 +122,9 @@ $env:PYTHONPATH="."; .venv\Scripts\python.exe -m pytest tests/test_phase*.py -q
 
 ## 📚 Key Reference Documentation
 
+- [Final Release Report (Phase 24)](file:///e:/PROJECTS/AGNI-NETRA/FINAL_RELEASE_REPORT.md)
+- [Final Release Readiness Checklist](file:///e:/PROJECTS/AGNI-NETRA/FINAL_RELEASE_CHECKLIST.md)
+- [Stakeholder Demonstration Guide](file:///e:/PROJECTS/AGNI-NETRA/FINAL_DEMO_GUIDE.md)
+- [Phase 24 Full Audit Report](file:///e:/PROJECTS/AGNI-NETRA/PHASE_24_REPORT.md)
 - [Technical Architecture Specification](file:///e:/PROJECTS/AGNI-NETRA/ARCHITECTURE.md)
 - [Operations & Runbook Guide](file:///e:/PROJECTS/AGNI-NETRA/OPERATIONS_RUNBOOK.md)
-- [Stakeholder Demonstration Script](file:///e:/PROJECTS/AGNI-NETRA/DEMO_GUIDE.md)
-- [Phase 21 Comprehensive Release Report](file:///e:/PROJECTS/AGNI-NETRA/PHASE_21_REPORT.md)
