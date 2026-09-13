@@ -77,12 +77,12 @@ class AnomalyDetectionEngine:
             reason = "Thermal behavior aligns with expected historical and spatial baselines."
 
         return {
-            "is_anomaly": is_overall_anomaly,
-            "anomaly_type": severity,
-            "z_score": z_score,
-            "deviation_ratio": deviation_ratio,
-            "isolation_forest_score": round(iso_anomaly_score, 3),
-            "explanation": reason
+            "is_anomaly": bool(is_overall_anomaly),
+            "anomaly_type": str(severity),
+            "z_score": float(z_score),
+            "deviation_ratio": float(deviation_ratio),
+            "isolation_forest_score": float(round(iso_anomaly_score, 3)),
+            "explanation": str(reason)
         }
 
 

@@ -1,10 +1,32 @@
 import os
 import re
 import time
+import json
+from enum import Enum
 from typing import Dict, Any, Tuple, Optional
+import numpy as np
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from backend.app.core.config import settings
+
+
+def agni_json_serializer(obj: Any) -> str:
+    """Robust JSON serializer that handles numpy scalars, Enums, and dates across PostgreSQL and SQLite JSON columns."""
+    def _default(o: Any) -> Any:
+        if isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        if isinstance(o, (np.integer, int)):
+            return int(o)
+        if isinstance(o, (np.floating, float)):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        if isinstance(o, Enum):
+            return o.value
+        if hasattr(o, "isoformat"):
+            return o.isoformat()
+        return str(o)
+    return json.dumps(obj, default=_default)
 
 
 # 1. Helper Utilities (Defined First to Guarantee Availability in Exception Handlers)
@@ -51,7 +73,10 @@ IS_SQLITE_TEST = (DATABASE_MODE == "SQLITE_TEST")
 
 # 3. Configure Engine with Strict Production Operational Parameters
 connect_args = {}
-engine_kwargs: Dict[str, Any] = {"pool_pre_ping": True}
+engine_kwargs: Dict[str, Any] = {
+    "pool_pre_ping": True,
+    "json_serializer": agni_json_serializer
+}
 
 if IS_SQLITE_TEST:
     connect_args["check_same_thread"] = False

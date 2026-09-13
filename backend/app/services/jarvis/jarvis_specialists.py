@@ -68,7 +68,7 @@ class JarvisGeo:
         top_fac = nearest_facs[0] if nearest_facs else None
         
         assessment = {
-            "agent": AgentType.JARVIS_GEO,
+            "agent": AgentType.JARVIS_GEO.value,
             "raw_context": result,
             "summary": (
                 f"Thermal anomaly centered at [{result['latitude']:.4f}, {result['longitude']:.4f}] in "
@@ -97,7 +97,7 @@ class JarvisML:
         shap_res = JarvisToolRegistry.tool_get_shap_drivers(db, event_ref)
 
         return {
-            "agent": AgentType.JARVIS_ML,
+            "agent": AgentType.JARVIS_ML.value,
             "predicted_class": cls_res["predicted_class"],
             "calibrated_confidence": cls_res["calibrated_confidence"],
             "model_version": cls_res["model_version"],
@@ -127,9 +127,9 @@ class JarvisAnom:
         base_res = JarvisToolRegistry.tool_compare_baseline(db, event_ref)
 
         return {
-            "agent": AgentType.JARVIS_ANOM,
-            "is_anomaly": anom_res.get("is_anomaly", False),
-            "anomaly_type": anom_res.get("anomaly_type", "NORMAL_BEHAVIOR"),
+            "agent": AgentType.JARVIS_ANOM.value,
+            "is_anomaly": bool(anom_res.get("is_anomaly", False)),
+            "anomaly_type": str(anom_res.get("anomaly_type", "NORMAL_BEHAVIOR")),
             "isolation_forest_score": anom_res.get("isolation_forest_score", 0.0),
             "z_score": anom_res.get("z_score", 0.0),
             "deviation_ratio": anom_res.get("deviation_ratio", 1.0),
@@ -159,7 +159,7 @@ class JarvisRisk:
             return {"error": risk_res.get("error")}
 
         return {
-            "agent": AgentType.JARVIS_RISK,
+            "agent": AgentType.JARVIS_RISK.value,
             "total_risk_score": risk_res["total_risk_score"],
             "risk_level": risk_res["risk_level"],
             "priority": risk_res["priority"],
@@ -190,7 +190,7 @@ class JarvisSat:
         top_obs = obs[0] if obs else {}
 
         return {
-            "agent": AgentType.JARVIS_SAT,
+            "agent": AgentType.JARVIS_SAT.value,
             "total_detections": sat_res.get("total_detections", 0),
             "observations": obs,
             "latest_satellite": top_obs.get("satellite", "VIIRS NOAA-20"),
@@ -231,7 +231,7 @@ class JarvisInvest:
         )
 
         return {
-            "agent": AgentType.JARVIS_INVEST,
+            "agent": AgentType.JARVIS_INVEST.value,
             "event": evt,
             "geospatial": geo_intel,
             "ml": ml_intel,
@@ -276,7 +276,7 @@ class JarvisReport:
             recommendations.append("Log event in automated thermal surveillance archive.")
 
         return {
-            "agent": AgentType.JARVIS_REPORT,
+            "agent": AgentType.JARVIS_REPORT.value,
             "dossier_title": f"Incident Investigation Dossier: {evt.get('event_code', 'UNKNOWN')}",
             "headline": f"{risk.get('risk_level', 'NORMAL')} Severity Thermal Anomaly at {evt.get('state', 'India')}",
             "executive_summary": investigation_data.get("summary", "Complete investigation conducted."),
