@@ -1,0 +1,66 @@
+{
+  "1. Objective Normalization & Sovereign Scope": {
+    "mean_ms": 0.19,
+    "p50_ms": 0.16,
+    "p95_ms": 0.37,
+    "p99_ms": 0.54,
+    "max_ms": 0.54,
+    "iterations": 25
+  },
+  "2. Governed Tool Registry & Safety Guard": {
+    "mean_ms": 0.03,
+    "p50_ms": 0.03,
+    "p95_ms": 0.04,
+    "p99_ms": 0.05,
+    "max_ms": 0.05,
+    "iterations": 25
+  },
+  "3. Command Interpreter Intent & Param Extraction": {
+    "mean_ms": 0.48,
+    "p50_ms": 0.48,
+    "p95_ms": 0.67,
+    "p99_ms": 0.67,
+    "max_ms": 0.67,
+    "iterations": 20
+  },
+  "4. Competing Hypotheses Matrix (ACH)": {
+    "mean_ms": 12.36,
+    "p50_ms": 12.51,
+    "p95_ms": 13.46,
+    "p99_ms": 13.46,
+    "max_ms": 13.46,
+    "iterations": 15
+  },
+  "5. Assessment Version History & Differing": {
+    "mean_ms": 0.0,
+    "p50_ms": 0.0,
+    "p95_ms": 0.0,
+    "p99_ms": 0.01,
+    "max_ms": 0.01,
+    "iterations": 25
+  },
+  "6. E2E JARVIS Mission Orchestration": {
+    "mean_ms": 173.58,
+    "p50_ms": 152.78,
+    "p95_ms": 354.43,
+    "p99_ms": 354.43,
+    "max_ms": 354.43,
+    "iterations": 10
+  },
+  "7. Master Agent Routing & Return to IDLE": {
+    "mean_ms": 165.51,
+    "p50_ms": 166.4,
+    "p95_ms": 178.42,
+    "p99_ms": 178.42,
+    "max_ms": 178.42,
+    "iterations": 10
+  },
+  "8. REST API /api/v1/jarvis/mission": {
+    "mean_ms": 211.64,
+    "p50_ms": 181.89,
+    "p95_ms": 430.61,
+    "p99_ms": 430.61,
+    "max_ms": 430.61,
+    "iterations": 10
+  }
+}

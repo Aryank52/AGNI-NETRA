@@ -178,6 +178,7 @@ class JarvisCommandRequest(BaseModel):
     session_id: Optional[str] = Field(default=None, description="Optional working memory session ID")
     investigation_id: Optional[str] = Field(default=None, description="Optional active investigation workspace ID")
     context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Session and UI viewport context")
+    is_phase22_mission: bool = Field(default=False, description="Explicit Phase 22 Mission Orchestration mode flag")
 
 
 class ExecutionStep(BaseModel):
@@ -283,6 +284,7 @@ class JarvisResponse(BaseModel):
     analyst_ranking: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     operator_summary: Optional[Dict[str, Any]] = None
     information_status: Optional[str] = "AVAILABLE"  # AVAILABLE, INSUFFICIENT, NOT_CONFIGURED, OUT_OF_SCOPE, REQUIRES_HUMAN_VERIFICATION
+    mission: Optional[Any] = None  # Phase 22 Governed Mission object / serialization
 
     # Phase 6 Global Intelligence & Provider Abstraction
     sources_used: Optional[List[str]] = Field(default_factory=list)
@@ -634,4 +636,152 @@ class EvidenceRequestCreateRequest(BaseModel):
     reason: str = Field(..., description="Rationale for requested telemetry")
     uncertainty_target: Optional[str] = Field(None, description="Targeted epistemic uncertainty gap")
     priority: Optional[str] = Field("MEDIUM", description="CRITICAL, HIGH, MEDIUM, LOW")
+
+
+# =================================================================================
+# PHASE 22 JARVIS MISSION MODE, ASSESSMENT & EPISTEMIC SCHEMAS
+# =================================================================================
+
+class MissionState(str, Enum):
+    CREATED = "CREATED"
+    UNDERSTANDING = "UNDERSTANDING"
+    PLANNING = "PLANNING"
+    EXECUTING = "EXECUTING"
+    EVALUATING = "EVALUATING"
+    REQUIRES_APPROVAL = "REQUIRES_APPROVAL"
+    REQUIRES_HUMAN_VERIFICATION = "REQUIRES_HUMAN_VERIFICATION"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    IDLE = "IDLE"
+
+
+class EpistemicEvidenceType(str, Enum):
+    OBSERVED = "OBSERVED"
+    DERIVED = "DERIVED"
+    INFERRED = "INFERRED"
+    UNKNOWN = "UNKNOWN"
+
+
+class EvidenceCitation(BaseModel):
+    citation_id: str = Field(..., description="Evidence identifier, e.g. [E-1001]")
+    epistemic_type: EpistemicEvidenceType = EpistemicEvidenceType.OBSERVED
+    title: str
+    source: str
+    record_id: Optional[str] = None
+    description: str = ""
+    verified: bool = True
+    observed_at: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
+
+
+class NormalizedObjective(BaseModel):
+    intent: str
+    raw_objective: str
+    country: str = "INDIA"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    time_range: Optional[str] = "LAST_30_DAYS"
+    temporal_window: Optional[str] = "LAST_30_DAYS"
+    entities: List[str] = Field(default_factory=list)
+    focus: Optional[str] = "INDUSTRIAL_ASSOCIATION"
+    primary_focus: Optional[str] = "INDUSTRIAL"
+    analysis_types: List[str] = Field(default_factory=lambda: ["ABNORMALITY", "PERSISTENCE", "RISK", "EVIDENCE", "HYPOTHESES", "UNCERTAINTY"])
+    is_valid_sovereign_scope: bool = True
+    rejection_reason: Optional[str] = None
+    requires_reassessment: bool = False
+    requires_change_explanation: bool = False
+    requires_contradiction_analysis: bool = False
+    requires_uncertainty_explanation: bool = False
+    requires_next_best_evidence: bool = False
+
+
+
+class MissionTraceStep(BaseModel):
+    step_number: int
+    phase: str
+    capability: str
+    tool: str
+    input_parameters: Dict[str, Any] = Field(default_factory=dict)
+    output_summary: str = ""
+    evidence_citations: List[str] = Field(default_factory=list)
+    decision: Optional[str] = None
+    governance_check: str = "PASSED (Dispatch Gate Blocked, Model Activation Disabled)"
+    duration_ms: float = 0.0
+    status: str = "COMPLETED"
+
+
+class CanonicalAssessment(BaseModel):
+    assessment_id: str
+    mission_id: str
+    event_or_incident_id: Optional[str] = None
+    event_code: Optional[str] = None
+    conclusion: str
+    classification: str
+    risk_score: float
+    priority_score: float
+    model_calibrated_confidence: float
+    evidence_strength: str = "MODERATE"
+    analyst_confidence: str = "NOT_RECORDED (Awaiting Human Review)"
+    epistemic_uncertainty: str = "MEDIUM"
+    supporting_evidence: List[str] = Field(default_factory=list)
+    contradicting_evidence: List[str] = Field(default_factory=list)
+    missing_evidence: List[str] = Field(default_factory=list)
+    competing_hypotheses: List[Dict[str, Any]] = Field(default_factory=list)
+    recommended_next_evidence: List[str] = Field(default_factory=list)
+    assessment_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    model_version: str = "1.0.0-frozen"
+    calibration_version: str = "isotonic-v1"
+    version: int = 1
+
+
+class AssessmentChange(BaseModel):
+    previous_assessment_ref: Optional[str] = None
+    has_prior_assessment: bool = False
+    risk_change: float = 0.0
+    priority_change: float = 0.0
+    confidence_change: float = 0.0
+    classification_change: Optional[str] = None
+    persistence_change: Optional[str] = None
+    evidence_change: Optional[str] = None
+    context_change: Optional[str] = None
+    uncertainty_change: Optional[str] = None
+    change_drivers: List[str] = Field(default_factory=list)
+    summary_explanation: str = "NO PRIOR ASSESSMENT AVAILABLE"
+
+
+class JarvisMission(BaseModel):
+    mission_id: str
+    user_id: str = "ANALYST"
+    user_role: str = "ANALYST"
+    objective: str
+    normalized_objective: NormalizedObjective
+    execution_status: MissionState = MissionState.CREATED
+    current_phase: str = "CREATED"
+    plan: List[str] = Field(default_factory=list)
+    execution_trace: List[MissionTraceStep] = Field(default_factory=list)
+    evidence_citations: List[EvidenceCitation] = Field(default_factory=list)
+    assessment: Optional[CanonicalAssessment] = None
+    assessment_change: Optional[AssessmentChange] = None
+    uncertainty_breakdown: Dict[str, Any] = Field(default_factory=dict)
+    sensitivity_conditions: List[str] = Field(default_factory=list)
+    next_best_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    target_map_coordinates: Optional[List[float]] = None
+    target_event_id: Optional[str] = None
+    target_case_id: Optional[str] = None
+    operational_dispatch_gate: str = "BLOCKED"
+    automated_model_activation: str = "DISABLED"
+    summary_markdown: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    completed_at: Optional[str] = None
+
+
+class JarvisMissionRequest(BaseModel):
+    objective: str
+    user_role: str = "ANALYST"
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+    target_event_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
 

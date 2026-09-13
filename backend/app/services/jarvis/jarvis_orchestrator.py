@@ -2276,6 +2276,62 @@ class JarvisMasterOrchestrator:
             requires_approval = True
 
         # =========================================================================
+        # PHASE 22: JARVIS MISSION MODE, EVIDENCE-GROUNDED INTELLIGENCE & ASSESSMENT CHANGE
+        # =========================================================================
+        elif (
+            (objective and getattr(objective, "primary_goal", None) == "PHASE22_MISSION_ORCHESTRATION") or
+            entities.get("is_phase22_mission") or
+            getattr(request, "is_phase22_mission", False)
+        ):
+            log_state(JarvisState.PLANNING, "Constructing Controlled Epistemic Intelligence Mission Plan")
+            log_state(JarvisState.EXECUTING, "Executing Controlled Epistemic Intelligence Mission")
+            from backend.app.services.jarvis.jarvis_mission_service import jarvis_mission_service
+            mission_res = jarvis_mission_service.execute_mission(
+                db=db,
+                request=request.command,
+                user_id=user_id or "ANALYST",
+                user_role=user_role,
+                session_id=session_id
+            )
+            log_state(JarvisState.EVALUATING, "Evaluating Evidence-Grounded Canonical Assessment")
+            
+            # Map mission execution trace steps to Jarvis orchestrator steps
+            for m_step in mission_res.execution_trace:
+                steps.append(ExecutionStep(
+                    step_number=len(steps) + 1,
+                    agent="JARVIS",
+                    capability=JarvisCapability[m_step.capability] if m_step.capability in JarvisCapability.__members__ else JarvisCapability.THERMAL_INTELLIGENCE,
+                    tool=m_step.tool,
+                    action=f"Phase 22 Mission [{m_step.phase}] via {m_step.tool}",
+                    action_description=f"Phase 22 Mission [{m_step.phase}] via {m_step.tool}",
+                    parameters=m_step.input_parameters,
+                    status=StepStatus.COMPLETED if m_step.decision != "BLOCK_EXECUTION" else StepStatus.FAILED,
+                    result_summary=f"{m_step.output_summary} | Citations: {', '.join(m_step.evidence_citations)}",
+                    data_snapshot={"decision": m_step.decision, "governance_check": m_step.governance_check},
+                    duration_ms=m_step.duration_ms
+                ))
+                if m_step.capability not in capabilities_used:
+                    capabilities_used.append(m_step.capability)
+
+            summary_text = mission_res.summary_markdown
+            details["mission"] = mission_res.model_dump()
+            details["mission_id"] = mission_res.mission_id
+            details["canonical_assessment"] = mission_res.assessment.model_dump() if mission_res.assessment else None
+            details["assessment_change"] = mission_res.assessment_change.model_dump() if mission_res.assessment_change else None
+            details["evidence_citations"] = [c.model_dump() for c in mission_res.evidence_citations]
+            details["uncertainty_breakdown"] = mission_res.uncertainty_breakdown
+            details["next_best_evidence"] = mission_res.next_best_evidence
+            details["dispatch_gate_blocked"] = True
+            details["operational_dispatch_gate"] = "BLOCKED"
+            details["automated_model_activation"] = "DISABLED"
+            
+            if mission_res.assessment:
+                recommendations.extend(mission_res.assessment.recommended_next_evidence)
+            
+            stopping_reason = f"MISSION_{mission_res.execution_status.value}_AND_RETURN_TO_IDLE"
+            requires_approval = (mission_res.execution_status.value == "REQUIRES_HUMAN_VERIFICATION")
+
+        # =========================================================================
         # PHASE 20: INDIA OPERATIONAL VALIDATION & ANALYST WORKFLOW
         # =========================================================================
         elif (
@@ -8872,7 +8928,8 @@ class JarvisMasterOrchestrator:
             temporal_anomalies=details.get("temporal_anomalies") or (active_ws.temporal_anomalies if active_ws and active_ws.temporal_anomalies else None),
             temporal_uncertainty=details.get("temporal_uncertainty") or (active_ws.temporal_uncertainty if active_ws and active_ws.temporal_uncertainty else None),
             temporal_coverage=details.get("temporal_coverage") or (active_ws.temporal_coverage if active_ws and active_ws.temporal_coverage else None),
-            temporal_observation_count=details.get("temporal_observation_count") if details.get("temporal_observation_count") is not None else (active_ws.temporal_observation_count if active_ws and active_ws.temporal_observation_count is not None else None)
+            temporal_observation_count=details.get("temporal_observation_count") if details.get("temporal_observation_count") is not None else (active_ws.temporal_observation_count if active_ws and active_ws.temporal_observation_count is not None else None),
+            mission=details.get("mission")
         )
 
 
