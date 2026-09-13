@@ -466,7 +466,7 @@ export default function Header() {
         <button
           onClick={() => setReleaseModalOpen(true)}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 text-[11px] font-mono font-bold transition-all shadow-sm group"
-          title="View AGNI-NETRA Phase 21 Release Candidate Specifications"
+          title="View AGNI-NETRA Phase 24 Final Release Specifications"
           id="release-info-btn"
         >
           <Info className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
@@ -769,7 +769,7 @@ export default function Header() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white tracking-wide">AGNI-NETRA — Release Candidate</h2>
-                <p className="text-xs font-mono text-blue-400">Phase 21: India-First Product Readiness & Operational Hardening</p>
+                <p className="text-xs font-mono text-blue-400">Phase 24: India-First Final Productization, Full System Audit & Release Freeze</p>
               </div>
             </div>
 
@@ -777,7 +777,7 @@ export default function Header() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
                   <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Product Name & Version</div>
-                  <div className="font-semibold text-white">AGNI-NETRA (v1.0-RC)</div>
+                  <div className="font-semibold text-white">AGNI-NETRA (v1.0-RC / India-First Local Release)</div>
                   <div className="text-[11px] text-slate-400">Geospatial Thermal Intelligence & Decision Support</div>
                 </div>
 
