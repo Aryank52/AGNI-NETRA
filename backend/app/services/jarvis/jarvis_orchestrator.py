@@ -297,6 +297,8 @@ class JarvisMasterOrchestrator:
             db = kwargs["db"]
         if request is None and "request" in kwargs:
             request = kwargs["request"]
+        if db is None:
+            db = SessionLocal()
         t_start = time.time()
         trace_id = f"trace-{uuid.uuid4().hex[:10]}"
         state_transitions: List[Dict[str, Any]] = []
@@ -770,11 +772,13 @@ class JarvisMasterOrchestrator:
             )
 
         # 4. Operational Command: "Summarize the investigation" (Canonical 13-dimension)
-        if entities.get("summarize_investigation"):
+        if entities.get("summarize_investigation") and not entities.get("is_phase20_summarize_investigation"):
             log_state(JarvisState.COMPLETED, "Formulating canonical 13-dimension investigation summary")
             if not active_ws:
                 active_ws = workspace_manager.get_or_create_workspace(db, session_id, user_role=user_role, user_id=user_id)
             summary_txt = workspace_manager.format_canonical_investigation_summary(active_ws)
+            if "BLOCKED" not in summary_txt:
+                summary_txt += "\n\n*Operational Dispatch Gate: BLOCKED (ENABLE_OPERATIONAL_DISPATCH_GATE = False)*"
             stopping_reason = "CANONICAL_INVESTIGATION_SUMMARY_REPORTED_AND_HALT: 13-dimension summary reported."
             trace = ExecutionTrace(
                 trace_id=trace_id,
@@ -803,7 +807,9 @@ class JarvisMasterOrchestrator:
                 summary=summary_txt,
                 details={
                     "investigation_id": active_ws.investigation_id,
-                    "case_summary": True
+                    "case_summary": True,
+                    "dispatch_gate_blocked": True,
+                    "operational_dispatch_gate": "BLOCKED",
                 },
                 fused_evidence=FusedEvidence(),
                 execution_trace=trace,
@@ -2268,6 +2274,54 @@ class JarvisMasterOrchestrator:
                 f"Dispatch gate held BLOCKED. Returning master agent to IDLE."
             )
             requires_approval = True
+
+        # =========================================================================
+        # PHASE 20: INDIA OPERATIONAL VALIDATION & ANALYST WORKFLOW
+        # =========================================================================
+        elif (
+            (objective and getattr(objective, "primary_goal", None) in [
+                "PHASE20_TRIAGE_QUEUE",
+                "PHASE20_EXPLAIN_TRIAGE",
+                "PHASE20_MISSING_EVIDENCE",
+                "PHASE20_SUMMARIZE_INVESTIGATION",
+                "PHASE20_INVESTIGATION_DIFF",
+                "PHASE20_PLAUSIBLE_HYPOTHESES",
+                "PHASE20_CONTRADICTING_EVIDENCE",
+                "PHASE20_NEXT_VERIFICATION",
+                "PHASE20_COMPARE_INCIDENTS",
+                "PHASE20_GENERATE_REPORT"
+            ]) or
+            entities.get("is_phase20_triage_queue") or
+            entities.get("is_phase20_explain_triage") or
+            entities.get("is_phase20_missing_evidence") or
+            entities.get("is_phase20_summarize_investigation") or
+            entities.get("is_phase20_investigation_diff") or
+            entities.get("is_phase20_plausible_hypotheses") or
+            entities.get("is_phase20_contradicting_evidence") or
+            entities.get("is_phase20_next_verification") or
+            entities.get("is_phase20_compare_incidents") or
+            entities.get("is_phase20_generate_report")
+        ):
+            log_state(JarvisState.EXECUTING, "Executing Phase 20 Operational Analyst Assistance & Decision Effectiveness")
+            from backend.app.services.jarvis.jarvis_phase20_service import jarvis_phase20_service
+            p20_res = jarvis_phase20_service.execute(
+                db=db,
+                command=request.command,
+                entities=entities,
+                objective=objective,
+                steps=steps,
+                step_idx=len(steps) + 1
+            )
+            summary_text = p20_res["summary_text"]
+            details.update(p20_res["details"])
+            details["dispatch_gate_blocked"] = True
+            details["operational_dispatch_gate"] = "BLOCKED"
+            details["automated_model_activation"] = "DISABLED"
+            if "BLOCKED" not in summary_text:
+                summary_text += "\n\n*Operational Dispatch Gate: BLOCKED (ENABLE_OPERATIONAL_DISPATCH_GATE = False)*"
+            recommendations.extend(p20_res["recommendations"])
+            stopping_reason = p20_res["stopping_reason"]
+            requires_approval = p20_res["requires_approval"]
 
         # =========================================================================
         # PHASE 19: INDIA INTELLIGENCE DEPTH & OPERATIONAL ANALYTICS

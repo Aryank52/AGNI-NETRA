@@ -446,6 +446,9 @@ class JarvisWorkspaceManager:
         - ANALYST / RESEARCHER can view workspace within same role or owned workspaces.
         - PUBLIC users cannot view internal investigations.
         """
+        if db is None:
+            return None, "Database session not provided."
+
         workspace = db.query(InvestigationWorkspace).filter(
             InvestigationWorkspace.investigation_id == investigation_id
         ).first()
@@ -477,6 +480,9 @@ class JarvisWorkspaceManager:
         Resolves active, open investigation workspace for a given session.
         Prioritizes session memory pointer, falling back to most recently updated active workspace in DB.
         """
+        if db is None:
+            return None
+
         session_ctx = session_memory.get_or_create_session(session_id)
         if session_ctx.active_investigation_id:
             ws = db.query(InvestigationWorkspace).filter(

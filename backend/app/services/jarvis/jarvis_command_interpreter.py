@@ -1838,6 +1838,118 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["report_unavailable_dependencies"] = True
 
         # =========================================================================
+        # Phase 20: India Operational Validation & Analyst Workflow Commands
+        # =========================================================================
+        is_phase20_triage_queue = any(w in cmd for w in [
+            "show me what needs verification first",
+            "what needs verification first",
+            "show what needs verification first",
+            "show triage queue",
+            "analyst triage queue",
+            "operational triage queue",
+            "triage queue"
+        ])
+        if is_phase20_triage_queue:
+            entities["is_phase20_triage_queue"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_explain_triage = any(w in cmd for w in [
+            "why was this event prioritized",
+            "why this event was prioritized",
+            "why was this event assigned high priority",
+            "explain triage priority",
+            "explain triage for",
+            "explain triage"
+        ])
+        if is_phase20_explain_triage:
+            entities["is_phase20_explain_triage"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_missing_evidence = any(w in cmd for w in [
+            "what evidence is still missing",
+            "what evidence is missing",
+            "missing evidence for this event",
+            "missing evidence"
+        ])
+        if is_phase20_missing_evidence:
+            entities["is_phase20_missing_evidence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_summarize_investigation = any(w in cmd for w in [
+            "summarize this investigation",
+            "summarize the investigation",
+            "investigation summary for this event",
+            "event dossier",
+            "standardized event dossier"
+        ])
+        if is_phase20_summarize_investigation:
+            entities["is_phase20_summarize_investigation"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_investigation_diff = any(w in cmd for w in [
+            "what changed since the previous assessment",
+            "what changed since previous assessment",
+            "assessment delta",
+            "investigation diff"
+        ])
+        if is_phase20_investigation_diff:
+            entities["is_phase20_investigation_diff"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_plausible_hypotheses = any(w in cmd for w in [
+            "what hypotheses remain plausible",
+            "hypotheses remain plausible",
+            "plausible hypotheses for this event",
+            "plausible hypotheses"
+        ])
+        if is_phase20_plausible_hypotheses:
+            entities["is_phase20_plausible_hypotheses"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_contradicting_evidence = any(w in cmd for w in [
+            "what contradicts the current assessment",
+            "what contradicts current assessment",
+            "what contradicts it",
+            "contradicting evidence",
+            "contradictory evidence for this assessment"
+        ])
+        if is_phase20_contradicting_evidence:
+            entities["is_phase20_contradicting_evidence"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_next_verification = any(w in cmd for w in [
+            "what should the analyst verify next",
+            "what should an analyst verify next",
+            "what to verify next",
+            "what should be verified next",
+            "analyst verify next"
+        ])
+        if is_phase20_next_verification:
+            entities["is_phase20_next_verification"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_compare_incidents = any(w in cmd for w in [
+            "compare these two incidents",
+            "compare two incidents",
+            "compare incidents",
+            "comparative incident evaluation"
+        ])
+        if is_phase20_compare_incidents:
+            entities["is_phase20_compare_incidents"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        is_phase20_generate_report = any(w in cmd for w in [
+            "generate the final case report",
+            "generate final case report",
+            "final case report",
+            "operational case report",
+            "generate operational analyst report"
+        ])
+        if is_phase20_generate_report:
+            entities["is_phase20_generate_report"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # =========================================================================
         # Phase 19: India Intelligence Depth & Operational Analytics Commands
         # =========================================================================
         is_phase19_persistent_hotspots = any(w in cmd for w in [
@@ -2579,7 +2691,37 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_phase19_persistent_hotspots:
+        if is_phase20_triage_queue:
+            primary_goal = "PHASE20_TRIAGE_QUEUE"
+            intent = CommandIntent.RANK
+        elif is_phase20_explain_triage:
+            primary_goal = "PHASE20_EXPLAIN_TRIAGE"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase20_missing_evidence:
+            primary_goal = "PHASE20_MISSING_EVIDENCE"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase20_summarize_investigation:
+            primary_goal = "PHASE20_SUMMARIZE_INVESTIGATION"
+            intent = CommandIntent.SUMMARIZE
+        elif is_phase20_investigation_diff:
+            primary_goal = "PHASE20_INVESTIGATION_DIFF"
+            intent = CommandIntent.COMPARE
+        elif is_phase20_plausible_hypotheses:
+            primary_goal = "PHASE20_PLAUSIBLE_HYPOTHESES"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase20_contradicting_evidence:
+            primary_goal = "PHASE20_CONTRADICTING_EVIDENCE"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase20_next_verification:
+            primary_goal = "PHASE20_NEXT_VERIFICATION"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase20_compare_incidents:
+            primary_goal = "PHASE20_COMPARE_INCIDENTS"
+            intent = CommandIntent.COMPARE
+        elif is_phase20_generate_report:
+            primary_goal = "PHASE20_GENERATE_REPORT"
+            intent = CommandIntent.GENERATE_REPORT
+        elif is_phase19_persistent_hotspots:
             primary_goal = "PHASE19_PERSISTENT_HOTSPOTS"
             intent = CommandIntent.RANK
         elif is_phase19_state_abnormal_activity:

@@ -1736,4 +1736,155 @@ class CaseActionProposal(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# =================================================================================
+# PHASE 20 ANALYST WORKFLOW, VALIDATION & DECISION EFFECTIVENESS SCHEMAS
+# =================================================================================
+
+class InvestigationWorkflowStep(str, Enum):
+    SELECT = "SELECT"
+    SCOPE = "SCOPE"
+    DISCOVER = "DISCOVER"
+    CONTEXTUALIZE = "CONTEXTUALIZE"
+    COMPARE = "COMPARE"
+    EVALUATE = "EVALUATE"
+    VERIFY = "VERIFY"
+    REPORT = "REPORT"
+
+
+class EvidenceEvaluationStatus(str, Enum):
+    SUPPORTED = "SUPPORTED"
+    CONTRADICTED = "CONTRADICTED"
+    UNCERTAIN = "UNCERTAIN"
+    NOT_RELEVANT = "NOT_RELEVANT"
+    NEEDS_VERIFICATION = "NEEDS_VERIFICATION"
+
+
+class HypothesisStatus(str, Enum):
+    PLAUSIBLE = "PLAUSIBLE"
+    DISPROVED = "DISPROVED"
+    CONTRADICTED = "CONTRADICTED"
+    SUPPORTED = "SUPPORTED"
+    UNKNOWN = "UNKNOWN"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+
+class EpistemicStrength(str, Enum):
+    STRONG = "STRONG"
+    MODERATE = "MODERATE"
+    LIMITED = "LIMITED"
+    INSUFFICIENT = "INSUFFICIENT"
+
+
+class EpistemicUncertaintyLevel(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class HumanVerificationAction(str, Enum):
+    CONFIRM = "CONFIRM"
+    OVERRIDE = "OVERRIDE"
+    REJECT = "REJECT"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class AnalystFeedbackType(str, Enum):
+    USEFUL = "USEFUL"
+    NOT_USEFUL = "NOT_USEFUL"
+    INCORRECT = "INCORRECT"
+    MISSING_CONTEXT = "MISSING_CONTEXT"
+    SUGGESTION = "SUGGESTION"
+
+
+class InvestigationWorkflowState(BaseModel):
+    case_id: str
+    target_event_id: Optional[str] = None
+    current_step: InvestigationWorkflowStep = InvestigationWorkflowStep.SELECT
+    completed_steps: List[str] = Field(default_factory=list)
+    pending_steps: List[str] = Field(default_factory=list)
+    step_history: List[Dict[str, Any]] = Field(default_factory=list)
+    can_verify: bool = False
+    can_report: bool = False
+    is_completed: bool = False
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class EvidenceDecisionRequest(BaseModel):
+    evidence_id: str
+    decision: EvidenceEvaluationStatus
+    analyst_id: str
+    analyst_role: str = "ANALYST"
+    notes: Optional[str] = None
+
+
+class HypothesisAssessmentRequest(BaseModel):
+    hypothesis_id: str
+    status: HypothesisStatus
+    analyst_id: str
+    analyst_role: str = "ANALYST"
+    rationale: str
+    supporting_evidence_ids: List[str] = Field(default_factory=list)
+    contradicting_evidence_ids: List[str] = Field(default_factory=list)
+
+
+class AnalystConfidenceSubmission(BaseModel):
+    analyst_id: str
+    analyst_role: str = "ANALYST"
+    analyst_confidence: float = Field(..., ge=0.0, le=1.0, description="Analyst confidence rating 0.0 to 1.0")
+    confidence_scale_1_to_5: Optional[int] = Field(None, ge=1, le=5)
+    rationale: str = Field(..., min_length=5, description="Mandatory analyst justification")
+
+
+class HumanVerificationSubmission(BaseModel):
+    verifier_id: str
+    verifier_role: str = "ANALYST"
+    action: HumanVerificationAction
+    verified_label: Optional[str] = None
+    notes: Optional[str] = None
+    analyst_confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
+    evidence_reviewed: List[str] = Field(default_factory=list)
+
+
+class DecisionEffectivenessMetrics(BaseModel):
+    metric_status: str = "COMPUTED"  # COMPUTED or INSUFFICIENT_DATA
+    explanation: Optional[str] = None
+    sample_size: int = 0
+    total_verifications: int = 0
+    confirmed_count: int = 0
+    overridden_count: int = 0
+    rejected_count: int = 0
+    inconclusive_count: int = 0
+    confirmation_rate: Optional[float] = None
+    override_rate: Optional[float] = None
+    rejection_rate: Optional[float] = None
+    analyst_model_agreement_rate: Optional[float] = None
+    average_triage_latency_seconds: Optional[float] = None
+    average_investigation_latency_seconds: Optional[float] = None
+    epistemic_uncertainty_reduction_rate: Optional[float] = None
+
+
+class TriageEffectivenessMetrics(BaseModel):
+    metric_status: str = "COMPUTED"  # COMPUTED or INSUFFICIENT_DATA
+    explanation: Optional[str] = None
+    total_triaged_events: int = 0
+    high_priority_count: int = 0
+    high_priority_precision: Optional[float] = None
+    false_priority_rate: Optional[float] = None
+    queue_retrieval_latency_ms: float = 0.0
+    queue_volume_by_category: Dict[str, int] = Field(default_factory=dict)
+
+
+class AnalystFeedbackSubmission(BaseModel):
+    case_id: Optional[str] = None
+    event_id: Optional[str] = None
+    analyst_id: str
+    analyst_role: str = "ANALYST"
+    feedback_type: AnalystFeedbackType
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    target_component: Optional[str] = None
+    comments: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
+
+
+
 

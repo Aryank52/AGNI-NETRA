@@ -157,7 +157,8 @@ class IndiaIntelligenceService:
         district: Optional[str] = None,
         min_risk: float = 0.0,
         persistence_category: Optional[str] = None,
-        limit: int = 50
+        limit: int = 50,
+        event_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Calculates deep analyst-grade intelligence for active Indian thermal events.
@@ -182,6 +183,9 @@ class IndiaIntelligenceService:
             WHERE (te.country IS NULL OR te.country = 'India' OR te.country = 'IND')
         """
         params: Dict[str, Any] = {}
+        if event_id:
+            sql += " AND (te.id = :single_event_id OR te.event_code = :single_event_id)"
+            params["single_event_id"] = event_id
         if state:
             sql += " AND te.state ILIKE :state"
             params["state"] = f"%{state}%"
@@ -913,10 +917,11 @@ class IndiaIntelligenceService:
         Risk != Probability != Evidence Support != Evidence Strength != Uncertainty.
         Hypothesis statuses: SUPPORTED, PLAUSIBLE, CONTRADICTED, UNKNOWN.
         """
-        hotspots = self.get_india_hotspot_intelligence(db=db, limit=200)
+        hotspots = self.get_india_hotspot_intelligence(db=db, event_id=event_id, limit=5)
         matched = next((h for h in hotspots if h["event_id"] == event_id or h["event_code"] == event_id), None)
-        if not matched and hotspots:
-            matched = hotspots[0]
+        if not matched:
+            hotspots = self.get_india_hotspot_intelligence(db=db, limit=5)
+            matched = hotspots[0] if hotspots else None
 
         if not matched:
             return {"error": f"Event {event_id} not found"}
@@ -1116,10 +1121,11 @@ class IndiaIntelligenceService:
         Deterministic decision-support recommendations to reduce uncertainty.
         Truthfully declares unconfigured providers as NOT_CONFIGURED without simulation.
         """
-        hotspots = self.get_india_hotspot_intelligence(db=db, limit=200)
+        hotspots = self.get_india_hotspot_intelligence(db=db, event_id=event_id, limit=5)
         matched = next((h for h in hotspots if h["event_id"] == event_id or h["event_code"] == event_id), None)
-        if not matched and hotspots:
-            matched = hotspots[0]
+        if not matched:
+            hotspots = self.get_india_hotspot_intelligence(db=db, limit=5)
+            matched = hotspots[0] if hotspots else None
 
         recs = [
             {

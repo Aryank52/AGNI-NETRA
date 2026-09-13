@@ -1633,3 +1633,30 @@ class IngestionCheckpointModel(Base):
     last_successful_batch_id = Column(String(64), nullable=True)
     cursor_state = Column(JSON, default=dict)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+# =================================================================================
+# PHASE 20 ANALYST WORKFLOW & OPERATIONAL FEEDBACK MODELS
+# =================================================================================
+
+class AnalystFeedback(Base):
+    """
+    Phase 20 Governed Analyst Feedback.
+    Records operational user feedback on triage, dossiers, hypotheses, evidence,
+    decision-support, or reports separately from immutable raw telemetry.
+    """
+    __tablename__ = "analyst_feedback"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    feedback_id = Column(String(64), unique=True, nullable=False, index=True)
+    case_id = Column(String(64), nullable=True, index=True)
+    event_id = Column(String(64), nullable=True, index=True)
+    analyst_id = Column(String(64), nullable=False)
+    analyst_role = Column(String(50), default="ANALYST", nullable=False)
+    feedback_type = Column(String(50), nullable=False)  # USEFUL, NOT_USEFUL, INCORRECT, MISSING_CONTEXT, SUGGESTION
+    rating = Column(Integer, nullable=True)  # 1-5
+    target_component = Column(String(100), nullable=True)  # TRIAGE, DOSSIER, HYPOTHESES, EVIDENCE, DECISION_SUPPORT, REPORT
+    comments = Column(Text, nullable=True)
+    details = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+

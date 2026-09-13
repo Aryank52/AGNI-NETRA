@@ -283,6 +283,27 @@ class IndiaBoundaryService:
             if own_session:
                 db.close()
 
+    def get_administrative_lineage(
+        self,
+        db: Optional[Session],
+        lat: float,
+        lon: float
+    ) -> Dict[str, Any]:
+        """
+        Retrieves administrative lineage and LGD codes for coordinates within India.
+        """
+        ctx = self.get_hierarchical_context(lat=lat, lon=lon, db=db)
+        return {
+            "country": ctx.get("country", "India"),
+            "state": ctx.get("state_name"),
+            "district": ctx.get("district_name"),
+            "sub_district": ctx.get("subdistrict_name"),
+            "lgd_state_code": ctx.get("state_code"),
+            "lgd_district_code": ctx.get("district_code"),
+            "lgd_subdistrict_code": ctx.get("subdistrict_code"),
+            "cadastral_authority": "Survey of India / Local Government Directory (LGD)",
+        }
+
     def filter_live_observations_for_india(
         self,
         observations: List[Dict[str, Any]],

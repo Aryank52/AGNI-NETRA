@@ -152,7 +152,18 @@ export default function JarvisCommandConsolePage() {
     "JARVIS, what observations would reduce temporal uncertainty?",
     "JARVIS, combine all thermal, contextual, and temporal evidence for EVT-827",
     "JARVIS, show the temporal evidence provenance",
-    "JARVIS, what temporal coverage is available for this event?"
+    "JARVIS, what temporal coverage is available for this event?",
+    // Phase 20 Operational Analyst Assistance & Decision Effectiveness Commands
+    "JARVIS, show me what needs verification first.",
+    "JARVIS, why was this event prioritized?",
+    "JARVIS, what evidence is still missing?",
+    "JARVIS, summarize this investigation.",
+    "JARVIS, what changed since the previous assessment?",
+    "JARVIS, what hypotheses remain plausible?",
+    "JARVIS, what contradicts the current assessment?",
+    "JARVIS, what should the analyst verify next?",
+    "JARVIS, compare these two incidents.",
+    "JARVIS, generate the final case report."
   ];
 
   // Initialize session ID and fetch tool catalog + active investigations
