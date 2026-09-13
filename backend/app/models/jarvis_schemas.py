@@ -107,6 +107,7 @@ class CommandIntent(str, Enum):
     STATUS = "STATUS"
     DISPATCH_REQUEST = "DISPATCH_REQUEST"
     SYNTHESIZE = "SYNTHESIZE"
+    SITUATIONAL_AWARENESS = "SITUATIONAL_AWARENESS"
     GENERAL = "GENERAL"
 
 
@@ -775,13 +776,159 @@ class JarvisMission(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     completed_at: Optional[str] = None
 
+    @property
+    def canonical_assessment(self) -> Optional[CanonicalAssessment]:
+        return self.assessment
+
 
 class JarvisMissionRequest(BaseModel):
-    objective: str
-    user_role: str = "ANALYST"
-    user_id: Optional[str] = None
+    objective: str = ""
+    command: Optional[str] = None
+    user_role: Optional[str] = "ANALYST"
+    user_id: Optional[str] = "ANALYST"
     session_id: Optional[str] = None
     target_event_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+
+# =========================================================================
+# Phase 23: Situational Awareness, Priority Briefing & Command Center Schemas
+# =========================================================================
+
+class ChangeCategory(str, Enum):
+    NEW_DETECTION = "NEW_DETECTION"
+    ASSESSMENT_SHIFT = "ASSESSMENT_SHIFT"
+    RISK_ESCALATION = "RISK_ESCALATION"
+    VERIFICATION_UPDATE = "VERIFICATION_UPDATE"
+    PERSISTENCE_CONFIRMATION = "PERSISTENCE_CONFIRMATION"
+    ANOMALY_SPIKE = "ANOMALY_SPIKE"
+    NO_MATERIAL_CHANGE = "NO_MATERIAL_CHANGE"
+    # Legacy aliases
+    CRITICAL_CHANGE = "CRITICAL_CHANGE"
+    HIGH_SIGNIFICANCE = "HIGH_SIGNIFICANCE"
+    MODERATE_SIGNIFICANCE = "MODERATE_SIGNIFICANCE"
+    LOW_SIGNIFICANCE = "LOW_SIGNIFICANCE"
+
+
+class AttentionCategory(str, Enum):
+    VERIFY_NOW = "VERIFY_NOW"
+    INVESTIGATE_NOW = "INVESTIGATE_NOW"
+    REVIEW_CHANGE = "REVIEW_CHANGE"
+    REVIEW_UNCERTAINTY = "REVIEW_UNCERTAINTY"
+    MONITOR = "MONITOR"
+    NO_ACTION_REQUIRED = "NO_ACTION_REQUIRED"
+
+
+class SituationalChange(BaseModel):
+    change_id: str = Field(..., description="Unique change identifier, e.g. CHG-...")
+    category: Union[ChangeCategory, str] = ChangeCategory.MODERATE_SIGNIFICANCE
+    significance: str = "MODERATE"  # CRITICAL, HIGH, MODERATE, LOW
+    entity_type: str = Field(..., description="THERMAL_EVENT, INCIDENT, ASSESSMENT, CASE, DATA_SOURCE")
+    entity_id: str
+    entity_code: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    metric_deltas: Dict[str, Any] = Field(default_factory=dict)
+    driver_explanation: str
+    prior_value: Optional[Any] = None
+    current_value: Optional[Any] = None
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class AttentionItem(BaseModel):
+    item_id: str = Field(..., description="Unique attention identifier, e.g. ATTN-...")
+    item_type: str = Field(..., description="EVENT, INCIDENT, ASSESSMENT_CHANGE, UNRESOLVED_CASE, DATA_GAP")
+    category: Union[AttentionCategory, str] = AttentionCategory.INVESTIGATE_NOW
+    severity: str = "HIGH"  # CRITICAL, HIGH, MODERATE, LOW
+    priority_score: float = Field(..., description="Governed priority score (0.0 - 1.0)")
+    risk_score: float = Field(..., description="Authoritative 5-factor risk score (0.0 - 1.0)")
+    reason: str = Field(..., description="Grounded, deterministic reason for attention")
+    why_attention_needed: str = ""
+    supporting_evidence: List[str] = Field(default_factory=list)
+    missing_evidence: List[str] = Field(default_factory=list)
+    calibrated_confidence: float = 0.85
+    evidence_strength: float = 0.80
+    epistemic_uncertainty: str = "MEDIUM"  # HIGH, MEDIUM, LOW
+    recommended_next_step: str = Field(..., description="Actionable analyst next step")
+    recommended_action: str = ""
+    event_id: Optional[str] = None
+    event_code: Optional[str] = None
+    case_id: Optional[str] = None
+    mission_id: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    coordinates: Optional[List[float]] = None
+    last_updated: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class SituationalSnapshot(BaseModel):
+    snapshot_id: str = Field(..., description="Snapshot identifier, e.g. SNAP-...")
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    geographic_scope: str = "INDIA"
+    time_window: str = "LAST_30_DAYS"
+    active_event_count: int = 0
+    high_priority_count: int = 0
+    high_risk_count: int = 0
+    persistent_hotspot_count: int = 0
+    newly_emerging_count: int = 0
+    reactivated_count: int = 0
+    abnormal_activity_count: int = 0
+    unresolved_case_count: int = 0
+    requiring_verification_count: int = 0
+    changed_assessment_count: int = 0
+    major_changes: List[SituationalChange] = Field(default_factory=list)
+    major_uncertainties: List[str] = Field(default_factory=list)
+    attention_items: List[AttentionItem] = Field(default_factory=list)
+    data_freshness: Dict[str, Any] = Field(default_factory=dict)
+    provider_status: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+
+
+class IndiaSituationBrief(BaseModel):
+    brief_id: str = Field(..., description="Brief identifier, e.g. BRF-...")
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    geographic_scope: str = "INDIA"
+    regional_focus: Optional[str] = None
+    current_situation: Dict[str, Any] = Field(default_factory=dict)
+    changes: Dict[str, Any] = Field(default_factory=dict)
+    attention: Dict[str, Any] = Field(default_factory=dict)
+    uncertainty: Dict[str, Any] = Field(default_factory=dict)
+    next_steps: List[str] = Field(default_factory=list)
+    data_status: Dict[str, Any] = Field(default_factory=dict)
+    markdown_brief: str = ""
+
+
+class SixtySecondBrief(BaseModel):
+    brief_id: str
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    situation: List[str] = Field(default_factory=list, description="3-5 highest-value findings")
+    changes: List[str] = Field(default_factory=list, description="Top material changes")
+    attention: List[Dict[str, Any]] = Field(default_factory=list, description="Top 3 items requiring action")
+    uncertainty: List[str] = Field(default_factory=list, description="Most important gaps")
+    next: List[str] = Field(default_factory=list, description="Recommended analyst actions")
+    markdown_text: str = ""
+
+
+class TimelineEvent(BaseModel):
+    timeline_id: str
+    timestamp: str
+    event_type: str  # NEW_EVENT, ESCALATION, ASSESSMENT_REVISION, EVIDENCE_ADDED, HYPOTHESIS_CHANGED, VERIFICATION_RESULT, CASE_STATE_CHANGE
+    entity_id: str
+    entity_code: Optional[str] = None
+    title: str
+    description: str
+    severity: str = "MODERATE"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    source_record_url: Optional[str] = None
+
+
+class SituationalBriefRequest(BaseModel):
+    brief_type: str = "INDIA"  # INDIA, SIXTY_SECOND, REGIONAL, INDUSTRIAL, TREND, EXECUTIVE, ANALYST
+    state: Optional[str] = None
+    district: Optional[str] = None
+    time_window: Optional[str] = "LAST_30_DAYS"
+    user_role: str = "ANALYST"
+
 
 

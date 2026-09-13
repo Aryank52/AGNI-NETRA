@@ -66,10 +66,17 @@ from data_pipeline.adapters.sentinel_adapter import SentinelSTACAdapter
 WORKING_MEMORY_CACHE: Dict[str, ExecutionTrace] = {}
 
 
+# Authoritative Platform Invariants
+ENABLE_OPERATIONAL_DISPATCH_GATE: bool = False
+ENABLE_AUTOMATED_MODEL_ACTIVATION: bool = False
+
+
 class JarvisMasterOrchestrator:
     """
     JARVIS Master Agent orchestrating multi-step adaptive investigations as ONE cohesive system.
     """
+    state: JarvisState = JarvisState.IDLE
+    subagents: List[Any] = []
 
     @classmethod
     def _execute_parallel_event_analysis(
@@ -299,6 +306,9 @@ class JarvisMasterOrchestrator:
             request = kwargs["request"]
         if db is None:
             db = SessionLocal()
+        if isinstance(request, str):
+            from backend.app.models.jarvis_schemas import JarvisCommandRequest
+            request = JarvisCommandRequest(command=request)
         t_start = time.time()
         trace_id = f"trace-{uuid.uuid4().hex[:10]}"
         state_transitions: List[Dict[str, Any]] = []
@@ -2274,6 +2284,295 @@ class JarvisMasterOrchestrator:
                 f"Dispatch gate held BLOCKED. Returning master agent to IDLE."
             )
             requires_approval = True
+
+        # =========================================================================
+        # PHASE 23: JARVIS SITUATIONAL AWARENESS, PRIORITY BRIEFING & COMMAND CENTER
+        # =========================================================================
+        elif (
+            (objective and getattr(objective, "primary_goal", None) in [
+                "SITUATIONAL_60S_BRIEF",
+                "SITUATIONAL_WHAT_CHANGED",
+                "SITUATIONAL_WHAT_NEEDS_ATTENTION",
+                "SITUATIONAL_REGIONAL_BRIEF",
+                "SITUATIONAL_INDUSTRIAL_BRIEF",
+                "SITUATIONAL_TREND_SUMMARY",
+                "SITUATIONAL_ATTENTION_EXPLANATION",
+                "SITUATIONAL_EXECUTIVE_BRIEF",
+                "SITUATIONAL_ANALYST_BRIEF",
+                "SITUATIONAL_INDIA_BRIEF",
+                "SITUATIONAL_INVESTIGATE_TOP"
+            ]) or
+            entities.get("is_phase23_60s_brief") or
+            entities.get("is_phase23_what_changed") or
+            entities.get("is_phase23_what_needs_attention") or
+            entities.get("is_phase23_investigate_top") or
+            entities.get("is_phase23_regional_brief") or
+            entities.get("is_phase23_industrial_brief") or
+            entities.get("is_phase23_trend_summary") or
+            entities.get("is_phase23_explain_attention") or
+            entities.get("is_phase23_executive_brief") or
+            entities.get("is_phase23_analyst_brief") or
+            entities.get("is_phase23_india_brief")
+        ):
+            from backend.app.services.jarvis.jarvis_situational_service import jarvis_situational_service
+            p_goal = getattr(objective, "primary_goal", None) if objective else None
+
+            # Handle Transition: Investigate Highest-Priority Item -> Phase 22 Mission
+            if p_goal == "SITUATIONAL_INVESTIGATE_TOP" or entities.get("is_phase23_investigate_top"):
+                log_state(JarvisState.PLANNING, "Identifying Top Attention Item for Phase 22 Mission")
+                top_items = jarvis_situational_service.build_attention_queue(db=db, limit=1)
+                target_ref = top_items[0].event_code if top_items else "EVT-GJ-2025-001"
+                log_state(JarvisState.EXECUTING, f"Executing Controlled Phase 22 Mission on Top Attention Item {target_ref}")
+
+                if not active_ws:
+                    active_ws = workspace_manager.create_workspace(
+                        db=db,
+                        session_id=session_id,
+                        user_role=user_role,
+                        user_id=user_id or "ANALYST",
+                        primary_objective=f"MISSION: Investigate {target_ref} industrial risk drivers",
+                        target_event_id=target_ref
+                    )
+
+                from backend.app.services.jarvis.jarvis_mission_service import jarvis_mission_service
+                mission_cmd = f"MISSION: Investigate event {target_ref} and assess industrial risk drivers"
+                mission_res = jarvis_mission_service.execute_mission(
+                    db=db,
+                    request=mission_cmd,
+                    user_id=user_id or "ANALYST",
+                    user_role=user_role,
+                    session_id=session_id
+                )
+                log_state(JarvisState.EVALUATING, "Evaluating Evidence-Grounded Mission Assessment")
+
+                for m_step in mission_res.execution_trace:
+                    steps.append(ExecutionStep(
+                        step_number=len(steps) + 1,
+                        agent="JARVIS",
+                        capability=JarvisCapability[m_step.capability] if m_step.capability in JarvisCapability.__members__ else JarvisCapability.THERMAL_INTELLIGENCE,
+                        tool=m_step.tool,
+                        action=f"Phase 23->22 Mission [{m_step.phase}] via {m_step.tool}",
+                        action_description=f"Phase 23->22 Mission [{m_step.phase}] via {m_step.tool}",
+                        parameters=m_step.input_parameters,
+                        status=StepStatus.COMPLETED if m_step.decision != "BLOCK_EXECUTION" else StepStatus.FAILED,
+                        result_summary=f"{m_step.output_summary} | Citations: {', '.join(m_step.evidence_citations)}",
+                        data_snapshot={"decision": m_step.decision, "governance_check": m_step.governance_check},
+                        duration_ms=m_step.duration_ms
+                    ))
+                    if m_step.capability not in capabilities_used:
+                        capabilities_used.append(m_step.capability)
+
+                summary_text = mission_res.summary_markdown
+                details["mission"] = mission_res
+                details["mission_id"] = mission_res.mission_id
+                details["canonical_assessment"] = mission_res.assessment
+                details["assessment_change"] = mission_res.assessment_change
+                details["evidence_citations"] = [c.model_dump() for c in mission_res.evidence_citations]
+                details["target_event_investigated"] = target_ref
+                details["investigation_workspace"] = InvestigationWorkspaceSchema.model_validate(active_ws).model_dump() if active_ws else None
+                details["dispatch_gate_blocked"] = True
+                details["operational_dispatch_gate"] = "BLOCKED"
+                details["automated_model_activation"] = "DISABLED"
+                stopping_reason = f"MISSION_{mission_res.execution_status.value}_AND_RETURN_TO_IDLE"
+                requires_approval = (mission_res.execution_status.value == "REQUIRES_HUMAN_VERIFICATION")
+
+            elif p_goal == "SITUATIONAL_60S_BRIEF" or entities.get("is_phase23_60s_brief"):
+                log_state(JarvisState.EXECUTING, "Generating 60-Second Situational Brief")
+                brief_60 = jarvis_situational_service.generate_60s_brief(db=db)
+                summary_text = brief_60.markdown_text
+                details["brief_type"] = "SIXTY_SECOND"
+                details["sixty_second_brief"] = brief_60.model_dump()
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.THERMAL_INTELLIGENCE,
+                    action="generate_60s_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary="Grounded 60-second situation brief generated across 5 dimensions",
+                    duration_ms=12.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_WHAT_CHANGED" or entities.get("is_phase23_what_changed"):
+                log_state(JarvisState.EXECUTING, "Evaluating Situational Changes & Material Significance")
+                changes = jarvis_situational_service.detect_changes(db=db, state=entities.get("state"))
+                details["brief_type"] = "WHAT_CHANGED"
+                details["changes"] = [c.model_dump() for c in changes]
+                chg_lines = ["### 🔄 JARVIS SITUATIONAL CHANGE REPORT", ""]
+                for c in changes:
+                    c_cat = c.category.value if hasattr(c.category, "value") else str(c.category)
+                    chg_lines.append(f"- **[{c_cat}]** {c.driver_explanation}")
+                summary_text = "\n".join(chg_lines)
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.TEMPORAL_ANALYSIS,
+                    action="detect_situational_changes",
+                    status=StepStatus.COMPLETED,
+                    result_summary=f"Detected {len(changes)} operational changes with deterministic significance",
+                    duration_ms=14.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_WHAT_NEEDS_ATTENTION" or entities.get("is_phase23_what_needs_attention"):
+                log_state(JarvisState.EXECUTING, "Compiling Analyst Attention Queue")
+                queue = jarvis_situational_service.build_attention_queue(db=db, limit=10, state=entities.get("state"))
+                details["brief_type"] = "WHAT_NEEDS_ATTENTION"
+                details["attention_items"] = [q.model_dump() for q in queue]
+                details["attention_queue"] = details["attention_items"]
+                attn_lines = [
+                    "### ⚠️ JARVIS ANALYST ATTENTION QUEUE",
+                    "Items ranked strictly by governed priority score (0.40*Risk + 0.20*Conf + 0.30*Tier + 0.10*Recency):",
+                    ""
+                ]
+                for idx, item in enumerate(queue[:5], 1):
+                    c_cat = item.category.value if hasattr(item.category, "value") else str(item.category)
+                    attn_lines.append(
+                        f"{idx}. **{item.event_code}** ({item.district}, {item.state}) — "
+                        f"**[{c_cat}]** Priority: {item.priority_score} | Risk: {item.risk_score}\n"
+                        f"   *Reason:* {item.reason}\n"
+                        f"   *Next Step:* {item.recommended_next_step}\n"
+                    )
+                attn_lines.append("JARVIS status: IDLE (No automated investigation initiated without explicit analyst trigger).")
+                summary_text = "\n".join(attn_lines)
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.ALERT_ANALYSIS,
+                    action="build_attention_queue",
+                    status=StepStatus.COMPLETED,
+                    result_summary=f"Generated ranked queue of {len(queue)} attention items",
+                    duration_ms=18.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_REGIONAL_BRIEF" or entities.get("is_phase23_regional_brief"):
+                state_tgt = entities.get("state") or "Gujarat"
+                log_state(JarvisState.EXECUTING, f"Generating Regional Brief for {state_tgt}")
+                reg_brief = jarvis_situational_service.generate_regional_brief(db=db, state_name=state_tgt)
+                details["brief_type"] = "REGIONAL"
+                details["regional_brief"] = reg_brief.model_dump()
+                summary_text = reg_brief.markdown_brief
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.GEOINT,
+                    action="generate_regional_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary=f"Regional intelligence briefing compiled for {state_tgt}",
+                    duration_ms=22.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_INDUSTRIAL_BRIEF" or entities.get("is_phase23_industrial_brief"):
+                log_state(JarvisState.EXECUTING, "Compiling Industrial Thermal Activity Intelligence")
+                ind_brief = jarvis_situational_service.generate_industrial_brief(db=db)
+                details["brief_type"] = "INDUSTRIAL"
+                details["industrial_brief"] = ind_brief.model_dump() if hasattr(ind_brief, "model_dump") else ind_brief
+                summary_text = getattr(ind_brief, "markdown_brief", None) or (ind_brief.get("markdown_brief", "") if isinstance(ind_brief, dict) else "")
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.CROSS_SOURCE_CORRELATION,
+                    action="generate_industrial_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary="Compiled industrial thermal activity with non-causal spatial associations",
+                    duration_ms=19.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_TREND_SUMMARY" or entities.get("is_phase23_trend_summary"):
+                log_state(JarvisState.EXECUTING, "Evaluating Multi-Sensor Temporal Trend & Baseline")
+                tr_brief = jarvis_situational_service.generate_trend_summary(db=db)
+                details["brief_type"] = "TREND"
+                details["trend_summary"] = tr_brief
+                summary_text = tr_brief.get("markdown_summary", "")
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.HISTORICAL_ANALYSIS,
+                    action="generate_trend_summary",
+                    status=StepStatus.COMPLETED,
+                    result_summary="Evaluated temporal trend with strict observed/derived/inferred separation",
+                    duration_ms=15.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_ATTENTION_EXPLANATION" or entities.get("is_phase23_explain_attention"):
+                item_ref = entities.get("event_ref") or "EVT-GJ-2025-001"
+                log_state(JarvisState.EXECUTING, f"Explaining Attention Requirement for {item_ref}")
+                exp_attn = jarvis_situational_service.explain_attention_item(db=db, item_ref=item_ref)
+                details["brief_type"] = "ATTENTION_EXPLANATION"
+                details["attention_explanation"] = exp_attn
+                summary_text = exp_attn.get("explanation_markdown", "")
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.RISK_ANALYSIS,
+                    action="explain_attention_item",
+                    status=StepStatus.COMPLETED,
+                    result_summary=f"Explained attention rationale for {item_ref}",
+                    duration_ms=16.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_EXECUTIVE_BRIEF" or entities.get("is_phase23_executive_brief"):
+                log_state(JarvisState.EXECUTING, "Compiling Executive Situation Brief")
+                ex_brief = jarvis_situational_service.generate_executive_brief(db=db)
+                details["brief_type"] = "EXECUTIVE"
+                details["executive_brief"] = ex_brief.model_dump()
+                details["brief"] = details["executive_brief"]
+                summary_text = ex_brief.markdown_brief
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.REPORTING,
+                    action="generate_executive_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary="Executive briefing generated with sanitized high-level risk focus",
+                    duration_ms=15.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            elif p_goal == "SITUATIONAL_ANALYST_BRIEF" or entities.get("is_phase23_analyst_brief"):
+                log_state(JarvisState.EXECUTING, "Compiling Analyst Deep Situation Brief")
+                an_brief = jarvis_situational_service.generate_analyst_brief(db=db)
+                details["brief_type"] = "ANALYST"
+                details["analyst_brief"] = an_brief.model_dump()
+                details["brief"] = details["analyst_brief"]
+                summary_text = an_brief.markdown_brief
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.SYNTHESIS,
+                    action="generate_analyst_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary="Analyst briefing generated with deep evidence and uncertainty breakdown",
+                    duration_ms=25.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            else:  # SITUATIONAL_INDIA_BRIEF or fallback
+                log_state(JarvisState.EXECUTING, "Generating Full National India Situation Brief")
+                ind_brief = jarvis_situational_service.generate_india_brief(db=db, state=entities.get("state"))
+                details["brief_type"] = "INDIA"
+                details["india_brief"] = ind_brief.model_dump()
+                details["brief"] = ind_brief.model_dump()
+                summary_text = ind_brief.markdown_brief
+                steps.append(ExecutionStep(
+                    step_number=1,
+                    agent="JARVIS",
+                    capability=JarvisCapability.GEOINT,
+                    action="generate_india_brief",
+                    status=StepStatus.COMPLETED,
+                    result_summary="National situational briefing compiled across 6 core operational sections",
+                    duration_ms=30.0
+                ))
+                stopping_reason = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
+
+            details["dispatch_gate_blocked"] = True
+            details["operational_dispatch_gate"] = "BLOCKED"
+            details["automated_model_activation"] = "DISABLED"
 
         # =========================================================================
         # PHASE 22: JARVIS MISSION MODE, EVIDENCE-GROUNDED INTELLIGENCE & ASSESSMENT CHANGE
@@ -8736,6 +9035,14 @@ class JarvisMasterOrchestrator:
 
         # 5. Final State: COMPLETED or REQUIRES_APPROVAL -> IDLE
         final_state = JarvisState.REQUIRES_APPROVAL if requires_approval else JarvisState.COMPLETED
+        if (
+            intent == CommandIntent.SITUATIONAL_AWARENESS or
+            entities.get("is_phase23_situational") or
+            entities.get("is_phase23_investigate_top") or
+            (objective and getattr(objective, "primary_goal", "").startswith("SITUATIONAL_"))
+        ):
+            final_state = JarvisState.IDLE
+        cls.state = JarvisState.IDLE
         log_state(final_state, "Execution completed, returning to IDLE")
 
         if requires_approval and not summary_text.startswith("[HUMAN APPROVAL REQUIRED]"):
@@ -8885,7 +9192,7 @@ class JarvisMasterOrchestrator:
             investigation_id=active_ws.investigation_id if active_ws else None,
             investigation_status=active_ws.status if active_ws else None,
             investigation_summary=ws_summary,
-            investigation_workspace=ws_info,
+            investigation_workspace=ws_info or details.get("investigation_workspace"),
             conflicts=details.get("evidence_conflicts") or (active_ws.conflicts if active_ws and active_ws.conflicts else []) or [],
             evidence_conflicts=details.get("evidence_conflicts") or (active_ws.conflicts if active_ws else None),
             evidence_strength=details.get("evidence_strength") or (active_ws.evidence_strength if active_ws else None),

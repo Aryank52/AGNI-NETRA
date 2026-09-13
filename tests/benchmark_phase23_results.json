@@ -1,0 +1,102 @@
+{
+  "1. Situational Snapshot Generation": {
+    "mean_ms": 369.07,
+    "p50_ms": 365.58,
+    "p95_ms": 420.88,
+    "p99_ms": 420.88,
+    "max_ms": 420.88,
+    "target_ms": 1000.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "2. Change Detection Engine": {
+    "mean_ms": 119.51,
+    "p50_ms": 119.27,
+    "p95_ms": 150.22,
+    "p99_ms": 150.22,
+    "max_ms": 150.22,
+    "target_ms": 500.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "3. Attention Queue Ranking": {
+    "mean_ms": 178.32,
+    "p50_ms": 177.8,
+    "p95_ms": 189.0,
+    "p99_ms": 189.0,
+    "max_ms": 189.0,
+    "target_ms": 800.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "4. 60-Second Situational Brief": {
+    "mean_ms": 334.92,
+    "p50_ms": 310.85,
+    "p95_ms": 549.84,
+    "p99_ms": 549.84,
+    "max_ms": 549.84,
+    "target_ms": 2000.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "5. India Macro Situation Brief": {
+    "mean_ms": 339.78,
+    "p50_ms": 309.88,
+    "p95_ms": 557.08,
+    "p99_ms": 557.08,
+    "max_ms": 557.08,
+    "target_ms": 2500.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "6. Operational Timeline Aggregation": {
+    "mean_ms": 9.53,
+    "p50_ms": 9.42,
+    "p95_ms": 10.5,
+    "p99_ms": 10.5,
+    "max_ms": 10.5,
+    "target_ms": 300.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "7. E2E JARVIS Situational Orchestration": {
+    "mean_ms": 384.28,
+    "p50_ms": 356.05,
+    "p95_ms": 556.77,
+    "p99_ms": 556.77,
+    "max_ms": 556.77,
+    "target_ms": 2500.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "8. REST API /situational/brief/60-second": {
+    "mean_ms": 12.21,
+    "p50_ms": 12.06,
+    "p95_ms": 14.14,
+    "p99_ms": 14.14,
+    "max_ms": 14.14,
+    "target_ms": 2000.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "9. REST API /situational/attention-queue": {
+    "mean_ms": 11.88,
+    "p50_ms": 12.33,
+    "p95_ms": 13.65,
+    "p99_ms": 13.65,
+    "max_ms": 13.65,
+    "target_ms": 1000.0,
+    "status": "PASS",
+    "iterations": 10
+  },
+  "10. REST API /situational/brief/india": {
+    "mean_ms": 18.15,
+    "p50_ms": 18.43,
+    "p95_ms": 24.81,
+    "p99_ms": 24.81,
+    "max_ms": 24.81,
+    "target_ms": 2500.0,
+    "status": "PASS",
+    "iterations": 10
+  }
+}

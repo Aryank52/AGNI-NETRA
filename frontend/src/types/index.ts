@@ -1268,6 +1268,132 @@ export interface JarvisMissionRequest {
   context?: Record<string, any>;
 }
 
+// =========================================================================
+// Phase 23: Situational Awareness & Command Center Types
+// =========================================================================
+
+export type ChangeCategory = "CRITICAL_CHANGE" | "HIGH_SIGNIFICANCE" | "MODERATE_SIGNIFICANCE" | "LOW_SIGNIFICANCE" | "NO_MATERIAL_CHANGE";
+
+export type AttentionCategory = "VERIFY_NOW" | "INVESTIGATE_NOW" | "REVIEW_CHANGE" | "REVIEW_UNCERTAINTY" | "MONITOR" | "NO_ACTION_REQUIRED";
+
+export interface SituationalChange {
+  change_id: string;
+  category: string;
+  significance: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | string;
+  title: string;
+  description: string;
+  entity_id: string;
+  entity_type: string;
+  event_code?: string;
+  previous_state?: Record<string, any>;
+  current_state?: Record<string, any>;
+  detected_at: string;
+  state?: string;
+  district?: string;
+  coordinates?: [number, number];
+  metric_deltas?: Record<string, any>;
+  driver_explanation?: string;
+  timestamp?: string;
+}
+
+export interface AttentionItem {
+  item_id: string;
+  event_id: string;
+  event_code?: string;
+  target_name?: string;
+  category: string;
+  severity?: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | string;
+  priority_score: number;
+  risk_score: number;
+  calibrated_confidence: number;
+  evidence_strength: number;
+  why_attention_needed: string;
+  what_changed?: string;
+  missing_evidence?: string[];
+  recommended_action: string;
+  reason?: string;
+  supporting_evidence?: string[];
+  epistemic_uncertainty?: "HIGH" | "MEDIUM" | "LOW" | string;
+  recommended_next_step?: string;
+  item_type?: string;
+  case_id?: string;
+  mission_id?: string;
+  state?: string;
+  district?: string;
+  coordinates?: [number, number];
+  last_updated: string;
+}
+
+export interface SituationalSnapshot {
+  snapshot_id: string;
+  generated_at: string;
+  geographic_scope: string;
+  time_window: string;
+  active_event_count: number;
+  high_priority_count: number;
+  high_risk_count: number;
+  persistent_hotspot_count: number;
+  newly_emerging_count: number;
+  reactivated_count: number;
+  abnormal_activity_count: number;
+  unresolved_case_count: number;
+  requiring_verification_count: number;
+  changed_assessment_count: number;
+  major_changes: SituationalChange[];
+  major_uncertainties: string[];
+  attention_items: AttentionItem[];
+  data_freshness: Record<string, any>;
+  provider_status: Record<string, string>;
+  provenance: Record<string, any>;
+}
+
+export interface IndiaSituationBrief {
+  brief_id: string;
+  generated_at: string;
+  geographic_scope: string;
+  regional_focus?: string;
+  current_situation: Record<string, any>;
+  changes: Record<string, any>;
+  attention: Record<string, any>;
+  uncertainty: Record<string, any>;
+  next_steps: string[];
+  data_status: Record<string, any>;
+  markdown_brief: string;
+}
+
+export interface SixtySecondBrief {
+  brief_id: string;
+  generated_at: string;
+  situation: string[];
+  changes: string[];
+  attention: Array<{
+    item_code?: string;
+    category: string;
+    priority: number;
+    risk: number;
+    reason: string;
+    next_step: string;
+  }>;
+  uncertainty: string[];
+  next: string[];
+  markdown_text: string;
+}
+
+export interface TimelineEvent {
+  timeline_id: string;
+  timestamp: string;
+  event_type: string;
+  entity_id: string;
+  entity_code?: string;
+  title: string;
+  description: string;
+  severity: string;
+  state?: string;
+  district?: string;
+  source_record_url?: string;
+}
+
+
 
 
 

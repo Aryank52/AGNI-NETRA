@@ -9,7 +9,8 @@ import { useAuth } from "@/lib/authContext";
 import { 
   JarvisResponse, ExecutionStep, ExecutionTrace, JarvisToolInfo,
   InvestigationWorkspace, StructuredEvidenceItem, InvestigationStatus, EpistemicType,
-  JarvisMission, EvidenceCitation, MissionTraceStep, CanonicalAssessment, AssessmentChange
+  JarvisMission, EvidenceCitation, MissionTraceStep, CanonicalAssessment, AssessmentChange,
+  SituationalSnapshot, SituationalChange, AttentionItem, IndiaSituationBrief, SixtySecondBrief, TimelineEvent
 } from "@/types";
 import {
   Terminal, Cpu, ShieldAlert, CheckCircle2, AlertTriangle, Layers,
@@ -19,7 +20,7 @@ import {
   XCircle, BarChart3, AlertOctagon, CornerDownLeft, FolderKanban,
   HelpCircle, RotateCcw, FileDown, Tag, Compass, Award, FileCode, Globe,
   History, Calendar, Sun, Moon, Wind, Cloud, CloudRain, Navigation, Radar,
-  Network, GitBranch, GitFork, ShieldX, Target, Scale, BookmarkCheck
+  Network, GitBranch, GitFork, ShieldX, Target, Scale, BookmarkCheck, Bell, Crosshair
 } from "lucide-react";
 
 export default function JarvisCommandConsolePage() {
@@ -39,8 +40,28 @@ export default function JarvisCommandConsolePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Phase 23 Situational Awareness & Command Center State
+  const [situationalSnapshot, setSituationalSnapshot] = useState<SituationalSnapshot | null>(null);
+  const [situationalChanges, setSituationalChanges] = useState<SituationalChange[]>([]);
+  const [attentionQueue, setAttentionQueue] = useState<AttentionItem[]>([]);
+  const [situationalTimeline, setSituationalTimeline] = useState<TimelineEvent[]>([]);
+  const [situationalLoading, setSituationalLoading] = useState(false);
+  const [commandCenterTab, setCommandCenterTab] = useState<"STATUS" | "CHANGES" | "ATTENTION" | "UNCERTAINTY" | "TIMELINE">("STATUS");
+
   // Suggested high-value commands as specified in product taxonomy
   const suggestedCommands = [
+    // Phase 23 Situational Awareness & Analyst Command Center Commands (Sovereign India)
+    "JARVIS, give me a 60-second situation brief.",
+    "JARVIS, what changed?",
+    "JARVIS, what needs attention right now?",
+    "JARVIS, investigate the highest-priority item.",
+    "JARVIS, give me the situation in Gujarat.",
+    "JARVIS, summarize current industrial thermal activity.",
+    "Is thermal activity increasing?",
+    "JARVIS, why does this need attention?",
+    "JARVIS, give me the executive situation brief.",
+    "JARVIS, give me the analyst situation brief.",
+
     // Phase 22 Intelligence Mission Orchestrator Commands (Sovereign India)
     "Investigate unusual industrial thermal activity in Gujarat.",
     "Investigate thermal activity near Mundra within the last 48 hours.",
@@ -181,6 +202,27 @@ export default function JarvisCommandConsolePage() {
     "JARVIS, generate the final case report."
   ];
 
+  // Phase 23: Fetch Situational Awareness Data
+  const fetchSituational = async () => {
+    setSituationalLoading(true);
+    try {
+      const [snap, chgs, attn, tl] = await Promise.all([
+        fetchApi<SituationalSnapshot>("/jarvis/situational/snapshot").catch(() => null),
+        fetchApi<SituationalChange[]>("/jarvis/situational/changes").catch(() => []),
+        fetchApi<AttentionItem[]>("/jarvis/situational/attention").catch(() => []),
+        fetchApi<TimelineEvent[]>("/jarvis/situational/timeline").catch(() => [])
+      ]);
+      if (snap) setSituationalSnapshot(snap);
+      if (chgs) setSituationalChanges(chgs);
+      if (attn) setAttentionQueue(attn);
+      if (tl) setSituationalTimeline(tl);
+    } catch (err) {
+      console.warn("Could not load situational data:", err);
+    } finally {
+      setSituationalLoading(false);
+    }
+  };
+
   // Initialize session ID and fetch tool catalog + active investigations
   useEffect(() => {
     let sId = localStorage.getItem("agni_jarvis_session_id");
@@ -206,6 +248,9 @@ export default function JarvisCommandConsolePage() {
         }
       })
       .catch(() => {});
+
+    // Fetch Situational Awareness on mount
+    fetchSituational();
   }, []);
 
   const handleExecuteCommand = async (cmdToRun?: string) => {
@@ -473,6 +518,659 @@ export default function JarvisCommandConsolePage() {
               <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">VERIFICATION (Tri-Tier HITL)</span>
               <span className="px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">REPORTING (PDF Dossier)</span>
             </div>
+          </div>
+
+          {/* Phase 23: JARVIS SITUATIONAL AWARENESS & COMMAND CENTER */}
+          <div id="jarvis-command-center" className="bg-slate-950/95 border border-cyan-500/30 rounded-xl p-5 shadow-2xl space-y-4 relative overflow-hidden backdrop-blur-md">
+            {/* Header / Control Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono text-xs font-bold tracking-wider">
+                  <Radar className="w-4 h-4 text-cyan-400" />
+                  <span>JARVIS COMMAND CENTER</span>
+                </div>
+                <span className="text-slate-400 text-xs font-mono hidden md:inline">
+                  Sovereign India Situational Awareness & Operational Queue
+                </span>
+              </div>
+
+              {/* Quick Actions / Refresh */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  id="btn-cmd-60s-brief"
+                  onClick={() => handleExecuteCommand("JARVIS, give me a 60-second situation brief.")}
+                  disabled={loading}
+                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-cyan-300 font-mono text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Generate 60-second situational brief"
+                >
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>60S BRIEF</span>
+                </button>
+                <button
+                  id="btn-cmd-what-changed"
+                  onClick={() => handleExecuteCommand("JARVIS, what changed?")}
+                  disabled={loading}
+                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 text-amber-300 font-mono text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Detect and summarize operational changes"
+                >
+                  <Activity className="w-3.5 h-3.5 text-amber-400" />
+                  <span>WHAT CHANGED</span>
+                </button>
+                <button
+                  id="btn-cmd-attention"
+                  onClick={() => handleExecuteCommand("JARVIS, what needs attention right now?")}
+                  disabled={loading}
+                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-rose-500/40 text-rose-300 font-mono text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Examine prioritized attention queue"
+                >
+                  <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+                  <span>ATTENTION QUEUE</span>
+                </button>
+                <button
+                  id="btn-cmd-india-brief"
+                  onClick={() => handleExecuteCommand("JARVIS, what is the current India thermal situation?")}
+                  disabled={loading}
+                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-purple-300 font-mono text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Comprehensive Sovereign India macro situation brief"
+                >
+                  <Globe className="w-3.5 h-3.5 text-purple-400" />
+                  <span>INDIA BRIEF</span>
+                </button>
+                <button
+                  id="btn-refresh-situational"
+                  onClick={() => fetchSituational()}
+                  disabled={situationalLoading}
+                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-300 font-mono text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Reload live snapshot from backend"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${situationalLoading ? "animate-spin" : ""}`} />
+                  <span>REFRESH</span>
+                </button>
+              </div>
+            </div>
+
+            {/* KPI Metric Cards (6-grid) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  ACTIVE EVENTS
+                  <Flame className="w-3.5 h-3.5 text-amber-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-amber-300 mt-1">
+                  {situationalSnapshot?.active_event_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">Sovereign India Scope</span>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  HIGH PRIORITY
+                  <Crosshair className="w-3.5 h-3.5 text-rose-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-rose-400 mt-1">
+                  {situationalSnapshot?.high_priority_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">Governed Priority &ge; 0.65</span>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  AUTHORITATIVE RISK
+                  <ShieldAlert className="w-3.5 h-3.5 text-orange-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-orange-300 mt-1">
+                  {situationalSnapshot?.high_risk_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">5-Factor Risk &ge; 0.65</span>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  PERSISTENT
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-cyan-300 mt-1">
+                  {situationalSnapshot?.persistent_hotspot_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">&ge; 3 Hotspot Detections</span>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  NEW EMERGING
+                  <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-yellow-300 mt-1">
+                  {situationalSnapshot?.newly_emerging_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">Detected &lt; 24h</span>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800/80 rounded-lg p-3 flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  UNRESOLVED CASES
+                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                </span>
+                <span className="text-xl font-bold font-mono text-emerald-300 mt-1">
+                  {situationalSnapshot?.unresolved_case_count ?? 0}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">Pending HITL Verification</span>
+              </div>
+            </div>
+
+            {/* Sub-Tab Navigation */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pt-1 font-mono text-xs">
+              <button
+                onClick={() => setCommandCenterTab("STATUS")}
+                className={`px-3 py-2 border-b-2 font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  commandCenterTab === "STATUS"
+                    ? "border-cyan-400 text-cyan-300 bg-cyan-500/5"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>STATUS & OVERVIEW</span>
+              </button>
+
+              <button
+                onClick={() => setCommandCenterTab("CHANGES")}
+                className={`px-3 py-2 border-b-2 font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  commandCenterTab === "CHANGES"
+                    ? "border-amber-400 text-amber-300 bg-amber-500/5"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>WHAT CHANGED</span>
+                {situationalChanges.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-bold">
+                    {situationalChanges.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setCommandCenterTab("ATTENTION")}
+                className={`px-3 py-2 border-b-2 font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  commandCenterTab === "ATTENTION"
+                    ? "border-rose-400 text-rose-300 bg-rose-500/5"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <AlertOctagon className="w-3.5 h-3.5" />
+                <span>ATTENTION QUEUE</span>
+                {attentionQueue.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/20 text-rose-300 font-bold">
+                    {attentionQueue.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setCommandCenterTab("UNCERTAINTY")}
+                className={`px-3 py-2 border-b-2 font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  commandCenterTab === "UNCERTAINTY"
+                    ? "border-purple-400 text-purple-300 bg-purple-500/5"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>EPISTEMIC UNCERTAINTY</span>
+              </button>
+
+              <button
+                onClick={() => setCommandCenterTab("TIMELINE")}
+                className={`px-3 py-2 border-b-2 font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  commandCenterTab === "TIMELINE"
+                    ? "border-emerald-400 text-emerald-300 bg-emerald-500/5"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>OPERATIONAL TIMELINE</span>
+                {situationalTimeline.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold">
+                    {situationalTimeline.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* TAB CONTENTS */}
+            {/* 1. STATUS & OVERVIEW */}
+            {commandCenterTab === "STATUS" && (
+              <div className="space-y-4">
+                {/* Macro Context Banner */}
+                <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-800 text-xs font-mono text-slate-300 space-y-2">
+                  <div className="flex items-center justify-between text-slate-400 font-bold pb-2 border-b border-slate-800">
+                    <span className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-cyan-400" />
+                      <span>INDIA OPERATIONAL SITUATION SUMMARY</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Scope: Sovereign PostGIS Boundaries • Single Master Agent
+                    </span>
+                  </div>
+                  <p className="leading-relaxed">
+                    National thermal monitoring indicates <strong className="text-cyan-300">{situationalSnapshot?.active_event_count ?? 0} active thermal events</strong> across sovereign territory.
+                    Identified <strong className="text-rose-300">{situationalSnapshot?.high_priority_count ?? 0} high-priority targets</strong> under governed multi-criteria ranking,
+                    and <strong className="text-orange-300">{situationalSnapshot?.high_risk_count ?? 0} high authoritative risk incidents</strong> evaluated via frozen 5-factor risk formula.
+                    {situationalSnapshot?.persistent_hotspot_count ? ` Industrial persistence observed across ${situationalSnapshot.persistent_hotspot_count} recurrent facilities.` : ""}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1.5 text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      NASA FIRMS VIIRS/MODIS Operational
+                    </span>
+                    <span className="flex items-center gap-1.5 text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      PostGIS 3.4 Boundary Audit Clean
+                    </span>
+                    <span className="flex items-center gap-1.5 text-amber-400">
+                      <Lock className="w-3.5 h-3.5" />
+                      Operational Dispatch Gate Blocked
+                    </span>
+                    <span className="flex items-center gap-1.5 text-slate-400">
+                      <ShieldAlert className="w-3.5 h-3.5 text-slate-400" />
+                      Sentinel-2 / Planet / Maxar: Not Configured
+                    </span>
+                  </div>
+                </div>
+
+                {/* Top Priority Highlights Grid */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-300">
+                    <span className="flex items-center gap-2">
+                      <Crosshair className="w-4 h-4 text-rose-400" />
+                      <span>TOP ATTENTION TARGETS REQUIRING OPERATIONAL REVIEW</span>
+                    </span>
+                    <button
+                      onClick={() => setCommandCenterTab("ATTENTION")}
+                      className="text-cyan-400 hover:text-cyan-300 text-[11px] flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Full Queue ({attentionQueue.length})</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {attentionQueue.slice(0, 3).map((item, idx) => (
+                      <div
+                        key={item.item_id || idx}
+                        className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3 font-mono text-xs"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+                            <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-[11px]">
+                              RANK #{idx + 1}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {item.state || "India"} {item.district ? `• ${item.district}` : ""}
+                            </span>
+                          </div>
+                          <div className="mt-2 font-bold text-slate-200">
+                            {item.event_code || item.event_id}
+                          </div>
+                          <div className="text-[11px] text-amber-300/90 font-medium mt-0.5 line-clamp-1">
+                            {item.target_name || item.category.replace(/_/g, " ")}
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                            {item.why_attention_needed}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400">Governed Priority:</span>
+                            <span className="font-bold text-rose-400">{(item.priority_score * 100).toFixed(0)}%</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400">5-Factor Risk:</span>
+                            <span className="font-bold text-orange-400">{(item.risk_score * 100).toFixed(0)}%</span>
+                          </div>
+                          <button
+                            onClick={() => handleExecuteCommand(`Investigate event ${item.event_code || item.event_id}`)}
+                            disabled={loading}
+                            className="w-full py-1.5 px-2 rounded bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/40 text-amber-300 font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>INVESTIGATE IN MISSION MODE</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {attentionQueue.length === 0 && (
+                      <div className="col-span-3 p-6 text-center text-slate-500 font-mono text-xs">
+                        No critical attention items currently flagged in operational queue.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. WHAT CHANGED */}
+            {commandCenterTab === "CHANGES" && (
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-slate-400">
+                  <span className="flex items-center gap-2 font-bold text-slate-300">
+                    <Activity className="w-4 h-4 text-amber-400" />
+                    <span>DETECTED SITUATIONAL & STATE CHANGES ({situationalChanges.length})</span>
+                  </span>
+                  <span className="text-[11px]">Empirical differential over operational observation window</span>
+                </div>
+
+                {situationalChanges.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 rounded-lg bg-slate-900/40 border border-slate-800">
+                    No material situational changes detected across the active observation window.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+                    {situationalChanges.map((change, idx) => {
+                      const sigColor =
+                        change.significance === "CRITICAL"
+                          ? "border-red-500/40 bg-red-500/10 text-red-300"
+                          : change.significance === "HIGH"
+                          ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                          : change.significance === "MODERATE"
+                          ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                          : "border-slate-700 bg-slate-800/40 text-slate-300";
+
+                      return (
+                        <div
+                          key={change.change_id || idx}
+                          className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all space-y-2"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${sigColor}`}>
+                                {change.significance}
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold">
+                                {change.category.replace(/_/g, " ")}
+                              </span>
+                              <span className="font-bold text-slate-200">
+                                {change.event_code || change.entity_id}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500">
+                              {change.detected_at ? new Date(change.detected_at).toLocaleString() : ""}
+                            </span>
+                          </div>
+
+                          <div className="font-medium text-slate-300">
+                            {change.title}
+                          </div>
+                          <p className="text-slate-400 text-[11px] leading-relaxed">
+                            {change.description}
+                          </p>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                            <span className="text-slate-500">
+                              Location: <strong className="text-slate-400">{change.state || "National Scope"}{change.district ? ` / ${change.district}` : ""}</strong>
+                            </span>
+                            {change.event_code && (
+                              <button
+                                onClick={() => handleExecuteCommand(`Investigate event ${change.event_code}`)}
+                                disabled={loading}
+                                className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+                              >
+                                <Search className="w-3 h-3 text-amber-400" />
+                                <span>Investigate Event</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. ATTENTION QUEUE */}
+            {commandCenterTab === "ATTENTION" && (
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-slate-400">
+                  <span className="flex items-center gap-2 font-bold text-slate-300">
+                    <AlertOctagon className="w-4 h-4 text-rose-400" />
+                    <span>PRIORITIZED ATTENTION QUEUE ({attentionQueue.length})</span>
+                  </span>
+                  <span className="text-[11px]">Governed priority formula: 0.40R + 0.20C + 0.30T + 0.10Rec</span>
+                </div>
+
+                {attentionQueue.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 rounded-lg bg-slate-900/40 border border-slate-800">
+                    Attention queue empty. No items exceed the operational significance threshold.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                    {attentionQueue.map((item, idx) => (
+                      <div
+                        key={item.item_id || idx}
+                        className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all space-y-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-[11px]">
+                              #{idx + 1} PRIORITY
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+                              {item.category.replace(/_/g, " ")}
+                            </span>
+                            <span className="font-bold text-slate-200">
+                              {item.event_code || item.event_id}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            {item.state || "India"}{item.district ? ` • ${item.district}` : ""}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-slate-200">
+                            {item.target_name || "Unidentified Facility / Corridor"}
+                          </div>
+                          <p className="text-slate-300 text-[11px] leading-relaxed mt-1">
+                            <strong className="text-amber-400">Why Attention Needed: </strong>
+                            {item.why_attention_needed}
+                          </p>
+                          {item.what_changed && (
+                            <p className="text-slate-400 text-[11px] leading-relaxed mt-1">
+                              <strong className="text-cyan-400">What Changed: </strong>
+                              {item.what_changed}
+                            </p>
+                          )}
+                          {item.missing_evidence && item.missing_evidence.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] text-slate-500">Missing Evidence:</span>
+                              {item.missing_evidence.map((gap, gIdx) => (
+                                <span key={gIdx} className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 text-[10px]">
+                                  {gap}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Metric Bars & Action Row */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-800/80">
+                          <div className="flex flex-wrap items-center gap-4 text-[11px]">
+                            <div>
+                              <span className="text-slate-500">Priority: </span>
+                              <strong className="text-rose-400 font-mono">{(item.priority_score * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">5-Factor Risk: </span>
+                              <strong className="text-orange-400 font-mono">{(item.risk_score * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Confidence: </span>
+                              <strong className="text-cyan-400 font-mono">{(item.calibrated_confidence * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Evidence: </span>
+                              <strong className="text-emerald-400 font-mono">{(item.evidence_strength * 100).toFixed(1)}%</strong>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleExecuteCommand(`Investigate event ${item.event_code || item.event_id}`)}
+                            disabled={loading}
+                            className="px-3 py-1.5 rounded bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/40 text-amber-300 hover:text-amber-200 font-bold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>INVESTIGATE IN MISSION MODE</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. EPISTEMIC UNCERTAINTY */}
+            {commandCenterTab === "UNCERTAINTY" && (
+              <div className="space-y-4 font-mono text-xs text-slate-300">
+                <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-slate-200 pb-2 border-b border-slate-800">
+                    <Scale className="w-4 h-4 text-purple-400" />
+                    <span>DECOUPLED EPISTEMIC UNCERTAINTY & RISK METRICS DISCLOSURE</span>
+                  </div>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Under AGNI-NETRA governed intelligence standards, <strong>Authoritative Risk</strong> is strictly decoupled from
+                    <strong> Calibrated ML Confidence</strong>, <strong>Evidence Strength</strong>, and <strong>Epistemic Uncertainty</strong>.
+                    A high risk score indicates severe real-world operational consequence (industrial facility, high FRP, low distance to hazard),
+                    whereas epistemic uncertainty denotes absence or conflict of confirming sensor observations.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                    <div className="p-3 rounded bg-slate-950/70 border border-slate-800">
+                      <div className="font-bold text-orange-300 text-[11px]">5-FACTOR RISK FORMULA</div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        0.30 Thermal + 0.25 Context + 0.20 Persistence + 0.15 Vulnerability + 0.10 Environmental.
+                        Frozen and deterministic.
+                      </div>
+                    </div>
+                    <div className="p-3 rounded bg-slate-950/70 border border-slate-800">
+                      <div className="font-bold text-cyan-300 text-[11px]">CALIBRATED ML CONFIDENCE</div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        Isotonic / Platt calibrated probability from XGBoost v3.0 thermal classification model.
+                      </div>
+                    </div>
+                    <div className="p-3 rounded bg-slate-950/70 border border-slate-800">
+                      <div className="font-bold text-purple-300 text-[11px]">EPISTEMIC UNCERTAINTY</div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        Quantified metric of missing corroborating sources, sensor latency, and unverified hypotheses.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* External Feeds Reality Check */}
+                <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-slate-200 pb-2 border-b border-slate-800">
+                    <Database className="w-4 h-4 text-cyan-400" />
+                    <span>LIVE SENSOR & EXTERNAL PROVIDER OPERATIONAL AUDIT</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        OPERATIONAL DATA SOURCES
+                      </span>
+                      <ul className="list-disc list-inside text-[11px] text-slate-400 space-y-1">
+                        <li><strong>NASA FIRMS:</strong> NRT VIIRS 375m (Suomi NPP, NOAA-20/21) & MODIS 1km</li>
+                        <li><strong>PostGIS 3.4 Sovereign LGD:</strong> 7,595 validated India administrative boundaries</li>
+                        <li><strong>Tri-Tier HITL Registry:</strong> Human-in-the-loop analyst verification database</li>
+                        <li><strong>XGBoost v3.0 & TreeSHAP:</strong> Governed on-premise inference engines</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-slate-400" />
+                        UNCONFIGURED / UNAVAILABLE FEEDS (NOT FAKED)
+                      </span>
+                      <ul className="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+                        <li><strong>Copernicus Sentinel-2:</strong> No live API key configured (declared UNAVAILABLE)</li>
+                        <li><strong>PlanetScope / SkySat:</strong> Commercial feed unconfigured</li>
+                        <li><strong>Maxar WorldView:</strong> High-res optical feed unconfigured</li>
+                        <li><strong>ISRO Bhuvan Live API:</strong> Standardized direct feed offline</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. OPERATIONAL TIMELINE */}
+            {commandCenterTab === "TIMELINE" && (
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-slate-400">
+                  <span className="flex items-center gap-2 font-bold text-slate-300">
+                    <History className="w-4 h-4 text-emerald-400" />
+                    <span>OPERATIONAL INTELLIGENCE TIMELINE ({situationalTimeline.length})</span>
+                  </span>
+                  <span className="text-[11px]">Audit log of missions, detections, assessments, and verifications</span>
+                </div>
+
+                {situationalTimeline.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 rounded-lg bg-slate-900/40 border border-slate-800">
+                    No operational timeline records found in the database.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                    {situationalTimeline.map((item, idx) => (
+                      <div
+                        key={item.timeline_id || idx}
+                        className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex items-start gap-3"
+                      >
+                        <div className="mt-0.5 p-1.5 rounded bg-slate-800 border border-slate-700 shrink-0">
+                          {item.event_type.includes("MISSION") ? (
+                            <Target className="w-3.5 h-3.5 text-amber-400" />
+                          ) : item.event_type.includes("VERIF") ? (
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : item.event_type.includes("ASSESS") ? (
+                            <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                          ) : (
+                            <Flame className="w-3.5 h-3.5 text-rose-400" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] text-slate-300 font-bold">
+                                {item.event_type}
+                              </span>
+                              <span className="font-bold text-slate-200">
+                                {item.entity_code || item.entity_id}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500">
+                              {item.timestamp ? new Date(item.timestamp).toLocaleString() : ""}
+                            </span>
+                          </div>
+
+                          <div className="font-medium text-slate-300">
+                            {item.title}
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed">
+                            {item.description}
+                          </p>
+
+                          {(item.state || item.district) && (
+                            <div className="text-[10px] text-slate-500">
+                              Location: <strong className="text-slate-400">{item.state}{item.district ? ` • ${item.district}` : ""}</strong>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Active Investigation Workspace Panel */}

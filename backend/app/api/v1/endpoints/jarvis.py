@@ -13,8 +13,11 @@ from backend.app.api.deps import get_current_active_user, get_optional_current_u
 from backend.app.models.domain import User, InvestigationWorkspace
 from backend.app.models.jarvis_schemas import (
     JarvisCommandRequest, JarvisResponse, ExecutionTrace, JarvisToolInfo, SessionContext,
-    InvestigationWorkspaceSchema, JarvisMission, JarvisMissionRequest
+    InvestigationWorkspaceSchema, JarvisMission, JarvisMissionRequest,
+    SituationalSnapshot, SituationalChange, AttentionItem, IndiaSituationBrief, SixtySecondBrief,
+    TimelineEvent, SituationalBriefRequest
 )
+from backend.app.services.jarvis.jarvis_situational_service import jarvis_situational_service
 from backend.app.services.jarvis.jarvis_orchestrator import (
     master_orchestrator, WORKING_MEMORY_CACHE
 )
@@ -412,5 +415,136 @@ def get_active_mission(
     from backend.app.services.jarvis.jarvis_mission_service import mission_memory
     m = mission_memory.get_current_mission()
     return m.model_dump() if m else None
+
+
+# =========================================================================
+# Phase 23: Situational Awareness & Command Center Endpoints
+# =========================================================================
+
+@router.get("/situational/snapshot", response_model=SituationalSnapshot)
+def get_situational_snapshot(
+    time_window: str = Query("LAST_30_DAYS"),
+    state: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> SituationalSnapshot:
+    """
+    Returns the canonical SituationalSnapshot across Sovereign India.
+    Derives all counts and attention queues from real database state.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    snap = jarvis_situational_service.generate_snapshot(db=db, time_window=time_window, state=state)
+    if user_role == "PUBLIC":
+        snap.major_uncertainties = [u for u in snap.major_uncertainties if "unverified" not in u.lower()]
+        for item in snap.attention_items:
+            item.coordinates = None
+    return snap
+
+
+@router.get("/situational/changes", response_model=List[SituationalChange])
+def get_situational_changes(
+    state: Optional[str] = Query(None),
+    entity_ref: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[SituationalChange]:
+    """
+    Evaluates what changed across sovereign Indian thermal clusters with deterministic significance.
+    """
+    return jarvis_situational_service.detect_changes(db=db, state=state, entity_ref=entity_ref)
+
+
+@router.get("/situational/attention", response_model=List[AttentionItem])
+def get_situational_attention_queue(
+    limit: int = Query(20, ge=1, le=100),
+    state: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[AttentionItem]:
+    """
+    Returns the ranked Analyst Attention Queue ordered by the governed priority score.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    items = jarvis_situational_service.build_attention_queue(db=db, limit=limit, state=state)
+    if user_role == "PUBLIC":
+        for it in items:
+            it.coordinates = None
+    return items
+
+
+@router.post("/situational/brief")
+def generate_situational_brief(
+    req: SituationalBriefRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Generates situational briefs (60-second, India national, regional, industrial, trend, executive, or analyst).
+    """
+    user_role = current_user.role if current_user else req.user_role
+    b_type = req.brief_type.upper()
+
+    if b_type in ("SIXTY_SECOND", "60_SECOND", "60S"):
+        res = jarvis_situational_service.generate_60s_brief(db=db)
+        return res.model_dump()
+    elif b_type == "REGIONAL" and req.state:
+        res = jarvis_situational_service.generate_regional_brief(db=db, state_name=req.state)
+        return res.model_dump()
+    elif b_type == "INDUSTRIAL":
+        res = jarvis_situational_service.generate_industrial_brief(db=db, corridor_or_facility=req.corridor or req.state)
+        return res.model_dump()
+    elif b_type == "TREND":
+        return jarvis_situational_service.generate_trend_summary(db=db, time_window=req.time_window or "30d")
+    elif b_type == "EXECUTIVE":
+        res = jarvis_situational_service.generate_executive_brief(db=db)
+        return res.model_dump()
+    elif b_type == "ANALYST":
+        if user_role == "PUBLIC":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Role 'PUBLIC' is not authorized to access analyst-depth briefings."
+            )
+        res = jarvis_situational_service.generate_analyst_brief(db=db)
+        return res.model_dump()
+    else:  # INDIA
+        res = jarvis_situational_service.generate_india_brief(db=db, state=req.state)
+        return res.model_dump()
+
+
+@router.get("/situational/timeline", response_model=List[TimelineEvent])
+def get_situational_timeline(
+    limit: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> List[TimelineEvent]:
+    """
+    Retrieves chronological timeline of events, escalations, assessment revisions, and verifications.
+    """
+    return jarvis_situational_service.get_situational_timeline(db=db, limit=limit)
+
+
+@router.post("/situational/investigate-top", response_model=JarvisMission)
+def investigate_top_attention_item(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> JarvisMission:
+    """
+    Transition endpoint: Identifies highest-priority item in the attention queue and launches Phase 22 mission mode.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    user_id = current_user.id if current_user else "ANALYST"
+
+    top_items = jarvis_situational_service.build_attention_queue(db=db, limit=1)
+    target_ref = top_items[0].event_code if top_items else "EVT-GJ-2025-001"
+
+    from backend.app.services.jarvis.jarvis_mission_service import jarvis_mission_service
+    mission_cmd = f"MISSION: Investigate event {target_ref} and assess industrial risk drivers"
+    return jarvis_mission_service.execute_mission(
+        db=db,
+        request=mission_cmd,
+        user_id=user_id,
+        user_role=user_role
+    )
+
 
 

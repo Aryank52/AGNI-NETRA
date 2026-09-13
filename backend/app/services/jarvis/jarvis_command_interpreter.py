@@ -1896,6 +1896,130 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["geographic_scope"] = "INDIA"
 
         # =========================================================================
+        # Phase 23: JARVIS Situational Awareness, Priority Briefing & Command Center
+        # =========================================================================
+        # 1. 60-Second Brief
+        is_phase23_60s_brief = any(w in cmd for w in [
+            "60-second situation brief", "60-second brief", "60 second situation brief",
+            "60 second brief", "60s situation brief", "60s brief", "sixty second brief",
+            "give me a 60-second situation brief", "give me a 60-second brief",
+            "give me a 60 second situation brief"
+        ])
+        if is_phase23_60s_brief:
+            entities["is_phase23_60s_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 2. What Changed
+        is_phase23_what_changed = (
+            any(w in cmd for w in [
+                "what changed", "what has changed", "what changed since",
+                "what changed yesterday", "what changed since yesterday",
+                "what changed in gujarat", "what changed in maharashtra",
+                "what changed around this incident"
+            ]) or (
+                "what changed" in cmd and not any(k in cmd for k in ["assessment", "hypothesis"])
+            )
+        )
+        if is_phase23_what_changed:
+            entities["is_phase23_what_changed"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 3. What Needs Attention
+        is_phase23_what_needs_attention = any(w in cmd for w in [
+            "what needs attention right now", "what needs attention", "what requires attention",
+            "what requires attention right now", "show attention queue", "attention queue",
+            "what needs attention now"
+        ])
+        if is_phase23_what_needs_attention:
+            entities["is_phase23_what_needs_attention"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 4. Investigate Highest-Priority Item (Transition to Phase 22 Mission)
+        is_phase23_investigate_top = any(w in cmd for w in [
+            "investigate the highest-priority item", "investigate highest-priority item",
+            "investigate the highest priority item", "investigate highest priority item",
+            "investigate the top attention item", "investigate top attention item",
+            "investigate the top priority item"
+        ])
+        if is_phase23_investigate_top:
+            entities["is_phase23_investigate_top"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 5. Regional Brief ("situation in Gujarat", "situation brief for Maharashtra")
+        is_phase23_regional_brief = (
+            any(w in cmd for w in [
+                "give me the situation in", "situation in gujarat", "situation in maharashtra",
+                "situation brief for", "regional situation brief", "situation in odisha",
+                "situation in chhattisgarh"
+            ]) or (
+                "situation in " in cmd and any(st in cmd for st in self.INDIAN_STATES)
+            ) or (
+                "situation brief for " in cmd and any(st in cmd for st in self.INDIAN_STATES)
+            )
+        )
+        if is_phase23_regional_brief:
+            entities["is_phase23_regional_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 6. Industrial Brief
+        is_phase23_industrial_brief = not cmd.startswith("investigate") and any(w in cmd for w in [
+            "summarize current industrial thermal activity", "summarize industrial thermal activity",
+            "industrial situation brief", "current industrial thermal activity", "industrial thermal activity brief",
+            "industrial thermal activity summary"
+        ])
+        if is_phase23_industrial_brief:
+            entities["is_phase23_industrial_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 7. Trend Summary
+        is_phase23_trend_summary = any(w in cmd for w in [
+            "is thermal activity increasing", "which regions are becoming more active",
+            "where is activity unusually high", "thermal trend summary", "thermal activity trend",
+            "is activity increasing", "regions becoming more active"
+        ])
+        if is_phase23_trend_summary:
+            entities["is_phase23_trend_summary"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 8. Attention Explanation
+        is_phase23_explain_attention = any(w in cmd for w in [
+            "why does this need attention", "why does this require attention",
+            "why does it need attention", "explain why this needs attention"
+        ])
+        if is_phase23_explain_attention:
+            entities["is_phase23_explain_attention"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 9. Executive Brief
+        is_phase23_executive_brief = any(w in cmd for w in [
+            "executive situation brief", "executive brief", "give me the executive situation brief",
+            "give me an executive brief", "executive summary brief"
+        ])
+        if is_phase23_executive_brief:
+            entities["is_phase23_executive_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 10. Analyst Brief
+        is_phase23_analyst_brief = any(w in cmd for w in [
+            "analyst situation brief", "analyst brief", "give me the analyst situation brief",
+            "give me an analyst brief"
+        ])
+        if is_phase23_analyst_brief:
+            entities["is_phase23_analyst_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+        # 11. India Situation Brief (Full national)
+        is_phase23_india_brief = any(w in cmd for w in [
+            "india situation brief", "give me the india situation brief",
+            "current india thermal situation", "summarize the operational situation quickly",
+            "summarize the operational situation", "india thermal situation"
+        ])
+        if is_phase23_india_brief:
+            entities["is_phase23_india_brief"] = True
+            entities["geographic_scope"] = "INDIA"
+
+
+        # =========================================================================
         # Phase 20: India Operational Validation & Analyst Workflow Commands
         # =========================================================================
         is_phase20_triage_queue = any(w in cmd for w in [
@@ -2749,7 +2873,40 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_phase22_mission:
+        if is_phase23_investigate_top:
+            primary_goal = "SITUATIONAL_INVESTIGATE_TOP"
+            intent = CommandIntent.INVESTIGATE
+        elif is_phase23_60s_brief:
+            primary_goal = "SITUATIONAL_60S_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_what_changed:
+            primary_goal = "SITUATIONAL_WHAT_CHANGED"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_what_needs_attention:
+            primary_goal = "SITUATIONAL_WHAT_NEEDS_ATTENTION"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_regional_brief:
+            primary_goal = "SITUATIONAL_REGIONAL_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_industrial_brief:
+            primary_goal = "SITUATIONAL_INDUSTRIAL_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_trend_summary:
+            primary_goal = "SITUATIONAL_TREND_SUMMARY"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_explain_attention:
+            primary_goal = "SITUATIONAL_ATTENTION_EXPLANATION"
+            intent = CommandIntent.EXPLAIN
+        elif is_phase23_executive_brief:
+            primary_goal = "SITUATIONAL_EXECUTIVE_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_analyst_brief:
+            primary_goal = "SITUATIONAL_ANALYST_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase23_india_brief:
+            primary_goal = "SITUATIONAL_INDIA_BRIEF"
+            intent = CommandIntent.SITUATIONAL_AWARENESS
+        elif is_phase22_mission:
             primary_goal = "PHASE22_MISSION_ORCHESTRATION"
             intent = CommandIntent.INVESTIGATE
         elif is_phase20_triage_queue:
@@ -3195,12 +3352,26 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SHOW_PROVENANCE_CHAIN", "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
         ]:
             requested_output = "SYNTHESIS"
-        elif primary_goal == "PHASE22_MISSION_ORCHESTRATION":
+        elif primary_goal in [
+            "SITUATIONAL_60S_BRIEF", "SITUATIONAL_WHAT_CHANGED", "SITUATIONAL_WHAT_NEEDS_ATTENTION",
+            "SITUATIONAL_REGIONAL_BRIEF", "SITUATIONAL_INDUSTRIAL_BRIEF", "SITUATIONAL_TREND_SUMMARY",
+            "SITUATIONAL_ATTENTION_EXPLANATION", "SITUATIONAL_EXECUTIVE_BRIEF", "SITUATIONAL_ANALYST_BRIEF",
+            "SITUATIONAL_INDIA_BRIEF"
+        ]:
+            requested_output = "SITUATIONAL_BRIEF"
+        elif primary_goal in ["PHASE22_MISSION_ORCHESTRATION", "SITUATIONAL_INVESTIGATE_TOP"]:
             requested_output = "MISSION_INTELLIGENCE_REPORT"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
-        if primary_goal == "PHASE22_MISSION_ORCHESTRATION":
+        if primary_goal in ["PHASE22_MISSION_ORCHESTRATION", "SITUATIONAL_INVESTIGATE_TOP"]:
             stopping_condition = "MISSION_COMPLETED_AND_HALT_TO_IDLE"
+        elif primary_goal in [
+            "SITUATIONAL_60S_BRIEF", "SITUATIONAL_WHAT_CHANGED", "SITUATIONAL_WHAT_NEEDS_ATTENTION",
+            "SITUATIONAL_REGIONAL_BRIEF", "SITUATIONAL_INDUSTRIAL_BRIEF", "SITUATIONAL_TREND_SUMMARY",
+            "SITUATIONAL_ATTENTION_EXPLANATION", "SITUATIONAL_EXECUTIVE_BRIEF", "SITUATIONAL_ANALYST_BRIEF",
+            "SITUATIONAL_INDIA_BRIEF"
+        ]:
+            stopping_condition = "SITUATIONAL_BRIEFING_DELIVERED_AND_HALT_TO_IDLE"
         elif primary_goal in [
             "SECTION_28_PHASE12_ACCEPTANCE", "FIND_RELATED_EVENTS", "IDENTIFY_NEAREST_RELATED",
             "DETERMINE_SAME_INCIDENT", "CORRELATE_SPATIALLY_TEMPORALLY", "IDENTIFY_RECURRING_CLUSTERS",
@@ -3378,7 +3549,10 @@ class JarvisCommandInterpreter:
         """
         Direct facade for provider interpretation.
         """
-        return self.provider.interpret(command, context)
+        res = self.provider.interpret(command, context)
+        if "objective" in res and hasattr(res["objective"], "primary_goal"):
+            res["primary_goal"] = res["objective"].primary_goal
+        return res
 
     def interpret_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
