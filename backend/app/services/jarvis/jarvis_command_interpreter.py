@@ -2257,6 +2257,32 @@ class LocalDeterministicProvider(BaseLLMProvider):
             entities["geographic_scope"] = "INDIA"
 
         # =========================================================================
+        # Phase 24: Comprehensive Safety, Negative, and Security Invariant Detection
+        # =========================================================================
+        is_security_sql_refusal = bool(re.search(r"(\bselect\b.*\bfrom\b|\bdrop\b\s+\btable\b|\bdelete\b.*\bfrom\b|\bshow\b\s+(me\s+)?(all\s+)?users\b|\binsert\b.*\binto\b|--|;)", cmd))
+        is_security_shell_refusal = bool(re.search(r"(\bexecute\b\s+(shell|command|os)\b|\bexec\b|\bbash\b|\bpowershell\b|\brm\s+-rf\b|\bsh\b\s+-c\b)", cmd))
+        is_safety_dispatch_refusal = any(w in cmd for w in ["enable operational dispatch", "enable dispatch", "activate dispatch", "override dispatch gate", "unblock dispatch"])
+        is_safety_model_activation_refusal = any(w in cmd for w in ["activate the production model", "activate production model", "activate model", "retrain model", "enable model activation", "auto-activate model"])
+        is_safety_hitl_bypass_refusal = any(w in cmd for w in ["bypass human verification", "bypass verification", "skip human verification", "skip verification", "override human verification"])
+        is_causation_claim_query = any(w in cmd for w in ["prove the nearby factory caused", "prove the factory caused", "prove causation", "did the nearby factory cause", "prove factory caused", "prove plant caused"])
+        is_unavailable_imagery_query = any(w in cmd for w in ["give me unavailable optical imagery", "unavailable optical imagery", "give me optical imagery", "provide unavailable optical imagery", "unavailable imagery"])
+
+        if is_security_sql_refusal:
+            entities["is_security_sql_refusal"] = True
+        if is_security_shell_refusal:
+            entities["is_security_shell_refusal"] = True
+        if is_safety_dispatch_refusal:
+            entities["is_safety_dispatch_refusal"] = True
+        if is_safety_model_activation_refusal:
+            entities["is_safety_model_activation_refusal"] = True
+        if is_safety_hitl_bypass_refusal:
+            entities["is_safety_hitl_bypass_refusal"] = True
+        if is_causation_claim_query:
+            entities["is_causation_claim_query"] = True
+        if is_unavailable_imagery_query:
+            entities["is_unavailable_imagery_query"] = True
+
+        # =========================================================================
         # Phase 18: India-First Data Intelligence & Sovereign Geographic Integrity
         # =========================================================================
         # 1. Out-of-Scope Country Rejection (Zero fabrication for foreign countries)
@@ -2975,6 +3001,27 @@ class LocalDeterministicProvider(BaseLLMProvider):
         elif is_phase19_intelligence_report:
             primary_goal = "PHASE19_INTELLIGENCE_REPORT"
             intent = CommandIntent.GENERATE_REPORT
+        elif is_security_sql_refusal:
+            primary_goal = "SAFETY_SQL_REFUSAL"
+            intent = CommandIntent.QUERY
+        elif is_security_shell_refusal:
+            primary_goal = "SAFETY_SHELL_REFUSAL"
+            intent = CommandIntent.QUERY
+        elif is_safety_dispatch_refusal:
+            primary_goal = "SAFETY_DISPATCH_REFUSAL"
+            intent = CommandIntent.DISPATCH_REQUEST
+        elif is_safety_model_activation_refusal:
+            primary_goal = "SAFETY_MODEL_ACTIVATION_REFUSAL"
+            intent = CommandIntent.QUERY
+        elif is_safety_hitl_bypass_refusal:
+            primary_goal = "SAFETY_HITL_BYPASS_REFUSAL"
+            intent = CommandIntent.VERIFY
+        elif is_causation_claim_query:
+            primary_goal = "NON_CAUSAL_ASSOCIATION_DISCLOSURE"
+            intent = CommandIntent.EXPLAIN
+        elif is_unavailable_imagery_query:
+            primary_goal = "UNAVAILABLE_PROVIDER_DISCLOSURE"
+            intent = CommandIntent.QUERY
         elif is_phase18_out_of_scope_rejection:
             primary_goal = "PHASE18_OUT_OF_SCOPE_REJECTION"
             intent = CommandIntent.QUERY

@@ -643,8 +643,297 @@ class JarvisMasterOrchestrator:
                     )
 
         # ---------------------------------------------------------------------------------
-        # Phase 4 Intelligence Operations & Workflow Command Handlers
+        # Phase 24: Operational Safety, Negative, and Security Invariant Handlers
         # ---------------------------------------------------------------------------------
+        goal = getattr(objective, "primary_goal", "") if objective else ""
+
+        if goal == "SAFETY_SQL_REFUSAL" or entities.get("is_security_sql_refusal"):
+            log_state(JarvisState.COMPLETED, "Security Guard Intervention: SQL query rejected")
+            summary_txt = (
+                "### AGNI-NETRA // SECURITY GUARD INTERVENTION\n\n"
+                "- **Status**: `REFUSED / PROHIBITED`\n"
+                "- **Policy Violation**: Arbitrary SQL Execution / Unauthorized Database Inspection\n"
+                "- **Enforcement**: Direct database manipulation and SQL inspection queries are strictly forbidden. "
+                "AGNI-NETRA operates strictly through governed read-only service abstractions and role-based access controls.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "SECURITY_REFUSAL_SQL: Arbitrary SQL query rejected by safety guard. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "REFUSED", "violation": "ARBITRARY_SQL", "prohibited": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "SAFETY_SHELL_REFUSAL" or entities.get("is_security_shell_refusal"):
+            log_state(JarvisState.COMPLETED, "Security Guard Intervention: Shell command rejected")
+            summary_txt = (
+                "### AGNI-NETRA // SECURITY GUARD INTERVENTION\n\n"
+                "- **Status**: `REFUSED / PROHIBITED`\n"
+                "- **Policy Violation**: Direct OS Shell / Command Execution\n"
+                "- **Enforcement**: Direct OS command execution, terminal shell access, and filesystem manipulation are strictly forbidden. "
+                "Master Agent JARVIS controls zero host shell capabilities.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "SECURITY_REFUSAL_SHELL: Direct shell execution rejected by safety guard. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "REFUSED", "violation": "SHELL_EXECUTION", "prohibited": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "SAFETY_DISPATCH_REFUSAL" or entities.get("is_safety_dispatch_refusal"):
+            log_state(JarvisState.BLOCKED, "Operational Safety Intervention: Dispatch activation rejected")
+            summary_txt = (
+                "### AGNI-NETRA // OPERATIONAL SAFETY GOVERNANCE\n\n"
+                "- **Status**: `BLOCKED / SAFETY ENFORCED`\n"
+                "- **Statutory Policy**: Operational Dispatch Gate is hard-locked in BLOCKED state (`ENABLE_OPERATIONAL_DISPATCH_GATE = False`).\n"
+                "- **Enforcement**: Autonomous emergency response dispatch is disabled by national operating policy. "
+                "All dispatch recommendations require external statutory authority confirmation.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "SAFETY_DISPATCH_GATE_BLOCKED: Dispatch activation rejected. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="DISPATCH_REQUEST",
+                user_role=user_role,
+                current_state=JarvisState.BLOCKED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="DISPATCH_REQUEST",
+                state=JarvisState.BLOCKED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "BLOCKED", "policy": "DISPATCH_PROHIBITED", "dispatch_gate_blocked": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "SAFETY_MODEL_ACTIVATION_REFUSAL" or entities.get("is_safety_model_activation_refusal"):
+            log_state(JarvisState.COMPLETED, "Model Governance Intervention: Model activation rejected")
+            summary_txt = (
+                "### AGNI-NETRA // MODEL GOVERNANCE INTERVENTION\n\n"
+                "- **Status**: `BLOCKED / REFUSED`\n"
+                "- **Model Governance Policy**: Automated Model Activation is hard-locked in DISABLED state (`ENABLE_AUTOMATED_MODEL_ACTIVATION = False`).\n"
+                "- **Enforcement**: Production model XGBoost V3.0 remains strictly frozen. Automated retraining, silent parameter adjustment, or un-audited model deployment is prohibited.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "GOVERNANCE_REFUSAL_MODEL_ACTIVATION: Model activation attempt rejected. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "BLOCKED", "policy": "MODEL_ACTIVATION_DISABLED", "model_frozen": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "SAFETY_HITL_BYPASS_REFUSAL" or entities.get("is_safety_hitl_bypass_refusal"):
+            log_state(JarvisState.REQUIRES_APPROVAL, "HITL Mandate Enforced: Verification bypass rejected")
+            summary_txt = (
+                "### AGNI-NETRA // HUMAN-IN-THE-LOOP (HITL) MANDATE\n\n"
+                "- **Status**: `REQUIRES_HUMAN_VERIFICATION / REFUSED`\n"
+                "- **HITL Policy**: Human verification cannot be bypassed by automated command.\n"
+                "- **Enforcement**: High-severity, anomalous, and critical thermal incidents mandate explicit human analyst confirmation "
+                "(Confirm, Override, Reject, Inconclusive) at the Analyst Verification Desk before disposition.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "HITL_MANDATE_ENFORCED: Bypass attempt rejected. Case forwarded to Verification Desk. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="VERIFY",
+                user_role=user_role,
+                current_state=JarvisState.REQUIRES_APPROVAL,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="VERIFY",
+                state=JarvisState.REQUIRES_APPROVAL,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "REQUIRES_HUMAN_VERIFICATION", "hitl_required": True, "bypass_prohibited": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "NON_CAUSAL_ASSOCIATION_DISCLOSURE" or entities.get("is_causation_claim_query"):
+            log_state(JarvisState.COMPLETED, "Non-Causal Association Disclosure Formulated")
+            summary_txt = (
+                "### AGNI-NETRA // NON-CAUSAL SPATIAL ASSOCIATION DISCLOSURE\n\n"
+                "- **Status**: `INSUFFICIENT_DATA / ASSOCIATION != CAUSATION`\n"
+                "- **Scientific Disclosure**: Spatial proximity (geographic co-location or buffer containment) does NOT constitute physical or legal causation.\n"
+                "- **Evidence Grounding**: Satellite-derived thermal sensors observe thermal radiative energy (MW) and brightness temperature. "
+                "Proximity to an industrial facility, power plant, or mine represents spatial exposure, but cannot prove that the facility caused the thermal event without ground forensic evidence.\n"
+                "- **Recommendation**: Dispatch ground inspection or request high-resolution optical/SAR verification before assigning liability.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "NON_CAUSAL_DISCLOSURE_COMPLETE: Association vs causation explained. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="EXPLAIN",
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="EXPLAIN",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "INSUFFICIENT_DATA", "causation_proven": False, "spatial_association_only": True},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if goal == "UNAVAILABLE_PROVIDER_DISCLOSURE" or entities.get("is_unavailable_imagery_query"):
+            log_state(JarvisState.COMPLETED, "External Provider Status Disclosure Formulated")
+            summary_txt = (
+                "### AGNI-NETRA // DATA PROVIDER STATUS DISCLOSURE\n\n"
+                "- **Status**: `NOT_CONFIGURED / UNAVAILABLE`\n"
+                "- **Requested Provider**: Copernicus Sentinel-2 / Commercial High-Resolution Optical\n"
+                "- **Availability Status**: `NOT_CONFIGURED` (Factual Status in India-First Release)\n"
+                "- **Zero-Fabrication Guarantee**: AGNI-NETRA strictly prohibits substituting synthetic or mock imagery for unavailable external providers. "
+                "Operational thermal observations are sourced authentically from NASA FIRMS VIIRS 375m and MODIS 1km feeds.\n"
+                "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
+            )
+            stopping_reason = "UNAVAILABLE_PROVIDER_DISCLOSED: Factual provider status reported without synthetic substitution. Returning to IDLE."
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"status": "NOT_CONFIGURED", "provider": "Copernicus Sentinel-2", "synthetic_substitution": False},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
 
         # 1. Operational Command: "What remains to be done?"
         if entities.get("what_remains") and not entities.get("is_complex_acceptance") and not entities.get("is_uncertainty"):
