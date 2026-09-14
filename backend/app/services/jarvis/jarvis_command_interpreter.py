@@ -385,17 +385,21 @@ class LocalDeterministicProvider(BaseLLMProvider):
         
         # Multi-candidate cohort comparison driver
         is_multi_compare = (
+            entities.get("is_multi_compare", False) or
             any(w in cmd for w in [
                 "similar events", "compare with similar", "which case is strongest", "which candidate",
                 "which is strongest", "strongest case", "winner", "compare the critical thermal events",
                 "compare the critical events", "compare events", "compare thermal events",
                 "which candidate is most severe", "most severe candidate", "strongest candidate",
-                "compare them", "which case"
+                "compare them", "which case", "which one has the strongest evidence", "which one has stronger evidence",
+                "tell me which one", "tell me which", "which has the strongest evidence",
+                "identify the strongest case"
             ]) or (
                 "compare" in cmd and any(w in cmd for w in ["events", "cases", "candidates", "cohort", "similar"])
             )
         )
         entities["is_multi_compare"] = is_multi_compare
+
 
         # Baseline comparison driver
         is_baseline_comparison = (

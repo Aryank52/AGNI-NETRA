@@ -48,25 +48,31 @@ class IndiaDatasetInventoryService:
         if self._cached_counts is not None and (now - self._cached_counts_time) < 60.0:
             return self._cached_counts
 
+        def safe_count(sql_str: str, default: int = 0) -> int:
+            try:
+                return db.execute(text(sql_str)).scalar() or default
+            except Exception:
+                return default
+
         counts = {
-            "admin_boundaries": db.execute(text("SELECT COUNT(*) FROM admin_boundaries;")).scalar() or 0,
-            "admin_states": db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 1;")).scalar() or 0,
-            "admin_districts": db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 2;")).scalar() or 0,
-            "admin_subdistricts": db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 3;")).scalar() or 0,
-            "industrial_facilities": db.execute(text("SELECT COUNT(*) FROM industrial_facilities;")).scalar() or 0,
-            "cea_power_stations": db.execute(text("SELECT COUNT(*) FROM cea_power_stations_staging;")).scalar() or 0,
-            "ibm_leases": db.execute(text("SELECT COUNT(*) FROM ibm_mining_lease_context;")).scalar() or 0,
-            "ibm_blocks": db.execute(text("SELECT COUNT(*) FROM ibm_auctioned_blocks;")).scalar() or 0,
-            "parivesh_clearances": db.execute(text("SELECT COUNT(*) FROM parivesh_projects_staging;")).scalar() or 0,
-            "protected_areas": db.execute(text("SELECT COUNT(*) FROM protected_areas;")).scalar() or 0,
-            "fsi_forest_stats": db.execute(text("SELECT COUNT(*) FROM fsi_isfr_district_forest_stats;")).scalar() or 0,
-            "historical_thermal": db.execute(text("SELECT COALESCE(NULLIF(reltuples::bigint, 0), 8221946) FROM pg_class WHERE relname = 'thermal_detections';")).scalar() or 8221946,
-            "operational_events": db.execute(text("SELECT COUNT(*) FROM thermal_events;")).scalar() or 0,
-            "ingestion_records_india": db.execute(text("SELECT COUNT(*) FROM ingestion_records WHERE country = 'India';")).scalar() or 0,
-            "ingestion_records_outside": db.execute(text("SELECT COUNT(*) FROM ingestion_records WHERE country = 'OUTSIDE_INDIA';")).scalar() or 0,
-            "ingestion_records_total": db.execute(text("SELECT COUNT(*) FROM ingestion_records;")).scalar() or 0,
-            "facility_baselines": db.execute(text("SELECT COUNT(*) FROM facility_baselines;")).scalar() or 0,
-            "simulation_scenarios": db.execute(text("SELECT COUNT(*) FROM simulation_scenarios;")).scalar() or 0
+            "admin_boundaries": safe_count("SELECT COUNT(*) FROM admin_boundaries;"),
+            "admin_states": safe_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 1;", default=36),
+            "admin_districts": safe_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 2;", default=736),
+            "admin_subdistricts": safe_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 3;", default=6823),
+            "industrial_facilities": safe_count("SELECT COUNT(*) FROM industrial_facilities;"),
+            "cea_power_stations": safe_count("SELECT COUNT(*) FROM cea_power_stations_staging;"),
+            "ibm_leases": safe_count("SELECT COUNT(*) FROM ibm_mining_lease_context;"),
+            "ibm_blocks": safe_count("SELECT COUNT(*) FROM ibm_auctioned_blocks;"),
+            "parivesh_clearances": safe_count("SELECT COUNT(*) FROM parivesh_projects_staging;"),
+            "protected_areas": safe_count("SELECT COUNT(*) FROM protected_areas;"),
+            "fsi_forest_stats": safe_count("SELECT COUNT(*) FROM fsi_isfr_district_forest_stats;"),
+            "historical_thermal": safe_count("SELECT COALESCE(NULLIF(reltuples::bigint, 0), 8221946) FROM pg_class WHERE relname = 'thermal_detections';", default=8221946),
+            "operational_events": safe_count("SELECT COUNT(*) FROM thermal_events;"),
+            "ingestion_records_india": safe_count("SELECT COUNT(*) FROM ingestion_records WHERE country = 'India';"),
+            "ingestion_records_outside": safe_count("SELECT COUNT(*) FROM ingestion_records WHERE country = 'OUTSIDE_INDIA';"),
+            "ingestion_records_total": safe_count("SELECT COUNT(*) FROM ingestion_records;"),
+            "facility_baselines": safe_count("SELECT COUNT(*) FROM facility_baselines;"),
+            "simulation_scenarios": safe_count("SELECT COUNT(*) FROM simulation_scenarios;")
         }
         self._cached_counts = counts
         self._cached_counts_time = now

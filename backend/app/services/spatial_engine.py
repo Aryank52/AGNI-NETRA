@@ -151,6 +151,7 @@ INDIAN_STATES_BOUNDS = {
     "Karnataka": {"min_lat": 11.5, "max_lat": 18.5, "min_lon": 74.0, "max_lon": 78.6, "district": "Ballari"},
     "West Bengal": {"min_lat": 21.5, "max_lat": 27.2, "min_lon": 85.8, "max_lon": 89.9, "district": "Haldia"},
     "Uttar Pradesh": {"min_lat": 23.8, "max_lat": 30.4, "min_lon": 77.0, "max_lon": 84.6, "district": "Sonbhadra"},
+    "Delhi": {"min_lat": 28.3, "max_lat": 28.9, "min_lon": 76.8, "max_lon": 77.4, "district": "New Delhi"},
 }
 
 

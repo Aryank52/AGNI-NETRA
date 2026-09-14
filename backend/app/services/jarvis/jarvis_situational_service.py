@@ -517,7 +517,7 @@ class JarvisSituationalService:
             adm = h["administrative"]
             obs = h["observed"]
             der = h["derived"]
-            ctx = h["nearest_context"]
+            ctx = h.get("nearest_context") or {}
 
             risk_score = der["risk_score"]
             priority_score = der["priority_score"]
@@ -538,7 +538,7 @@ class JarvisSituationalService:
                 severity = "CRITICAL" if risk_score >= 80.0 else "HIGH"
                 reason = (
                     f"Elevated risk score ({risk_score}/100) and priority ({priority_score}/100) "
-                    f"near {ctx.get('osm_industrial', {}).get('name', 'industrial infrastructure')}; "
+                    f"near {(ctx.get('osm_industrial') or {}).get('name', 'industrial infrastructure')}; "
                     f"human verification required by operational governance."
                 )
                 recommended_next = "Execute Human Verification step at Verification Desk or command mission verification."

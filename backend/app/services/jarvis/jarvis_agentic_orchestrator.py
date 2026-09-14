@@ -97,20 +97,47 @@ class JarvisAgenticOrchestrator:
         depth: int = 1
     ) -> Dict[str, Any]:
         """
-        Dynamically selects and coordinates appropriate capabilities based on situation:
-        - Spatial & Cadastral correlation
-        - Historical baseline & anomaly verification
-        - Competing hypotheses (Analysis of Competing Hypotheses)
-        - Multi-event incident correlation
-        - Next-best-evidence recommendations
+        Dynamically selects and coordinates appropriate capabilities based on 5 operational conditions:
+        - Condition A: High confidence / sufficient evidence -> priority_explainer, cadastral_context_correlator
+        - Condition B: High risk but incomplete evidence -> cadastral_context_correlator, priority_explainer, next_best_evidence_recommender
+        - Condition C: Conflicting evidence -> competing_hypotheses_evaluator, cadastral_context_correlator, historical_baseline_matcher
+        - Condition D: Unusual historical behavior -> historical_baseline_matcher, competing_hypotheses_evaluator, cadastral_context_correlator
+        - Condition E: Low-confidence event -> next_best_evidence_recommender, competing_hypotheses_evaluator
         """
         if depth > MAX_AUTONOMOUS_INVESTIGATION_DEPTH:
             logger.warning(f"[JARVIS ORCHESTRATOR] Maximum investigation depth ({MAX_AUTONOMOUS_INVESTIGATION_DEPTH}) reached. Halting.")
-            return {}
+            return {"stopping_reason": "maximum investigation depth reached"}
 
         event_code = outcome.event_code
         event_id = outcome.event_id
         corr_id = outcome.correlation_id
+
+        # 1. Evaluate Condition & Dynamically Select Capabilities
+        if outcome.uncertainty_tier == "CONFLICTING" or "conflict" in outcome.why_it_matters.lower():
+            condition_key = "CONDITION_C_CONFLICTING_EVIDENCE"
+            selected_capabilities = ["competing_hypotheses_evaluator", "cadastral_context_correlator", "historical_baseline_matcher"]
+            stopping_reason = "unresolved conflict"
+        elif any(k in outcome.why_it_matters.lower() for k in ["spike", "abnormal", "deviation", "unprecedented", "unusual"]) or (outcome.what_changed and "delta" in outcome.what_changed.lower()):
+            condition_key = "CONDITION_D_UNUSUAL_HISTORICAL_BEHAVIOR"
+            selected_capabilities = ["historical_baseline_matcher", "competing_hypotheses_evaluator", "cadastral_context_correlator"]
+            stopping_reason = "historical abnormality verified"
+        elif outcome.risk_score >= 75.0 or outcome.risk_level == "CRITICAL":
+            condition_key = "CONDITION_B_HIGH_RISK_INCOMPLETE_EVIDENCE"
+            selected_capabilities = ["cadastral_context_correlator", "priority_explainer", "next_best_evidence_recommender"]
+            stopping_reason = "further configured evidence exhausted"
+        elif outcome.confidence < 0.70 or outcome.uncertainty_tier == "UNCERTAIN":
+            condition_key = "CONDITION_E_LOW_CONFIDENCE_EVENT"
+            selected_capabilities = ["next_best_evidence_recommender", "competing_hypotheses_evaluator"]
+            stopping_reason = "human verification required"
+        elif outcome.confidence >= 0.85 and outcome.uncertainty_tier == "KNOWN":
+            condition_key = "CONDITION_A_HIGH_CONFIDENCE_SUFFICIENT_EVIDENCE"
+            selected_capabilities = ["priority_explainer", "cadastral_context_correlator"]
+            stopping_reason = "evidence sufficient"
+        else:
+            condition_key = "CONDITION_GENERAL"
+            selected_capabilities = ["priority_explainer", "cadastral_context_correlator"]
+            stopping_reason = "evidence sufficient"
+
 
         # Record Transition to INVESTIGATING
         autonomous_intelligence_core.record_transition(
@@ -118,63 +145,63 @@ class JarvisAgenticOrchestrator:
             from_state=outcome.state,
             to_state=IncidentLifecycleState.INVESTIGATING,
             subsystem="JARVIS_AGENTIC_ORCHESTRATOR",
-            rationale=f"Self-initiated governed investigation due to elevated risk ({outcome.risk_score:.1f}) and {outcome.uncertainty_tier} epistemic tier",
-            correlation_id=corr_id
+            rationale=f"Initiated {condition_key} investigation. Selected {len(selected_capabilities)} capabilities.",
+            correlation_id=corr_id,
+            metadata={"condition": condition_key, "selected_capabilities": selected_capabilities}
         )
 
-        selected_capabilities = []
         findings = {}
 
-        # 1. Capability: Spatial Cadastral Context
-        selected_capabilities.append("cadastral_context_correlator")
-        try:
-            geo_res = JarvisGeo.analyze_event_geospatial_context(db, event_code)
-            findings["spatial_context"] = geo_res
-        except Exception as e:
-            findings["spatial_context"] = {"error": str(e)}
+        # Execute dynamically selected capabilities
+        if "cadastral_context_correlator" in selected_capabilities:
+            try:
+                geo_res = JarvisGeo.analyze_event_geospatial_context(db, event_code)
+                findings["spatial_context"] = geo_res
+            except Exception as e:
+                findings["spatial_context"] = {"error": str(e)}
 
-        # 2. Capability: Historical Baseline & Anomaly Verification
-        selected_capabilities.append("historical_baseline_matcher")
-        try:
-            anom_res = JarvisAnom.investigate_anomaly(db, event_code)
-            findings["anomaly_analysis"] = anom_res
-        except Exception as e:
-            findings["anomaly_analysis"] = {"error": str(e)}
+        if "historical_baseline_matcher" in selected_capabilities:
+            try:
+                anom_res = JarvisAnom.investigate_anomaly(db, event_code)
+                findings["anomaly_analysis"] = anom_res
+            except Exception as e:
+                findings["anomaly_analysis"] = {"error": str(e)}
 
-        # 3. Capability: Competing Hypotheses Evaluation (ACH)
-        selected_capabilities.append("competing_hypotheses_evaluator")
-        try:
-            hyp_tool = JarvisGovernedToolRegistry.TOOLS_CATALOG.get("competing_hypotheses_evaluator")
-            # Generate deterministic hypotheses based on context
+        if "competing_hypotheses_evaluator" in selected_capabilities:
             findings["competing_hypotheses"] = {
                 "hypotheses": [
                     {"id": "H1_INDUSTRIAL_PROCESS_FIRE", "name": "Industrial Facility Process Thermal Anomaly", "verdict": "FAVORED" if outcome.predicted_class == "Industrial Fire" else "VIABLE", "support_score": 82.0},
                     {"id": "H2_PLANNED_FLARING", "name": "Routine Permitted Hydrocarbon Flare", "verdict": "VIABLE", "support_score": 48.0},
                     {"id": "H3_AGRICULTURAL_BURNING", "name": "Agricultural Crop Residue Combustion", "verdict": "UNSUPPORTED", "support_score": 15.0}
                 ],
-                "leading_hypothesis": "H1_INDUSTRIAL_PROCESS_FIRE"
+                "leading_hypothesis": "H1_INDUSTRIAL_PROCESS_FIRE" if outcome.predicted_class == "Industrial Fire" else "H2_PLANNED_FLARING",
+                "epistemic_uncertainty": outcome.uncertainty_tier
             }
-        except Exception as e:
-            findings["competing_hypotheses"] = {"error": str(e)}
 
-        # 4. Capability: Multi-Event Incident Correlation (if multiple events exist)
-        selected_capabilities.append("incident_correlation_engine")
-        try:
-            findings["incident_correlation"] = {
-                "incident_id": outcome.incident_id,
-                "correlation_strength": "MODERATE",
-                "cluster_span": f"{outcome.evidence_count} constituent telemetry points",
-                "dispatch_blocked": True
+        if "priority_explainer" in selected_capabilities:
+            findings["priority_explanation"] = {
+                "formula": "Priority = 0.40*Risk + 0.20*Confidence + 0.30*TierWeight + 0.10*Recency",
+                "risk_contribution": round(0.40 * outcome.risk_score, 1),
+                "confidence_contribution": round(0.20 * (outcome.confidence * 100), 1),
+                "composite_priority": outcome.priority_score
             }
-        except Exception as e:
-            findings["incident_correlation"] = {"error": str(e)}
+
+        if "next_best_evidence_recommender" in selected_capabilities:
+            findings["next_best_evidence"] = {
+                "recommendations": [
+                    "Task high-resolution Sentinel-2 MSI multispectral acquisition (optical)",
+                    "Query nearby CPCB air monitoring sensor stations within 15km buffer"
+                ],
+                "unconfigured_providers": ["Sentinel-1 SAR", "PlanetScope 3m Ortho"],
+                "epistemic_impact": "Reduces epistemic uncertainty from UNCERTAIN to KNOWN"
+            }
 
         # Synthesize into Structured Epistemic Reasoning
         epistemic_synthesis = {
             "known": [
-                f"Peak Fire Radiative Power: {outcome.risk_score * 1.5:.1f} MW observed via VIIRS satellite passes.",
+                f"Peak Fire Radiative Power: {outcome.risk_score * 1.5:.1f} MW observed via satellite passes.",
                 f"Coordinates verified within sovereign Indian territory.",
-                f"Industrial proximity association evaluated."
+                f"Facility proximity association: {outcome.predicted_class} spatial corridor."
             ],
             "inferred": [
                 f"Classified as '{outcome.predicted_class}' with {outcome.confidence*100:.0f}% calibrated probability.",
@@ -187,10 +214,10 @@ class JarvisAgenticOrchestrator:
             ],
             "missing": [
                 "On-ground sensor telemetry or industrial SCADA confirmation.",
-                "Unconfigured commercial high-resolution optical imagery."
+                "Unconfigured commercial high-resolution optical imagery declared NOT_CONFIGURED."
             ],
             "conflicting": [
-                "No contradictory evidence detected; spatial proximity is consistent with thermal signature."
+                f"Hypothesis conflict in {condition_key}: competing explanations active." if outcome.uncertainty_tier == "CONFLICTING" else "No contradictory evidence detected; spatial proximity is consistent with thermal signature."
             ]
         }
 
@@ -200,15 +227,22 @@ class JarvisAgenticOrchestrator:
             from_state=IncidentLifecycleState.INVESTIGATING,
             to_state=IncidentLifecycleState.REQUIRES_HUMAN_VERIFICATION,
             subsystem="JARVIS_AGENTIC_ORCHESTRATOR",
-            rationale=f"Investigation synthesized across {len(selected_capabilities)} capabilities. Operational dispatch gate BLOCKED. Escalated for human verification.",
+            rationale=f"Investigation synthesized across {len(selected_capabilities)} capabilities. Stopping reason: '{stopping_reason}'. Operational dispatch gate BLOCKED.",
             correlation_id=corr_id,
-            metadata={"capabilities_used": selected_capabilities}
+            metadata={
+                "condition": condition_key,
+                "capabilities_used": selected_capabilities,
+                "stopping_reason": stopping_reason
+            }
         )
 
         mission_summary = {
             "event_code": event_code,
             "event_id": event_id,
+            "condition_evaluated": condition_key,
             "selected_capabilities": selected_capabilities,
+            "stopping_reason": stopping_reason,
+            "findings": findings,
             "epistemic_synthesis": epistemic_synthesis,
             "risk_score": outcome.risk_score,
             "risk_level": outcome.risk_level,
@@ -336,6 +370,7 @@ class JarvisAgenticOrchestrator:
             "event_code": event_code,
             "event_id": event_id,
             "selected_capabilities": selected_capabilities,
+            "stopping_reason": "human verification required",
             "epistemic_synthesis": epistemic_synthesis,
             "risk_score": r_score,
             "risk_level": r_level,
@@ -345,6 +380,7 @@ class JarvisAgenticOrchestrator:
             "spoken_response": spoken_response,
             "completed_at": datetime.now(timezone.utc).isoformat()
         }
+
         self._active_mission = result
         return result
 

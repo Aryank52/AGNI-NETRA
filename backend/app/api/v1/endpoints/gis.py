@@ -77,23 +77,29 @@ def get_gis_layers_catalog(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """
     events_count = db.execute(text("SELECT COUNT(*) FROM thermal_events WHERE status = 'ACTIVE';")).scalar() or 0
     facilities_count = db.execute(text("SELECT COUNT(*) FROM industrial_facilities;")).scalar() or 0
-    power_stations_count = db.execute(text("""
+    def safe_gis_count(sql_str: str, default: int = 0) -> int:
+        try:
+            return db.execute(text(sql_str)).scalar() or default
+        except Exception:
+            return default
+
+    power_stations_count = safe_gis_count("""
         SELECT COUNT(*) FROM industrial_facilities 
         WHERE cea_project_name IS NOT NULL OR LOWER(facility_type) LIKE '%power%' OR LOWER(master_sector) LIKE '%power%';
-    """)).scalar() or 0
+    """)
     if power_stations_count == 0:
-        power_stations_count = db.execute(text("SELECT COUNT(*) FROM cea_power_stations_staging;")).scalar() or 1633
+        power_stations_count = safe_gis_count("SELECT COUNT(*) FROM cea_power_stations_staging;", default=1633)
 
-    mining_count = db.execute(text("SELECT COUNT(*) FROM ibm_auctioned_blocks WHERE geom IS NOT NULL;")).scalar() or 0
+    mining_count = safe_gis_count("SELECT COUNT(*) FROM ibm_auctioned_blocks WHERE geom IS NOT NULL;")
     if mining_count == 0:
-        mining_count = db.execute(text("SELECT COUNT(*) FROM facility_mining_evidence;")).scalar() or 0
+        mining_count = safe_gis_count("SELECT COUNT(*) FROM facility_mining_evidence;")
 
-    protected_areas_count = db.execute(text("SELECT COUNT(*) FROM protected_areas;")).scalar() or 0
-    lulc_count = db.execute(text("SELECT COUNT(*) FROM lulc_spatial_features;")).scalar() or 0
-    states_count = db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 1;")).scalar() or 36
-    districts_count = db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 2;")).scalar() or 736
-    subdistricts_count = db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 3;")).scalar() or 6823
-    parivesh_count = db.execute(text("SELECT COUNT(*) FROM parivesh_projects_staging;")).scalar() or 0
+    protected_areas_count = safe_gis_count("SELECT COUNT(*) FROM protected_areas;")
+    lulc_count = safe_gis_count("SELECT COUNT(*) FROM lulc_spatial_features;")
+    states_count = safe_gis_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 1;", default=36)
+    districts_count = safe_gis_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 2;", default=736)
+    subdistricts_count = safe_gis_count("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 3;", default=6823)
+    parivesh_count = safe_gis_count("SELECT COUNT(*) FROM parivesh_projects_staging;")
 
     return {
         "status": "OPERATIONAL",
@@ -670,31 +676,34 @@ def get_admin_states_geojson(
     """
     Returns simplified GeoJSON FeatureCollection of 36 Indian States/UTs for map rendering and drill-down.
     """
-    rows = db.execute(text("""
-        SELECT b.id, b.state_code, b.normalized_name as state_name,
-               ST_AsGeoJSON(ST_Simplify(b.geom, :simplify)) as geojson
-        FROM admin_boundaries b
-        WHERE b.admin_level = 1 AND b.geom IS NOT NULL
-        ORDER BY b.normalized_name ASC;
-    """), {"simplify": simplify}).fetchall()
-
     features = []
-    for r in rows:
-        if r[3]:
-            try:
-                geom = json.loads(r[3])
-                features.append({
-                    "type": "Feature",
-                    "geometry": geom,
-                    "properties": {
-                        "id": r[0],
-                        "state_code": r[1],
-                        "state_name": r[2],
-                        "layer": "admin_states"
-                    }
-                })
-            except Exception:
-                pass
+    try:
+        rows = db.execute(text("""
+            SELECT b.id, b.state_code, b.normalized_name as state_name,
+                   ST_AsGeoJSON(ST_Simplify(b.geom, :simplify)) as geojson
+            FROM admin_boundaries b
+            WHERE b.admin_level = 1 AND b.geom IS NOT NULL
+            ORDER BY b.normalized_name ASC;
+        """), {"simplify": simplify}).fetchall()
+
+        for r in rows:
+            if r[3]:
+                try:
+                    geom = json.loads(r[3])
+                    features.append({
+                        "type": "Feature",
+                        "geometry": geom,
+                        "properties": {
+                            "id": r[0],
+                            "state_code": r[1],
+                            "state_name": r[2],
+                            "layer": "admin_states"
+                        }
+                    })
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
     return {
         "type": "FeatureCollection",
@@ -729,26 +738,28 @@ def get_admin_districts_geojson(
         WHERE {where_sql}
         LIMIT :limit;
     """
-    rows = db.execute(text(query_sql), params).fetchall()
-
     features = []
-    for r in rows:
-        if r[4]:
-            try:
-                geom = json.loads(r[4])
-                features.append({
-                    "type": "Feature",
-                    "geometry": geom,
-                    "properties": {
-                        "id": r[0],
-                        "district_code": r[1],
-                        "district_name": r[2],
-                        "state_name": r[3],
-                        "layer": "admin_districts"
-                    }
-                })
-            except Exception:
-                pass
+    try:
+        rows = db.execute(text(query_sql), params).fetchall()
+        for r in rows:
+            if r[4]:
+                try:
+                    geom = json.loads(r[4])
+                    features.append({
+                        "type": "Feature",
+                        "geometry": geom,
+                        "properties": {
+                            "id": r[0],
+                            "district_code": r[1],
+                            "district_name": r[2],
+                            "state_name": r[3],
+                            "layer": "admin_districts"
+                        }
+                    })
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
     return {
         "type": "FeatureCollection",

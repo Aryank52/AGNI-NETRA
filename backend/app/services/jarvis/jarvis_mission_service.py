@@ -358,12 +358,15 @@ class JarvisGovernedToolRegistry:
                 logger.warning(f"Adversarial OS shell command attempt detected: {raw_command}")
                 return False, "SECURITY_REFUSAL: Direct OS command and shell execution is strictly forbidden."
 
-        # 3. Block Attempts to Enable Dispatch Gate
+        # 3. Block Attempts to Enable Dispatch Gate or Trigger Autonomous Dispatches
         if any(w in cmd_lower for w in [
             "enable dispatch", "activate dispatch", "override dispatch gate", "unblock dispatch",
-            "dispatch_gate", "enable_operational_dispatch_gate", "operational_dispatch_gate"
+            "dispatch_gate", "enable_operational_dispatch_gate", "operational_dispatch_gate",
+            "dispatch fire", "emergency siren", "activate siren", "siren", "dispatch trucks",
+            "dispatch emergency", "live dispatch", "dispatch responders", "trigger sirens"
         ]):
-            return False, "INVARIANT_REFUSAL: Operational Dispatch Gate is hard-locked in BLOCKED state (ENABLE_OPERATIONAL_DISPATCH_GATE = False). Autonomous dispatch cannot be enabled."
+            return False, "INVARIANT_REFUSAL: Operational Dispatch Gate is hard-locked in BLOCKED state (ENABLE_OPERATIONAL_DISPATCH_GATE = False). Autonomous emergency dispatch is strictly prohibited."
+
 
         # 4. Block Attempts to Auto-Activate / Retrain Models
         if any(w in cmd_lower for w in [

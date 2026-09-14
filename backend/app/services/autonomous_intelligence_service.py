@@ -494,6 +494,13 @@ class AutonomousIntelligenceCore:
                 f"Human verification is {'mandatory' if requires_hitl else 'optional'}."
             )
 
+            if requires_hitl:
+                stop_reason = "human verification required"
+            elif r_score < 40.0:
+                stop_reason = "risk below investigation threshold"
+            else:
+                stop_reason = "evidence sufficient"
+
             outcome = AutonomousIntelligenceOutcome(
                 event_id=event_id,
                 event_code=evt_code,
@@ -511,12 +518,14 @@ class AutonomousIntelligenceCore:
                 what_changed="Initial autonomous detection and assessment formed",
                 why_it_matters=why_it_matters,
                 correlation_id=correlation_id,
+                stopping_reason=stop_reason,
                 transitions=transitions
             )
             outcomes.append(outcome)
 
             # Emit state to subscribers (e.g. JARVIS)
             self._notify_subscribers(outcome)
+
 
         return outcomes
 

@@ -63,5 +63,7 @@ class AutonomousIntelligenceOutcome(BaseModel):
     what_changed: Optional[str] = Field(None, description="Delta summary if re-evaluated")
     why_it_matters: str = Field("", description="Operational context narrative")
     correlation_id: str = Field(..., description="End-to-end correlation ID")
+    stopping_reason: Optional[str] = Field(None, description="Deterministic autonomous investigation stopping reason")
     transitions: List[IncidentLifecycleTransition] = Field(default_factory=list, description="Audit trail of state transitions")
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+

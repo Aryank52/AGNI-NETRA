@@ -7625,6 +7625,7 @@ class JarvisMasterOrchestrator:
 
             details["events"] = results
             details["multi_constraint_results"] = results
+            details["multi_constraint_events"] = results
             details["constraints"] = {
                 "state": state, "risk_level": risk_lvl, "max_distance_m": max_dist,
                 "anomalous_only": anom_only, "low_confidence_only": low_conf
@@ -7659,7 +7660,8 @@ class JarvisMasterOrchestrator:
                 f"Enter: 'JARVIS, investigate {results[0]['event_code']}' to open case." if results else "Broaden query constraints.",
                 "Review spatial buffer radius in GIS filter."
             ]
-            stopping_reason = f"MULTI_CONSTRAINT_SEARCH_COMPLETE: Found {len(results)} events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions."
+            stopping_reason = f"MULTI_CONSTRAINT_FILTER_SATISFIED: Discovered {len(results)} events satisfying multi-dimensional predicates across spatial, risk, anomaly, and ML dimensions."
+
 
         # 5. EVIDENCE CONFLICT DETECTION ("Find events where historical behavior conflicts with classification")
         elif is_conflict_detection:

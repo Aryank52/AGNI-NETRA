@@ -192,6 +192,13 @@ class IndiaBoundaryService:
             return False, None, None, None
         except Exception as e:
             logger.error(f"Error during PostGIS containment check for ({lat}, {lon}): {e}")
+            from backend.app.services.spatial_engine import lookup_state, lookup_district
+            if (lat >= 30.0 and lon < 74.57) or (lon < 68.0) or (lat < 8.0) or (lon > 88.5 and 21.0 < lat < 26.5):
+                return False, None, None, None
+            st = lookup_state(lat, lon)
+            if st and st != "National / Other":
+                dt = lookup_district(lat, lon)
+                return True, st, dt, None
             return False, None, None, None
         finally:
             if own_session:

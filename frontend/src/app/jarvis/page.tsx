@@ -208,6 +208,17 @@ export default function JarvisOperationalConsole() {
           console.warn("Speech recognition error:", event.error);
           setIsListening(false);
           setVisualState("IDLE");
+          if (event.error === "not-allowed" || event.error === "permission-denied") {
+            setErrorMsg("Microphone permission denied. Voice input is unavailable. Please type your query in the prompt bar below.");
+          } else if (event.error === "network") {
+            setErrorMsg("Network error during speech recognition. Falling back to visual text interface.");
+          } else if (event.error === "no-speech") {
+            setErrorMsg("No speech detected. Please speak clearly into your microphone or type your question below.");
+          } else if (event.error === "audio-capture") {
+            setErrorMsg("No microphone hardware detected. Operating in visual text mode.");
+          } else {
+            setErrorMsg(`Speech recognition issue (${event.error}). Gracefully falling back to text interface.`);
+          }
         };
 
         recognition.onend = () => {
@@ -244,13 +255,16 @@ export default function JarvisOperationalConsole() {
       setVisualState("COMPLETED");
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (event: any) => {
+      console.warn("Speech synthesis error:", event);
       setIsSpeaking(false);
       setVisualState("COMPLETED");
+      setErrorMsg("Text-to-speech audio synthesis unavailable. Spoken response displayed in text above.");
     };
 
     synthRef.current.speak(utterance);
   };
+
 
   const stopSpeaking = () => {
     if (synthRef.current) {

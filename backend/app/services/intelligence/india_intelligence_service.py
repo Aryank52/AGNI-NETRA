@@ -36,6 +36,7 @@ from backend.app.services.data_plane.india_dataset_inventory import india_datase
 from backend.app.services.risk_service import RiskService
 from backend.app.services.alert_workflow_service import ROUTING_TIER_WEIGHTS
 from backend.app.core.config import settings
+from backend.app.core.database import IS_SQLITE_TEST
 
 logger = logging.getLogger("agni_netra.india_intelligence")
 
@@ -188,14 +189,15 @@ class IndiaIntelligenceService:
             WHERE (te.country IS NULL OR te.country = 'India' OR te.country = 'IND')
         """
         params: Dict[str, Any] = {}
+        like_op = "LIKE" if IS_SQLITE_TEST else "ILIKE"
         if event_id:
             sql += " AND (te.id = :single_event_id OR te.event_code = :single_event_id)"
             params["single_event_id"] = event_id
         if state:
-            sql += " AND te.state ILIKE :state"
+            sql += f" AND te.state {like_op} :state"
             params["state"] = f"%{state}%"
         if district:
-            sql += " AND te.district ILIKE :district"
+            sql += f" AND te.district {like_op} :district"
             params["district"] = f"%{district}%"
         if min_risk > 0.0:
             sql += " AND COALESCE(rs.risk_score, 0.0) >= :min_risk"
@@ -572,19 +574,20 @@ class IndiaIntelligenceService:
         for h in hotspots:
             obs = h["observed"]
             der = h["derived"]
-            ctx = h["nearest_context"]
+            ctx = h.get("nearest_context") or {}
+            osm_ind = ctx.get("osm_industrial") or {}
 
             # Mathematical risk factor breakdown
             intensity_score = min(100.0, obs["avg_frp_mw"] * 2.5)
             abnormality_score = min(100.0, max(0.0, der["abnormality_z_score"] * 20.0 + 30.0))
-            exposure_score = 70.0 if ctx.get("osm_industrial") else 40.0
+            exposure_score = 70.0 if osm_ind else 40.0
             persistence_score = der["persistence_score"] * 10.0
-            context_score = 85.0 if ctx.get("cea_power") or ctx.get("osm_industrial") else 30.0
+            context_score = 85.0 if ctx.get("cea_power") or osm_ind else 30.0
 
             profile = {
                 "event_id": h["event_id"],
                 "event_code": h["event_code"],
-                "facility_association": ctx.get("osm_industrial", {}).get("name", "Unassociated Industrial Zone"),
+                "facility_association": osm_ind.get("name", "Unassociated Industrial Zone"),
                 "state": h["administrative"]["state"],
                 "district": h["administrative"]["district"],
                 "risk_profile": {
@@ -608,14 +611,14 @@ class IndiaIntelligenceService:
                     "thermal_frequency": f"{obs['detection_count']} passes over {obs['active_duration_hours']}h",
                     "thermal_persistence": der["persistence_category"],
                     "abnormality": f"Z-score {der['abnormality_z_score']} vs 6-yr historical baseline",
-                    "proximity_to_industrial_assets": f"{ctx.get('osm_industrial', {}).get('distance_m', 'N/A')}m to nearest facility",
+                    "proximity_to_industrial_assets": f"{osm_ind.get('distance_m', 'N/A')}m to nearest facility",
                     "environmental_sensitivity": "MODERATE (Outside notified National Parks)" if not ctx.get("protected_area") else "HIGH (Adjacent to Protected Area)",
-                    "multi_source_agreement": "CORROBORATED (Satellite NRT + OSM Cadastre)" if ctx.get("osm_industrial") else "SINGLE_SOURCE (Satellite Only)"
+                    "multi_source_agreement": "CORROBORATED (Satellite NRT + OSM Cadastre)" if osm_ind else "SINGLE_SOURCE (Satellite Only)"
                 },
                 "explainable_summary": (
                     f"Event {h['event_code']} in {h['administrative']['district']}, {h['administrative']['state']} "
                     f"exhibits {der['persistence_category'].lower()} thermal emissions (Risk: {der['risk_score']}/100). "
-                    f"Spatially associated with {ctx.get('osm_industrial', {}).get('name', 'industrial territory')} "
+                    f"Spatially associated with {osm_ind.get('name', 'industrial territory')} "
                     f"with {obs['detection_count']} satellite passes and average FRP of {obs['avg_frp_mw']} MW."
                 )
             }
@@ -726,8 +729,9 @@ class IndiaIntelligenceService:
             WHERE (te.country IS NULL OR te.country = 'India' OR te.country = 'IND')
         """
         params: Dict[str, Any] = {}
+        like_op = "LIKE" if IS_SQLITE_TEST else "ILIKE"
         if state:
-            sql += " AND te.state ILIKE :state"
+            sql += f" AND te.state {like_op} :state"
             params["state"] = f"%{state}%"
 
         sql += " GROUP BY te.district, te.state ORDER BY COUNT(te.id) DESC LIMIT :limit;"
