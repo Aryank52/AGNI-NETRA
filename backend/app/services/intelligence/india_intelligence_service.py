@@ -213,6 +213,17 @@ class IndiaIntelligenceService:
             lon = float(r["longitude"])
             first_seen = r["first_seen"]
             last_seen = r["last_seen"]
+            if isinstance(first_seen, str):
+                try:
+                    first_seen = datetime.fromisoformat(first_seen.replace("Z", "+00:00"))
+                except Exception:
+                    first_seen = None
+            if isinstance(last_seen, str):
+                try:
+                    last_seen = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+                except Exception:
+                    last_seen = None
+
             det_count = int(r["detection_count"] or 1)
             avg_frp = float(r["avg_frp"] or 0.0)
             max_frp = float(r["max_frp"] or avg_frp)

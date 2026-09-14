@@ -547,4 +547,181 @@ def investigate_top_attention_item(
     )
 
 
+# =========================================================================
+# JARVIS Autonomous Intelligence, World State & Voice Re-Architecture
+# =========================================================================
 
+from pydantic import BaseModel
+from backend.app.services.autonomous_intelligence_service import autonomous_intelligence_core
+from backend.app.services.jarvis.jarvis_world_state import jarvis_world_state
+from backend.app.services.jarvis.jarvis_agentic_orchestrator import jarvis_agentic_orchestrator
+from backend.app.services.jarvis.jarvis_voice_service import jarvis_voice_service
+
+
+class VoiceInteractRequest(BaseModel):
+    transcript: str
+    session_id: Optional[str] = None
+
+
+class VoiceSettingsRequest(BaseModel):
+    is_muted: Optional[bool] = None
+    proactive_notifications_enabled: Optional[bool] = None
+    min_risk_threshold: Optional[float] = None
+
+
+class AutonomousTriggerRequest(BaseModel):
+    observations: Optional[List[Dict[str, Any]]] = None
+    source: Optional[str] = "NASA FIRMS VIIRS"
+
+
+@router.get("/world-state")
+def get_jarvis_world_state(
+    state: Optional[str] = Query(None, description="Optional state filter"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns live operational situation summary, active incidents, changed events,
+    and attention queues across sovereign India.
+    """
+    return jarvis_world_state.get_world_state_summary(db=db, state_filter=state)
+
+
+@router.post("/autonomous/trigger")
+def trigger_autonomous_pipeline(
+    req: AutonomousTriggerRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Triggers Path A autonomous intelligence pipeline across observations.
+    Executes detection, clustering, context fusion, classification, risk, priority,
+    evidence assembly, and notifies JARVIS orchestrator without analyst intervention.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    if user_role == "PUBLIC":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Role 'PUBLIC' is not authorized to trigger autonomous pipeline runs."
+        )
+
+    observations = req.observations
+    if not observations:
+        # Default sample observation in Gujarat industrial corridor
+        observations = [
+            {
+                "latitude": 22.4707,
+                "longitude": 70.0577,
+                "brightness": 355.0,
+                "frp": 125.4,
+                "confidence": 92.0,
+                "sensor": "VIIRS",
+                "satellite": "NOAA-20",
+                "acq_timestamp": datetime.now(timezone.utc).isoformat(),
+                "day_night": "N"
+            },
+            {
+                "latitude": 22.4720,
+                "longitude": 70.0590,
+                "brightness": 348.0,
+                "frp": 85.2,
+                "confidence": 88.0,
+                "sensor": "VIIRS",
+                "satellite": "NOAA-20",
+                "acq_timestamp": datetime.now(timezone.utc).isoformat(),
+                "day_night": "N"
+            }
+        ]
+
+    outcomes = autonomous_intelligence_core.process_observations_autonomous(
+        db=db,
+        raw_observations=observations,
+        source_name=req.source or "NASA FIRMS VIIRS"
+    )
+
+    return {
+        "status": "SUCCESS",
+        "events_processed": len(outcomes),
+        "outcomes": [o.model_dump() for o in outcomes]
+    }
+
+
+@router.get("/autonomous/lifecycle/{event_code}")
+def get_event_lifecycle_history(
+    event_code: str,
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves the chronological, audited 12-state lifecycle transition history for an event.
+    """
+    transitions = autonomous_intelligence_core.get_lifecycle_history(event_code)
+    return {
+        "event_code": event_code,
+        "total_transitions": len(transitions),
+        "transitions": [t.model_dump() for t in transitions]
+    }
+
+
+@router.post("/voice/interact")
+def process_voice_interaction(
+    req: VoiceInteractRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Unified voice and conversational console endpoint.
+    Processes transcribed speech, queries world state or initiates governed investigation,
+    and returns grounded structured reasoning with spoken response text.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    user_id = current_user.id if current_user else "ANALYST"
+
+    return jarvis_voice_service.process_voice_transcript(
+        db=db,
+        transcript=req.transcript,
+        user_role=user_role,
+        user_id=user_id
+    )
+
+
+@router.get("/voice/proactive")
+def get_proactive_voice_notifications(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Retrieves queued proactive spoken notifications that exceed the significance threshold.
+    """
+    user_role = current_user.role if current_user else "ANALYST"
+    notifications = jarvis_voice_service.get_proactive_notifications(user_role=user_role)
+    return {
+        "notifications": notifications,
+        "count": len(notifications)
+    }
+
+
+@router.post("/voice/settings")
+def update_voice_settings(
+    req: VoiceSettingsRequest,
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Updates voice preferences (mute, proactive threshold, auto-speak).
+    """
+    return jarvis_voice_service.update_settings(req.model_dump(exclude_unset=True))
+
+
+@router.get("/voice/settings")
+def get_voice_settings(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    return jarvis_voice_service.get_settings()
+
+
+@router.get("/mission/orchestrated")
+def get_orchestrated_mission(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Optional[Dict[str, Any]]:
+    """
+    Returns the latest governed multi-capability investigation executed by the JARVIS Agentic Orchestrator.
+    """
+    return jarvis_agentic_orchestrator.get_active_mission()
