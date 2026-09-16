@@ -2656,6 +2656,20 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_identify_stale_sources:
             entities["is_identify_stale_sources"] = True
 
+        # Phase 25.4 Data Truth & Entity Semantics Queries
+        is_data_truth_query = any(w in cmd for w in [
+            "data truth", "truth table", "data reconciliation", "reconciled count",
+            "entity semantics", "how many power stations", "power stations vs generating units",
+            "cea generating units", "how many mining leases", "extraction records",
+            "mining blocks vs extraction records", "how many industrial facilities",
+            "how many facilities", "35570", "35,570", "35684", "35,684",
+            "how many districts", "735 districts", "736 districts",
+            "audit report counts", "dataset counts"
+        ])
+        if is_data_truth_query:
+            entities["is_data_truth_query"] = True
+            entities["status_type"] = "DATA_TRUTH"
+
         # J. General Multi-Constraint Search Flag
         if any(w in cmd for w in ["persistent anomalies", "persistent anomaly", "abnormal thermal activity", "intensity is significantly above historical", "significantly above historical"]):
             entities["anomalous_only"] = True
@@ -2791,6 +2805,9 @@ class LocalDeterministicProvider(BaseLLMProvider):
         elif is_data_ingestion_status or is_data_freshness_query or is_dataset_coverage_query or is_latest_ingestion_batches or is_show_quarantined_records or is_latest_successful_ingestion or is_identify_stale_sources:
             intent = CommandIntent.STATUS
             entities["status_type"] = "PHASE16_DATA_GOVERNANCE"
+        elif is_data_truth_query:
+            intent = CommandIntent.STATUS
+            entities["status_type"] = "DATA_TRUTH"
         elif is_explain_provider_unavailable or is_dataset_global_or_partial:
             intent = CommandIntent.EXPLAIN
             entities["status_type"] = "PHASE16_DATA_GOVERNANCE"
@@ -2936,7 +2953,10 @@ class LocalDeterministicProvider(BaseLLMProvider):
 
         # 10. Construct Explicit CommandObjective Model
         primary_goal = "QUERY"
-        if is_phase23_investigate_top:
+        if is_data_truth_query:
+            primary_goal = "DATA_TRUTH"
+            intent = CommandIntent.STATUS
+        elif is_phase23_investigate_top:
             primary_goal = "SITUATIONAL_INVESTIGATE_TOP"
             intent = CommandIntent.INVESTIGATE
         elif is_phase23_60s_brief:

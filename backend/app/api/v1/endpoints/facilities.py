@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
-from backend.app.core.database import get_db
+from backend.app.core.database import get_db, IS_POSTGRESQL, haversine_distance_meters
 from backend.app.api.deps import require_analyst
 from backend.app.models.domain import (
     IndustrialFacility, HistoricalBaseline, FacilityBaseline, ThermalEvent,
@@ -266,98 +266,173 @@ def get_facility_deep_intelligence(
     # 1. Nearby active thermal events within 5km
     nearby_events = []
     if lat is not None and lon is not None:
-        evt_rows = db.execute(text("""
-            SELECT id, event_code, max_frp, avg_frp, detection_count,
-                   state, district, status,
-                   ROUND(ST_Distance(
-                       ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
-                       ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography
-                   )::numeric, 1) as dist_m
-            FROM thermal_events
-            WHERE ST_DWithin(
-                ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
-                ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography,
-                5000
-            )
-            ORDER BY dist_m ASC
-            LIMIT 10;
-        """), {"lon": lon, "lat": lat}).fetchall()
-
-        nearby_events = [
-            {
-                "id": r[0],
-                "event_code": r[1],
-                "max_frp": float(r[2] or 0.0),
-                "avg_frp": float(r[3] or 0.0),
-                "detection_count": r[4],
-                "state": r[5],
-                "district": r[6],
-                "status": r[7],
-                "distance_m": float(r[8])
-            }
-            for r in evt_rows
-        ]
+        if IS_POSTGRESQL:
+            try:
+                evt_rows = db.execute(text("""
+                    SELECT id, event_code, max_frp, avg_frp, detection_count,
+                           state, district, status,
+                           ROUND(ST_Distance(
+                               ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
+                               ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography
+                           )::numeric, 1) as dist_m
+                    FROM thermal_events
+                    WHERE ST_DWithin(
+                        ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
+                        ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography,
+                        5000
+                    )
+                    ORDER BY dist_m ASC
+                    LIMIT 10;
+                """), {"lon": lon, "lat": lat}).fetchall()
+                nearby_events = [
+                    {
+                        "id": r[0],
+                        "event_code": r[1],
+                        "max_frp": float(r[2] or 0.0),
+                        "avg_frp": float(r[3] or 0.0),
+                        "detection_count": r[4],
+                        "state": r[5],
+                        "district": r[6],
+                        "status": r[7],
+                        "distance_m": float(r[8])
+                    }
+                    for r in evt_rows
+                ]
+            except Exception:
+                nearby_events = []
+        else:
+            try:
+                evt_rows = db.execute(text("""
+                    SELECT id, event_code, max_frp, avg_frp, detection_count,
+                           state, district, status, latitude, longitude
+                    FROM thermal_events
+                    WHERE latitude BETWEEN :min_lat AND :max_lat
+                      AND longitude BETWEEN :min_lon AND :max_lon;
+                """), {
+                    "min_lat": lat - 0.06,
+                    "max_lat": lat + 0.06,
+                    "min_lon": lon - 0.06,
+                    "max_lon": lon + 0.06
+                }).fetchall()
+                scored = []
+                for r in evt_rows:
+                    d_m = haversine_distance_meters(lat, lon, float(r[8]), float(r[9]))
+                    if d_m <= 5000:
+                        scored.append({
+                            "id": r[0],
+                            "event_code": r[1],
+                            "max_frp": float(r[2] or 0.0),
+                            "avg_frp": float(r[3] or 0.0),
+                            "detection_count": r[4],
+                            "state": r[5],
+                            "district": r[6],
+                            "status": r[7],
+                            "distance_m": round(d_m, 1)
+                        })
+                scored.sort(key=lambda x: x["distance_m"])
+                nearby_events = scored[:10]
+            except Exception:
+                nearby_events = []
 
     # 2. Nearby CEA Thermal Power Stations (within state/district)
     nearby_power = []
-    if fac.district:
-        p_rows = db.execute(text("""
-            SELECT id, project_name, organisation, prime_mover, installed_capacity_mw
-            FROM cea_power_stations_staging
-            WHERE state ILIKE :st
-            ORDER BY installed_capacity_mw DESC NULLS LAST
-            LIMIT 5;
-        """), {"st": f"%{fac.state or ''}%"}).fetchall()
-        nearby_power = [
-            {
-                "id": str(r[0]),
-                "project_name": r[1],
-                "organisation": r[2],
-                "prime_mover": r[3],
-                "installed_capacity_mw": r[4]
-            }
-            for r in p_rows
-        ]
+    if fac.state:
+        try:
+            p_rows = db.execute(text("""
+                SELECT id, project_name, organisation, prime_mover, installed_capacity_mw
+                FROM cea_power_stations_staging
+                WHERE LOWER(state) LIKE LOWER(:st)
+                ORDER BY installed_capacity_mw DESC
+                LIMIT 5;
+            """), {"st": f"%{fac.state}%"}).fetchall()
+            nearby_power = [
+                {
+                    "id": str(r[0]),
+                    "project_name": r[1],
+                    "organisation": r[2],
+                    "prime_mover": r[3],
+                    "installed_capacity_mw": r[4]
+                }
+                for r in p_rows
+            ]
+        except Exception:
+            nearby_power = []
 
     # 3. Nearby IBM Mining Leases in district
     nearby_mining = []
     if fac.district:
-        m_rows = db.execute(text("""
-            SELECT id, mineral, lease_count, lease_area_ha, sector
-            FROM ibm_mining_lease_context
-            WHERE district ILIKE :dist
-            ORDER BY lease_area_ha DESC NULLS LAST
-            LIMIT 5;
-        """), {"dist": f"%{fac.district}%"}).fetchall()
-        nearby_mining = [
-            {
-                "id": str(r[0]),
-                "mineral": r[1],
-                "lease_count": r[2],
-                "lease_area_ha": r[3],
-                "sector": r[4]
-            }
-            for r in m_rows
-        ]
+        try:
+            m_rows = db.execute(text("""
+                SELECT id, mineral, lease_count, lease_area_ha, sector
+                FROM ibm_mining_lease_context
+                WHERE LOWER(district) LIKE LOWER(:dist)
+                ORDER BY lease_area_ha DESC
+                LIMIT 5;
+            """), {"dist": f"%{fac.district}%"}).fetchall()
+            nearby_mining = [
+                {
+                    "id": str(r[0]),
+                    "mineral": r[1],
+                    "lease_count": r[2],
+                    "lease_area_ha": r[3],
+                    "sector": r[4]
+                }
+                for r in m_rows
+            ]
+        except Exception:
+            nearby_mining = []
 
     # 4. Nearest Protected Wildlife Sanctuary
     nearest_protected = None
     if lat is not None and lon is not None:
-        pa_row = db.execute(text("""
-            SELECT id, pa_name, pa_type, area_sqkm,
-                   ROUND(ST_Distance(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography)::numeric, 1) as dist_m
-            FROM protected_areas
-            ORDER BY dist_m ASC
-            LIMIT 1;
-        """), {"lon": lon, "lat": lat}).fetchone()
-        if pa_row:
-            nearest_protected = {
-                "id": pa_row[0],
-                "name": pa_row[1],
-                "type": pa_row[2],
-                "area_sqkm": pa_row[3],
-                "distance_m": float(pa_row[4])
-            }
+        if IS_POSTGRESQL:
+            try:
+                pa_row = db.execute(text("""
+                    SELECT id, pa_name, pa_type, area_sqkm,
+                           ROUND(ST_Distance(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326)::geography)::numeric, 1) as dist_m
+                    FROM protected_areas
+                    ORDER BY dist_m ASC
+                    LIMIT 1;
+                """), {"lon": lon, "lat": lat}).fetchone()
+                if pa_row:
+                    nearest_protected = {
+                        "id": pa_row[0],
+                        "name": pa_row[1],
+                        "type": pa_row[2],
+                        "area_sqkm": pa_row[3],
+                        "distance_m": float(pa_row[4])
+                    }
+            except Exception:
+                nearest_protected = None
+        else:
+            try:
+                import shapely.wkt
+                from shapely.geometry import Point
+                pa_rows = db.execute(text("SELECT id, pa_name, pa_type, area_sqkm, geom FROM protected_areas;")).fetchall()
+                pt = Point(lon, lat)
+                best_pa = None
+                best_dist = float("inf")
+                for r in pa_rows:
+                    g_wkt = r[4]
+                    if g_wkt:
+                        try:
+                            geom = shapely.wkt.loads(g_wkt)
+                            d_deg = geom.distance(pt)
+                            d_m = d_deg * 111139.0
+                            if d_m < best_dist:
+                                best_dist = d_m
+                                best_pa = {
+                                    "id": r[0],
+                                    "name": r[1],
+                                    "type": r[2],
+                                    "area_sqkm": r[3],
+                                    "distance_m": round(d_m, 1)
+                                }
+                        except Exception:
+                            continue
+                nearest_protected = best_pa
+            except Exception:
+                nearest_protected = None
 
     base = fac.facility_baseline
     return {

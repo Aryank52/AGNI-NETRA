@@ -10,7 +10,7 @@ import {
   FileText, ShieldCheck, Cpu, Settings,
   Flame, Bell, Compass, Building2, Eye,
   Sliders, Database, ShieldAlert, BookOpen, Globe, Layers, Radio,
-  Pickaxe, GraduationCap, Shield, Terminal
+  Pickaxe, GraduationCap, Shield, Terminal, Scale
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -80,6 +80,7 @@ export default function Sidebar() {
 
   // 9. ADMINISTRATION (Admin Restricted)
   const administration = [
+    { label: "Data Truth & Governance", href: "/admin/data-truth", icon: Scale, badge: "TRUTH" },
     { label: "Data Ingestion", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
     { label: "Model Governance", href: "/admin/models", icon: Cpu, badge: "REGISTRY" },
     { label: "Datasets & Lineage", href: "/admin/datasets", icon: Layers, badge: "DATA" },

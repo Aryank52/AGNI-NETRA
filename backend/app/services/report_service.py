@@ -181,7 +181,7 @@ def generate_event_pdf_report(
     fac_info = [
         [Paragraph(f"<b>Associated Facility:</b> {fac_name}", body_style), Paragraph(f"<b>Facility Type:</b> {fac_type}", body_style)],
         [Paragraph(f"<b>Facility Status:</b> {event_data.get('facility_status', 'UNKNOWN')}", body_style), Paragraph(f"<b>Distance to Boundary:</b> {fac_dist:.1f} m", body_style)],
-        [Paragraph(f"<b>Land Cover Context:</b> {event_data.get('landcover_class', 'Unknown')}", body_style), Paragraph(f"<b>Source Provenance:</b> OSM / Satellite Survey", body_style)]
+        [Paragraph(f"<b>Land Cover Context:</b> {event_data.get('landcover_class', 'Unknown')}", body_style), Paragraph(f"<b>Source Provenance:</b> Authoritative Registry (35,570 Geolocated Facilities)", body_style)]
     ]
     t_fac = Table(fac_info, colWidths=[270, 270])
     t_fac.setStyle(TableStyle([
@@ -209,7 +209,7 @@ def generate_event_pdf_report(
             Paragraph("<b>Telemetry Source:</b> NASA FIRMS S-NPP/VIIRS 375m NRT", body_style)
         ],
         [
-            Paragraph("<b>Spatial Context Engine:</b> PostGIS 3.4 Multi-Layer Topology", body_style),
+            Paragraph("<b>Spatial Context Engine:</b> PostGIS 3.4 (735 Districts, 36 States/UTs)", body_style),
             Paragraph(f"<b>Verification Status:</b> {event_data.get('status', 'ACTIVE')} ({analyst_decision})", body_style)
         ],
         [
