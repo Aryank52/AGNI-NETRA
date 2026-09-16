@@ -13,6 +13,9 @@ import {
 import RiskBadge from "./RiskBadge";
 import IntelligenceCoveragePanel from "./IntelligenceCoveragePanel";
 import ShapWaterfallChart from "./ShapWaterfallChart";
+import IntelligenceChainView from "./IntelligenceChainView";
+import HistoricalIntelligencePanel from "./HistoricalIntelligencePanel";
+import WhyCriticalPanel from "./WhyCriticalPanel";
 import { fetchApi, API_BASE_URL } from "@/lib/api";
 
 interface DossierProps {
@@ -22,6 +25,7 @@ interface DossierProps {
 
 export default function EventInvestigationDossier({ eventId, onClose }: DossierProps) {
   const [dossier, setDossier] = useState<any | null>(null);
+  const [canonical, setCanonical] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("summary");
@@ -29,15 +33,16 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
   useEffect(() => {
     if (!eventId) {
       setDossier(null);
+      setCanonical(null);
       return;
     }
 
     setLoading(true);
     setError(null);
-    fetchApi<any>(`/gis/dossier/${eventId}`)
-      .then((data) => {
-        setDossier(data);
-      })
+    Promise.all([
+      fetchApi<any>(`/gis/dossier/${eventId}`).then(d => setDossier(d)),
+      fetchApi<any>(`/events/${eventId}/canonical`).then(c => setCanonical(c)).catch(() => null)
+    ])
       .catch((err) => {
         console.error("Failed to load GIS dossier:", err);
         setError("Failed to load multi-source spatial dossier.");
@@ -102,6 +107,9 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
 
   const tabs = [
     { id: "summary", label: "Overview & AI" },
+    { id: "chain", label: "Intelligence Chain (13-Stage)" },
+    { id: "historical", label: "Historical Baseline & Recurrence" },
+    { id: "why_critical", label: "Why Critical?" },
     { id: "synthesis", label: "Intelligence Synthesis" },
     { id: "explainability", label: "Evidence & Explainability" },
     { id: "proximity", label: "Proximity & Energy" },
@@ -728,6 +736,30 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB: 13-STAGE INTELLIGENCE CHAIN */}
+        {activeTab === "chain" && (
+          <IntelligenceChainView canonicalData={canonical} />
+        )}
+
+        {/* TAB: HISTORICAL BASELINE & RECURRENCE */}
+        {activeTab === "historical" && (
+          <HistoricalIntelligencePanel
+            comparisonData={dossier.historical_intelligence}
+            canonicalHistorical={canonical?.historical}
+            eventId={eventId}
+          />
+        )}
+
+        {/* TAB: WHY CRITICAL (MULTI-FACTOR DECOMPOSITION) */}
+        {activeTab === "why_critical" && (
+          <WhyCriticalPanel
+            analyticsData={canonical?.analytics || dossier.risk_assessment}
+            evidenceData={canonical?.evidence}
+            historicalData={canonical?.historical || dossier.historical_intelligence}
+            eventCode={event_code}
+          />
         )}
       </div>
     </div>

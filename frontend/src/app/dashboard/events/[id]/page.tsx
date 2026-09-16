@@ -7,6 +7,9 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import ShapWaterfallChart from "@/components/intelligence/ShapWaterfallChart";
+import IntelligenceChainView from "@/components/intelligence/IntelligenceChainView";
+import HistoricalIntelligencePanel from "@/components/intelligence/HistoricalIntelligencePanel";
+import WhyCriticalPanel from "@/components/intelligence/WhyCriticalPanel";
 import { ThermalEvent, AlertDossier, AuditTrailItem } from "@/types";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
@@ -18,7 +21,7 @@ import {
   HelpCircle, Cpu, Layers, ExternalLink, RefreshCw,
   GitCommit, ChevronRight, Binary, Globe, Lock,
   Zap, Eye, Trees, Factory, Pickaxe, ShieldCheck, X,
-  Flame, ShieldAlert, Compass
+  Flame, ShieldAlert, Compass, History, Network
 } from "lucide-react";
 
 export default function EventDetailPage() {
@@ -32,8 +35,10 @@ export default function EventDetailPage() {
   const [dossier, setDossier] = useState<AlertDossier | null>(null);
   const [detections, setDetections] = useState<any[]>([]);
   const [traceData, setTraceData] = useState<any | null>(null);
+  const [canonicalData, setCanonicalData] = useState<any | null>(null);
+  const [historicalData, setHistoricalData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<"DOSSIER" | "TELEMETRY" | "ML_SHAP" | "AUDIT_TRAIL" | "TRACE">("DOSSIER");
+  const [activeTab, setActiveTab] = useState<"DOSSIER" | "CHAIN" | "HISTORICAL" | "WHY_CRITICAL" | "TELEMETRY" | "ML_SHAP" | "AUDIT_TRAIL" | "TRACE">("DOSSIER");
 
   // Multi-Distance Spatial Buffer State
   const [bufferRadius, setBufferRadius] = useState<number>(1000);
@@ -97,6 +102,21 @@ export default function EventDetailPage() {
         const trace = await fetchApi<any>(`/events/${eventId}/trace`);
         setTraceData(trace);
       } catch {}
+
+      // 5. Load Phase 25 Canonical Intelligence & Historical Baseline Comparison
+      try {
+        const cData = await fetchApi<any>(`/events/${eventId}/canonical`);
+        setCanonicalData(cData);
+      } catch (cErr) {
+        console.warn("Canonical event fetch skipped:", cErr);
+      }
+
+      try {
+        const hData = await fetchApi<any>(`/historical/compare/${eventId}`);
+        setHistoricalData(hData);
+      } catch (hErr) {
+        console.warn("Historical comparison fetch skipped:", hErr);
+      }
     } catch (err) {
       console.warn("Failed to load event detail:", err);
     } finally {
@@ -479,6 +499,42 @@ export default function EventDetailPage() {
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Analyst Audit Trail ({dossier?.audit_trail?.length || 0})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("CHAIN")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
+                activeTab === "CHAIN"
+                  ? "bg-cyan-500 text-slate-950 shadow-md"
+                  : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              }`}
+            >
+              <Network className="w-3.5 h-3.5 text-cyan-400" />
+              <span>13-Stage Intelligence Chain</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("HISTORICAL")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
+                activeTab === "HISTORICAL"
+                  ? "bg-emerald-500 text-slate-950 shadow-md"
+                  : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              }`}
+            >
+              <History className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Historical Baseline &amp; Recurrence</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("WHY_CRITICAL")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
+                activeTab === "WHY_CRITICAL"
+                  ? "bg-red-500 text-white shadow-md"
+                  : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span>Why Critical?</span>
             </button>
 
             <button
@@ -1087,6 +1143,30 @@ export default function EventDetailPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* TAB 6: 13-STAGE VISUAL INTELLIGENCE CHAIN */}
+          {activeTab === "CHAIN" && (
+            <IntelligenceChainView canonicalData={canonicalData} />
+          )}
+
+          {/* TAB 7: HISTORICAL BASELINE & RECURRENCE */}
+          {activeTab === "HISTORICAL" && (
+            <HistoricalIntelligencePanel
+              comparisonData={historicalData}
+              canonicalHistorical={canonicalData?.historical}
+              eventId={eventId}
+            />
+          )}
+
+          {/* TAB 8: WHY CRITICAL (MULTI-FACTOR DECOMPOSITION) */}
+          {activeTab === "WHY_CRITICAL" && (
+            <WhyCriticalPanel
+              analyticsData={canonicalData?.analytics || event?.risk}
+              evidenceData={canonicalData?.evidence}
+              historicalData={canonicalData?.historical || historicalData}
+              eventCode={event?.event_code}
+            />
           )}
 
           {/* Action Modal */}

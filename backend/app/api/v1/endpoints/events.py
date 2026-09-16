@@ -420,3 +420,38 @@ def get_event_buffer_assets(
         "protected_areas": protected_areas,
         "mining_context": mining_context
     }
+
+
+# =============================================================================
+# Phase 25: Canonical Event Intelligence Endpoint (9 Core Pillars)
+# =============================================================================
+
+@router.get("/{event_id}/canonical")
+def get_canonical_event_intelligence(
+    event_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Synthesizes and returns the unified Canonical Event Intelligence Object (9 core pillars)
+    for an active thermal event:
+    1. Identity & Lifecycle
+    2. Geographic & Administrative
+    3. Multi-Sensor Physical Observations
+    4. Operational & Industrial Context
+    5. Longitudinal Historical Intelligence
+    6. Authoritative Risk & Multi-Model Analytics
+    7. Epistemic Evidence Breakdown
+    8. JARVIS Agentic State
+    9. Governance, Traceability & Safety Guardrails
+    """
+    from backend.app.services.intelligence.canonical_event_service import canonical_event_service
+
+    event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
+    if not event:
+        event = db.query(ThermalEvent).filter(ThermalEvent.event_code == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Thermal event '{event_id}' not found.")
+
+    canonical = canonical_event_service.get_canonical_event(db, event)
+    return canonical.model_dump()
+

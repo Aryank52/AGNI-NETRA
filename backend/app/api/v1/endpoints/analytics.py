@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
-from backend.app.core.database import get_db
+from backend.app.core.database import get_db, IS_POSTGRESQL
 from backend.app.api.deps import require_agency, get_optional_current_user
 from backend.app.models.domain import (
     ThermalEvent, IndustrialFacility, CandidateFacility,
@@ -195,7 +195,13 @@ def get_command_center_overview(
 
     # 4. Ingestion Stream Freshness & DB Health
     latest_det = db.execute(text("SELECT MAX(acq_timestamp) FROM thermal_detections;")).scalar()
-    total_detections = db.execute(text("SELECT reltuples::bigint FROM pg_class WHERE relname = 'thermal_detections';")).scalar() or 8221554
+    if IS_POSTGRESQL:
+        try:
+            total_detections = db.execute(text("SELECT reltuples::bigint FROM pg_class WHERE relname = 'thermal_detections';")).scalar() or 8221554
+        except Exception:
+            total_detections = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar() or 0
+    else:
+        total_detections = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar() or 0
     
     # 5. Candidate Model & Registry Info
     model_row = db.execute(text("""
@@ -207,7 +213,7 @@ def get_command_center_overview(
     metrics_dict = model_row[5] if model_row and isinstance(model_row[5], dict) else {}
 
     # 6. Safety Invariant Checks
-    live_dispatches = db.execute(text("SELECT COUNT(*) FROM alerts WHERE is_operational_dispatch = true;")).scalar()
+    live_dispatches = db.query(Alert).filter(Alert.is_operational_dispatch == True).count()
 
     return {
         "status": "OPERATIONAL",
@@ -220,7 +226,7 @@ def get_command_center_overview(
             "max_frp_mw": round(float(max_frp), 1),
             "avg_frp_mw": round(float(avg_frp), 1),
             "total_detections_ingested": total_detections,
-            "stream_freshness_timestamp": latest_det.isoformat() if latest_det else None
+            "stream_freshness_timestamp": latest_det.isoformat() if (latest_det and hasattr(latest_det, "isoformat")) else str(latest_det) if latest_det else None
         },
         "alert_queues": {
             "tier_1_auto_dispatch_candidate": tier_counts["TIER_1_AUTO_DISPATCH_CANDIDATE"],

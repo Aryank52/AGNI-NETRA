@@ -1,0 +1,205 @@
+{
+  "backup_id": "BAK-20260915_125911",
+  "created_at": "2026-09-15T12:59:11.681429+00:00",
+  "environment": "development",
+  "engine": "SQLite",
+  "database_name": "agni_netra",
+  "total_detections_sealed": 279,
+  "table_row_counts": {
+    "thermal_detections": 279,
+    "thermal_events": 88,
+    "event_features": 87,
+    "model_predictions": 87,
+    "risk_scores": 87,
+    "alerts": 41,
+    "alert_audit_logs": -1,
+    "verification_records": 7,
+    "industrial_facilities": 22,
+    "candidate_facilities": 3,
+    "ml_model_registry": 3,
+    "dataset_registry": 2,
+    "cea_thermal_power_stations": -1,
+    "parivesh_projects_staging": 0
+  },
+  "sample_records": {
+    "alerts": [
+      {
+        "id": "5237fea0-5605-4e15-ba90-94250766453d",
+        "event_id": "aff7a9e6-a72f-4575-b87a-e06be1f9007a",
+        "alert_level": "MODERATE",
+        "status": "NEW",
+        "routing_tier": "TIER_3_UNCERTAINTY_QUEUE",
+        "priority_score": 37.87
+      },
+      {
+        "id": "687d99d7-f09d-4e0c-a899-389239c1275b",
+        "event_id": "ee01141f-bea8-4a22-a58f-c2a175baab32",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 42.74
+      },
+      {
+        "id": "53ef1c46-7803-4c8d-8430-94ceacafa2cf",
+        "event_id": "137e15a1-b878-4365-ac1c-70934a884109",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 36.15
+      },
+      {
+        "id": "d982d6b7-1394-4b71-b56d-726728789cf3",
+        "event_id": "cee144f5-668e-44f6-9610-8ee2088799ac",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 43.85
+      },
+      {
+        "id": "5525b54e-6f0e-4d19-bcd7-95734c9b75d2",
+        "event_id": "f52b836e-5959-4e8e-8cf5-d19265aac394",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 46.09
+      },
+      {
+        "id": "47731372-79d0-4fb1-b45a-37fb3dee362c",
+        "event_id": "dbd2a099-5717-4088-b240-5b44d7226c53",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 45.49
+      },
+      {
+        "id": "953a3a15-b8a0-4d6e-a05f-9ed6886d1267",
+        "event_id": "d40d61f1-3a84-4a93-838e-4fc4cd4a61d2",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 46.09
+      },
+      {
+        "id": "f3b59c3a-b329-448d-8bb0-39095e3032bc",
+        "event_id": "4abd7ce1-abdb-4023-8e02-1aad46430700",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 45.49
+      },
+      {
+        "id": "5d68c3c1-4c00-490c-8c98-36b6f1d6c53c",
+        "event_id": "53d80303-52e2-4ed2-99e8-fc8a695980c3",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 46.09
+      },
+      {
+        "id": "2908c862-828a-4a67-a046-52ec63de961e",
+        "event_id": "7b9dba9c-586b-4fb8-91e1-1520a724435e",
+        "alert_level": "LOW",
+        "status": "NEW",
+        "routing_tier": "TIER_3_ROUTINE",
+        "priority_score": 45.49
+      }
+    ],
+    "events": [
+      {
+        "id": "aff7a9e6-a72f-4575-b87a-e06be1f9007a",
+        "event_code": "EVT-20260915-AFF7A9",
+        "latitude": 21.705,
+        "longitude": 72.998,
+        "max_frp": 195.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "0b8f9545-fa9c-46d2-8c99-571d37d0949e",
+        "event_code": "EVT-SM-0B8F95",
+        "latitude": 30.9,
+        "longitude": 75.85,
+        "max_frp": 0.0,
+        "detection_count": 2,
+        "state": "Punjab"
+      },
+      {
+        "id": "da031461-bce7-41d0-87c7-fffc4d752519",
+        "event_code": "EVT-TEST-DA0314",
+        "latitude": 22.47,
+        "longitude": 69.83,
+        "max_frp": 150.0,
+        "detection_count": 3,
+        "state": "Gujarat"
+      },
+      {
+        "id": "ee01141f-bea8-4a22-a58f-c2a175baab32",
+        "event_code": "EVT-GUJ-20260915-AC6C",
+        "latitude": 23.0225,
+        "longitude": 72.5714,
+        "max_frp": 95.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "137e15a1-b878-4365-ac1c-70934a884109",
+        "event_code": "EVT-GUJ-20260914-13D8",
+        "latitude": 22.4707,
+        "longitude": 70.0577,
+        "max_frp": 120.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "cee144f5-668e-44f6-9610-8ee2088799ac",
+        "event_code": "EVT-GUJ-20260915-2907",
+        "latitude": 22.4707,
+        "longitude": 70.0577,
+        "max_frp": 120.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "97e06c31-3d1f-451f-919d-9b0cdd752a2e",
+        "event_code": "EVT-ODI-20260828-39DA",
+        "latitude": 20.852,
+        "longitude": 85.124,
+        "max_frp": 85.0,
+        "detection_count": 1,
+        "state": "Odisha"
+      },
+      {
+        "id": "c98e7ed2-5794-4ac2-8b8b-b897657e035a",
+        "event_code": "EVT-GUJ-20260828-B90B",
+        "latitude": 22.3552,
+        "longitude": 69.86525,
+        "max_frp": 130.0,
+        "detection_count": 2,
+        "state": "Gujarat"
+      },
+      {
+        "id": "caa0a3a4-0ce2-431c-bb57-1000b8e14744",
+        "event_code": "EVT-GUJ-20260412-A816",
+        "latitude": 22.3552,
+        "longitude": 69.8654,
+        "max_frp": 165.0,
+        "detection_count": 1,
+        "state": "Gujarat"
+      },
+      {
+        "id": "3fd8cb9a-f2ad-4522-ae95-f9d2abf18456",
+        "event_code": "EVT-GUJ-20260915-B56A",
+        "latitude": 22.3542,
+        "longitude": 69.8644,
+        "max_frp": 285.0,
+        "detection_count": 6,
+        "state": "Gujarat"
+      }
+    ]
+  },
+  "safety_invariants": {
+    "authoritative_db_untouched": true,
+    "is_operational_dispatch": false,
+    "zero_live_dispatches_emitted": 0
+  }
+}

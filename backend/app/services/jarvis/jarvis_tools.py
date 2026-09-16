@@ -25,6 +25,10 @@ from backend.app.services.report_service import generate_event_pdf_report
 from ml.inference.production_inference_service import (
     production_thermal_predictor, FEATURE_COLUMNS, TARGET_CLASSES
 )
+from backend.app.services.intelligence.historical_comparison_engine import historical_comparison_engine
+from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+from backend.app.services.intelligence.canonical_event_service import canonical_event_service
+from backend.app.services.data_plane.data_coverage_registry import data_coverage_registry
 
 
 class JarvisToolRegistry:
@@ -489,37 +493,69 @@ class JarvisToolRegistry:
     def tool_compare_baseline(db: Session, event_ref: str) -> Dict[str, Any]:
         """
         Compares current thermal event intensity against facility or regional historical baseline.
+        Delegates to deterministic, point-in-time safe HistoricalComparisonEngine.
         """
         event = JarvisToolRegistry.resolve_event(db, event_ref)
         if not event:
             return {"found": False, "error": f"Event '{event_ref}' not found."}
 
-        baseline_obj = None
-        facility_name = "Regional Spatial Cell"
-        if event.facility_id:
-            fac = db.query(IndustrialFacility).filter(IndustrialFacility.id == event.facility_id).first()
-            if fac:
-                facility_name = fac.name
-            fb = db.query(FacilityBaseline).filter(FacilityBaseline.facility_id == event.facility_id).first()
-            if fb:
-                std_val = getattr(fb, "std_frp", None)
-                if std_val is None:
-                    var_val = getattr(fb, "variance_frp", 0.0)
-                    std_val = (var_val ** 0.5) if var_val > 0 else (fb.mean_frp * 0.35)
-                baseline_obj = {
-                    "mean_frp": fb.mean_frp,
-                    "std_frp": std_val,
-                    "p90_frp": getattr(fb, "p90_frp", fb.mean_frp * 1.5),
-                    "sample_count": getattr(fb, "frequency_days", getattr(fb, "sample_count", 48))
-                }
+        comparison = historical_comparison_engine.compare_event(db, event)
+        facility_name = event.facility.name if event.facility else "Regional Spatial Cell"
 
-        comparison = compare_with_historical_baseline(event.max_frp, baseline_obj)
+        comparison["found"] = True
         comparison["event_id"] = event.id
         comparison["event_code"] = event.event_code
         comparison["facility_name"] = facility_name
         comparison["current_max_frp"] = event.max_frp
-        comparison["historical_mean_frp"] = baseline_obj["mean_frp"] if baseline_obj else None
+        comparison["historical_mean_frp"] = comparison["baseline_frp_mean"]
+        # Backward-compatible aliases
+        comparison["mean_frp"] = comparison["baseline_frp_mean"]
+        comparison["std_frp"] = comparison["baseline_frp_std"]
+        comparison["z_score"] = comparison["deviation_z_score"]
+        comparison["is_anomaly"] = comparison["is_intensity_anomaly"]
+        comparison["explanation"] = comparison["deviation_explanation"]
         return comparison
+
+    @staticmethod
+    def tool_query_historical_incidents(
+        db: Session,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+        status: Optional[str] = None,
+        classification: Optional[str] = None,
+        limit: int = 20
+    ) -> Dict[str, Any]:
+        """
+        Queries governed historical incidents from the Historical Incident Registry.
+        """
+        return historical_incident_registry.query_incidents(
+            db=db,
+            state=state,
+            district=district,
+            status=status,
+            classification=classification,
+            limit=limit
+        )
+
+    @staticmethod
+    def tool_get_canonical_event_intelligence(db: Session, event_ref: str) -> Dict[str, Any]:
+        """
+        Retrieves the authoritative 9-pillar Canonical Event Intelligence state for an event.
+        """
+        event = JarvisToolRegistry.resolve_event(db, event_ref)
+        if not event:
+            return {"found": False, "error": f"Event '{event_ref}' not found."}
+        canonical = canonical_event_service.get_canonical_event(db, event)
+        if not canonical:
+            return {"found": False, "error": f"Failed to compile canonical intelligence for '{event_ref}'."}
+        return canonical.model_dump()
+
+    @staticmethod
+    def tool_get_data_coverage_status(db: Session, provider_or_dataset: str) -> Dict[str, Any]:
+        """
+        Truthfully checks data coverage, freshness, and availability status for any provider or dataset.
+        """
+        return data_coverage_registry.check_provider_status(provider_or_dataset)
 
     @staticmethod
     def tool_calculate_risk(db: Session, event_ref: str) -> Dict[str, Any]:

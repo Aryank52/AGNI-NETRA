@@ -48,6 +48,7 @@ from backend.app.services.intelligence.global_intelligence_synthesis import glob
 from backend.app.services.intelligence.next_best_evidence import next_best_evidence_engine
 from backend.app.services.governance.case_management import case_management_engine
 from backend.app.models.domain import (
+    ThermalEvent, IndustrialFacility,
     InvestigationAuditLog, AssessmentVersion, EvidenceReview, EvidenceRequest, CaseNote, ReportVersion,
     IngestionBatchModel, IngestionRecordModel, IngestionQuarantineModel, DatasetRegistryModel, IngestionCheckpointModel
 )
@@ -58,6 +59,10 @@ from backend.app.services.data_plane.quarantine import quarantine_manager
 from backend.app.services.data_plane.deduplication import deduplication_engine
 from backend.app.services.data_plane.live_provider_service import live_provider_service
 from data_pipeline.adapters.sentinel_adapter import SentinelSTACAdapter
+from backend.app.services.intelligence.historical_comparison_engine import historical_comparison_engine
+from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+from backend.app.services.intelligence.canonical_event_service import canonical_event_service
+from backend.app.services.data_plane.data_coverage_registry import data_coverage_registry
 
 
 
@@ -930,6 +935,277 @@ class JarvisMasterOrchestrator:
                 capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
                 summary=summary_txt,
                 details={"status": "NOT_CONFIGURED", "provider": "Copernicus Sentinel-2", "synthetic_substitution": False},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        # ---------------------------------------------------------------------------------
+        # Phase 25: Unified Event Intelligence & Historical Incident Grounded Responses
+        # ---------------------------------------------------------------------------------
+        is_hist_query = (
+            entities.get("is_has_happened_before") or
+            entities.get("is_what_is_unusual") or
+            entities.get("is_compare_historical") or
+            entities.get("is_previous_incident") or
+            entities.get("is_is_normal") or
+            entities.get("is_what_changed_baseline")
+        )
+
+        if is_hist_query:
+            log_state(JarvisState.COMPLETED, "Evaluating Historical Intelligence & Longitudinal Baseline")
+            # Resolve event
+            target_ev = None
+            if event_ref:
+                target_ev = JarvisToolRegistry.resolve_event(db, event_ref)
+            if not target_ev and context_dict.get("current_event_ref"):
+                target_ev = JarvisToolRegistry.resolve_event(db, context_dict["current_event_ref"])
+            if not target_ev and active_ws and active_ws.target_event_id:
+                target_ev = JarvisToolRegistry.resolve_event(db, active_ws.target_event_id)
+            if not target_ev:
+                target_ev = db.query(ThermalEvent).order_by(ThermalEvent.max_frp.desc()).first()
+
+            if not target_ev:
+                summary_txt = "No active thermal events available in database for historical comparison."
+                stopping_reason = "NO_RELEVANT_HISTORY: No active events found. Returning to IDLE."
+            else:
+                comp = historical_comparison_engine.compare_event(db, target_ev)
+                status_str = "verified" if target_ev.status == "VERIFIED" else "unverified"
+                sim_count = comp["similar_historical_events_count"]
+                v_count = comp["previous_verified_incidents_count"]
+                dev_ratio = comp["deviation_ratio"]
+
+                if entities.get("is_has_happened_before"):
+                    if sim_count > 0 or v_count > 0:
+                        v_str = f"{v_count} previous event{'s were' if v_count != 1 else ' was'} verified" if v_count > 0 else "Zero previous events were verified"
+                        summary_txt = (
+                            f"Yes. I found {sim_count} historically similar thermal events at this location. "
+                            f"The current event is approximately {dev_ratio} times the historical intensity baseline. "
+                            f"{v_str}, while the current event remains {status_str}."
+                        )
+                    else:
+                        summary_txt = (
+                            f"No. Zero historically similar thermal events were detected within this spatial perimeter prior to this observation. "
+                            f"The current event remains {status_str} with observed radiative power of {target_ev.max_frp:.1f} MW."
+                        )
+                elif entities.get("is_what_is_unusual"):
+                    summary_txt = (
+                        f"### What Is Unusual About Event `{target_ev.event_code}`\n\n"
+                        f"- **Intensity Deviation**: Current peak {comp['current_frp']} MW is {comp['deviation_percent']:+.1f}% relative to historical baseline ({comp['baseline_frp_mean']} MW, z={comp['deviation_z_score']}σ).\n"
+                        f"- **Abnormality Finding**: {comp['deviation_explanation']}\n"
+                        f"- **Temporal Persistence**: `{comp['persistence_category']}` ({comp['active_days_count']} active days over {comp['span_days']}-day observation span).\n"
+                        f"- **Recurrence Category**: `{comp['recurrence_category']}` with {comp['episodes_count']} historical episodes ({comp['recent_30d_episodes']} in last 30 days).\n"
+                        f"- **Historical Relationship**: `{comp['historical_relationship']}`."
+                    )
+                elif entities.get("is_compare_historical"):
+                    summary_txt = (
+                        f"### Historical Comparison: `{target_ev.event_code}`\n\n"
+                        f"- **Historical Baseline**: {comp['baseline_frp_mean']} MW ({comp['baseline_status']})\n"
+                        f"- **Current Observation**: {comp['current_frp']} MW\n"
+                        f"- **Deviation**: {comp['deviation_percent']:+.1f}% (Ratio: {comp['deviation_ratio']}x, z={comp['deviation_z_score']}σ)\n"
+                        f"- **Persistence**: `{comp['persistence_category']}` ({comp['active_days_count']} active days)\n"
+                        f"- **Recurrence**: `{comp['recurrence_category']}` ({comp['episodes_count']} episodes total, {comp['recent_30d_episodes']} past 30 days)\n"
+                        f"- **Seasonality**: `{comp['seasonality_pattern']}`\n"
+                        f"- **Temporal Trend**: `{comp['temporal_trend']}`\n"
+                        f"- **Similar Historical Events**: {comp['similar_historical_events_count']}\n"
+                        f"- **Previous Verified Incidents**: {comp['previous_verified_incidents_count']}\n"
+                        f"- **Historical Relationship**: `{comp['historical_relationship']}`"
+                    )
+                elif entities.get("is_previous_incident"):
+                    if v_count > 0:
+                        top_inc = comp["previous_verified_incidents"][0]
+                        summary_txt = (
+                            f"Yes. There {'are' if v_count > 1 else 'is'} {v_count} previous verified incident{'s' if v_count > 1 else ''} on record in this corridor:\n\n"
+                            f"- **Incident Code**: `{top_inc['incident_code']}`\n"
+                            f"- **Classification**: {top_inc['classification']}\n"
+                            f"- **Peak FRP**: {top_inc['peak_frp']} MW\n"
+                            f"- **Distance**: {top_inc['distance_km']} km\n"
+                            f"- **Verified Cause**: {top_inc.get('verified_cause') or 'Analyst Verified Thermal Incident'}\n"
+                            f"- **Verified By**: {top_inc.get('verified_by') or 'Certified Regional Analyst'}"
+                        )
+                    else:
+                        summary_txt = "No previous verified incidents are on record for this location. The current event remains unverified."
+                elif entities.get("is_is_normal"):
+                    summary_txt = comp["answers"]["is_normal"]
+                elif entities.get("is_what_changed_baseline"):
+                    summary_txt = (
+                        f"Compared with the historical baseline for `{target_ev.event_code}`:\n\n"
+                        f"- **Historical Mean**: {comp['baseline_frp_mean']} MW\n"
+                        f"- **Current Intensity**: {comp['current_frp']} MW\n"
+                        f"- **Net Deviation**: {comp['deviation_percent']:+.1f}% ({comp['deviation_explanation']})\n"
+                        f"- **Directional Trend**: `{comp['temporal_trend']}`"
+                    )
+                else:
+                    summary_txt = comp["answers"]["is_normal"]
+
+                stopping_reason = (
+                    "HISTORICAL_PATTERN_SUFFICIENT: Longitudinal comparison evaluated."
+                    if comp["baseline_status"] != "NO_BASELINE"
+                    else "NO_RELEVANT_HISTORY: Sparse historical baseline."
+                )
+
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                target_event=target_ev.id if target_ev else None,
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.HISTORICAL_ANALYSIS.value, JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.HISTORICAL_ANALYSIS.value, JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"event_id": target_ev.id if target_ev else None, "historical_comparison": comp if target_ev else None},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if entities.get("is_why_critical"):
+            log_state(JarvisState.COMPLETED, "Evaluating Why-Critical Multi-Factor Grounding")
+            target_ev = None
+            if event_ref:
+                target_ev = JarvisToolRegistry.resolve_event(db, event_ref)
+            if not target_ev and context_dict.get("current_event_ref"):
+                target_ev = JarvisToolRegistry.resolve_event(db, context_dict["current_event_ref"])
+            if not target_ev and active_ws and active_ws.target_event_id:
+                target_ev = JarvisToolRegistry.resolve_event(db, active_ws.target_event_id)
+            if not target_ev:
+                target_ev = db.query(ThermalEvent).order_by(ThermalEvent.max_frp.desc()).first()
+
+            if not target_ev:
+                summary_txt = "No active thermal events available to evaluate criticality."
+                stopping_reason = "NO_RELEVANT_HISTORY: No event found. Returning to IDLE."
+            else:
+                canonical = canonical_event_service.get_canonical_event(db, target_ev)
+                a = canonical.analytics
+                h = canonical.historical
+                summary_txt = (
+                    f"### WHY EVENT `{target_ev.event_code}` IS IMPORTANT\n\n"
+                    f"- **Authoritative Risk Score**: **{a.risk_score} / 100** ({a.risk_level})\n"
+                    f"  - *Authoritative Formula*: `Risk = 0.30*Intensity + 0.25*Abnormality + 0.20*Exposure + 0.15*Persistence + 0.10*Context`\n"
+                    f"  - Intensity Subscore: `{a.risk_decomposition.get('intensity_subscore', 0.0):.1f}`\n"
+                    f"  - Abnormality Subscore: `{a.risk_decomposition.get('abnormality_subscore', 0.0):.1f}` (z={h.deviation_z_score}σ)\n"
+                    f"  - Exposure Subscore: `{a.risk_decomposition.get('exposure_subscore', 0.0):.1f}`\n"
+                    f"  - Persistence Subscore: `{a.risk_decomposition.get('persistence_subscore', 0.0):.1f}`\n"
+                    f"  - Context Subscore: `{a.risk_decomposition.get('context_subscore', 0.0):.1f}`\n"
+                    f"- **Governed Priority**: **{a.priority_score} / 100** (`{a.priority_tier}`)\n"
+                    f"  - *Governed Formula*: `Priority = 0.40*Risk + 0.20*Confidence + 0.30*TierWeight + 0.10*RecencyScore`\n"
+                    f"- **Intensity Relative to Baseline**: {h.deviation_explanation}\n"
+                    f"- **Persistence**: `{h.persistence_category}` ({h.active_days_count} observation days)\n"
+                    f"- **Historical Recurrence**: `{h.recurrence_category}` ({h.episodes_count} prior episodes)\n"
+                    f"- **Historical Similarity**: {h.similar_historical_events_count} matching thermal events; {h.previous_verified_incidents_count} verified historical incidents.\n"
+                    f"- **Epistemic Balance**: Known={len(canonical.evidence.known)}, Inferred={len(canonical.evidence.inferred)}, Uncertain={len(canonical.evidence.uncertain)}, Missing={len(canonical.evidence.missing)}.\n"
+                    f"- **Dispatch Status**: `BLOCKED [SAFETY ENFORCED]`"
+                )
+                stopping_reason = "EVIDENCE_SUFFICIENT: Multi-factor criticality explanation synthesized."
+
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="EXPLAIN",
+                target_event=target_ev.id if target_ev else None,
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.RISK_ANALYSIS.value, JarvisCapability.HISTORICAL_ANALYSIS.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="EXPLAIN",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.RISK_ANALYSIS.value, JarvisCapability.HISTORICAL_ANALYSIS.value],
+                summary=summary_txt,
+                details={"event_id": target_ev.id if target_ev else None, "canonical_intelligence": canonical.model_dump() if target_ev else None},
+                fused_evidence=FusedEvidence(),
+                execution_trace=trace,
+                dispatch_gate_blocked=True
+            )
+
+        if entities.get("is_evidence_sufficiency"):
+            log_state(JarvisState.COMPLETED, "Evaluating Epistemic Evidence Sufficiency")
+            target_ev = None
+            if event_ref:
+                target_ev = JarvisToolRegistry.resolve_event(db, event_ref)
+            if not target_ev and context_dict.get("current_event_ref"):
+                target_ev = JarvisToolRegistry.resolve_event(db, context_dict["current_event_ref"])
+            if not target_ev and active_ws and active_ws.target_event_id:
+                target_ev = JarvisToolRegistry.resolve_event(db, active_ws.target_event_id)
+            if not target_ev:
+                target_ev = db.query(ThermalEvent).order_by(ThermalEvent.max_frp.desc()).first()
+
+            if not target_ev:
+                summary_txt = "No active thermal event found for evidence evaluation."
+                stopping_reason = "AVAILABLE_EVIDENCE_EXHAUSTED: No event found."
+            else:
+                canonical = canonical_event_service.get_canonical_event(db, target_ev)
+                ev_data = canonical.evidence
+                summary_txt = (
+                    f"### EVIDENCE SUFFICIENCY ASSESSMENT: `{target_ev.event_code}`\n\n"
+                    f"- **Evidence Strength**: `{ev_data.evidence_strength:.2f} / 1.00`\n"
+                    f"- **Epistemic Uncertainty**: `{ev_data.epistemic_uncertainty_score:.2f} / 1.00`\n\n"
+                    f"**KNOWN (Empirically Observed)**:\n" +
+                    "\n".join(f"- {k}" for k in ev_data.known) + "\n\n" +
+                    f"**INFERRED (Algorithmic Hypotheses)**:\n" +
+                    "\n".join(f"- {inf}" for inf in ev_data.inferred) + "\n\n" +
+                    f"**UNCERTAIN (Observational Ambiguities)**:\n" +
+                    "\n".join(f"- {u}" for u in ev_data.uncertain) + "\n\n" +
+                    f"**MISSING (Unconfigured or Cloud-Obscured)**:\n" +
+                    "\n".join(f"- {m}" for m in ev_data.missing) + "\n\n" +
+                    f"**CONFLICTING**: None detected across thermal telemetry.\n\n" +
+                    f"**Governed Verdict**: `REQUIRES_HUMAN_VERIFICATION`. Evidence is sufficient for analyst review, but operational dispatch remains strictly blocked."
+                )
+                stopping_reason = "HUMAN_VERIFICATION_REQUIRED: Epistemic evaluation requires human sign-off."
+
+            trace = ExecutionTrace(
+                trace_id=trace_id,
+                command=request.command,
+                parsed_intent="QUERY",
+                target_event=target_ev.id if target_ev else None,
+                user_role=user_role,
+                current_state=JarvisState.COMPLETED,
+                capabilities_used=[JarvisCapability.THERMAL_INTELLIGENCE.value, JarvisCapability.SYSTEM_GOVERNANCE.value],
+                state_transitions=state_transitions,
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                total_duration_ms=round((time.time() - t_start) * 1000.0, 2),
+                objective=objective,
+                stopping_reason=stopping_reason,
+                steps=[]
+            )
+            WORKING_MEMORY_CACHE[trace_id] = trace
+            return JarvisResponse(
+                command=request.command,
+                intent="QUERY",
+                state=JarvisState.COMPLETED,
+                objective=objective,
+                stopping_reason=stopping_reason,
+                capabilities_used=[JarvisCapability.THERMAL_INTELLIGENCE.value, JarvisCapability.SYSTEM_GOVERNANCE.value],
+                summary=summary_txt,
+                details={"event_id": target_ev.id if target_ev else None, "evidence_breakdown": canonical.evidence.model_dump() if target_ev else None},
                 fused_evidence=FusedEvidence(),
                 execution_trace=trace,
                 dispatch_gate_blocked=True
@@ -3220,7 +3496,6 @@ class JarvisMasterOrchestrator:
                 step_idx += 1
 
                 t_c2 = time.time()
-                from backend.app.models.domain import ThermalEvent, IndustrialFacility
                 from backend.app.services.spatial_engine import haversine_distance_m
 
                 hist_records = db.query(ThermalEvent).filter(

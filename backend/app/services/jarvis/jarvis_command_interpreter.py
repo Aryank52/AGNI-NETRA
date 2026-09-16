@@ -137,8 +137,41 @@ class LocalDeterministicProvider(BaseLLMProvider):
             if candidate_count <= 1:
                 candidate_count = 3
             entities["candidate_count"] = candidate_count
-            if "industrial fire" in cmd or "fire" in cmd:
-                entities["target_hypothesis"] = "Industrial Fire"
+        # Phase 25 Historical Intelligence Entity Flags
+        entities["is_has_happened_before"] = any(w in cmd for w in [
+            "has this happened here before", "has this happened before", "happened here before",
+            "happened before", "occurred here before", "occurred before", "ever happened"
+        ])
+        entities["is_what_is_unusual"] = any(w in cmd for w in [
+            "what is unusual about this event", "what is unusual", "is this unusual",
+            "why is this unusual", "why is this abnormal", "unusual about"
+        ])
+        entities["is_compare_historical"] = any(w in cmd for w in [
+            "compare this with historical activity", "compare with historical activity",
+            "compare with historical", "compare to historical", "historical comparison",
+            "compare with baseline", "compare to baseline", "compare this with baseline"
+        ])
+        entities["is_previous_incident"] = any(w in cmd for w in [
+            "was there a previous incident here", "previous incident", "prior incident",
+            "previous incidents", "prior incidents", "past incidents", "earlier incident"
+        ])
+        entities["is_is_normal"] = any(w in cmd for w in [
+            "is this normal for this facility", "is this normal for this location",
+            "is this normal", "is that normal", "normal for this facility"
+        ])
+        entities["is_what_changed_baseline"] = any(w in cmd for w in [
+            "what changed compared with the baseline", "what changed compared to the baseline",
+            "what changed compared with baseline", "what changed from baseline",
+            "change compared to baseline", "changed compared with"
+        ])
+        entities["is_why_critical"] = any(w in cmd for w in [
+            "why is this event critical", "why is this critical", "why is this event important",
+            "why is this important", "why critical", "why is it critical"
+        ])
+        entities["is_evidence_sufficiency"] = any(w in cmd for w in [
+            "do we have enough evidence", "is evidence sufficient", "have enough evidence",
+            "what evidence supports this", "what is uncertain", "evidence sufficiency", "assess evidence"
+        ])
 
         # 6. Event Reference Extraction & Normalization (Possessive & Prepositional Syntax)
         common_words = {

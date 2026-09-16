@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text, func
 
-from backend.app.core.database import get_db
+from backend.app.core.database import get_db, IS_POSTGRESQL, haversine_distance_meters
 from backend.app.models.domain import (
     ThermalEvent, ThermalDetection, IndustrialFacility,
     CandidateFacility, ModelPrediction, RiskScore, EventFeature,
@@ -24,6 +24,32 @@ from backend.app.services.alert_workflow_service import alert_workflow_service
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
 
 router = APIRouter()
+
+
+def parse_geojson_geometry(raw_geom: Any) -> Optional[Dict[str, Any]]:
+    """
+    Normalizes GeoJSON geometries across PostgreSQL (PostGIS ST_AsGeoJSON strings)
+    and SQLite (stored WKT, GeoJSON strings, or dict representations).
+    """
+    if not raw_geom:
+        return None
+    if isinstance(raw_geom, dict):
+        return raw_geom
+    if isinstance(raw_geom, str):
+        cleaned = raw_geom.strip()
+        if cleaned.startswith("{"):
+            try:
+                return json.loads(cleaned)
+            except Exception:
+                return None
+        try:
+            import shapely.wkt
+            import shapely.geometry
+            g = shapely.wkt.loads(cleaned)
+            return shapely.geometry.mapping(g)
+        except Exception:
+            return None
+    return None
 
 
 # Helper: Parse Bounding Box [min_lon, min_lat, max_lon, max_lat]
@@ -477,20 +503,32 @@ def get_mining_geojson(
     """
     Returns authentic GeoJSON FeatureCollection of IBM Auctioned Blocks and Mineral Sites.
     """
-    # 1. Query IBM Auctioned Blocks with geometries
-    block_rows = db.execute(text("""
-        SELECT id, block_name, state, district, mineral, preferred_bidder,
-               ST_AsGeoJSON(geom) as geojson, firms_count_2km
-        FROM ibm_auctioned_blocks
-        WHERE geom IS NOT NULL
-        LIMIT :limit;
-    """), {"limit": limit}).fetchall()
+    box = parse_bbox(bbox)
+    features: List[Dict[str, Any]] = []
 
-    features = []
-    for r in block_rows:
-        if r[6]:
-            try:
-                geom = json.loads(r[6])
+    # 1. Query IBM Auctioned Blocks with geometries (if table exists)
+    try:
+        where_parts = ["geom IS NOT NULL"]
+        params: Dict[str, Any] = {"limit": limit}
+        if state and state.upper() not in ["ALL", "INDIA"]:
+            where_parts.append("LOWER(state) = LOWER(:state)")
+            params["state"] = state.strip()
+        if mineral and mineral.upper() not in ["ALL"]:
+            where_parts.append("LOWER(mineral) LIKE LOWER(:mineral)")
+            params["mineral"] = f"%{mineral.strip()}%"
+        where_sql = " AND ".join(where_parts)
+
+        block_rows = db.execute(text(f"""
+            SELECT id, block_name, state, district, mineral, preferred_bidder,
+                   ST_AsGeoJSON(geom) as geojson, firms_count_2km
+            FROM ibm_auctioned_blocks
+            WHERE {where_sql}
+            LIMIT :limit;
+        """), params).fetchall()
+
+        for r in block_rows:
+            geom = parse_geojson_geometry(r[6])
+            if geom:
                 features.append({
                     "type": "Feature",
                     "geometry": geom,
@@ -505,37 +543,85 @@ def get_mining_geojson(
                         "layer": "mining"
                     }
                 })
-            except Exception:
-                pass
+    except Exception:
+        pass
 
-    # 2. Query Facility Mining Evidence if block_rows are sparse
+    # 2. Query Facility Mining Evidence if blocks are sparse
     if len(features) < 10:
-        fac_rows = db.execute(text("""
-            SELECT facility_id, facility_name, state, district, mineral_commodity,
-                   ibm_potential_tier, firms_associated_2km, latitude, longitude
-            FROM facility_mining_evidence
-            WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-            LIMIT :limit;
-        """), {"limit": limit}).fetchall()
+        try:
+            fac_rows = db.execute(text("""
+                SELECT facility_id, facility_name, state, district, mineral_commodity,
+                       ibm_potential_tier, firms_associated_2km, latitude, longitude
+                FROM facility_mining_evidence
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                LIMIT :limit;
+            """), {"limit": limit}).fetchall()
 
-        for r in fac_rows:
-            features.append({
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [float(r[8]), float(r[7])]
-                },
-                "properties": {
-                    "id": r[0],
-                    "name": r[1] or "Mining Facility",
-                    "mineral": r[4] or "Coal / Lignite / Minerals",
-                    "state": r[2],
-                    "district": r[3],
-                    "potential_tier": r[5] or "HIGH",
-                    "firms_count_2km": int(r[6] or 0),
-                    "layer": "mining"
-                }
-            })
+            for r in fac_rows:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [float(r[8]), float(r[7])]
+                    },
+                    "properties": {
+                        "id": r[0],
+                        "name": r[1] or "Mining Facility",
+                        "mineral": r[4] or "Coal / Lignite / Minerals",
+                        "state": r[2],
+                        "district": r[3],
+                        "potential_tier": r[5] or "HIGH",
+                        "firms_count_2km": int(r[6] or 0),
+                        "layer": "mining"
+                    }
+                })
+        except Exception:
+            pass
+
+    # 3. Include verified MINING facilities from industrial_facilities
+    if len(features) < 10:
+        try:
+            where_ind = [
+                "latitude IS NOT NULL", "longitude IS NOT NULL",
+                "(facility_type = 'MINING' OR LOWER(name) LIKE '%mine%' OR LOWER(master_sector) LIKE '%mining%')"
+            ]
+            params_ind: Dict[str, Any] = {"limit": limit}
+            if box:
+                where_ind.append("latitude BETWEEN :min_lat AND :max_lat AND longitude BETWEEN :min_lon AND :max_lon")
+                params_ind.update(box)
+            if state and state.upper() not in ["ALL", "INDIA"]:
+                where_ind.append("LOWER(state) = LOWER(:state)")
+                params_ind["state"] = state.strip()
+
+            where_ind_sql = " AND ".join(where_ind)
+            ind_rows = db.execute(text(f"""
+                SELECT id, name, state, district, facility_type, master_sector,
+                       firms_detections_1km, latitude, longitude
+                FROM industrial_facilities
+                WHERE {where_ind_sql}
+                LIMIT :limit;
+            """), params_ind).fetchall()
+
+            for r in ind_rows:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [float(r[8]), float(r[7])]
+                    },
+                    "properties": {
+                        "id": r[0],
+                        "name": r[1] or "Mining Facility",
+                        "mineral": "Coal / Minerals",
+                        "state": r[2],
+                        "district": r[3],
+                        "potential_tier": "HIGH",
+                        "firms_count_2km": int(r[6] or 0),
+                        "layer": "mining"
+                    }
+                })
+        except Exception:
+            pass
 
     return {
         "type": "FeatureCollection",
@@ -572,21 +658,20 @@ def get_protected_areas_geojson(
         params["pa_type"] = f"%{pa_type.strip()}%"
 
     where_sql = " AND ".join(where_parts)
-    query_sql = f"""
-        SELECT id, pa_name, pa_type, state, district, established_year, area_sqkm,
-               ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
-        FROM protected_areas
-        WHERE {where_sql}
-        LIMIT :limit;
-    """
-
-    rows = db.execute(text(query_sql), params).fetchall()
-
     features = []
-    for r in rows:
-        if r[7]:
-            try:
-                geom = json.loads(r[7])
+    try:
+        query_sql = f"""
+            SELECT id, pa_name, pa_type, state, district, established_year, area_sqkm,
+                   ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
+            FROM protected_areas
+            WHERE {where_sql}
+            LIMIT :limit;
+        """
+        rows = db.execute(text(query_sql), params).fetchall()
+
+        for r in rows:
+            geom = parse_geojson_geometry(r[7])
+            if geom:
                 features.append({
                     "type": "Feature",
                     "geometry": geom,
@@ -601,8 +686,8 @@ def get_protected_areas_geojson(
                         "layer": "protected_areas"
                     }
                 })
-            except Exception:
-                pass
+    except Exception:
+        features = []
 
     return {
         "type": "FeatureCollection",
@@ -626,20 +711,27 @@ def get_lulc_geojson(
     """
     Returns authentic GeoJSON FeatureCollection of Bhuvan LULC polygons.
     """
-    query_sql = """
-        SELECT id, canonical_class, feature_name, state, district, area_sqkm,
-               ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
-        FROM lulc_spatial_features
-        WHERE geom IS NOT NULL
-        LIMIT :limit;
-    """
-    rows = db.execute(text(query_sql), {"limit": limit}).fetchall()
+    where_parts = ["geom IS NOT NULL"]
+    params: Dict[str, Any] = {"limit": limit}
+    if state and state.upper() not in ["ALL", "INDIA"]:
+        where_parts.append("LOWER(state) = LOWER(:state)")
+        params["state"] = state.strip()
 
+    where_sql = " AND ".join(where_parts)
     features = []
-    for r in rows:
-        if r[6]:
-            try:
-                geom = json.loads(r[6])
+    try:
+        query_sql = f"""
+            SELECT id, canonical_class, feature_name, state, district, area_sqkm,
+                   ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
+            FROM lulc_spatial_features
+            WHERE {where_sql}
+            LIMIT :limit;
+        """
+        rows = db.execute(text(query_sql), params).fetchall()
+
+        for r in rows:
+            geom = parse_geojson_geometry(r[6])
+            if geom:
                 features.append({
                     "type": "Feature",
                     "geometry": geom,
@@ -653,8 +745,8 @@ def get_lulc_geojson(
                         "layer": "lulc"
                     }
                 })
-            except Exception:
-                pass
+    except Exception:
+        features = []
 
     return {
         "type": "FeatureCollection",
@@ -773,6 +865,21 @@ def get_admin_districts_geojson(
 # 9. COMPREHENSIVE 7-LAYER SPATIAL INVESTIGATION DOSSIER
 # =====================================================================================
 
+def _safe_get_historical_intelligence(db: Session, event: ThermalEvent) -> Optional[Dict[str, Any]]:
+    """Gracefully computes Phase 25 historical intelligence or returns truthful partial fallback."""
+    try:
+        from backend.app.services.intelligence.historical_comparison_engine import historical_comparison_engine
+        return historical_comparison_engine.compare_event(db, event)
+    except Exception as e:
+        return {
+            "status": "PARTIAL",
+            "historical_context_available": False,
+            "error_detail": str(e),
+            "historical_incidents": [],
+            "baseline_summary": None
+        }
+
+
 @router.get("/dossier/{event_id}")
 def get_event_spatial_dossier(
     event_id: str,
@@ -805,123 +912,219 @@ def get_event_spatial_dossier(
             ThermalDetection.longitude.between(event.longitude - 0.04, event.longitude + 0.04)
         ).order_by(ThermalDetection.acq_timestamp.desc()).limit(20).all()
 
-    # 3. Spatial Proximity: Nearest Industrial Facilities (within 10 km)
-    nearest_facilities = db.execute(text("""
-        SELECT id, name, facility_type, master_sector, state, district,
-               ROUND(CAST(ST_Distance(
-                   ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
-                   ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography
-               ) AS numeric), 1) AS distance_meters
-        FROM industrial_facilities
-        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-        ORDER BY distance_meters ASC
-        LIMIT 5;
-    """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
+    # 3. Spatial Proximity: Nearest Industrial Facilities
+    facility_proximity: List[Dict[str, Any]] = []
+    try:
+        if IS_POSTGRESQL:
+            nearest_facilities = db.execute(text("""
+                SELECT id, name, facility_type, master_sector, state, district,
+                       ROUND(CAST(ST_Distance(
+                           ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                           ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography
+                       ) AS numeric), 1) AS distance_meters
+                FROM industrial_facilities
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY distance_meters ASC
+                LIMIT 5;
+            """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
 
-    facility_proximity = [
-        {
-            "facility_id": r[0],
-            "name": r[1] or "Industrial Facility",
-            "type": r[2] or "Manufacturing",
-            "sector": r[3] or "Industrial",
-            "state": r[4],
-            "district": r[5],
-            "distance_m": float(r[6])
-        }
-        for r in nearest_facilities
-    ]
+            facility_proximity = [
+                {
+                    "facility_id": r[0],
+                    "name": r[1] or "Industrial Facility",
+                    "type": r[2] or "Manufacturing",
+                    "sector": r[3] or "Industrial",
+                    "state": r[4],
+                    "district": r[5],
+                    "distance_m": float(r[6])
+                }
+                for r in nearest_facilities
+            ]
+        else:
+            fac_rows = db.execute(text("""
+                SELECT id, name, facility_type, master_sector, state, district, latitude, longitude
+                FROM industrial_facilities
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
+            """)).fetchall()
+            scored_facs = []
+            for r in fac_rows:
+                dist = haversine_distance_meters(event.latitude, event.longitude, float(r[6]), float(r[7]))
+                scored_facs.append({
+                    "facility_id": r[0],
+                    "name": r[1] or "Industrial Facility",
+                    "type": r[2] or "Manufacturing",
+                    "sector": r[3] or "Industrial",
+                    "state": r[4],
+                    "district": r[5],
+                    "distance_m": dist
+                })
+            scored_facs.sort(key=lambda x: x["distance_m"])
+            facility_proximity = scored_facs[:5]
+    except Exception:
+        facility_proximity = []
 
     # 4. Spatial Proximity: Nearest CEA Power Stations
-    nearest_power = db.execute(text("""
-        SELECT id, name, cea_project_name, cea_organisation, prime_mover,
-               ROUND(CAST(ST_Distance(
-                   ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
-                   ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography
-               ) AS numeric), 1) AS distance_meters
-        FROM industrial_facilities
-        WHERE (cea_project_name IS NOT NULL OR LOWER(facility_type) LIKE '%power%')
-          AND latitude IS NOT NULL AND longitude IS NOT NULL
-        ORDER BY distance_meters ASC
-        LIMIT 3;
-    """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
+    power_proximity: List[Dict[str, Any]] = []
+    try:
+        if IS_POSTGRESQL:
+            nearest_power = db.execute(text("""
+                SELECT id, name, cea_project_name, cea_organisation, prime_mover,
+                       ROUND(CAST(ST_Distance(
+                           ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                           ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography
+                       ) AS numeric), 1) AS distance_meters
+                FROM industrial_facilities
+                WHERE (cea_project_name IS NOT NULL OR LOWER(facility_type) LIKE '%power%')
+                  AND latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY distance_meters ASC
+                LIMIT 3;
+            """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
 
-    power_proximity = [
-        {
-            "facility_id": r[0],
-            "project_name": r[2] or r[1] or "Power Generating Plant",
-            "organisation": r[3] or "CEA Registered Utility",
-            "prime_mover": r[4] or "Thermal / Gas / Hydro",
-            "distance_m": float(r[5])
-        }
-        for r in nearest_power
-    ]
+            power_proximity = [
+                {
+                    "facility_id": r[0],
+                    "project_name": r[2] or r[1] or "Power Generating Plant",
+                    "organisation": r[3] or "CEA Registered Utility",
+                    "prime_mover": r[4] or "Thermal / Gas / Hydro",
+                    "distance_m": float(r[5])
+                }
+                for r in nearest_power
+            ]
+        else:
+            pow_rows = db.execute(text("""
+                SELECT id, name, cea_project_name, cea_organisation, prime_mover, latitude, longitude
+                FROM industrial_facilities
+                WHERE (cea_project_name IS NOT NULL OR LOWER(facility_type) LIKE '%power%')
+                  AND latitude IS NOT NULL AND longitude IS NOT NULL;
+            """)).fetchall()
+            scored_pow = []
+            for r in pow_rows:
+                dist = haversine_distance_meters(event.latitude, event.longitude, float(r[5]), float(r[6]))
+                scored_pow.append({
+                    "facility_id": r[0],
+                    "project_name": r[2] or r[1] or "Power Generating Plant",
+                    "organisation": r[3] or "CEA Registered Utility",
+                    "prime_mover": r[4] or "Thermal / Gas / Hydro",
+                    "distance_m": dist
+                })
+            scored_pow.sort(key=lambda x: x["distance_m"])
+            power_proximity = scored_pow[:3]
+    except Exception:
+        power_proximity = []
 
     # 5. Spatial Proximity: Nearest Protected Areas & Forests
-    nearest_pa = db.execute(text("""
-        SELECT id, pa_name, pa_type, state, district, area_sqkm,
-               ROUND(CAST(ST_Distance(
-                   ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
-                   geom::geography
-               ) AS numeric), 1) AS distance_meters
-        FROM protected_areas
-        WHERE geom IS NOT NULL
-        ORDER BY distance_meters ASC
-        LIMIT 2;
-    """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
+    pa_proximity: List[Dict[str, Any]] = []
+    try:
+        if IS_POSTGRESQL:
+            nearest_pa = db.execute(text("""
+                SELECT id, pa_name, pa_type, state, district, area_sqkm,
+                       ROUND(CAST(ST_Distance(
+                           ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                           geom::geography
+                       ) AS numeric), 1) AS distance_meters
+                FROM protected_areas
+                WHERE geom IS NOT NULL
+                ORDER BY distance_meters ASC
+                LIMIT 2;
+            """), {"lat": event.latitude, "lon": event.longitude}).fetchall()
 
-    pa_proximity = [
-        {
-            "pa_id": r[0],
-            "name": r[1],
-            "type": r[2],
-            "state": r[3],
-            "district": r[4],
-            "area_sqkm": float(r[5] or 0.0),
-            "distance_m": float(r[6])
-        }
-        for r in nearest_pa
-    ]
+            pa_proximity = [
+                {
+                    "pa_id": r[0],
+                    "name": r[1],
+                    "type": r[2],
+                    "state": r[3],
+                    "district": r[4],
+                    "area_sqkm": float(r[5] or 0.0),
+                    "distance_m": float(r[6])
+                }
+                for r in nearest_pa
+            ]
+        else:
+            pa_rows = db.execute(text("""
+                SELECT id, pa_name, pa_type, state, district, area_sqkm, geom
+                FROM protected_areas
+                WHERE geom IS NOT NULL;
+            """)).fetchall()
+            scored_pa = []
+            for r in pa_rows:
+                geom_val = r[6]
+                dist_m = 999999.0
+                try:
+                    import shapely.wkt
+                    if isinstance(geom_val, str) and (geom_val.startswith("MULTI") or geom_val.startswith("POLY")):
+                        poly = shapely.wkt.loads(geom_val)
+                        centroid = poly.centroid
+                        dist_m = haversine_distance_meters(event.latitude, event.longitude, centroid.y, centroid.x)
+                    elif isinstance(geom_val, str) and geom_val.startswith("{"):
+                        import shapely.geometry
+                        poly = shapely.geometry.shape(json.loads(geom_val))
+                        centroid = poly.centroid
+                        dist_m = haversine_distance_meters(event.latitude, event.longitude, centroid.y, centroid.x)
+                except Exception:
+                    pass
+                scored_pa.append({
+                    "pa_id": r[0],
+                    "name": r[1],
+                    "type": r[2],
+                    "state": r[3],
+                    "district": r[4],
+                    "area_sqkm": float(r[5] or 0.0),
+                    "distance_m": dist_m
+                })
+            scored_pa.sort(key=lambda x: x["distance_m"])
+            pa_proximity = scored_pa[:2]
+    except Exception:
+        pa_proximity = []
 
     # 6. Fetch FSI Forest Density for District
-    fsi_stat = db.query(FSIISFRDistrictStats).filter(
-        func.lower(FSIISFRDistrictStats.district) == (event.district or "").strip().lower()
-    ).first()
+    fsi_stat = None
+    try:
+        fsi_stat = db.query(FSIISFRDistrictStats).filter(
+            func.lower(FSIISFRDistrictStats.district) == (event.district or "").strip().lower()
+        ).first()
+    except Exception:
+        fsi_stat = None
 
     # 7. Check Associated Alerts & Audit History
-    alert = db.query(Alert).filter(Alert.event_id == event_id).first()
-    audit_history = []
-    if alert:
-        audit_rows = db.execute(text("""
-            SELECT id, action, previous_state, new_state, analyst_name, notes, timestamp
-            FROM alert_audit_logs
-            WHERE alert_id = :aid
-            ORDER BY timestamp ASC;
-        """), {"aid": alert.id}).fetchall()
+    audit_history: List[Dict[str, Any]] = []
+    alert = None
+    try:
+        alert = db.query(Alert).filter(Alert.event_id == event_id).first()
+        if alert:
+            audit_rows = db.execute(text("""
+                SELECT id, action, previous_state, new_state, analyst_name, notes, timestamp
+                FROM audit_logs
+                WHERE entity_id = :aid OR entity_id = :eid
+                ORDER BY timestamp ASC;
+            """), {"aid": alert.id, "eid": event.id}).fetchall()
 
-        audit_history = [
-            {
-                "audit_id": r[0],
-                "action": r[1],
-                "previous_state": r[2],
-                "new_state": r[3],
-                "analyst_name": r[4],
-                "notes": r[5],
-                "timestamp": r[6].isoformat() if r[6] else None
-            }
-            for r in audit_rows
-        ]
+            audit_history = [
+                {
+                    "audit_id": r[0],
+                    "action": r[1],
+                    "previous_state": r[2],
+                    "new_state": r[3],
+                    "analyst_name": r[4],
+                    "notes": r[5],
+                    "timestamp": r[6].isoformat() if (r[6] and hasattr(r[6], "isoformat")) else str(r[6]) if r[6] else None
+                }
+                for r in audit_rows
+            ]
+    except Exception:
+        audit_history = []
 
     # 8. Compile Provenance Checkmarks
     coverage = {
         "firms_telemetry": True,
         "industrial_facility": len(facility_proximity) > 0 and facility_proximity[0]["distance_m"] < 5000,
         "cea_power_station": len(power_proximity) > 0 and power_proximity[0]["distance_m"] < 25000,
-        "mining_intelligence": True if (event.features and event.features.dist_to_mine_m < 15000) else False,
+        "mining_intelligence": True if (event.features and getattr(event.features, "dist_to_mine_m", 999999) < 15000) else False,
         "bhuvan_lulc": bool(event.landcover_class and event.landcover_class != "Unknown"),
         "forest_intelligence": fsi_stat is not None,
         "protected_area": len(pa_proximity) > 0 and pa_proximity[0]["distance_m"] < 50000,
         "administrative_geography": bool(event.state and event.district),
-        "parivesh_regulatory": bool(event.facility and event.facility.environmental_clearance_present)
+        "parivesh_regulatory": bool(event.facility and getattr(event.facility, "environmental_clearance_present", False))
     }
 
     return {
@@ -1038,7 +1241,9 @@ def get_event_spatial_dossier(
                 "CONFLICTING": 1
             },
             "dispatch_status": "BLOCKED"
-        }
+        },
+        # Phase 25: Longitudinal Historical Intelligence & Baseline Comparison
+        "historical_intelligence": _safe_get_historical_intelligence(db, event)
     }
 
 

@@ -184,3 +184,78 @@ def get_thermal_recurrence_map(
         "total_clusters": len(clusters),
         "recurrence_clusters": clusters
     }
+
+
+# =============================================================================
+# Phase 25: Authoritative Historical Incident Registry & Baseline Comparison Endpoints
+# =============================================================================
+
+@router.get("/incidents")
+def query_historical_incidents(
+    state: Optional[str] = Query(None, description="Filter by Indian State/UT"),
+    district: Optional[str] = Query(None, description="Filter by District"),
+    status: Optional[str] = Query(None, description="Status: VERIFIED, UNVERIFIED, CONTESTED, RESOLVED"),
+    classification: Optional[str] = Query(None, description="Industrial classification"),
+    facility_id: Optional[str] = Query(None, description="Filter by facility UUID"),
+    min_frp: Optional[float] = Query(None, ge=0.0, description="Minimum peak FRP in MW"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db)
+):
+    """
+    Queries the authoritative Historical Incident Registry with verified ground truth,
+    provenance, and similarity signatures.
+    """
+    from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+
+    return historical_incident_registry.query_incidents(
+        db=db,
+        state=state,
+        district=district,
+        status=status,
+        classification=classification,
+        facility_id=facility_id,
+        min_frp=min_frp,
+        page=page,
+        limit=limit
+    )
+
+
+@router.get("/incidents/{incident_id}")
+def get_historical_incident_detail(
+    incident_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves a single historical incident record by its UUID or human-readable incident code (INC-...).
+    """
+    from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+
+    incident = historical_incident_registry.get_incident_by_id(db, incident_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail=f"Historical incident '{incident_id}' not found.")
+    
+    return incident.to_canonical_dict()
+
+
+@router.get("/compare/{event_id}")
+def compare_event_with_historical_baseline(
+    event_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Executes a point-in-time safe (t < T_obs) historical baseline comparison for an active thermal event.
+    Calculates z-score deviations, recurrence rates, persistence, seasonality, and matches against verified incidents.
+    """
+    from backend.app.services.intelligence.historical_comparison_engine import historical_comparison_engine
+
+    event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
+    if not event:
+        # Check by event_code
+        event = db.query(ThermalEvent).filter(ThermalEvent.event_code == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Thermal event '{event_id}' not found.")
+
+    comparison = historical_comparison_engine.compare_event(db, event)
+    return comparison
+

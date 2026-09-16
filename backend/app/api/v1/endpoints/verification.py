@@ -120,4 +120,18 @@ def submit_verification(
     db.commit()
     db.refresh(record)
 
+    # Phase 25: Closed-Loop Registration into Historical Incident Registry
+    # Enforces safety invariant: Zero automated model retraining / activation (ENABLE_AUTOMATED_MODEL_ACTIVATION = False)
+    if action in ["CONFIRM", "CORRECT", "OVERRIDE"]:
+        from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+        historical_incident_registry.register_verified_incident(
+            db=db,
+            event_id=event.id,
+            analyst_name=current_user.full_name or current_user.email,
+            verified_label=verif_in.verified_label or (pred.predicted_class if pred else "Industrial Hotspot"),
+            verification_action=action,
+            notes=verif_in.notes,
+            verification_record_id=record.id
+        )
+
     return record

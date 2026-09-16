@@ -43,3 +43,25 @@ def get_india_coverage_scorecard(
     Returns the authoritative 11-point India Coverage & Readiness Scorecard.
     """
     return india_dataset_inventory.get_india_coverage_scorecard(db)
+
+
+@router.get("/coverage-registry")
+def get_data_coverage_registry() -> Dict[str, Any]:
+    """
+    Returns Phase 25 full Data Coverage Registry across all 18+ satellite, terrestrial,
+    geospatial, and administrative feeds with explicit statuses (AVAILABLE, DERIVED,
+    UNAVAILABLE, NOT_CONFIGURED) and no synthetic mock numbers.
+    """
+    from backend.app.services.data_plane.data_coverage_registry import data_coverage_registry
+    records = data_coverage_registry.get_coverage_registry()
+    status_counts = {}
+    for r in records:
+        status_counts[r.current_status.value] = status_counts.get(r.current_status.value, 0) + 1
+    return {
+        "total_feeds": len(records),
+        "summary": status_counts,
+        "records": [r.model_dump() for r in records]
+    }
+
+
+

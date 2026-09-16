@@ -5,7 +5,8 @@ import json
 from enum import Enum
 from typing import Dict, Any, Tuple, Optional
 import numpy as np
-from sqlalchemy import create_engine, text
+import math
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from backend.app.core.config import settings
 
@@ -102,6 +103,56 @@ except Exception as e:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Computes exact great-circle geodesic distance in meters between two coordinates.
+    Used for spatial proximity calculations across SQLite / fallback environments.
+    """
+    R = 6371000.0  # Earth's mean radius in meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1.0 - a)))
+    return round(R * c, 1)
+
+
+if IS_SQLITE_TEST:
+    @event.listens_for(engine, "connect")
+    def register_sqlite_gis_functions(dbapi_connection, connection_record):
+        """Registers spatial GIS functions on SQLite connections when running in local/test mode."""
+        def _sqlite_as_geojson(geom):
+            if not geom:
+                return None
+            try:
+                if isinstance(geom, str):
+                    if geom.strip().startswith("{"):
+                        return geom
+                    import shapely.wkt
+                    import shapely.geometry
+                    g = shapely.wkt.loads(geom)
+                    return json.dumps(shapely.geometry.mapping(g))
+                import shapely
+                import shapely.geometry
+                g = shapely.from_wkb(geom)
+                return json.dumps(shapely.geometry.mapping(g))
+            except Exception:
+                return None
+
+        try:
+            dbapi_connection.create_function("ST_AsGeoJSON", 1, _sqlite_as_geojson)
+            dbapi_connection.create_function("ST_Simplify", 2, lambda g, tol: g)
+            dbapi_connection.create_function("ST_GeomFromText", 2, lambda wkt, srid=4326: wkt)
+            dbapi_connection.create_function("ST_Multi", 1, lambda g: g)
+            dbapi_connection.create_function("ST_SetSRID", 2, lambda g, srid: g)
+            dbapi_connection.create_function("ST_MakePoint", 2, lambda lon, lat: f"POINT({lon} {lat})")
+        except Exception:
+            pass
+
 
 
 # 4. Diagnostics & Connection Pool Reporting

@@ -1660,3 +1660,46 @@ class AnalystFeedback(Base):
     details = Column(JSON, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
+
+# =================================================================================
+# PHASE 25 HISTORICAL INCIDENT REGISTRY MODEL
+# =================================================================================
+
+class HistoricalIncident(Base):
+    """
+    Phase 25 Governed Historical Incident Registry.
+    Explicitly separates governed historical incidents from raw unverified satellite detections.
+    Supports closed-loop HITL verification recording without automatic model retraining.
+    """
+    __tablename__ = "historical_incidents"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    incident_code = Column(String(50), unique=True, nullable=False, index=True)
+    linked_event_ids = Column(JSON, default=list)
+    latitude = Column(Float, nullable=False, index=True)
+    longitude = Column(Float, nullable=False, index=True)
+    state = Column(String(100), nullable=False, index=True)
+    district = Column(String(100), nullable=False, index=True)
+    subdistrict = Column(String(100), nullable=True)
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="SET NULL"), nullable=True, index=True)
+    facility_name = Column(String(255), nullable=True)
+    first_observed_date = Column(DateTime, nullable=False, index=True)
+    last_observed_date = Column(DateTime, nullable=False, index=True)
+    peak_frp = Column(Float, nullable=False)
+    avg_frp = Column(Float, default=0.0)
+    detection_count = Column(Integer, default=1)
+    classification = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), default="UNVERIFIED", nullable=False, index=True)  # OBSERVED, UNVERIFIED, VERIFIED, CONTESTED, RESOLVED
+    verified_cause = Column(String(255), nullable=True)
+    evidence_ids = Column(JSON, default=list)
+    source_provenance = Column(JSON, default=dict)
+    similarity_signature = Column(JSON, default=dict)
+    verification_record_id = Column(String(36), nullable=True)
+    verified_by = Column(String(100), nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    facility = relationship("IndustrialFacility", backref="historical_incidents")
+

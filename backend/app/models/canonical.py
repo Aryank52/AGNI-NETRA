@@ -1874,6 +1874,7 @@ class TriageEffectivenessMetrics(BaseModel):
     queue_volume_by_category: Dict[str, int] = Field(default_factory=dict)
 
 
+
 class AnalystFeedbackSubmission(BaseModel):
     case_id: Optional[str] = None
     event_id: Optional[str] = None
@@ -1886,5 +1887,219 @@ class AnalystFeedbackSubmission(BaseModel):
     details: Dict[str, Any] = Field(default_factory=dict)
 
 
+# ==============================================================================
+# PHASE 25: CANONICAL EVENT INTELLIGENCE OBJECT & HISTORICAL REGISTRY SCHEMAS
+# ==============================================================================
+
+class DataCoverageStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    PARTIAL = "PARTIAL"
+    STALE = "STALE"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    UNAVAILABLE = "UNAVAILABLE"
+    FIXTURE = "FIXTURE"
+    SIMULATION = "SIMULATION"
+    DERIVED = "DERIVED"
 
 
+class DataCoverageRecord(BaseModel):
+    """
+    Authoritative registration record for any ingested dataset or intelligence provider.
+    Truthfully declares operational availability without synthetic substitution.
+    """
+    dataset_id: str
+    dataset_name: str
+    provider: str
+    category: str
+    geographic_coverage: str
+    temporal_coverage: str
+    freshness: str
+    last_update: Optional[str] = None
+    authority_type: str
+    current_status: DataCoverageStatus = DataCoverageStatus.AVAILABLE
+    dependent_capabilities: List[str] = Field(default_factory=list)
+    limitations: Optional[str] = None
+
+
+class HistoricalIncidentStatus(str, Enum):
+    OBSERVED = "OBSERVED"
+    UNVERIFIED = "UNVERIFIED"
+    VERIFIED = "VERIFIED"
+    CONTESTED = "CONTESTED"
+    RESOLVED = "RESOLVED"
+
+
+class HistoricalIncidentCanonical(BaseModel):
+    """
+    Governed canonical representation of a historical incident.
+    Explicitly separated from raw unverified satellite thermal observations.
+    """
+    incident_id: str
+    incident_code: str
+    linked_thermal_event_ids: List[str] = Field(default_factory=list)
+    latitude: float
+    longitude: float
+    state: str
+    district: str
+    subdistrict: Optional[str] = None
+    facility_id: Optional[str] = None
+    facility_name: Optional[str] = None
+    first_observed_date: str
+    last_observed_date: str
+    peak_frp: float
+    avg_frp: float = 0.0
+    detection_count: int = 1
+    classification: str
+    verification_status: HistoricalIncidentStatus = HistoricalIncidentStatus.UNVERIFIED
+    verified_cause: Optional[str] = None
+    evidence_ids: List[str] = Field(default_factory=list)
+    source_provenance: Dict[str, Any] = Field(default_factory=dict)
+    similarity_signature: Dict[str, Any] = Field(default_factory=dict)
+    related_events: List[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+    verified_by: Optional[str] = None
+    verified_at: Optional[str] = None
+
+
+class EventIdentityIntelligence(BaseModel):
+    event_id: str
+    event_code: str
+    incident_id: Optional[str] = None
+    first_seen: str
+    last_seen: str
+    duration_hours: float = 0.0
+    source_provider: str = "NASA_FIRMS"
+    sensor: str = "VIIRS"
+    satellite: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class EventGeographyIntelligence(BaseModel):
+    latitude: float
+    longitude: float
+    india_boundary_status: str = "INSIDE_SOVEREIGN_INDIA"
+    state: str
+    district: str
+    subdistrict: Optional[str] = None
+    spatial_cluster: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EventObservationIntelligence(BaseModel):
+    max_frp: float
+    avg_frp: float
+    frp_variance: float = 0.0
+    max_brightness_kelvin: Optional[float] = None
+    avg_brightness_kelvin: Optional[float] = None
+    observation_count: int = 1
+    sensor_passes: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class EventContextIntelligence(BaseModel):
+    industrial_facilities: List[Dict[str, Any]] = Field(default_factory=list)
+    power_infrastructure: List[Dict[str, Any]] = Field(default_factory=list)
+    mining: List[Dict[str, Any]] = Field(default_factory=list)
+    land_use: Dict[str, Any] = Field(default_factory=dict)
+    forest: Dict[str, Any] = Field(default_factory=dict)
+    protected_areas: List[Dict[str, Any]] = Field(default_factory=list)
+    environmental_context: Dict[str, Any] = Field(default_factory=dict)
+    administrative_context: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EventHistoricalIntelligence(BaseModel):
+    baseline_frp_mean: float = 0.0
+    baseline_frp_std: float = 0.0
+    baseline_sample_count: int = 0
+    baseline_status: str = "NO_BASELINE"
+    deviation_ratio: float = 1.0
+    deviation_percent: float = 0.0
+    deviation_z_score: float = 0.0
+    is_intensity_anomaly: bool = False
+    deviation_explanation: str = "No baseline data."
+    persistence_score: float = 0.0
+    persistence_category: str = "TRANSIENT"
+    active_days_count: int = 1
+    span_days: int = 1
+    recurrence_rate: float = 0.0
+    recurrence_category: str = "NON_RECURRENT"
+    episodes_count: int = 0
+    recent_30d_episodes: int = 0
+    seasonality_pattern: str = "INSUFFICIENT_DATA"
+    seasonal_peak_months: List[str] = Field(default_factory=list)
+    temporal_trend: str = "STABLE"
+    similar_historical_events_count: int = 0
+    similar_historical_events: List[Dict[str, Any]] = Field(default_factory=list)
+    previous_verified_incidents_count: int = 0
+    previous_verified_incidents: List[Dict[str, Any]] = Field(default_factory=list)
+    historical_relationship: str = "NONE"  # HIGH, MODERATE, LOW, NONE
+
+
+class EventAnalyticsIntelligence(BaseModel):
+    predicted_class: str
+    confidence: float
+    probabilities: Dict[str, float] = Field(default_factory=dict)
+    model_version: str = "xgb-v3.0-real-candidate"
+    calibrator: str = "Balanced Platt Scaling (v3.0)"
+    anomaly_score: float = 0.0
+    is_statistical_anomaly: bool = False
+    shap_explanation: Dict[str, Any] = Field(default_factory=dict)
+    risk_score: float
+    risk_level: str
+    risk_decomposition: Dict[str, float] = Field(default_factory=dict)
+    risk_reasons: List[str] = Field(default_factory=list)
+    priority_score: float
+    priority_tier: str
+    priority_decomposition: Dict[str, float] = Field(default_factory=dict)
+    alert_tier: str = "TIER_2_ANALYST_REVIEW_QUEUE"
+
+
+class EventEvidenceIntelligence(BaseModel):
+    evidence_ids: List[str] = Field(default_factory=list)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+    evidence_strength: float = 0.0
+    epistemic_uncertainty_score: float = 0.0
+    known: List[str] = Field(default_factory=list)
+    inferred: List[str] = Field(default_factory=list)
+    uncertain: List[str] = Field(default_factory=list)
+    missing: List[str] = Field(default_factory=list)
+    conflicting: List[str] = Field(default_factory=list)
+
+
+class EventJarvisIntelligence(BaseModel):
+    awareness_state: str = "AWARE"  # AWARE, EVALUATED, INVESTIGATED, IDLE
+    selected_capabilities: List[str] = Field(default_factory=list)
+    investigation_state: str = "NONE"  # NONE, IN_PROGRESS, COMPLETED
+    assessment_summary: Optional[str] = None
+    stopping_reason: Optional[str] = None
+
+
+class EventGovernanceIntelligence(BaseModel):
+    hitl_status: str = "PENDING_REVIEW"  # PENDING_REVIEW, CONFIRMED, OVERRIDDEN, REJECTED, VERIFIED
+    verification_status: HistoricalIncidentStatus = HistoricalIncidentStatus.UNVERIFIED
+    case_status: Optional[str] = "NONE"
+    audit_references: List[str] = Field(default_factory=list)
+    report_references: List[str] = Field(default_factory=list)
+    dispatch_gate_blocked: bool = True
+    automated_model_activation_blocked: bool = True
+
+
+class CanonicalEventIntelligence(BaseModel):
+    """
+    ONE EVENT -> ONE CONSISTENT INTELLIGENCE STATE.
+    Authoritative unified intelligence state shared across ingestion, GIS, dossier,
+    ML, risk, priority, evidence graph, JARVIS, HITL, case management, and reporting.
+    """
+    schema_version: str = "1.0-phase25"
+    identity: EventIdentityIntelligence
+    geography: EventGeographyIntelligence
+    observation: EventObservationIntelligence
+    context: EventContextIntelligence
+    historical: EventHistoricalIntelligence
+    analytics: EventAnalyticsIntelligence
+    evidence: EventEvidenceIntelligence
+    jarvis: EventJarvisIntelligence
+    governance: EventGovernanceIntelligence
+
+
+# Backward-compatible alias
+EventIntelligenceState = CanonicalEventIntelligence

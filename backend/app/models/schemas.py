@@ -1114,6 +1114,96 @@ class ForestStatsOut(BaseModel):
     top_forested_districts: List[FSIISFRStatsOut]
 
 
+# ==============================================================================
+# PHASE 25 HISTORICAL INCIDENT & CANONICAL SCHEMAS
+# ==============================================================================
+
+class HistoricalIncidentCreate(BaseModel):
+    incident_code: Optional[str] = None
+    linked_event_ids: List[str] = Field(default_factory=list)
+    latitude: float
+    longitude: float
+    state: str
+    district: str
+    subdistrict: Optional[str] = None
+    facility_id: Optional[str] = None
+    facility_name: Optional[str] = None
+    first_observed_date: datetime
+    last_observed_date: datetime
+    peak_frp: float
+    avg_frp: float = 0.0
+    detection_count: int = 1
+    classification: str
+    status: str = "UNVERIFIED"  # OBSERVED, UNVERIFIED, VERIFIED, CONTESTED, RESOLVED
+    verified_cause: Optional[str] = None
+    evidence_ids: List[str] = Field(default_factory=list)
+    source_provenance: Dict[str, Any] = Field(default_factory=dict)
+    similarity_signature: Dict[str, Any] = Field(default_factory=dict)
+    notes: Optional[str] = None
 
 
+class HistoricalIncidentOut(BaseModel):
+    id: str
+    incident_code: str
+    linked_event_ids: List[str] = Field(default_factory=list)
+    latitude: float
+    longitude: float
+    state: str
+    district: str
+    subdistrict: Optional[str] = None
+    facility_id: Optional[str] = None
+    facility_name: Optional[str] = None
+    first_observed_date: datetime
+    last_observed_date: datetime
+    peak_frp: float
+    avg_frp: float
+    detection_count: int
+    classification: str
+    status: str
+    verified_cause: Optional[str] = None
+    evidence_ids: List[str] = Field(default_factory=list)
+    source_provenance: Dict[str, Any] = Field(default_factory=dict)
+    similarity_signature: Dict[str, Any] = Field(default_factory=dict)
+    verification_record_id: Optional[str] = None
+    verified_by: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HistoricalIncidentListOut(BaseModel):
+    total_count: int
+    page: int
+    limit: int
+    total_pages: int
+    items: List[HistoricalIncidentOut]
+
+
+class HistoricalComparisonOut(BaseModel):
+    event_id: str
+    event_code: str
+    baseline_frp_mean: float
+    baseline_frp_std: float
+    baseline_sample_count: int
+    baseline_status: str
+    current_frp: float
+    deviation_ratio: float
+    deviation_percent: float
+    deviation_z_score: float
+    is_intensity_anomaly: bool
+    deviation_explanation: str
+    persistence_score: float
+    persistence_category: str
+    recurrence_rate: float
+    recurrence_category: str
+    recent_30d_episodes: int
+    seasonality_pattern: str
+    temporal_trend: str
+    similar_historical_events_count: int
+    previous_verified_incidents_count: int
+    historical_relationship: str
+    answers: Dict[str, str] = Field(default_factory=dict)
 
