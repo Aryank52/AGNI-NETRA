@@ -119,6 +119,8 @@ def get_gis_layers_catalog(db: Session = Depends(get_db)) -> Dict[str, Any]:
     mining_count = safe_gis_count("SELECT COUNT(*) FROM ibm_auctioned_blocks WHERE geom IS NOT NULL;")
     if mining_count == 0:
         mining_count = safe_gis_count("SELECT COUNT(*) FROM facility_mining_evidence;")
+    if mining_count == 0:
+        mining_count = safe_gis_count("SELECT COUNT(*) FROM industrial_facilities WHERE facility_type = 'MINING' OR LOWER(name) LIKE '%mine%' OR LOWER(master_sector) LIKE '%mining%';")
 
     protected_areas_count = safe_gis_count("SELECT COUNT(*) FROM protected_areas;")
     lulc_count = safe_gis_count("SELECT COUNT(*) FROM lulc_spatial_features;")

@@ -334,6 +334,10 @@ class JarvisMasterOrchestrator:
         context_dict = session_memory.get_context_dict(session_id)
         if request.context:
             context_dict.update(request.context)
+            if request.context.get("selected_event_id") and not context_dict.get("current_event_ref"):
+                context_dict["current_event_ref"] = request.context["selected_event_id"]
+            if request.context.get("event_id") and not context_dict.get("current_event_ref"):
+                context_dict["current_event_ref"] = request.context["event_id"]
 
         # Resolve Active Investigation Workspace for context continuity
         active_ws = None

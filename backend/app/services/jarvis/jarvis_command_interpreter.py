@@ -362,7 +362,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
                 )
 
                 if is_descriptive and not is_new_search and not entities.get("is_multi_compare"):
-                    current_ref = context.get("current_event_ref")
+                    current_ref = context.get("current_event_ref") or context.get("selected_event_id") or context.get("event_id")
                     sel_ref = context.get("selected_candidate_ref")
 
                     if sel_ref:

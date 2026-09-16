@@ -23,13 +23,13 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import text, desc, asc
+from sqlalchemy import text, desc, asc, or_
 
 WORKSPACE_DIR = r"E:\PROJECTS\AGNI-NETRA"
 if WORKSPACE_DIR not in sys.path:
     sys.path.insert(0, WORKSPACE_DIR)
 
-from backend.app.core.database import engine
+from backend.app.core.database import engine, IS_POSTGRESQL
 from backend.app.models.domain import (
     Alert, ThermalEvent, ThermalDetection, ModelPrediction, RiskScore,
     EventFeature, IndustrialFacility, VerificationRecord, AuditLog
@@ -58,42 +58,77 @@ _schema_initialized = False
 
 def ensure_alert_schema():
     """
-    Ensures PostgreSQL tables and columns for Phase 11 alerts and audit logs exist.
+    Ensures database tables and columns for Phase 11 alerts and audit logs exist across PostgreSQL and SQLite.
     """
     global _schema_initialized
     if _schema_initialized:
         return
     try:
         with engine.connect() as conn:
-            # 1. Add columns to alerts table if missing
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS routing_tier VARCHAR(50);"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS priority_score FLOAT;"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS predicted_class VARCHAR(100);"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS confidence FLOAT;"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS risk_score FLOAT;"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS evidence_summary JSONB;"))
-            conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS is_operational_dispatch BOOLEAN DEFAULT FALSE;"))
+            if IS_POSTGRESQL:
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS routing_tier VARCHAR(50);"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS priority_score FLOAT;"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS predicted_class VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS confidence FLOAT;"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS risk_score FLOAT;"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS evidence_summary JSONB;"))
+                conn.execute(text("ALTER TABLE alerts ADD COLUMN IF NOT EXISTS is_operational_dispatch BOOLEAN DEFAULT FALSE;"))
 
-            # 2. Create alert_audit_logs table if missing
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS alert_audit_logs (
-                    id VARCHAR(36) PRIMARY KEY,
-                    alert_id VARCHAR(36) NOT NULL,
-                    event_id VARCHAR(36),
-                    action VARCHAR(100) NOT NULL,
-                    previous_state VARCHAR(50) NOT NULL,
-                    new_state VARCHAR(50) NOT NULL,
-                    analyst_id VARCHAR(36),
-                    analyst_name VARCHAR(150),
-                    notes TEXT,
-                    verification_outcome VARCHAR(100),
-                    evidence_snapshot JSONB,
-                    is_operational_dispatch BOOLEAN DEFAULT FALSE,
-                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_alert_id ON alert_audit_logs(alert_id);"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_timestamp ON alert_audit_logs(timestamp);"))
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS alert_audit_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        alert_id VARCHAR(36) NOT NULL,
+                        event_id VARCHAR(36),
+                        action VARCHAR(100) NOT NULL,
+                        previous_state VARCHAR(50) NOT NULL,
+                        new_state VARCHAR(50) NOT NULL,
+                        analyst_id VARCHAR(36),
+                        analyst_name VARCHAR(150),
+                        notes TEXT,
+                        verification_outcome VARCHAR(100),
+                        evidence_snapshot JSONB,
+                        is_operational_dispatch BOOLEAN DEFAULT FALSE,
+                        timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_alert_id ON alert_audit_logs(alert_id);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_alert_audit_logs_timestamp ON alert_audit_logs(timestamp);"))
+            else:
+                # SQLite column check
+                cols = [r[1] for r in conn.execute(text("PRAGMA table_info(alerts);")).fetchall()]
+                col_defs = [
+                    ("routing_tier", "VARCHAR(50)"),
+                    ("priority_score", "FLOAT"),
+                    ("predicted_class", "VARCHAR(100)"),
+                    ("confidence", "FLOAT"),
+                    ("risk_score", "FLOAT"),
+                    ("evidence_summary", "TEXT"),
+                    ("is_operational_dispatch", "BOOLEAN DEFAULT 0")
+                ]
+                for c_name, c_type in col_defs:
+                    if c_name not in cols:
+                        try:
+                            conn.execute(text(f"ALTER TABLE alerts ADD COLUMN {c_name} {c_type};"))
+                        except Exception:
+                            pass
+
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS alert_audit_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        alert_id VARCHAR(36) NOT NULL,
+                        event_id VARCHAR(36),
+                        action VARCHAR(100) NOT NULL,
+                        previous_state VARCHAR(50) NOT NULL,
+                        new_state VARCHAR(50) NOT NULL,
+                        analyst_id VARCHAR(36),
+                        analyst_name VARCHAR(150),
+                        notes TEXT,
+                        verification_outcome VARCHAR(100),
+                        evidence_snapshot TEXT,
+                        is_operational_dispatch BOOLEAN DEFAULT 0,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );
+                """))
             conn.commit()
             _schema_initialized = True
     except Exception:
@@ -288,12 +323,12 @@ class AlertWorkflowService:
                 UPDATE alerts 
                 SET routing_tier = :tier, priority_score = :prio, predicted_class = :pclass,
                     confidence = :conf, risk_score = :rscore, evidence_summary = :ev_json,
-                    is_operational_dispatch = false
+                    is_operational_dispatch = :is_op
                 WHERE id = :aid;
             """), {
                 "tier": routing_tier, "prio": priority, "pclass": predicted_class,
                 "conf": confidence, "rscore": risk_score, "ev_json": json.dumps(evidence_summary),
-                "aid": alert_id
+                "is_op": False, "aid": alert_id
             })
 
             # Record Inception Audit Log
@@ -449,13 +484,13 @@ class AlertWorkflowService:
             ) VALUES (
                 :id, :aid, :eid, :act, :prev, :new,
                 :an_id, :an_name, :notes, :outcome,
-                :ev_json, false, CURRENT_TIMESTAMP
+                :ev_json, :is_op, CURRENT_TIMESTAMP
             );
         """), {
             "id": audit_id, "aid": alert_id, "eid": event_id, "act": action,
             "prev": prev_state, "new": new_state, "an_id": analyst_id,
             "an_name": analyst_name, "notes": notes, "outcome": verification_outcome,
-            "ev_json": json.dumps(evidence_snapshot)
+            "ev_json": json.dumps(evidence_snapshot), "is_op": False
         })
         return audit_id
 
@@ -610,12 +645,13 @@ class AlertWorkflowService:
         status: Optional[str] = None,
         min_risk: Optional[float] = None,
         state: Optional[str] = None,
+        event_id: Optional[str] = None,
         sort_by: str = "priority",
         limit: int = 50,
         offset: int = 0
     ) -> Dict[str, Any]:
         """
-        Queries operational alerts with multi-tier routing and lifecycle state filters.
+        Queries operational alerts with multi-tier routing, lifecycle state filters, and event_id filtering.
         """
         # Sanitize against FastAPI Query defaults if called programmatically
         if tier is not None and not isinstance(tier, str):
@@ -626,6 +662,8 @@ class AlertWorkflowService:
             min_risk = getattr(min_risk, "default", None)
         if state is not None and not isinstance(state, str):
             state = getattr(state, "default", None)
+        if event_id is not None and not isinstance(event_id, str):
+            event_id = getattr(event_id, "default", None)
         if sort_by is not None and not isinstance(sort_by, str):
             sort_by = getattr(sort_by, "default", "priority")
         if limit is not None and not isinstance(limit, int):
@@ -644,6 +682,9 @@ class AlertWorkflowService:
         """
         params = {}
 
+        if event_id:
+            query_str += " AND a.event_id = :event_id"
+            params["event_id"] = event_id
         if tier and tier != "ALL":
             query_str += " AND a.routing_tier = :tier"
             params["tier"] = tier
@@ -670,6 +711,17 @@ class AlertWorkflowService:
 
         rows = db.execute(text(query_str), params).fetchall()
 
+        # If filtered by event_id and no alert found, attempt on-demand creation for valid event
+        if event_id and len(rows) == 0:
+            ev_check = db.query(ThermalEvent).filter(or_(ThermalEvent.id == event_id, ThermalEvent.event_code == event_id)).first()
+            if ev_check:
+                try:
+                    self.create_or_update_alert_from_event(db, ev_check.id)
+                    params["event_id"] = ev_check.id
+                    rows = db.execute(text(query_str), params).fetchall()
+                except Exception:
+                    pass
+
         alerts = [
             {
                 "alert_id": r[0],
@@ -683,8 +735,8 @@ class AlertWorkflowService:
                 "predicted_class": r[8] or "Unknown",
                 "confidence": r[9] or 0.50,
                 "risk_score": r[10] or 35.0,
-                "created_at": r[11].isoformat() if r[11] else None,
-                "updated_at": r[12].isoformat() if r[12] else None,
+                "created_at": r[11].isoformat() if hasattr(r[11], "isoformat") else (str(r[11]) if r[11] else None),
+                "updated_at": r[12].isoformat() if hasattr(r[12], "isoformat") else (str(r[12]) if r[12] else None),
                 "state": r[13],
                 "district": r[14],
                 "max_frp": r[15],
@@ -702,6 +754,23 @@ class AlertWorkflowService:
             "returned_alerts": len(alerts),
             "alerts": alerts
         }
+
+    def ensure_alerts_for_all_events(self, db: Session) -> int:
+        """
+        Ensures every active ThermalEvent has an authentic linked Alert with
+        ML prediction, risk score, and routing tier.
+        """
+        events = db.query(ThermalEvent).all()
+        created_count = 0
+        for ev in events:
+            existing = db.query(Alert).filter(Alert.event_id == ev.id).first()
+            if not existing:
+                try:
+                    self.create_or_update_alert_from_event(db, ev.id)
+                    created_count += 1
+                except Exception:
+                    pass
+        return created_count
 
 
 # Singleton service instance

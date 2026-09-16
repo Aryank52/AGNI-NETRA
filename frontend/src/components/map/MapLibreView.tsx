@@ -393,6 +393,30 @@ export default function MapLibreView({
         }
       })
       .catch(() => {});
+
+    fetchApi<any>("/gis/industrial-facilities?limit=400")
+      .then((data) => {
+        if (m.getSource("industrial_facilities")) {
+          (m.getSource("industrial_facilities") as maplibregl.GeoJSONSource).setData(data);
+        }
+      })
+      .catch(() => {});
+
+    fetchApi<any>("/gis/power-stations?limit=200")
+      .then((data) => {
+        if (m.getSource("power_stations")) {
+          (m.getSource("power_stations") as maplibregl.GeoJSONSource).setData(data);
+        }
+      })
+      .catch(() => {});
+
+    fetchApi<any>("/gis/mining?limit=200")
+      .then((data) => {
+        if (m.getSource("mining")) {
+          (m.getSource("mining") as maplibregl.GeoJSONSource).setData(data);
+        }
+      })
+      .catch(() => {});
   };
 
   // 3. Interactive Click Popups

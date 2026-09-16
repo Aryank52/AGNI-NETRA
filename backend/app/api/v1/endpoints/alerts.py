@@ -47,6 +47,7 @@ class TestNotificationRequest(BaseModel):
 def list_operational_alerts(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_agency),
+    event_id: Optional[str] = Query(None, description="Filter alerts by associated ThermalEvent ID"),
     tier: Optional[str] = Query(None, description="Routing tier filter (TIER_1_AUTO_DISPATCH_CANDIDATE, TIER_2_ANALYST_REVIEW_QUEUE, TIER_3_UNCERTAINTY_QUEUE)"),
     status_filter: Optional[str] = Query(None, alias="status", description="Lifecycle state (NEW, ACKNOWLEDGED, UNDER_INVESTIGATION, VERIFIED, ESCALATED, DISMISSED, CLOSED)"),
     min_risk: Optional[float] = Query(None, description="Minimum risk score threshold (0-100)"),
@@ -57,7 +58,7 @@ def list_operational_alerts(
 ):
     """
     Retrieves operational alerts with multi-tier routing, state filtering,
-    and priority queue ordering. Permitted for AGENCY, ANALYST, and ADMIN roles.
+    event filtering, and priority queue ordering. Permitted for AGENCY, ANALYST, and ADMIN roles.
     """
     return alert_workflow_service.list_alerts(
         db=db,
@@ -65,6 +66,7 @@ def list_operational_alerts(
         status=status_filter,
         min_risk=min_risk,
         state=state,
+        event_id=event_id,
         sort_by=sort_by,
         limit=limit,
         offset=offset
