@@ -2656,19 +2656,38 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_identify_stale_sources:
             entities["is_identify_stale_sources"] = True
 
-        # Phase 25.4 Data Truth & Entity Semantics Queries
+        # Phase 25.4 / 25.5.2 Data Truth & Entity Semantics Queries
         is_data_truth_query = any(w in cmd for w in [
             "data truth", "truth table", "data reconciliation", "reconciled count",
             "entity semantics", "how many power stations", "power stations vs generating units",
-            "cea generating units", "how many mining leases", "extraction records",
-            "mining blocks vs extraction records", "how many industrial facilities",
-            "how many facilities", "35570", "35,570", "35684", "35,684",
+            "cea generating units", "how many generating units", "generating units count",
+            "how many mining leases", "extraction records", "mining lease records", "how many mining lease records",
+            "mining blocks vs extraction records", "how many mining blocks", "mining blocks count",
+            "how many industrial facilities", "how many facilities", "35570", "35,570", "35684", "35,684",
+            "how many active thermal events", "how many active events", "how many thermal events",
+            "how many verified incidents", "how many incidents", "verified incidents count",
             "how many districts", "735 districts", "736 districts",
             "audit report counts", "dataset counts"
         ])
         if is_data_truth_query:
             entities["is_data_truth_query"] = True
             entities["status_type"] = "DATA_TRUTH"
+            if "facility" in cmd or "industrial" in cmd or "35570" in cmd or "35684" in cmd:
+                entities["data_truth_focus"] = "FACILITIES"
+            elif "generating unit" in cmd:
+                entities["data_truth_focus"] = "GENERATING_UNITS"
+            elif "power station" in cmd or "power utility" in cmd or "power plant" in cmd:
+                entities["data_truth_focus"] = "POWER_STATIONS"
+            elif "mining lease" in cmd or "lease record" in cmd:
+                entities["data_truth_focus"] = "MINING_LEASES"
+            elif "mining block" in cmd or "mining site" in cmd or "mine" in cmd:
+                entities["data_truth_focus"] = "MINING_SITES"
+            elif "district" in cmd:
+                entities["data_truth_focus"] = "DISTRICTS"
+            elif "verified incident" in cmd or "incident" in cmd:
+                entities["data_truth_focus"] = "VERIFIED_INCIDENTS"
+            elif "active event" in cmd or "active thermal" in cmd or "hotspot" in cmd:
+                entities["data_truth_focus"] = "ACTIVE_EVENTS"
 
         # J. General Multi-Constraint Search Flag
         if any(w in cmd for w in ["persistent anomalies", "persistent anomaly", "abnormal thermal activity", "intensity is significantly above historical", "significantly above historical"]):

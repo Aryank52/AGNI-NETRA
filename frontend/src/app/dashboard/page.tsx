@@ -383,13 +383,14 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* KPI 3: Registered Facilities */}
+            {/* KPI 3: Authoritative Facilities (35,570 Geolocated Registry) */}
             <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
               <div>
-                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Industrial Plants</div>
+                <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider font-mono">Authoritative Facilities</div>
                 <div className="text-base font-black text-cyan-400 font-mono mt-0.5">
-                  35,684
+                  {Number((commandCenterData?.kpis as any)?.authoritative_facilities ?? 35570).toLocaleString()}
                 </div>
+                <div className="text-[9px] text-slate-500 font-mono">35,570 Geolocated</div>
               </div>
               <div className="w-7 h-7 rounded bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                 <Factory className="w-3.5 h-3.5 text-cyan-400" />

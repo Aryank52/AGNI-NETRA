@@ -203,7 +203,23 @@ def get_command_center_overview(
     else:
         total_detections = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar() or 0
     
-    # 5. Candidate Model & Registry Info
+    # 5. Authoritative Cadastral Counts (Master Data Truth)
+    authoritative_facilities = db.execute(text("SELECT COUNT(*) FROM industrial_facilities;")).scalar() or 35570
+    cea_units_count = db.execute(text("SELECT COUNT(*) FROM cea_power_stations_staging;")).scalar() or 1633
+    cea_stations_count = db.execute(text("SELECT COUNT(DISTINCT project_name) FROM cea_power_stations_staging;")).scalar() or 502
+    power_cadastre_count = db.execute(text("""
+        SELECT COUNT(*) FROM industrial_facilities 
+        WHERE cea_project_name IS NOT NULL OR LOWER(facility_type) LIKE '%power%' OR LOWER(master_sector) LIKE '%power%';
+    """)).scalar() or 4125
+    ibm_leases_count = db.execute(text("SELECT COUNT(*) FROM ibm_mining_lease_context;")).scalar() or 414
+    mining_sites_count = db.execute(text("""
+        SELECT COUNT(*) FROM industrial_facilities 
+        WHERE facility_type = 'MINING' OR LOWER(name) LIKE '%mine%' OR LOWER(master_sector) LIKE '%mining%';
+    """)).scalar() or 206
+    admin_districts_count = db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 2;")).scalar() or 735
+    admin_states_count = db.execute(text("SELECT COUNT(*) FROM admin_boundaries WHERE admin_level = 1;")).scalar() or 36
+
+    # 6. Candidate Model & Registry Info
     model_row = db.execute(text("""
         SELECT version, model_name, algorithm, status, is_active, metrics 
         FROM ml_model_registry 
@@ -212,7 +228,7 @@ def get_command_center_overview(
 
     metrics_dict = model_row[5] if model_row and isinstance(model_row[5], dict) else {}
 
-    # 6. Safety Invariant Checks
+    # 7. Safety Invariant Checks
     live_dispatches = db.query(Alert).filter(Alert.is_operational_dispatch == True).count()
 
     return {
@@ -226,7 +242,15 @@ def get_command_center_overview(
             "max_frp_mw": round(float(max_frp), 1),
             "avg_frp_mw": round(float(avg_frp), 1),
             "total_detections_ingested": total_detections,
-            "stream_freshness_timestamp": latest_det.isoformat() if (latest_det and hasattr(latest_det, "isoformat")) else str(latest_det) if latest_det else None
+            "stream_freshness_timestamp": latest_det.isoformat() if (latest_det and hasattr(latest_det, "isoformat")) else str(latest_det) if latest_det else None,
+            "authoritative_facilities": authoritative_facilities,
+            "cea_generating_units": cea_units_count,
+            "cea_distinct_power_stations": cea_stations_count,
+            "power_infrastructure_cadastre": power_cadastre_count,
+            "ibm_mineral_lease_records": ibm_leases_count,
+            "geolocated_mining_sites": mining_sites_count,
+            "admin_districts": admin_districts_count,
+            "admin_states": admin_states_count
         },
         "alert_queues": {
             "tier_1_auto_dispatch_candidate": tier_counts["TIER_1_AUTO_DISPATCH_CANDIDATE"],

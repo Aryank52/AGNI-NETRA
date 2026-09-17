@@ -74,8 +74,8 @@ const LAYER_ITEMS: LayerItemDef[] = [
   {
     key: "industrialFacilities",
     category: "INDUSTRIAL",
-    label: "Industrial Facilities",
-    sublabel: "35,570 Regulated Manufacturing Registry",
+    label: "Authoritative Industrial Facilities",
+    sublabel: "35,570 Verified Geolocated Registry",
     icon: Factory,
     color: "#38bdf8",
     countDefault: 35570,

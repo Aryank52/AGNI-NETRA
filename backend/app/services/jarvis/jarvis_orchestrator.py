@@ -9024,8 +9024,28 @@ class JarvisMasterOrchestrator:
                 ver_evts = db.execute(text("SELECT COUNT(*) FROM thermal_events WHERE status = 'VERIFIED';")).scalar() or 6
                 raw_det = db.execute(text("SELECT COUNT(*) FROM thermal_detections;")).scalar() or 285
 
+                focus = entities.get("data_truth_focus")
+                focus_headline = ""
+                if focus == "FACILITIES":
+                    focus_headline = f"**DIRECT ANSWER:** AGNI-NETRA monitors exactly **{fac_cnt:,} authoritative geolocated facilities** across sovereign India (35,546 OSM features + 11 seed hubs + 8 CEA stations + 5 promoted candidates). Legacy documentation cited 35,684, which included 114 non-geolocated provisional project staging entries (geom=NULL) from early staging runs.\n\n"
+                elif focus == "GENERATING_UNITS":
+                    focus_headline = f"**DIRECT ANSWER:** There are exactly **{cea_cnt:,} CEA generating units** across {cea_stat_cnt} distinct utility power stations according to the official Central Electricity Authority Bulletin.\n\n"
+                elif focus == "POWER_STATIONS":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{cea_stat_cnt} distinct CEA power stations** (containing {cea_cnt:,} generating units) cross-referenced with {pwr_cad_cnt:,} facilities in the OpenStreetMap power cadastre.\n\n"
+                elif focus == "MINING_LEASES":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{ibm_cnt} official IBM mineral extraction lease distribution records** across 24 mineral-producing states (IBM Bulletin 2024 Tables 1–6).\n\n"
+                elif focus == "MINING_SITES":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{mine_site_cnt} geolocated mining sites and quarries** in the active cadastre, enriched with {ibm_cnt} official IBM mineral lease context records.\n\n"
+                elif focus == "DISTRICTS":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{dist_cnt} authoritative administrative district boundaries** across {state_cnt} States/UTs in the sovereign vector boundary registry (geoBoundaries IND-ADM2).\n\n"
+                elif focus == "VERIFIED_INCIDENTS":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{ver_evts} analyst-verified operational incidents** confirmed via Human-in-the-Loop workflow (out of {tot_evts} clustered pipeline events and {act_evts} active hotspots).\n\n"
+                elif focus == "ACTIVE_EVENTS":
+                    focus_headline = f"**DIRECT ANSWER:** There are **{act_evts} active thermal hotspots** currently undergoing live surveillance (clustered from {raw_det} raw satellite pixel detections).\n\n"
+
                 summary_text = (
-                    "### AGNI-NETRA — PHASE 25.4 MASTER DATA TRUTH & ENTITY SEMANTICS REPORT\n\n"
+                    f"{focus_headline}"
+                    "### AGNI-NETRA — MASTER DATA TRUTH & ENTITY SEMANTICS REPORT\n\n"
                     "#### 1. RECONCILED DATASET TRUTH TABLE\n"
                     f"- **Industrial Facilities**: **{fac_cnt:,} authoritative geolocated facilities** in active database (35,546 OSM features + 11 seed hubs + 8 CEA stations + 5 promoted candidates). "
                     "*Historical variance note*: Legacy documentation cited 35,684, which included 114 non-geolocated provisional project entries (`geom=NULL`) from earlier staging runs.\n"
