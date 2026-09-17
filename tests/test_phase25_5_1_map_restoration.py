@@ -8,7 +8,7 @@ Comprehensive automated validation of:
 3. 50+ Event Coordinates Fidelity: DB -> API -> Map GeoJSON coordinates with zero delta.
 4. Sri Lanka Zero Leakage Boundary: Bounding box [79.6, 5.9, 81.9, 9.85] contains 0 facilities/events.
 5. Southern Mainland Legitimacy: Tamil Nadu / Kerala points strictly within Indian sovereign land.
-6. Golden Event Chain: Jamnagar EVT-GUJ-20260916-150D distance ~181.9m to Reliance Jamnagar.
+6. Golden Event Chain: Jamnagar EVT-GUJ-20260916-150D distance ~181m to Reliance Jamnagar.
 7. Macro-Facility Ordering: National UUID assets prioritized at national zoom.
 8. BBOX Spatial Filtering: [minLon, minLat, maxLon, maxLat] bounding box query accuracy.
 9. Static/Dynamic Architecture Invariant: No duplicate unbounded layer fetches in setupGisLayers.
@@ -61,7 +61,6 @@ def auth_headers(db_session: Session):
 
 def test_facility_coordinates_invariance_50(db_session: Session):
     """Verify that 50 facilities across diverse tiers match DB and API GeoJSON with 0 error."""
-    # Sample from UUIDs, CEA, OSM relations, ways, nodes
     facilities = db_session.execute(text("""
         SELECT id, name, latitude, longitude, facility_type, source
         FROM industrial_facilities
@@ -80,11 +79,14 @@ def test_facility_coordinates_invariance_50(db_session: Session):
 
     assert len(facilities) >= 50, f"Expected at least 50 facilities, got {len(facilities)}"
 
-    # Query API
-    resp = client.get("/api/v1/gis/industrial-facilities?limit=100")
-    assert resp.status_code == 200
-    features = resp.json().get("features", [])
-    api_map = {f["properties"]["id"]: f for f in features}
+    # Query APIs for both industrial facilities and dedicated power stations
+    fac_resp = client.get("/api/v1/gis/industrial-facilities?limit=400")
+    assert fac_resp.status_code == 200
+    pwr_resp = client.get("/api/v1/gis/power-stations?limit=200")
+    assert pwr_resp.status_code == 200
+
+    api_map = {f["properties"]["id"]: f for f in fac_resp.json().get("features", [])}
+    api_map.update({f["properties"]["id"]: f for f in pwr_resp.json().get("features", [])})
 
     verified_count = 0
     for fac in facilities:
@@ -107,7 +109,7 @@ def test_facility_coordinates_invariance_50(db_session: Session):
             )
             verified_count += 1
 
-    assert verified_count >= 20, f"Expected at least 20 sampled facilities in top-100 API results, got {verified_count}"
+    assert verified_count >= 50, f"Expected at least 50 sampled facilities matched in API layers with zero delta, got {verified_count}"
 
 
 def test_osm_raw_master_source_fidelity(db_session: Session):
@@ -119,7 +121,7 @@ def test_osm_raw_master_source_fidelity(db_session: Session):
     with open(raw_path, "r", encoding="utf-8") as f:
         raw_data = json.load(f)
 
-    # Index first 500 features by osm id
+    # Index features by osm id
     raw_lookup = {}
     for feat in raw_data.get("features", []):
         feat_id = str(feat.get("id", ""))
@@ -145,9 +147,7 @@ def test_osm_raw_master_source_fidelity(db_session: Session):
             assert abs(row[2] - raw_lon) < 1e-5, f"Longitude mismatch for {db_id}: DB={row[2]}, Raw={raw_lon}"
             checked += 1
 
-    # At least some nodes must match if raw export exists
-    if len(raw_lookup) > 0 and checked == 0:
-        pass  # Sampling may not overlap the first 500 features of 35k, acceptable
+    assert checked > 0 or len(raw_lookup) == 0
 
 
 # =============================================================================
@@ -157,9 +157,9 @@ def test_osm_raw_master_source_fidelity(db_session: Session):
 def test_event_coordinates_fidelity_50(db_session: Session):
     """Verify 50 thermal events have identical coordinates across DB and API."""
     events = db_session.execute(text("""
-        SELECT id, event_id, latitude, longitude, severity, status
+        SELECT id, event_code, latitude, longitude, status
         FROM thermal_events
-        ORDER BY detected_at DESC
+        ORDER BY created_at DESC
         LIMIT 50
     """)).fetchall()
 
@@ -202,21 +202,21 @@ def test_sri_lanka_zero_leakage_boundary(db_session: Session):
           AND longitude BETWEEN 79.6 AND 81.9
     """)).scalar()
 
-    sl_power = db_session.execute(text("""
-        SELECT COUNT(*) FROM power_stations_cadastre
-        WHERE latitude BETWEEN 5.9 AND 9.85
-          AND longitude BETWEEN 79.6 AND 81.9
-    """)).scalar()
-
     assert sl_facilities == 0, f"Expected 0 facilities in Sri Lanka, found {sl_facilities}"
     assert sl_events == 0, f"Expected 0 events in Sri Lanka, found {sl_events}"
-    assert sl_power == 0, f"Expected 0 power stations in Sri Lanka, found {sl_power}"
 
-    # Also test API endpoint with Sri Lanka bbox
-    resp = client.get("/api/v1/gis/industrial-facilities?bbox=79.6,5.9,81.9,9.85")
-    assert resp.status_code == 200
-    features = resp.json().get("features", [])
-    assert len(features) == 0, f"Expected 0 features in Sri Lanka bbox via API, got {len(features)}"
+    # Also test API endpoints with Sri Lanka bbox
+    resp_fac = client.get("/api/v1/gis/industrial-facilities?bbox=79.6,5.9,81.9,9.85")
+    assert resp_fac.status_code == 200
+    assert len(resp_fac.json().get("features", [])) == 0
+
+    resp_pwr = client.get("/api/v1/gis/power-stations?bbox=79.6,5.9,81.9,9.85")
+    assert resp_pwr.status_code == 200
+    assert len(resp_pwr.json().get("features", [])) == 0
+
+    resp_min = client.get("/api/v1/gis/mining?bbox=79.6,5.9,81.9,9.85")
+    assert resp_min.status_code == 200
+    assert len(resp_min.json().get("features", [])) == 0
 
 
 # =============================================================================
@@ -247,10 +247,10 @@ def test_southern_mainland_legitimacy(db_session: Session):
 # 5. GOLDEN EVENT JAMNAGAR ALIGNMENT
 # =============================================================================
 
-def test_golden_event_jamnagar_distance_alignment(db_session: Session):
-    """Verify EVT-GUJ-20260916-150D is ~181.9m from Reliance Jamnagar across DB, API, and Jarvis."""
+def test_golden_event_jamnagar_distance_alignment(db_session: Session, auth_headers):
+    """Verify EVT-GUJ-20260916-150D is ~181m from Reliance Jamnagar across DB, API, Dossier, and Jarvis."""
     event = db_session.query(ThermalEvent).filter(
-        ThermalEvent.event_id == "EVT-GUJ-20260916-150D"
+        ThermalEvent.event_code == "EVT-GUJ-20260916-150D"
     ).first()
     assert event is not None, "Golden event EVT-GUJ-20260916-150D must exist in database"
 
@@ -267,17 +267,26 @@ def test_golden_event_jamnagar_distance_alignment(db_session: Session):
         jamnagar_fac[2], jamnagar_fac[3]
     )
     # Distance should be ~181.9 meters (within 250m buffer)
-    assert 150.0 <= dist <= 220.0, f"Expected distance ~181.9m, got {dist:.2f}m"
+    assert 150.0 <= dist <= 220.0, f"Expected distance ~181m, got {dist:.2f}m"
+
+    # Verify Dossier endpoint distance
+    dossier_res = client.get(f"/api/v1/gis/dossier/{event.id}", headers=auth_headers)
+    assert dossier_res.status_code == 200
+    dossier_data = dossier_res.json()
+    nearest_facs = dossier_data["spatial_context_enrichment"]["nearest_industrial_facilities"]
+    assert len(nearest_facs) > 0
+    top_fac = nearest_facs[0]
+    assert "Reliance" in top_fac["name"] or "Jamnagar" in top_fac["name"]
+    assert abs(top_fac["distance_m"] - dist) < 5.0
 
     # Verify Jarvis Tool spatial query distance agreement
-    registry = JarvisToolRegistry()
-    proximity_res = registry.get_facility_proximity(event.id)
-    assert "error" not in proximity_res
-    nearby = proximity_res.get("nearby_facilities", [])
+    jarvis_res = JarvisToolRegistry.tool_get_event_spatial_context(db_session, event.id)
+    assert "nearest_facilities" in jarvis_res
+    nearby = jarvis_res["nearest_facilities"]
     assert len(nearby) > 0, "Jarvis must find nearby facilities for Jamnagar event"
-    top_fac = nearby[0]
-    assert "Reliance" in top_fac["name"] or "Jamnagar" in top_fac["name"]
-    jarvis_dist = top_fac["distance_meters"]
+    j_fac = nearby[0]
+    assert "Reliance" in j_fac["name"] or "Jamnagar" in j_fac["name"]
+    jarvis_dist = j_fac["distance_meters"]
     assert abs(jarvis_dist - dist) < 5.0, (
         f"Jarvis distance {jarvis_dist}m does not match Haversine {dist:.2f}m"
     )
@@ -331,9 +340,16 @@ def test_maplibre_architecture_no_duplicate_static_fetches():
         content = f.read()
 
     # Locate setupGisLayers function
-    setup_idx = content.find("const setupGisLayers = useCallback(")
+    setup_sig = "const setupGisLayers = (m: maplibregl.Map) => {"
+    setup_idx = content.find(setup_sig)
     assert setup_idx != -1, "setupGisLayers function must exist in MapLibreView.tsx"
-    setup_body = content[setup_idx:setup_idx + 1500]
+    
+    # Locate where setupGisLayers ends (before setupLayerClickHandlers)
+    end_sig = "const setupLayerClickHandlers = ("
+    end_idx = content.find(end_sig, setup_idx)
+    assert end_idx != -1, "setupLayerClickHandlers function must exist in MapLibreView.tsx"
+    
+    setup_body = content[setup_idx:end_idx]
 
     # Invariant: setupGisLayers must NOT fetch industrial-facilities, power-stations, or mining
     assert "/gis/industrial-facilities" not in setup_body, (
@@ -348,7 +364,58 @@ def test_maplibre_architecture_no_duplicate_static_fetches():
 
 
 # =============================================================================
-# 9. SAFETY INVARIANTS
+# 9. LAYER INDEPENDENCE & ZERO OVERLAP VALIDATION
+# =============================================================================
+
+def test_layer_independence_zero_overlap():
+    """Verify that industrial facilities and power stations layers have 0 overlapping features."""
+    fac_resp = client.get("/api/v1/gis/industrial-facilities?limit=400")
+    assert fac_resp.status_code == 200
+    pwr_resp = client.get("/api/v1/gis/power-stations?limit=200")
+    assert pwr_resp.status_code == 200
+
+    fac_ids = set(f["properties"]["id"] for f in fac_resp.json().get("features", []))
+    pwr_ids = set(f["properties"]["id"] for f in pwr_resp.json().get("features", []))
+
+    overlap = fac_ids.intersection(pwr_ids)
+    assert len(overlap) == 0, f"Expected 0 overlap between facilities and power stations, found {len(overlap)}: {list(overlap)[:5]}"
+
+
+def test_nationwide_multi_region_distribution():
+    """Verify top facilities span across Northern, Western, Southern, Eastern, and Central India."""
+    fac_resp = client.get("/api/v1/gis/industrial-facilities?limit=400")
+    assert fac_resp.status_code == 200
+    features = fac_resp.json().get("features", [])
+    states = set(f["properties"]["state"] for f in features if f["properties"].get("state"))
+
+    # Must represent diverse geographic regions across India
+    has_north = any(s in states for s in ["Punjab", "Haryana", "Uttar Pradesh", "Delhi", "Jammu And Kashmīr"])
+    has_west = any(s in states for s in ["Gujarāt", "Gujarat", "Mahārāshtra", "Maharashtra", "Rājasthān"])
+    has_south = any(s in states for s in ["Tamil Nādu", "Tamil Nadu", "Karnātaka", "Karnataka", "Kerala", "Andhra Pradesh", "Telangāna"])
+    has_east = any(s in states for s in ["Bihār", "Bihar", "West Bengal", "Odisha", "Assam"])
+    has_central = any(s in states for s in ["Madhya Pradesh", "Chhattīsgarh"])
+
+    assert has_north, f"Expected Northern India representation in top 400 facilities, got states: {states}"
+    assert has_west, f"Expected Western India representation in top 400 facilities, got states: {states}"
+    assert has_south, f"Expected Southern India representation in top 400 facilities, got states: {states}"
+    assert has_east, f"Expected Eastern India representation in top 400 facilities, got states: {states}"
+    assert has_central, f"Expected Central India representation in top 400 facilities, got states: {states}"
+
+
+def test_zoom_interpolated_styling_definitions():
+    """Verify MapLibreView.tsx defines zoom-interpolated circle sizing for all point layers."""
+    maplibre_path = r"e:\PROJECTS\AGNI-NETRA\frontend\src\components\map\MapLibreView.tsx"
+    with open(maplibre_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert '"interpolate"' in content, "MapLibreView must use zoom interpolation for circle styling"
+    assert "power-stations-point" in content
+    assert "mining-point" in content
+    assert "industrial-facilities-point" in content
+
+
+# =============================================================================
+# 10. SAFETY INVARIANTS
 # =============================================================================
 
 def test_safety_invariants_strictly_locked():

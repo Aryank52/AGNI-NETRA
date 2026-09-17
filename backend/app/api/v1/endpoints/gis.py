@@ -416,6 +416,13 @@ def get_industrial_facilities_geojson(
     if sector and sector.upper() not in ["ALL"]:
         where_parts.append("(LOWER(master_sector) LIKE LOWER(:sector) OR LOWER(facility_type) LIKE LOWER(:sector))")
         params["sector"] = f"%{sector.strip()}%"
+    else:
+        # Layer separation: Power generation assets are served exclusively by dedicated /power-stations layer
+        where_parts.append("""(
+            cea_project_name IS NULL 
+            AND (facility_type IS NULL OR LOWER(facility_type) NOT LIKE '%power%') 
+            AND (master_sector IS NULL OR (LOWER(master_sector) NOT LIKE '%power%' AND LOWER(master_sector) NOT LIKE '%electricity%'))
+        )""")
 
     if has_thermal is True:
         where_parts.append("firms_detections_1km > 0")
@@ -433,13 +440,8 @@ def get_industrial_facilities_geojson(
             CASE 
                 WHEN length(id) = 36 THEN 1
                 WHEN source = 'PROMOTED_CANDIDATE' THEN 2
-                WHEN source = 'CEA' THEN 3
-                WHEN cea_project_name IS NOT NULL THEN 4
-                WHEN plant_capacity IS NOT NULL THEN 5
-                WHEN environmental_clearance_present = 1 THEN 6
-                WHEN id LIKE 'osm_relation_%' THEN 7
-                WHEN id LIKE 'osm_way_%' THEN 8
-                ELSE 9
+                WHEN environmental_clearance_present = 1 THEN 3
+                ELSE 4
             END ASC,
             id ASC
         LIMIT :limit;
@@ -523,9 +525,7 @@ def get_power_stations_geojson(
                 WHEN source = 'CEA' THEN 2
                 WHEN cea_project_name IS NOT NULL THEN 3
                 WHEN plant_capacity IS NOT NULL THEN 4
-                WHEN id LIKE 'osm_relation_%' THEN 5
-                WHEN id LIKE 'osm_way_%' THEN 6
-                ELSE 7
+                ELSE 5
             END ASC,
             id ASC
         LIMIT :limit;
@@ -674,11 +674,6 @@ def get_mining_geojson(
                 WHERE {where_ind_sql}
                 ORDER BY 
                     COALESCE(firms_detections_1km, 0) DESC,
-                    CASE 
-                        WHEN id LIKE 'osm_relation_%' THEN 1
-                        WHEN id LIKE 'osm_way_%' THEN 2
-                        ELSE 3
-                    END ASC,
                     id ASC
                 LIMIT :limit;
             """), params_ind).fetchall()
