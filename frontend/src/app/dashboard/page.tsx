@@ -44,6 +44,7 @@ function DashboardContent() {
 
   // State & Data
   const [events, setEvents] = useState<ThermalEvent[]>([]);
+  const [mapEvents, setMapEvents] = useState<ThermalEvent[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [commandCenterData, setCommandCenterData] = useState<CommandCenterData | null>(null);
   const [gisCatalog, setGisCatalog] = useState<any | null>(null);
@@ -171,13 +172,27 @@ function DashboardContent() {
       params.append("page", page.toString());
       params.append("limit", limit.toString());
 
-      const [eventsData, ccData] = await Promise.all([
+      const mapParams = new URLSearchParams();
+      if (selectedState !== "ALL" && selectedState !== "India") mapParams.append("state", selectedState);
+      if (selectedDistrict !== "ALL") mapParams.append("district", selectedDistrict);
+      if (riskFilter !== "ALL") mapParams.append("risk_level", riskFilter);
+      if (classFilter !== "ALL") mapParams.append("event_type", classFilter);
+      if (statusFilter !== "ALL") mapParams.append("status", statusFilter);
+      if (minFrp > 0) mapParams.append("min_frp", minFrp.toString());
+      if (dataMode === "LIVE") mapParams.append("is_demo", "false");
+      if (dataMode === "DEMO") mapParams.append("is_demo", "true");
+      mapParams.append("limit", "500");
+
+      const [eventsData, ccData, mapEventsData] = await Promise.all([
         fetchApi<any>(`/events?${params.toString()}`),
         fetchApi<CommandCenterData>("/analytics/command-center").catch(() => null),
+        fetchApi<any>(`/events?${mapParams.toString()}`).catch(() => null),
       ]);
 
       const items = safeArray<ThermalEvent>(eventsData);
       setEvents(items);
+      const allMapItems = safeArray<ThermalEvent>(mapEventsData);
+      setMapEvents(allMapItems.length > 0 ? allMapItems : items);
       setTotalCount(eventsData?.total_count ?? items.length);
       setTotalPages(eventsData?.total_pages ?? Math.max(1, Math.ceil(items.length / limit)));
 
@@ -268,13 +283,13 @@ function DashboardContent() {
   }, [events]);
 
   return (
-    <div className="min-h-screen bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans">
+    <div className="h-screen w-full overflow-hidden bg-agni-navy flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans">
       <Header />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Top System Health & Ingestion Telemetry Banner */}
           <div className="bg-slate-950/95 border-b border-agni-border px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs">
             <div className="flex flex-wrap items-center gap-3">
@@ -422,9 +437,9 @@ function DashboardContent() {
           </div>
 
           {/* Main Command Center Interactive Layout */}
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
             {/* Left/Center: MapLibre GIS Map Canvas */}
-            <div className="flex-1 relative flex flex-col overflow-hidden bg-slate-950">
+            <div className="flex-1 relative flex flex-col overflow-hidden bg-slate-950 min-h-0">
               {/* Tactical Filter Toolbar */}
               <div className="bg-slate-950/90 border-b border-agni-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 z-10 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
@@ -603,10 +618,10 @@ function DashboardContent() {
               )}
 
               {/* Map Canvas Component Wrapped in ErrorBoundary */}
-              <div className="flex-1 w-full h-full relative">
+              <div className="flex-1 w-full h-full relative min-h-0">
                 <ErrorBoundary fallbackTitle="Map Component Error" fallbackMessage="MapLibre GIS encountered an issue. Click below to retry.">
                   <MapLibreView
-                    events={events}
+                    events={mapEvents.length > 0 ? mapEvents : events}
                     selectedEventId={selectedEvent?.id}
                     onSelectEvent={handleSelectEvent}
                     selectedState={selectedState}
@@ -653,7 +668,7 @@ function DashboardContent() {
             </div>
 
             {/* Right: Operational Event Stream & 7-Layer Dossier Inspector */}
-            <div className="w-full lg:w-[460px] bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-agni-border flex flex-col shrink-0 overflow-hidden">
+            <div className="w-full lg:w-[460px] bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-agni-border flex flex-col shrink-0 overflow-hidden min-h-0">
               {/* Right Panel Header Switcher */}
               <div className="p-3 border-b border-agni-border flex items-center justify-between bg-slate-900/60">
                 <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
@@ -693,7 +708,7 @@ function DashboardContent() {
 
               {/* View 1: 7-Layer Spatial Investigation Dossier */}
               {rightPanelMode === "dossier" ? (
-                <div className="flex-1 overflow-hidden p-2.5">
+                <div className="flex-1 overflow-hidden min-h-0 p-2.5">
                   <ErrorBoundary fallbackTitle="Dossier Loading Error">
                     <EventInvestigationDossier
                       eventId={selectedEvent?.id || null}
@@ -703,7 +718,7 @@ function DashboardContent() {
                 </div>
               ) : (
                 /* View 2: Operational Event Stream Queue */
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                   {/* Selected Event Comprehensive Operational Inspector */}
                   {selectedEvent && (
                     <div className="p-3.5 bg-slate-900/95 border-b border-agni-border space-y-2.5">
@@ -812,7 +827,7 @@ function DashboardContent() {
                   )}
 
                   {/* Scrollable Events List */}
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2">
                     {loading && (
                       <div className="space-y-2">
                         <CardSkeleton />

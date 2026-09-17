@@ -138,7 +138,7 @@ export default function Sidebar() {
   const role = user?.role || "ANALYST";
 
   return (
-    <aside className="w-64 bg-agni-slate/95 border-r border-agni-border flex flex-col justify-between py-4 px-3 shrink-0 hidden md:flex overflow-y-auto">
+    <aside className="w-64 bg-agni-slate/95 border-r border-agni-border flex flex-col justify-between py-4 px-3 shrink-0 hidden md:flex h-full min-h-0 overflow-y-auto">
       <div>
         {/* Role-Specific Navigation Groups */}
         {role === "AGENCY" ? (

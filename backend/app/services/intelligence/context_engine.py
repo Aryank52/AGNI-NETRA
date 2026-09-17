@@ -276,8 +276,20 @@ class ContextDiscoveryEngine:
                 ))
         except Exception:
             db.rollback()
-            # Haversine fallback
-            facs = db.query(IndustrialFacility).filter(IndustrialFacility.latitude.isnot(None)).limit(200).all()
+            # Haversine fallback with localized candidate bounding-box filter
+            delta = 0.5
+            facs = db.query(IndustrialFacility).filter(
+                IndustrialFacility.latitude.between(lat - delta, lat + delta),
+                IndustrialFacility.longitude.between(lon - delta, lon + delta)
+            ).all()
+            if not facs:
+                delta = 1.5
+                facs = db.query(IndustrialFacility).filter(
+                    IndustrialFacility.latitude.between(lat - delta, lat + delta),
+                    IndustrialFacility.longitude.between(lon - delta, lon + delta)
+                ).all()
+            if not facs:
+                facs = db.query(IndustrialFacility).filter(IndustrialFacility.latitude.isnot(None)).limit(500).all()
             scored = []
             for f in facs:
                 d = haversine_distance_m(lat, lon, f.latitude, f.longitude)

@@ -241,9 +241,21 @@ class JarvisToolRegistry:
                     "distance_meters": float(r[6])
                 })
         except Exception:
-            db.rollback()
-            # Fallback using Haversine if PostGIS is not present
-            facs = db.query(IndustrialFacility).filter(IndustrialFacility.latitude.isnot(None)).limit(200).all()
+            # Fallback using localized bounding-box candidate filter + Haversine if PostGIS is not present
+            delta = 0.5
+            facs = db.query(IndustrialFacility).filter(
+                IndustrialFacility.latitude.between(lat - delta, lat + delta),
+                IndustrialFacility.longitude.between(lon - delta, lon + delta)
+            ).all()
+            if not facs:
+                delta = 1.5
+                facs = db.query(IndustrialFacility).filter(
+                    IndustrialFacility.latitude.between(lat - delta, lat + delta),
+                    IndustrialFacility.longitude.between(lon - delta, lon + delta)
+                ).all()
+            if not facs:
+                facs = db.query(IndustrialFacility).filter(IndustrialFacility.latitude.isnot(None)).limit(500).all()
+
             scored = []
             for f in facs:
                 d = haversine_distance_m(lat, lon, f.latitude, f.longitude)
@@ -306,6 +318,26 @@ class JarvisToolRegistry:
                 })
         except Exception:
             db.rollback()
+            try:
+                pa_rows = db.execute(text("SELECT id, pa_name, pa_type, state, geom FROM protected_areas WHERE geom IS NOT NULL")).fetchall()
+                scored_pa = []
+                from backend.app.api.v1.endpoints.gis import parse_geojson_geometry
+                from shapely.geometry import shape
+                for pr in pa_rows:
+                    geom_dict = parse_geojson_geometry(pr[4])
+                    if geom_dict:
+                        cent = shape(geom_dict).centroid
+                        dist = haversine_distance_m(lat, lon, cent.y, cent.x)
+                        scored_pa.append((dist, pr))
+                scored_pa.sort(key=lambda x: x[0])
+                for dist, pr in scored_pa[:2]:
+                    nearest_protected.append({
+                        "name": pr[1],
+                        "category": pr[2] or "Wildlife Sanctuary / National Park",
+                        "distance_meters": round(dist, 1)
+                    })
+            except Exception:
+                pass
 
         # 4. Multi-distance buffer asset counts
         buffer_analysis = {}

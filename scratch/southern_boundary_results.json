@@ -1,0 +1,150 @@
+{
+  "sri_lanka_leakage": {
+    "facilities": 0,
+    "events": 0,
+    "detections": 0,
+    "status": "PASS"
+  },
+  "southern_samples": [
+    {
+      "name": "SETC Depot",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.0818556,
+      "longitude": 77.5500995
+    },
+    {
+      "name": "SETC Depot",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.0932918,
+      "longitude": 77.5504728
+    },
+    {
+      "name": "Chinna Muttom Harbour",
+      "state": "Tamil N\u0101du",
+      "district": null,
+      "latitude": 8.0974582,
+      "longitude": 77.5628626
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #236418955)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1138711,
+      "longitude": 77.5556856
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #253579423)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1163851,
+      "longitude": 77.5411945
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #253579420)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1166195,
+      "longitude": 77.5422673
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #253744165)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1187936,
+      "longitude": 77.548507
+    },
+    {
+      "name": "Rajiv Gandhi Center for Aquaculture",
+      "state": "National / Unspecified",
+      "district": "Kanniyakumari",
+      "latitude": 8.1215356,
+      "longitude": 77.3578756
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #1041854336)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1244342,
+      "longitude": 77.3165792
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #1041854335)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1254897,
+      "longitude": 77.3131729
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #549752682)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1406139,
+      "longitude": 77.4415433
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #546681191)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.149644,
+      "longitude": 77.2980345
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #235930922)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1521911,
+      "longitude": 77.4916322
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #549780889)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1540648,
+      "longitude": 77.3865151
+    },
+    {
+      "name": "Aswin Plastiks",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1597779,
+      "longitude": 77.4328932
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #705744352)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1605124,
+      "longitude": 77.4329923
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #705744356)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1642292,
+      "longitude": 77.4337735
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #1032969731)",
+      "state": "Tamil N\u0101du",
+      "district": "Tirunelveli",
+      "latitude": 8.1689277,
+      "longitude": 77.6681847
+    },
+    {
+      "name": "Kudankulam Nuclear Power Plant",
+      "state": "Tamil N\u0101du",
+      "district": "Tirunelveli",
+      "latitude": 8.1725383,
+      "longitude": 77.7055336
+    },
+    {
+      "name": "Designated Industrial Park / Estate (Way #1038390611)",
+      "state": "Tamil N\u0101du",
+      "district": "Kanniyakumari",
+      "latitude": 8.1736774,
+      "longitude": 77.5418874
+    }
+  ]
+}

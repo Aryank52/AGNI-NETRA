@@ -428,7 +428,20 @@ def get_industrial_facilities_geojson(
                thermal_activity_status
         FROM industrial_facilities
         WHERE {where_sql}
-        ORDER BY firms_detections_1km DESC NULLS LAST
+        ORDER BY 
+            COALESCE(firms_detections_1km, 0) DESC,
+            CASE 
+                WHEN length(id) = 36 THEN 1
+                WHEN source = 'PROMOTED_CANDIDATE' THEN 2
+                WHEN source = 'CEA' THEN 3
+                WHEN cea_project_name IS NOT NULL THEN 4
+                WHEN plant_capacity IS NOT NULL THEN 5
+                WHEN environmental_clearance_present = 1 THEN 6
+                WHEN id LIKE 'osm_relation_%' THEN 7
+                WHEN id LIKE 'osm_way_%' THEN 8
+                ELSE 9
+            END ASC,
+            id ASC
         LIMIT :limit;
     """
 
@@ -503,6 +516,18 @@ def get_power_stations_geojson(
                firms_detections_1km
         FROM industrial_facilities
         WHERE {where_sql}
+        ORDER BY 
+            COALESCE(firms_detections_1km, 0) DESC,
+            CASE 
+                WHEN length(id) = 36 THEN 1
+                WHEN source = 'CEA' THEN 2
+                WHEN cea_project_name IS NOT NULL THEN 3
+                WHEN plant_capacity IS NOT NULL THEN 4
+                WHEN id LIKE 'osm_relation_%' THEN 5
+                WHEN id LIKE 'osm_way_%' THEN 6
+                ELSE 7
+            END ASC,
+            id ASC
         LIMIT :limit;
     """
     rows = db.execute(text(query_sql), params).fetchall()
@@ -647,6 +672,14 @@ def get_mining_geojson(
                        firms_detections_1km, latitude, longitude
                 FROM industrial_facilities
                 WHERE {where_ind_sql}
+                ORDER BY 
+                    COALESCE(firms_detections_1km, 0) DESC,
+                    CASE 
+                        WHEN id LIKE 'osm_relation_%' THEN 1
+                        WHEN id LIKE 'osm_way_%' THEN 2
+                        ELSE 3
+                    END ASC,
+                    id ASC
                 LIMIT :limit;
             """), params_ind).fetchall()
 

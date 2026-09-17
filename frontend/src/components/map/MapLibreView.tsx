@@ -38,8 +38,8 @@ const STATE_CENTROIDS: Record<string, { center: [number, number]; zoom: number }
   Bihar: { center: [85.3131, 25.0961], zoom: 7.0 },
   Assam: { center: [92.9376, 26.2006], zoom: 7.0 },
   Haryana: { center: [76.0856, 29.0588], zoom: 7.2 },
-  India: { center: [79.5, 22.0], zoom: 4.6 },
-  ALL: { center: [79.5, 22.0], zoom: 4.6 },
+  India: { center: [80.5, 22.0], zoom: 4.15 },
+  ALL: { center: [80.5, 22.0], zoom: 4.15 },
 };
 
 export default function MapLibreView({
@@ -87,16 +87,33 @@ export default function MapLibreView({
     m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
     m.on("load", () => {
+      m.resize();
       setMapLoaded(true);
       setupGisLayers(m);
     });
 
     map.current = m;
+    if (typeof window !== "undefined") {
+      (window as any)._map = m;
+    }
 
     return () => {
+      if (typeof window !== "undefined" && (window as any)._map === m) {
+        (window as any)._map = null;
+      }
       m.remove();
       map.current = null;
     };
+  }, []);
+
+  // Handle container resizing (e.g. responsive layout changes, sidebar collapse)
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    const resizeObserver = new ResizeObserver(() => {
+      map.current?.resize();
+    });
+    resizeObserver.observe(mapContainer.current);
+    return () => resizeObserver.disconnect();
   }, []);
 
   // 2. Setup PostGIS GeoJSON Sources & Layers
@@ -390,30 +407,6 @@ export default function MapLibreView({
       .then((data) => {
         if (m.getSource("lulc")) {
           (m.getSource("lulc") as maplibregl.GeoJSONSource).setData(data);
-        }
-      })
-      .catch(() => {});
-
-    fetchApi<any>("/gis/industrial-facilities?limit=400")
-      .then((data) => {
-        if (m.getSource("industrial_facilities")) {
-          (m.getSource("industrial_facilities") as maplibregl.GeoJSONSource).setData(data);
-        }
-      })
-      .catch(() => {});
-
-    fetchApi<any>("/gis/power-stations?limit=200")
-      .then((data) => {
-        if (m.getSource("power_stations")) {
-          (m.getSource("power_stations") as maplibregl.GeoJSONSource).setData(data);
-        }
-      })
-      .catch(() => {});
-
-    fetchApi<any>("/gis/mining?limit=200")
-      .then((data) => {
-        if (m.getSource("mining")) {
-          (m.getSource("mining") as maplibregl.GeoJSONSource).setData(data);
         }
       })
       .catch(() => {});
