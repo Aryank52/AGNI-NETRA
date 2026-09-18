@@ -95,6 +95,17 @@ def test_end_to_end_geospatial_pipeline():
         assert result["events_created"] >= 1
         assert result["detections_stored"] == 3
     finally:
+        try:
+            # Clean up test pipeline detections and events
+            test_dets = db.query(ThermalDetection).filter(ThermalDetection.source == "TEST_VIIRS_PIPELINE").all()
+            evt_ids = [d.event_id for d in test_dets if d.event_id]
+            if test_dets:
+                db.query(ThermalDetection).filter(ThermalDetection.id.in_([d.id for d in test_dets])).delete(synchronize_session=False)
+            if evt_ids:
+                db.query(ThermalEvent).filter(ThermalEvent.id.in_(evt_ids)).delete(synchronize_session=False)
+            db.commit()
+        except Exception:
+            db.rollback()
         db.close()
 
 

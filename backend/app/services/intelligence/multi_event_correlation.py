@@ -332,9 +332,14 @@ class MultiEventCorrelationEngine:
             if not val:
                 return datetime.now(timezone.utc)
             if isinstance(val, datetime):
+                if val.tzinfo is None:
+                    return val.replace(tzinfo=timezone.utc)
                 return val
             try:
-                return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+                dt = datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt
             except Exception:
                 return datetime.now(timezone.utc)
 
@@ -479,7 +484,13 @@ class MultiEventCorrelationEngine:
                 fs = e.get("first_seen")
                 if fs:
                     try:
-                        timestamps.append(datetime.fromisoformat(str(fs).replace("Z", "+00:00")))
+                        if isinstance(fs, datetime):
+                            ts = fs if fs.tzinfo else fs.replace(tzinfo=timezone.utc)
+                        else:
+                            ts = datetime.fromisoformat(str(fs).replace("Z", "+00:00"))
+                            if ts.tzinfo is None:
+                                ts = ts.replace(tzinfo=timezone.utc)
+                        timestamps.append(ts)
                     except Exception:
                         pass
             if timestamps:
