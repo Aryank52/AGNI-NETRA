@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Float, Integer, BigInteger, Boolean, DateTime, ForeignKey, Text, JSON, Enum
+    Column, String, Float, Integer, BigInteger, Boolean, DateTime, ForeignKey, Text, JSON, Enum, Index
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
@@ -553,6 +553,8 @@ class ThermalEvent(Base):
     country = Column(String(100), default="India")
     jurisdiction = Column(String(100), nullable=True)
     status = Column(String(50), default="ACTIVE")            # ACTIVE, DORMANT, RESOLVED
+    lifecycle_state = Column(String(50), default="OBSERVED", index=True)
+    is_simulation = Column(Boolean, default=False, index=True)
     is_demo = Column(Boolean, default=False)
     
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -586,9 +588,13 @@ class ThermalDetection(Base):
     frp = Column(Float, default=0.0)
     confidence = Column(Float, default=0.0)      # 0 to 100
     day_night = Column(String(1), default="D")   # D or N
-    event_id = Column(String(36), ForeignKey("thermal_events.id"), nullable=True)
+    event_id = Column(String(36), ForeignKey("thermal_events.id"), index=True, nullable=True)
     raw_metadata = Column(JSON, default=dict)
     is_demo = Column(Boolean, default=False)
+
+    __table_args__ = (
+        Index("ix_thermal_detections_lat_lon_ts", "latitude", "longitude", "acq_timestamp"),
+    )
 
     event = relationship("ThermalEvent", back_populates="detections")
 
@@ -1703,3 +1709,21 @@ class HistoricalIncident(Base):
 
     facility = relationship("IndustrialFacility", backref="historical_incidents")
 
+
+class IncidentLifecycleTransitionRecord(Base):
+    """
+    Persistent, immutable audit ledger of all incident lifecycle state transitions.
+    Tracks state progression from OBSERVED through to REQUIRES_HUMAN_VERIFICATION / RESOLVED.
+    """
+    __tablename__ = "incident_lifecycle_transitions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    event_id = Column(String(100), index=True, nullable=False)
+    incident_id = Column(String(100), index=True, nullable=True)
+    from_state = Column(String(50), nullable=True)
+    to_state = Column(String(50), index=True, nullable=False)
+    subsystem = Column(String(100), nullable=False)
+    rationale = Column(Text, nullable=False)
+    correlation_id = Column(String(100), index=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    meta_info = Column(JSON, default=dict)

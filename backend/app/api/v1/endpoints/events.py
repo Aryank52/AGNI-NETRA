@@ -605,3 +605,52 @@ def get_canonical_event_intelligence(
     canonical = canonical_event_service.get_canonical_event(db, event)
     return canonical.model_dump()
 
+
+@router.get("/{event_id}/lifecycle")
+def get_event_lifecycle_history(
+    event_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves the immutable, auditable lifecycle transition history for a thermal event.
+    Returns current lifecycle state and sequential transitions recorded across the
+    proactive intelligence event engine.
+    """
+    from backend.app.services.autonomous_intelligence_service import autonomous_intelligence_core
+
+    event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
+    if not event:
+        event = db.query(ThermalEvent).filter(ThermalEvent.event_code == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Thermal event '{event_id}' not found.")
+
+    transitions = autonomous_intelligence_core.get_lifecycle_history(event.event_code, db=db)
+    if not transitions and event.id != event.event_code:
+        transitions = autonomous_intelligence_core.get_lifecycle_history(event.id, db=db)
+
+    return {
+        "event_id": event.id,
+        "event_code": event.event_code,
+        "current_lifecycle_state": event.lifecycle_state or "OBSERVED",
+        "is_simulation": event.is_simulation,
+        "is_demo": event.is_demo,
+        "status": event.status,
+        "transition_count": len(transitions),
+        "transitions": [
+            {
+                "transition_id": t.transition_id,
+                "event_id": t.event_id,
+                "incident_id": t.incident_id,
+                "from_state": t.from_state.value if t.from_state else None,
+                "to_state": t.to_state.value if t.to_state else str(t.to_state),
+                "subsystem": t.subsystem,
+                "rationale": t.rationale,
+                "correlation_id": t.correlation_id,
+                "timestamp": t.timestamp,
+                "metadata": t.metadata
+            }
+            for t in transitions
+        ]
+    }
+
+
