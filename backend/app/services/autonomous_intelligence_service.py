@@ -633,8 +633,14 @@ class AutonomousIntelligenceCore:
             db.add(alert_obj)
 
             t_db_start = time.perf_counter()
-            db.commit()
+            try:
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to commit autonomous event {evt_code} transaction: {e}", exc_info=True)
+                continue
             db_commit_duration_ms += (time.perf_counter() - t_db_start) * 1000.0
+
 
             why_it_matters = (
                 f"New thermal event {evt_code} detected in {district}, {state}. "
