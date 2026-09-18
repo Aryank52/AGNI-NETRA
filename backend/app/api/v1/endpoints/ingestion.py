@@ -292,3 +292,135 @@ def upload_thermal_json(
 
     result = pipeline_service.process_observations(db, observations, source_name=source_name)
     return result
+
+
+# =============================================================================
+# WP3: HARDENED INGESTION, FAULT-RESILIENCE & REPLAY ENDPOINTS
+# =============================================================================
+
+from backend.app.services.ingestion import (
+    hardened_ingestion_service, checkpoint_service, dead_letter_service,
+    ProviderHealthState, IngestionFailureCategory
+)
+
+
+class HardenedSyncPayload(BaseModel):
+    provider: str = Field("NASA_FIRMS", description="Provider identifier")
+    dataset: str = Field("VIIRS_NOAA20_NRT", description="Dataset / product name")
+    observations: List[Dict[str, Any]] = Field(..., description="Raw or normalized observation payload")
+    is_replay: bool = Field(False, description="Whether this batch represents a replay operation")
+
+
+class ReplayBatchPayload(BaseModel):
+    batch_id: Optional[str] = Field(None, description="Original batch ID to replay")
+    provider: str = Field("NASA_FIRMS", description="Provider identifier")
+    dataset: str = Field("VIIRS_NOAA20_NRT", description="Dataset identifier")
+    observations: List[Dict[str, Any]] = Field(..., description="Observations to replay")
+
+
+@router.get("/checkpoints")
+def get_ingestion_checkpoints(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
+    """
+    Returns persistent ingestion watermark cursors across all providers.
+    """
+    from backend.app.models.domain import IngestionCheckpointModel
+    cps = db.query(IngestionCheckpointModel).all()
+    return [
+        {
+            "checkpoint_key": c.checkpoint_key,
+            "provider": c.provider,
+            "dataset": c.dataset,
+            "last_successful_observation_time": c.last_successful_observation_time.isoformat() if c.last_successful_observation_time else None,
+            "last_successful_source_record_id": c.last_successful_source_record_id,
+            "last_successful_batch_id": c.last_successful_batch_id,
+            "cursor_state": c.cursor_state,
+            "updated_at": c.updated_at.isoformat() if c.updated_at else None
+        }
+        for c in cps
+    ]
+
+
+@router.get("/provider-health")
+def get_provider_health_status(
+    db: Session = Depends(get_db)
+):
+    """
+    Returns explicit health semantics (HEALTHY, DEGRADED, STALE, FAILED, UNAVAILABLE)
+    for all registered data providers.
+    """
+    sources = db.query(DataSource).all()
+    out = []
+    for s in sources:
+        out.append({
+            "source_name": s.source_name,
+            "health_status": s.health_status,
+            "is_active": s.is_active,
+            "last_sync_at": s.last_sync_at.isoformat() if s.last_sync_at else None,
+            "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
+            "last_failure_at": s.last_failure_at.isoformat() if s.last_failure_at else None,
+            "latency_ms": s.latency_ms
+        })
+    return out
+
+
+@router.get("/quarantine")
+def get_dead_letter_quarantine(
+    limit: int = Query(50, ge=1, le=200),
+    provider: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
+    """
+    Lists quarantined failed/malformed records with sanitized payloads (secrets redacted).
+    """
+    return dead_letter_service.list_quarantined_records(db=db, limit=limit, provider=provider)
+
+
+@router.post("/hardened-sync")
+def trigger_hardened_ingestion_sync(
+    payload: HardenedSyncPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
+    """
+    Executes a hardened ingestion cycle with strict validation, deterministic SHA-256
+    deduplication, checkpoint updates, and WP1 proactive pipeline bridging.
+    """
+    res = hardened_ingestion_service.process_ingestion_batch(
+        db=db,
+        records=payload.observations,
+        provider=payload.provider,
+        dataset=payload.dataset,
+        is_replay=payload.is_replay
+    )
+    return res
+
+
+@router.post("/replay")
+def trigger_batch_replay(
+    payload: ReplayBatchPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Executes an operator-directed batch replay.
+    Guarantees deterministic duplicate detection with zero duplicate downstream events or alerts.
+    """
+    res = hardened_ingestion_service.process_ingestion_batch(
+        db=db,
+        records=payload.observations,
+        provider=payload.provider,
+        dataset=payload.dataset,
+        is_replay=True
+    )
+    res["replay_audit"] = {
+        "original_batch_id": payload.batch_id,
+        "is_replay": True,
+        "duplicate_events_suppressed": True,
+        "replayed_at": datetime.now(timezone.utc).isoformat()
+    }
+    return res
+

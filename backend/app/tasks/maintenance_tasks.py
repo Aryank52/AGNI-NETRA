@@ -39,10 +39,15 @@ def ingest_firms_data(country: str = "IND", days: int = 1):
     return firms_ingestion_job()
 
 
+from backend.app.services.ingestion import (
+    hardened_ingestion_service, checkpoint_service, IngestionFailureCategory, ProviderHealthState
+)
+
+
 @shared_task(name="backend.app.tasks.firms_ingestion_job")
-def firms_ingestion_job():
+def firms_ingestion_job(dataset: str = "VIIRS_NOAA20_NRT", country: str = "IND"):
     """
-    Scheduled NASA FIRMS incremental ingestion job for India.
+    Scheduled NASA FIRMS incremental ingestion job for India using hardened fault-resilient service.
     """
     db: Session = SessionLocal()
     start_time = datetime.now(timezone.utc)
@@ -57,25 +62,51 @@ def firms_ingestion_job():
                 source_name="NASA_FIRMS",
                 adapter_class="FIRMSAdapter",
                 description="NASA FIRMS VIIRS/MODIS Thermal Hotspot Active Feed",
-                health_status="HEALTHY"
+                health_status=ProviderHealthState.HEALTHY.value
             )
             db.add(source_rec)
             db.commit()
             db.refresh(source_rec)
 
-        # Fetch observations
-        observations = firms_adapter.fetch_thermal_observations(country="IND", days=1)
+        # Check durable watermark
+        cp = checkpoint_service.get_checkpoint(db, provider="NASA_FIRMS", dataset=dataset)
+        inc_since = None
+        if cp and cp.get("last_successful_observation_time"):
+            try:
+                inc_since = datetime.fromisoformat(cp["last_successful_observation_time"].replace("Z", "+00:00"))
+            except Exception:
+                inc_since = None
+
+        # Fetch observations with bounded retries and jittered backoff
+        observations = firms_adapter.fetch_thermal_observations(
+            country=country,
+            days=1,
+            sensor=dataset,
+            incremental_since=inc_since
+        )
         records_count = len(observations)
 
         if observations:
-            pipeline_service.process_observations(db, observations, source_name="NASA_FIRMS_VIIRS")
+            batch_result = hardened_ingestion_service.process_ingestion_batch(
+                db=db,
+                records=observations,
+                provider="NASA_FIRMS",
+                dataset=dataset
+            )
+            records_count = batch_result.get("records_valid", 0)
 
         source_rec.last_sync_at = datetime.now(timezone.utc)
-        source_rec.health_status = "HEALTHY" if firms_adapter.api_key else "DEGRADED"
+        source_rec.health_status = (
+            firms_adapter.health_state.value if hasattr(firms_adapter, "health_state")
+            else (ProviderHealthState.HEALTHY.value if firms_adapter.api_key else ProviderHealthState.DEGRADED.value)
+        )
 
     except Exception as e:
         job_status = "FAILED"
         error_msg = str(e)
+        if 'source_rec' in locals() and source_rec:
+            source_rec.health_status = ProviderHealthState.DEGRADED.value
+            source_rec.last_failure_at = datetime.now(timezone.utc)
     finally:
         if 'source_rec' in locals() and source_rec:
             job_record = DataIngestionJob(
