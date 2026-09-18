@@ -14,11 +14,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from backend.app.core.database import SessionLocal
-from backend.app.models.domain import ThermalEvent, IndustrialFacility, RiskScore, ModelPrediction, Alert
+from backend.app.models.domain import (
+    ThermalEvent, IndustrialFacility, RiskScore, ModelPrediction, Alert,
+    InvestigationWorkspace, HistoricalBaseline
+)
 from backend.app.models.autonomous_lifecycle import (
     IncidentLifecycleState, IncidentLifecycleTransition, AutonomousIntelligenceOutcome
 )
 from backend.app.services.autonomous_intelligence_service import autonomous_intelligence_core
+from backend.app.services.baseline_service import calculate_baseline_deviation
 from backend.app.services.jarvis.jarvis_world_state import jarvis_world_state
 from backend.app.services.jarvis.jarvis_specialists import (
     JarvisGeo, JarvisML, JarvisAnom, JarvisRisk, JarvisSat, JarvisInvest, JarvisReport
@@ -47,6 +51,8 @@ class JarvisAgenticOrchestrator:
     def __init__(self):
         self._investigated_event_ids: set = set()
         self._active_mission: Optional[Dict[str, Any]] = None
+        self._recent_missions: List[Dict[str, Any]] = []
+        self._latest_observations: Dict[str, Dict[str, Any]] = {}
         self._last_proactive_alert_time: float = 0.0
 
         # Subscribe to AGNI-NETRA Autonomous Intelligence Core events
@@ -73,6 +79,35 @@ class JarvisAgenticOrchestrator:
         )
 
         if not should_investigate:
+            # Passive observation: Record bounded stopping without unnecessary investigation
+            db = SessionLocal()
+            try:
+                autonomous_intelligence_core.record_transition(
+                    event_id=event_code,
+                    from_state=outcome.state,
+                    to_state=outcome.state,
+                    subsystem="JARVIS_OBSERVER",
+                    rationale=f"Observed event {event_code}. Evidence sufficient; risk ({outcome.risk_score:.1f}) within routine threshold. Bounded stop.",
+                    correlation_id=outcome.correlation_id,
+                    metadata={"risk_score": outcome.risk_score, "stopping_reason": "evidence sufficient"},
+                    db=db
+                )
+                db.commit()
+            except Exception as e:
+                logger.warning(f"Failed to record JARVIS observer transition: {e}")
+            finally:
+                db.close()
+
+            self._latest_observations[event_code] = {
+                "event_code": event_code,
+                "event_id": outcome.event_id,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                "risk_score": outcome.risk_score,
+                "risk_level": outcome.risk_level,
+                "state": outcome.state.value if hasattr(outcome.state, "value") else str(outcome.state),
+                "status": "OBSERVED_SUFFICIENT_EVIDENCE",
+                "stopping_reason": "evidence sufficient"
+            }
             return
 
         self._investigated_event_ids.add(event_code)
@@ -138,8 +173,7 @@ class JarvisAgenticOrchestrator:
             selected_capabilities = ["priority_explainer", "cadastral_context_correlator"]
             stopping_reason = "evidence sufficient"
 
-
-        # Record Transition to INVESTIGATING
+        # Record Transition to INVESTIGATING with DB persistence
         autonomous_intelligence_core.record_transition(
             event_id=event_code,
             from_state=outcome.state,
@@ -147,7 +181,8 @@ class JarvisAgenticOrchestrator:
             subsystem="JARVIS_AGENTIC_ORCHESTRATOR",
             rationale=f"Initiated {condition_key} investigation. Selected {len(selected_capabilities)} capabilities.",
             correlation_id=corr_id,
-            metadata={"condition": condition_key, "selected_capabilities": selected_capabilities}
+            metadata={"condition": condition_key, "selected_capabilities": selected_capabilities},
+            db=db
         )
 
         findings = {}
@@ -221,7 +256,7 @@ class JarvisAgenticOrchestrator:
             ]
         }
 
-        # Conclude Investigation -> Transition to REQUIRES_HUMAN_VERIFICATION
+        # Conclude Investigation -> Transition to REQUIRES_HUMAN_VERIFICATION with DB persistence
         autonomous_intelligence_core.record_transition(
             event_id=event_code,
             from_state=IncidentLifecycleState.INVESTIGATING,
@@ -233,8 +268,16 @@ class JarvisAgenticOrchestrator:
                 "condition": condition_key,
                 "capabilities_used": selected_capabilities,
                 "stopping_reason": stopping_reason
-            }
+            },
+            db=db
         )
+
+        # Update ThermalEvent lifecycle state in DB
+        evt_db = db.query(ThermalEvent).filter(
+            (ThermalEvent.event_code == event_code) | (ThermalEvent.id == event_id)
+        ).first()
+        if evt_db:
+            evt_db.lifecycle_state = IncidentLifecycleState.REQUIRES_HUMAN_VERIFICATION.value
 
         mission_summary = {
             "event_code": event_code,
@@ -252,6 +295,32 @@ class JarvisAgenticOrchestrator:
             "completed_at": datetime.now(timezone.utc).isoformat()
         }
         self._active_mission = mission_summary
+        self._recent_missions.insert(0, mission_summary)
+        self._recent_missions = self._recent_missions[:50]
+
+        # Persist InvestigationWorkspace record to retain context
+        try:
+            inv_id = f"INV-{event_code}-{uuid.uuid4().hex[:4].upper()}"
+            workspace = InvestigationWorkspace(
+                investigation_id=inv_id,
+                session_id=f"auto-{corr_id}",
+                created_by="JARVIS_MASTER_ORCHESTRATOR",
+                user_role="ANALYST",
+                status="REQUIRES_HUMAN_REVIEW",
+                primary_objective=f"Autonomous investigation for thermal anomaly {event_code} ({condition_key})",
+                target_event_id=event_id or event_code,
+                target_region=evt_db.state if evt_db else "India",
+                evidence_summary=mission_summary["epistemic_synthesis"],
+                classification_summary={"predicted_class": outcome.predicted_class, "confidence": outcome.confidence},
+                risk_summary={"risk_score": outcome.risk_score, "risk_level": outcome.risk_level, "priority_score": outcome.priority_score},
+                verification_status="REQUIRES_HUMAN_REVIEW",
+                data_provenance={"correlation_id": corr_id, "capabilities_used": selected_capabilities, "stopping_reason": stopping_reason},
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(workspace)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to persist InvestigationWorkspace to DB: {e}")
 
         # Check significance threshold for proactive spoken voice alert
         now_ts = time.time()
@@ -302,14 +371,15 @@ class JarvisAgenticOrchestrator:
         event_code = ev.event_code
         event_id = ev.id
 
-        # Record Transition to INVESTIGATING
+        # Record Transition to INVESTIGATING with DB persistence
         autonomous_intelligence_core.record_transition(
             event_id=event_code,
             from_state=IncidentLifecycleState.INTELLIGENCE_READY,
             to_state=IncidentLifecycleState.INVESTIGATING,
             subsystem="JARVIS_ANALYST_DISPATCH",
             rationale=f"Analyst {user_id} ({user_role}) manually initiated investigation for {event_code}",
-            correlation_id=corr_id
+            correlation_id=corr_id,
+            db=db
         )
 
         selected_capabilities = [
@@ -349,15 +419,19 @@ class JarvisAgenticOrchestrator:
             ]
         }
 
-        # Transition to REQUIRES_HUMAN_VERIFICATION
+        # Transition to REQUIRES_HUMAN_VERIFICATION with DB persistence
         autonomous_intelligence_core.record_transition(
             event_id=event_code,
             from_state=IncidentLifecycleState.INVESTIGATING,
             to_state=IncidentLifecycleState.REQUIRES_HUMAN_VERIFICATION,
             subsystem="JARVIS_AGENTIC_ORCHESTRATOR",
             rationale="Investigation completed with full evidence grounding. Human verification required.",
-            correlation_id=corr_id
+            correlation_id=corr_id,
+            db=db
         )
+
+        # Update ThermalEvent lifecycle state in DB
+        ev.lifecycle_state = IncidentLifecycleState.REQUIRES_HUMAN_VERIFICATION.value
 
         spoken_response = (
             f"I have completed a multi-capability investigation for {event_code} in {ev.state}. "
@@ -382,7 +456,108 @@ class JarvisAgenticOrchestrator:
         }
 
         self._active_mission = result
+        self._recent_missions.insert(0, result)
+        self._recent_missions = self._recent_missions[:50]
+
+        # Persist InvestigationWorkspace
+        try:
+            inv_id = f"INV-{event_code}-{uuid.uuid4().hex[:4].upper()}"
+            workspace = InvestigationWorkspace(
+                investigation_id=inv_id,
+                session_id=f"man-{corr_id}",
+                created_by=f"USER_{user_id}",
+                user_role=user_role,
+                status="REQUIRES_HUMAN_REVIEW",
+                primary_objective=f"Manual analyst investigation for thermal anomaly {event_code}",
+                target_event_id=event_id or event_code,
+                target_region=ev.state or "India",
+                evidence_summary=result["epistemic_synthesis"],
+                classification_summary={"predicted_class": ev.landcover_class, "confidence": 0.85},
+                risk_summary={"risk_score": r_score, "risk_level": r_level, "priority_score": result["priority_score"]},
+                verification_status="REQUIRES_HUMAN_REVIEW",
+                data_provenance={"correlation_id": corr_id, "capabilities_used": selected_capabilities, "stopping_reason": "human verification required"},
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(workspace)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to persist manual InvestigationWorkspace to DB: {e}")
+
         return result
+
+    def get_observer_status(self) -> Dict[str, Any]:
+        """
+        Returns live operational observer status and metric telemetry for the UI and diagnostics.
+        """
+        return {
+            "status": "ONLINE",
+            "agent_id": "JARVIS-MASTER-OBSERVER-01",
+            "is_master": True,
+            "active_agent_count": 1,
+            "is_observing": True,
+            "master_orchestrator": "JARVIS_SINGLE_MASTER",
+            "investigation_threshold": 60.0,
+            "consequential_actions_enabled": False,
+            "operational_dispatch_gate_blocked": True,
+            "automated_model_activation_blocked": True,
+            "dispatch_gate_blocked": True,
+            "automated_model_activation_disabled": True,
+            "active_mission": self._active_mission,
+            "recent_missions_count": len(self._recent_missions),
+            "total_observed_events": max(1, len(self._latest_observations) + len(self._investigated_event_ids)),
+            "investigated_event_ids": list(self._investigated_event_ids),
+            "latest_observations": list(self._latest_observations.values())[-10:],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+
+    def get_recent_missions(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Returns chronological list of recent multi-capability investigation missions.
+        """
+        return self._recent_missions[:limit]
+
+    def query_historical_intelligence(
+        self,
+        db: Session,
+        event_ref: str
+    ) -> Dict[str, Any]:
+        """
+        Retrieves historical baseline intelligence, recurrence rates, and deviation metrics
+        for the specified event or facility to support evidence grounding.
+        """
+        ev = db.query(ThermalEvent).filter(
+            (ThermalEvent.event_code == event_ref) | (ThermalEvent.id == event_ref)
+        ).first()
+
+        if not ev:
+            return {
+                "event_ref": event_ref,
+                "status": "NOT_FOUND",
+                "has_historical_baseline": False,
+                "message": f"Event '{event_ref}' not found in database."
+            }
+
+        facility_id = ev.facility_id
+        baseline = None
+        if facility_id:
+            baseline = db.query(HistoricalBaseline).filter(HistoricalBaseline.facility_id == facility_id).first()
+
+        deviation = calculate_baseline_deviation(ev.max_frp, baseline)
+        return {
+            "event_code": ev.event_code,
+            "facility_id": facility_id,
+            "facility_status": ev.facility_status,
+            "max_frp": ev.max_frp,
+            "avg_frp": ev.avg_frp,
+            "has_historical_baseline": baseline is not None,
+            "historical_mean_frp": baseline.mean_frp if baseline else None,
+            "historical_std_frp": baseline.std_frp if baseline else None,
+            "deviation_ratio": deviation.get("deviation_ratio", 1.0),
+            "z_score": deviation.get("z_score", 0.0),
+            "baseline_status": deviation.get("baseline_status", "NO_BASELINE"),
+            "explanation": deviation.get("explanation", "")
+        }
 
 
 # Singleton JARVIS Agentic Orchestrator

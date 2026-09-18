@@ -725,3 +725,31 @@ def get_orchestrated_mission(
     Returns the latest governed multi-capability investigation executed by the JARVIS Agentic Orchestrator.
     """
     return jarvis_agentic_orchestrator.get_active_mission()
+
+
+@router.get("/observer/status")
+def get_jarvis_observer_status(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns the real-time operational status of the JARVIS Intelligence Observer,
+    including observation count, investigation threshold, safety gates, and latest observed events.
+    """
+    return jarvis_agentic_orchestrator.get_observer_status()
+
+
+@router.get("/missions")
+def get_jarvis_missions(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns recent governed investigations and missions executed by JARVIS Observer,
+    including evidence provenance, epistemic uncertainty, and recommendation details.
+    """
+    missions = jarvis_agentic_orchestrator.get_recent_missions(limit=limit)
+    return {
+        "count": len(missions),
+        "missions": missions
+    }
+

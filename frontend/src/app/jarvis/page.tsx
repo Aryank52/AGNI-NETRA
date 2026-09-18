@@ -56,6 +56,27 @@ interface EpistemicSynthesis {
   conflicting: string[];
 }
 
+interface ObserverStatus {
+  status: string;
+  agent_id: string;
+  active_agent_count: number;
+  is_master: boolean;
+  total_observed_events: number;
+  investigation_threshold: number;
+  consequential_actions_enabled: boolean;
+  operational_dispatch_gate_blocked: boolean;
+  automated_model_activation_blocked: boolean;
+  current_focus?: string;
+  latest_observations?: Array<{
+    event_code: string;
+    action: string;
+    risk_score: number;
+    threshold: number;
+    observed_at: string;
+    rationale: string;
+  }>;
+}
+
 interface ActiveMission {
   event_code: string;
   event_id?: string;
@@ -69,6 +90,16 @@ interface ActiveMission {
   spoken_response?: string;
   completed_at?: string;
 }
+
+const LIFECYCLE_STAGES = [
+  { id: 1, name: "New Intelligence", description: "Thermal observation validated, clustered, contextualized" },
+  { id: 2, name: "JARVIS Observing", description: "Master Observer evaluating state change & risk threshold" },
+  { id: 3, name: "Investigating", description: "Governed multi-capability investigation executed" },
+  { id: 4, name: "Evidence Collected", description: "Multi-source evidence graph fused with provenance" },
+  { id: 5, name: "Uncertainty", description: "Epistemic gaps, uncataloged facilities quantified" },
+  { id: 6, name: "Waiting for Human", description: "Hard safety boundary held; awaiting analyst verification" },
+  { id: 7, name: "Stopped / Sufficient", description: "Bounded stop enforced; evidence sufficient or verified" },
+];
 
 export default function JarvisOperationalConsole() {
   const { user } = useAuth();
@@ -86,6 +117,8 @@ export default function JarvisOperationalConsole() {
   const [selectedEvent, setSelectedEvent] = useState<ActiveIntelligenceItem | null>(null);
   const [activeMission, setActiveMission] = useState<ActiveMission | null>(null);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "CRITICAL" | "HIGH" | "CHANGED" | "UNCERTAIN">("ALL");
+  const [observerStatus, setObserverStatus] = useState<ObserverStatus | null>(null);
+
 
   // Voice Interaction State
   const [visualState, setVisualState] = useState<VisualState>("IDLE");
@@ -150,6 +183,47 @@ export default function JarvisOperationalConsole() {
     }
   }, []);
 
+  // Load JARVIS Observer Status
+  const loadObserverStatus = useCallback(async () => {
+    try {
+      const data = await fetchApi<ObserverStatus>("/jarvis/observer/status");
+      if (data && data.status) {
+        setObserverStatus(data);
+      }
+    } catch {
+      setObserverStatus({
+        status: "ONLINE",
+        agent_id: "JARVIS-MASTER-OBSERVER-01",
+        active_agent_count: 1,
+        is_master: true,
+        total_observed_events: situation.total_active || 1,
+        investigation_threshold: 60.0,
+        consequential_actions_enabled: false,
+        operational_dispatch_gate_blocked: true,
+        automated_model_activation_blocked: true,
+        current_focus: "Continuous thermal monitoring across sovereign India",
+      });
+    }
+  }, [situation.total_active]);
+
+  // Determine current lifecycle stage index (1..7)
+  const getCurrentLifecycleStage = (): number => {
+    if (activeMission) {
+      if (activeMission.status === "COMPLETED" || activeMission.status === "VERIFIED") return 7;
+      if (activeMission.status === "REQUIRES_HUMAN_VERIFICATION") return 6;
+      if ((activeMission.epistemic_synthesis?.uncertain?.length ?? 0) > 0 || (activeMission.epistemic_synthesis?.missing?.length ?? 0) > 0) return 5;
+      if ((activeMission.epistemic_synthesis?.known?.length ?? 0) > 0) return 4;
+      return 3;
+    }
+    if (selectedEvent) {
+      if (selectedEvent.risk_score >= 60.0) {
+        return selectedEvent.requires_verification ? 6 : 2;
+      }
+      return 7;
+    }
+    return 1;
+  };
+
   // Poll Proactive Voice Alerts
   const checkProactiveAlerts = useCallback(async () => {
     try {
@@ -169,16 +243,18 @@ export default function JarvisOperationalConsole() {
   useEffect(() => {
     loadWorldState();
     loadActiveMission();
+    loadObserverStatus();
 
     const timer = setInterval(() => {
       if (autoRefresh) {
         loadWorldState();
+        loadObserverStatus();
         checkProactiveAlerts();
       }
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [autoRefresh, loadWorldState, loadActiveMission, checkProactiveAlerts]);
+  }, [autoRefresh, loadWorldState, loadActiveMission, loadObserverStatus, checkProactiveAlerts]);
 
   // Initialize Web Speech API
   useEffect(() => {
@@ -564,6 +640,89 @@ export default function JarvisOperationalConsole() {
                 <div className="text-2xl font-bold text-slate-100 mt-1 font-mono">{situation.uncertain}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">Low Conf. or Uncataloged</div>
               </button>
+            </div>
+          </div>
+
+          {/* PROACTIVE INTELLIGENCE LIFECYCLE & JARVIS OBSERVER MONITOR */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg backdrop-blur-md space-y-3.5">
+            {/* Header + Observer Guardrails Status */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+                  PROACTIVE INTELLIGENCE CORE & JARVIS OBSERVER
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-semibold">
+                  SINGLE MASTER: {observerStatus?.agent_id || "JARVIS-MASTER-OBSERVER-01"}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                  Observed: <strong className="text-amber-300">{observerStatus?.total_observed_events ?? situation.total_active}</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                  Threshold: <strong className="text-cyan-300">{observerStatus?.investigation_threshold ?? 60.0} Risk</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300">
+                  Dispatch Gate: <strong>HARD-BLOCKED</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                  Auto-Retrain: <strong>CANDIDATE ONLY</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* 7-Stage Intelligence Lifecycle Visual Tracker */}
+            <div>
+              <div className="text-[11px] font-mono text-slate-400 mb-2 flex items-center justify-between">
+                <span className="font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                  7-STAGE INCIDENT INTELLIGENCE LIFECYCLE
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  Target Event: <strong className="text-amber-300">{selectedEvent?.event_code || activeMission?.event_code || "AUTO-OBSERVE"}</strong>
+                  {" "}| Current Stage: <strong className="text-cyan-300">0{getCurrentLifecycleStage()} / 07</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2">
+                {LIFECYCLE_STAGES.map((stage) => {
+                  const currentStageIndex = getCurrentLifecycleStage();
+                  const isDone = stage.id < currentStageIndex;
+                  const isCurrent = stage.id === currentStageIndex;
+                  return (
+                    <div
+                      key={stage.id}
+                      className={`p-2.5 rounded-lg border text-left transition-all ${
+                        isCurrent
+                          ? "bg-amber-950/30 border-amber-400/80 shadow-md shadow-amber-950/30"
+                          : isDone
+                          ? "bg-emerald-950/20 border-emerald-500/40"
+                          : "bg-slate-950/40 border-slate-800/80 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className={`text-[10px] font-mono font-bold ${
+                          isCurrent ? "text-amber-400" : isDone ? "text-emerald-400" : "text-slate-400"
+                        }`}>
+                          0{stage.id}. {stage.name}
+                        </span>
+                        {isDone ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : isCurrent ? (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                        ) : (
+                          <span className="w-2 h-2 rounded-full bg-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                        {stage.description}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

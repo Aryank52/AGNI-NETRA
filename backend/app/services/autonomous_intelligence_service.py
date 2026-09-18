@@ -88,12 +88,15 @@ class AutonomousIntelligenceCore:
         to_state: IncidentLifecycleState,
         subsystem: str,
         rationale: str,
-        correlation_id: str,
+        correlation_id: Optional[str] = None,
         incident_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         db: Optional[Session] = None
     ) -> IncidentLifecycleTransition:
         """Appends an immutable, audited lifecycle state transition and persists to DB if session provided."""
+        if not correlation_id:
+            correlation_id = f"corr-{uuid.uuid4().hex[:8]}"
+
         trans = IncidentLifecycleTransition(
             event_id=event_id,
             incident_id=incident_id,
@@ -218,9 +221,17 @@ class AutonomousIntelligenceCore:
             else:
                 obs_dict = vars(obs) if hasattr(obs, "__dict__") else {}
 
-            lat = float(obs_dict.get("latitude", 0.0))
-            lon = float(obs_dict.get("longitude", 0.0))
-            frp = float(obs_dict.get("frp", 0.0) or 0.0)
+            try:
+                lat_raw = obs_dict.get("latitude")
+                lon_raw = obs_dict.get("longitude")
+                if lat_raw is None or lon_raw is None:
+                    continue
+                lat = float(lat_raw)
+                lon = float(lon_raw)
+                frp = float(obs_dict.get("frp", 0.0) or 0.0)
+            except (ValueError, TypeError):
+                continue
+
             acq_ts = obs_dict.get("acq_timestamp") or datetime.now(timezone.utc).isoformat()
             sensor = str(obs_dict.get("sensor", "VIIRS"))
 
@@ -233,6 +244,7 @@ class AutonomousIntelligenceCore:
             fp = f"{sensor}:{lat:.4f}:{lon:.4f}:{acq_ts}"
             if fp in self._processed_fingerprints:
                 continue
+
             self._processed_fingerprints.add(fp)
 
             valid_detections.append({
