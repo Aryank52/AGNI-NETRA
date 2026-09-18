@@ -4,7 +4,7 @@ from celery import shared_task
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import SessionLocal
-from backend.app.models.domain import DataSource, DataIngestionJob, ThermalEvent, IndustrialFacility
+from backend.app.models.domain import DataSource, DataIngestionJob, ThermalEvent, IndustrialFacility, HistoricalBaseline
 from data_pipeline.adapters.firms_adapter import firms_adapter
 from data_pipeline.adapters.osm_adapter import osm_adapter
 from data_pipeline.adapters.cea_adapter import cea_adapter
@@ -14,8 +14,9 @@ from data_pipeline.adapters.landsat_adapter import landsat_adapter
 from data_pipeline.adapters.mosdac_adapter import mosdac_adapter
 from backend.app.services.facility_resolver import facility_resolver
 from backend.app.services.pipeline_service import pipeline_service
-from backend.app.services.baseline_service import calculate_baseline_deviation
+from backend.app.services.baseline_service import calculate_baseline_deviation, calculate_facility_baseline
 from backend.app.services.anomaly_service import detect_thermal_anomalies
+from backend.app.services.alert_workflow_service import alert_workflow_service
 
 
 @shared_task(name="backend.app.tasks.system_heartbeat")
@@ -133,12 +134,27 @@ def satellite_catalog_job():
 @shared_task(name="backend.app.tasks.baseline_update_job")
 def baseline_update_job():
     """
-    Updates 90-day cell and facility historical baselines.
+    Updates empirical thermal baselines across industrial facilities with associated thermal events.
     """
     db: Session = SessionLocal()
     try:
-        events = db.query(ThermalEvent).all()
-        return {"status": "SUCCESS", "events_evaluated": len(events)}
+        facilities_with_events = db.query(IndustrialFacility).join(
+            ThermalEvent, ThermalEvent.facility_id == IndustrialFacility.id
+        ).distinct().all()
+
+        updated_count = 0
+        for fac in facilities_with_events:
+            try:
+                calculate_facility_baseline(db, fac.id)
+                updated_count += 1
+            except Exception:
+                pass
+
+        return {
+            "status": "SUCCESS",
+            "facilities_evaluated": len(facilities_with_events),
+            "baselines_updated": updated_count
+        }
     finally:
         db.close()
 
@@ -146,12 +162,34 @@ def baseline_update_job():
 @shared_task(name="backend.app.tasks.anomaly_analysis_job")
 def anomaly_analysis_job():
     """
-    Executes multivariate Isolation Forest anomaly scoring across all active thermal events.
+    Executes multivariate Isolation Forest and baseline anomaly scoring across all active thermal events.
     """
     db: Session = SessionLocal()
     try:
         events = db.query(ThermalEvent).filter(ThermalEvent.status == "ACTIVE").all()
-        return {"status": "SUCCESS", "active_anomalies_checked": len(events)}
+        anomalies_detected = 0
+        for evt in events:
+            feat_dict = {
+                "frp_avg": evt.avg_frp,
+                "frp_max": evt.max_frp,
+                "frp_variance": evt.frp_variance,
+                "day_night_ratio": 1.0,
+                "persistence_score": 5.0
+            }
+            baseline_stats = None
+            if evt.facility_id:
+                fb = db.query(HistoricalBaseline).filter(HistoricalBaseline.facility_id == evt.facility_id).first()
+                if fb:
+                    baseline_stats = {"mean_frp": fb.mean_frp, "std_frp": fb.std_frp}
+            res = detect_thermal_anomalies(feat_dict, baseline_stats)
+            if res.get("is_anomaly"):
+                anomalies_detected += 1
+
+        return {
+            "status": "SUCCESS",
+            "active_events_checked": len(events),
+            "anomalies_detected": anomalies_detected
+        }
     finally:
         db.close()
 
@@ -159,11 +197,25 @@ def anomaly_analysis_job():
 @shared_task(name="backend.app.tasks.alert_generation_job")
 def alert_generation_job():
     """
-    Evaluates critical threshold breaches and triggers automated agency alert dispatch.
+    Evaluates active thermal events and generates or synchronizes governed operational alerts.
+    Maintains strict production safety invariant: is_operational_dispatch = False permanently.
     """
     db: Session = SessionLocal()
     try:
-        critical_events = db.query(ThermalEvent).filter(ThermalEvent.max_frp >= 150.0).all()
-        return {"status": "SUCCESS", "critical_alerts_evaluated": len(critical_events)}
+        active_events = db.query(ThermalEvent).filter(ThermalEvent.status == "ACTIVE").all()
+        alerts_synced = 0
+        for evt in active_events:
+            try:
+                alert_workflow_service.create_or_update_alert_from_event(db, evt.id)
+                alerts_synced += 1
+            except Exception:
+                pass
+
+        return {
+            "status": "SUCCESS",
+            "events_evaluated": len(active_events),
+            "alerts_synced": alerts_synced
+        }
     finally:
         db.close()
+
