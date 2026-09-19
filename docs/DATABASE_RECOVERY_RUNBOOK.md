@@ -109,7 +109,37 @@ python scripts/verify_backup_recovery.py
 
 ---
 
-## 5. Failure Scenarios & Troubleshooting Matrix
+## 5. Live Isolated Backup & Restore Exercise Results (WP8 Final Pass)
+
+A complete end-to-end backup and restore exercise was conducted using `scripts/execute_real_backup_restore.py` against the PostgreSQL 16 cluster on localhost:5432.
+
+### 5.1 Execution Parameters & Measurements
+- **Backup Utility:** `pg_dump.exe (PostgreSQL 16.15)`
+- **Backup Format:** Custom binary archive (`-Fc`)
+- **Backup Artifact Name:** `database/backups/agni_netra_core_wp8.dump`
+- **Backup Artifact Size:** `7.12 MB (7,461,244 bytes)`
+- **Backup Execution Duration:** `4.10 seconds`
+- **Isolated Target Database:** `agni_netra_isolated_restore_test` (freshly created)
+- **PostGIS Initialization:** PostGIS 3.4.2 extension verified and instantiated
+- **Restore Utility:** `pg_restore.exe (PostgreSQL 16.15)`
+- **Restore Execution Duration:** `13.28 seconds`
+
+### 5.2 Verification Checklist Results
+1. **Critical Tables Restored (9 tables):** `industrial_facilities`, `thermal_events`, `incident_lifecycle_transitions`, `ml_model_registry`, `audit_logs`, `facility_baselines`, `ingestion_batches`, `ingestion_quarantine`, `spatial_ref_sys`.
+2. **PostGIS Geometry Validity:** `SELECT count(*) FROM industrial_facilities WHERE NOT ST_IsValid(geom);` returned **0 invalid geometries** (100% valid).
+3. **Spatial GIST Index Query:** `ST_DWithin` spatial query found **151 facilities within 0.5° of Jamnagar** (functioning spatial index).
+4. **Authoritative Facilities Total:** **35,684 records** (100% match).
+5. **Geolocated Core Facilities:** **35,589 geolocated records** with valid spatial points.
+6. **Provisional Staging Variance:** **95 provisional non-geolocated CEA power station records** (within 114 catalog variance threshold).
+7. **Thermal Events Sample:** **264 records** (100% benchmark snapshot match).
+8. **Lifecycle Transitions:** **10 records** (100% match).
+9. **Model Registry Invariant:** `xgb-v3.0-real-candidate` verified with `status = CANDIDATE`, `is_active = FALSE`, and SHA-256 `c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8`.
+10. **Active Production Champions:** **0 active champions** (strictly complies with governance invariant).
+11. **Cleanup Status:** `agni_netra_isolated_restore_test` dropped cleanly; **zero mutation to live database**.
+
+---
+
+## 6. Failure Scenarios & Troubleshooting Matrix
 
 | Failure Symptom | Root Cause | Remediation Procedure |
 |:---|:---|:---|

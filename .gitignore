@@ -61,8 +61,10 @@ deployment/.env
 *.db
 *.sqlite
 *.sqlite3
+*.dump
 agni_netra.db
 storage_cache/
+database/backups/
 
 # OS & IDE
 .DS_Store

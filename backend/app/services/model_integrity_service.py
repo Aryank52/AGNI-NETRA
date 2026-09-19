@@ -31,7 +31,7 @@ class ModelIntegrityService:
         return hasher.hexdigest()
 
     def get_artifact_checksums(self) -> Dict[str, Any]:
-        """Returns SHA-256 hashes for all production champion artifacts."""
+        """Returns SHA-256 hashes for all governed candidate and baseline model artifacts."""
         artifacts = {
             "model_file": os.path.join(self.model_dir, "xgb_v3_real_candidate.joblib"),
             "calibrator_file": os.path.join(self.model_dir, "xgb_v3_calibrated_candidate.joblib"),

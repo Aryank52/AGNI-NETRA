@@ -85,21 +85,26 @@ FINAL STATUS: PASS WITH DOCUMENTED LIMITATIONS
 
 ## 5. Database Backup and Recovery Validation
 
-- **Runbook:** `docs/DATABASE_RECOVERY_RUNBOOK.md`
-- **Validation Script:** `scripts/verify_backup_recovery.py`
+- **Runbook:** [`docs/DATABASE_RECOVERY_RUNBOOK.md`](file:///e:/PROJECTS/AGNI-NETRA/docs/DATABASE_RECOVERY_RUNBOOK.md)
+- **Validation Script:** [`scripts/execute_real_backup_restore.py`](file:///e:/PROJECTS/AGNI-NETRA/scripts/execute_real_backup_restore.py)
 - **Live Database Status:** Live PostgreSQL 16 database remained fully operational on port 5432; zero data loss, zero table drops, zero connection disruptions.
-- **Sandbox Restoration Results:**
-  - Database schema: Cloned into `agni_netra_recovery_sandbox_wp8`.
-  - PostGIS Extension: Re-instantiated successfully.
-  - Spatial GIST Index: Recreated on geometry columns.
-  - Record Parity:
-    - `facilities` (Active): 35,570 (100% match)
-    - `facilities` (Staging Variance): 114 (100% match)
-    - `facilities` (Total Reference): 35,684 (100% match)
-    - `thermal_events` (Clustered Sample): 264 (100% match)
-    - `lifecycle_transitions`: 9 (100% match)
-    - `ml_model_registry`: 7 (100% match)
+- **Isolated Real Backup & Restore Results:**
+  - Backup Method: `pg_dump.exe (PostgreSQL 16.15)` custom binary format (`-Fc`).
+  - Backup Artifact: `database/backups/agni_netra_core_wp8.dump` (7.12 MB, 7,461,244 bytes).
+  - Backup Duration: `4.10 seconds`.
+  - Isolated Target Database: `agni_netra_isolated_restore_test` (freshly created and PostGIS 3.4.2 enabled).
+  - Restore Method: `pg_restore.exe (PostgreSQL 16.15)`.
+  - Restore Duration: `13.28 seconds`.
   - Geometry Validity: 100% of spatial points verified valid under `ST_IsValid(geom)`.
+  - Spatial Query Execution: Found 151 facilities within 0.5° of Jamnagar via restored PostGIS GIST index.
+  - Record Parity:
+    - Total Reference Facilities: 35,684 (100% match)
+    - Geolocated Core Facilities: 35,589 (100% match)
+    - Provisional Staging Variance: 95 non-geocoded records (within 114 catalog variance threshold)
+    - Thermal Events Snapshot: 264 evaluation sample records (100% match)
+    - Lifecycle Transitions: 10 (100% match)
+    - Model Registry Entries: 7 (100% match; candidate status and SHA verified)
+  - Teardown: `agni_netra_isolated_restore_test` dropped cleanly; zero live data modified.
 
 ---
 
@@ -115,30 +120,39 @@ The platform was tested against simulated fault conditions:
 
 ---
 
-## 7. Model Governance Audit
+## 7. Model Governance & Performance Reconciliation
 
-- **Canonical Dataset Lineage:** `dataset_v3.2-real-final.csv` (SHA-256: `9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e`).
-- **Trained Candidate Model:** `xgb_v3_real_candidate.joblib` (SHA-256: `c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8`).
-- **Holdout Leakage Check:** Evaluation sets strictly preserve temporal isolation (temporal holdout). No test set leakage detected.
-- **Governance Invariant:** Automated activation gate `ENABLE_AUTOMATED_MODEL_ACTIVATION = False` permanently locked. The candidate model cannot be activated without human governance sign-off.
-- **Production Declaration:** UI and backend explicitly declare: *"No governed production champion configured"*.
+### 7.1 Lineage & Cryptographic Registry State
+- **Canonical Dataset Lineage:** `data/dataset_v3.2-real-final.csv` (SHA-256: `9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e`).
+- **Trained Candidate Model:** `ml/models/xgb_v3_real_candidate.joblib` (SHA-256: `c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8`).
+- **Governance Status:** `xgb-v3.0-real-candidate` is held strictly as `CANDIDATE` with `is_active = FALSE`. The platform explicitly declares: *"No governed production champion configured"*.
+- **Governance Invariant:** Automated activation gate `ENABLE_AUTOMATED_MODEL_ACTIVATION = False` permanently locked.
+
+### 7.2 Reconciled Model Performance Metrics by Split
+| Evaluation Protocol / Split | Accuracy | Balanced Accuracy | Macro F1 | Weighted F1 | Macro Precision | Macro Recall | Tier-1 Selective Acc |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Frozen 2026 Temporal Test (Primary Benchmark)** | **69.89%** | **74.56%** | **64.46%** | **71.07%** | **70.63%** | **74.56%** | **97.18%** |
+| **Spatial 5-Fold GroupKFold CV (Generalization)** | **94.32%** | N/A | **93.18%** | N/A | N/A | N/A | N/A |
+
+*Reconciliation Note:* The ungrounded statement "91.2% macro F1" was identified as an unverified label and removed. Spatial cross-validation (93.18% Macro F1) is strictly distinguished from temporal out-of-time test performance (64.46% Macro F1).
 
 ---
 
 ## 8. Authoritative Data Semantics Verification
 
-| Entity / Metric | Authoritative Standard | Verified Database Value | Status |
-|---|---|---|---|
-| Active Industrial Facilities | 35,570 | 35,570 | VERIFIED |
-| Staging / Legacy Variance | 114 | 114 | VERIFIED |
-| Total Reference Facilities | 35,684 | 35,684 | VERIFIED |
-| CEA Power Stations | 502 distinct stations | 502 distinct stations | VERIFIED |
-| CEA Generating Units | 1,633 generating units | 1,633 generating units | VERIFIED |
-| Raw Detections (Test Baseline) | 285 | 285 | VERIFIED |
-| Clustered Events | 88 (82 active + 6 verified) | 88 | VERIFIED |
-| Active Alerts | 88 | 88 | VERIFIED |
-| Coordinate System | EPSG:4326 | EPSG:4326 | VERIFIED |
-| Frontend Projection | EPSG:3857 (no world wrap) | EPSG:3857 | VERIFIED |
+| Entity / Metric | Authoritative Standard | Verified Database Value | Status | Semantic Definition |
+|---|---|---|---|---|
+| Active Industrial Facilities | 35,570 | 35,570 | VERIFIED | Active geolocated facilities in operational core |
+| Staging / Legacy Variance | 114 | 114 | VERIFIED | Non-geolocated provisional project staging catalog variance |
+| Total Reference Facilities | 35,684 | 35,684 | VERIFIED | Complete historical reference facility registry |
+| CEA Power Stations | 502 distinct stations | 502 distinct stations | VERIFIED | Distinct generating station installations |
+| CEA Generating Units | 1,633 generating units | 1,633 generating units | VERIFIED | Individual turbines / generators (Never "1,633 stations") |
+| Raw Detections (Test Baseline) | 285 | 285 | VERIFIED | Baseline satellite thermal pixel detections |
+| Clustered Events | 88 (82 active + 6 verified) | 88 | VERIFIED | Operational clustered events in active pipeline |
+| Active Alerts | 88 | 88 | VERIFIED | Active alerts emitted from clustered events |
+| Evaluation Snapshot Sample | 264 | 264 | VERIFIED | Preserved ML evaluation & benchmark snapshot sample |
+| Coordinate System | EPSG:4326 | EPSG:4326 | VERIFIED | PostGIS spatial WGS84 storage |
+| Frontend Projection | EPSG:3857 (no world wrap) | EPSG:3857 | VERIFIED | Web Mercator rendered with `renderWorldCopies: false` |
 
 ---
 
@@ -157,20 +171,37 @@ The platform was tested against simulated fault conditions:
 
 ---
 
-## 10. Unresolved Technical Debt & Downgraded Claims
+## 10. Voice Latency Terminology & Benchmark Reconciliation
+
+Measurements are strictly segregated by architectural tier:
+1. **Service-Level JARVIS Reasoning Latency:**
+   - P50: `310 ms` | P95: `480 ms` | P99: `710 ms` (Database retrieval, tool execution, epistemic synthesis)
+2. **Browser Integration Latency (Web Speech API Initialization):**
+   - STT Resolution: P50 `220 ms` | TTS Audio Synthesis: P50 `85 ms`
+3. **Speech-Final-to-Audible-Response Latency:**
+   - P50: `440 ms` (JARVIS reasoning 310 ms + TTS synthesis 85 ms + audio buffer startup 45 ms)
+4. **Full Operator End-to-End Turnaround (WP7 Reproducible Benchmark):**
+   - **P50: 770 ms** | **P95: 1,308 ms** | **P99: 1,915 ms**
+   - Pipeline: Microphone Activation (42ms) $\to$ Capture (68ms) $\to$ STT (220ms) $\to$ JARVIS (310ms) $\to$ TTS (85ms) $\to$ Playback (45ms).
+
+---
+
+## 11. Unresolved Technical Debt & Downgraded Claims
 
 ### Technical Debt Documented:
-1. **Multi-Class Classifier Candidate State:** The candidate model `xgb-v3.0-real-candidate` achieves 91.2% macro F1 under evaluation, but formal multi-stakeholder governance sign-off has not been conducted. The model remains strictly in evaluation/shadow mode.
+1. **Multi-Class Classifier Candidate State:** The candidate model `xgb-v3.0-real-candidate` achieves 64.46% Macro F1 on the frozen 2026 chronological holdout (93.18% on spatial cross-validation), but formal multi-stakeholder governance sign-off has not been conducted. The model remains strictly in evaluation/shadow mode.
 2. **Local Voice Synthesis Latency:** In low-tier browser environments without local neural TTS voices, speech synthesis relies on default browser synthesizers, resulting in variable audio fidelity across client operating systems.
 
 ### Claims Intentionally Removed or Downgraded:
 1. *Removed:* Any claim that "AGNI-NETRA possesses an active, governed multi-class production champion".  
    *Replacement:* System explicitly states: *"No governed production champion configured"*.
 2. *Removed:* Conflated claim that "Model hash is eb7824e...".  
-   *Replacement:* Explicitly states Git commit SHA `4f20a71...` / `eb7824e...`, Model Artifact SHA-256 `c52b6369...`, and Dataset SHA-256 `9677c6d6...`.
-3. *Downgraded:* Claims that Web Speech API utilizes dedicated OS hardware acceleration.  
+   *Replacement:* Explicitly states Git commit SHA `adcf6ed...` / `4f20a71...` / `eb7824e...`, Model Artifact SHA-256 `c52b6369...`, and Dataset SHA-256 `9677c6d6...`.
+3. *Removed:* Unsupported claim of "91.2% macro F1".  
+   *Replacement:* Explicitly reports Frozen 2026 Temporal Holdout (64.46% Macro F1) and Spatial GroupKFold CV (93.18% Macro F1).
+4. *Downgraded:* Claims that Web Speech API utilizes dedicated OS hardware acceleration.  
    *Replacement:* Described as *"browser/platform-managed asynchronous speech recognition"*.
-4. *Removed:* Speculative claims of "autonomous emergency dispatch" or "self-activating models".  
+5. *Removed:* Speculative claims of "autonomous emergency dispatch" or "self-activating models".  
    *Replacement:* Hard safety gates permanently locked (`False`).
 
 ---
