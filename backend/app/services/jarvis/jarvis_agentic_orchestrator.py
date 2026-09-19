@@ -300,7 +300,7 @@ class JarvisAgenticOrchestrator:
 
         # Persist InvestigationWorkspace record to retain context
         try:
-            inv_id = f"INV-{event_code}-{uuid.uuid4().hex[:4].upper()}"
+            inv_id = f"INV-{event_code}-{int(time.time()*1000)}-{uuid.uuid4().hex[:6].upper()}"
             workspace = InvestigationWorkspace(
                 investigation_id=inv_id,
                 session_id=f"auto-{corr_id}",
@@ -461,7 +461,7 @@ class JarvisAgenticOrchestrator:
 
         # Persist InvestigationWorkspace
         try:
-            inv_id = f"INV-{event_code}-{uuid.uuid4().hex[:4].upper()}"
+            inv_id = f"INV-{event_code}-{int(time.time()*1000)}-{uuid.uuid4().hex[:6].upper()}"
             workspace = InvestigationWorkspace(
                 investigation_id=inv_id,
                 session_id=f"man-{corr_id}",

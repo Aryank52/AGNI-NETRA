@@ -43,6 +43,20 @@ class JarvisVoiceService:
         cleaned = transcript.strip()
         cmd_lower = cleaned.lower()
 
+        # Security & Sovereign Geographic Validation (WP4 / WP6)
+        from backend.app.services.jarvis.jarvis_reasoning_engine import jarvis_reasoning_engine
+        is_safe, sanitized, reject_err = jarvis_reasoning_engine.validate_and_sanitize_query(cleaned)
+        if not is_safe:
+            spoken_err = f"Request cannot be processed. {reject_err}"
+            return {
+                "transcript": cleaned,
+                "intent": "SECURITY_REJECTION",
+                "response_text": reject_err,
+                "spoken_response": spoken_err,
+                "visual_state": "COMPLETED",
+                "error": reject_err
+            }
+
         # Handle 'Investigate ...' intents
         if any(w in cmd_lower for w in ["investigate", "analyze", "deep dive", "examine"]):
             # Extract state or event reference
