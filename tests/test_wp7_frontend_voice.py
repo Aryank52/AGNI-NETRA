@@ -85,8 +85,12 @@ def test_03_model_provenance_rendering_contract(db_session: Session):
     assert prov["model_id"] == "xgb-v3.0-real-candidate"
     assert prov["model_status"] == "CANDIDATE"
     assert prov["is_active"] is False
-    assert prov["sha256"] == "eb7824e6e58eb61f376a4dadb804984950f624e8"
-    assert "Candidate model strictly in validation" in prov["governance_notice"]
+    assert prov["artifact_sha256"] == "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8"
+    assert prov["dataset_sha256"] == "9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e"
+    # Invariant: Git commit SHA must NEVER be confused with model artifact SHA
+    assert prov["artifact_sha256"] != "eb7824e6e58eb61f376a4dadb804984950f624e8"
+    assert prov["production_champion_status"] == "NO_GOVERNED_PRODUCTION_CHAMPION_CONFIGURED"
+    assert "No governed production champion configured" in prov["governance_notice"]
 
 
 def test_04_evidence_rendering_epistemic_categories(db_session: Session):

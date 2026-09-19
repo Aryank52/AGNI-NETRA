@@ -19,6 +19,7 @@ logger = logging.getLogger("agni_netra.jarvis_voice")
 
 AUTHORITATIVE_DATA_SEMANTICS = {
     "authoritative_active_facilities": 35570,
+    "active_industrial_facilities": 35570,
     "staging_variance": 114,
     "historical_reference_total": 35684,
     "cea_generating_units": 1633,
@@ -32,11 +33,15 @@ MODEL_PROVENANCE_INFO = {
     "model_version": "3.0.0-candidate",
     "model_status": "CANDIDATE",
     "is_active": False,
-    "sha256": "eb7824e6e58eb61f376a4dadb804984950f624e8",
-    "feature_schema": "v3.0-enterprise-50-features",
-    "taxonomy_version": "2025.1",
-    "calibration_version": "isotonic-v1",
-    "governance_notice": "Candidate model strictly in validation. Production inference uses governed champion."
+    "artifact_sha256": "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",
+    "sha256": "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",
+    "dataset_version": "v3.2-real-final",
+    "dataset_sha256": "9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e",
+    "feature_schema": "v3.2",
+    "taxonomy_version": "7-class-v1",
+    "calibration_version": "balanced-platt-v3.0",
+    "production_champion_status": "NO_GOVERNED_PRODUCTION_CHAMPION_CONFIGURED",
+    "governance_notice": "No governed production champion configured. Candidate model xgb-v3.0-real-candidate held under shadow evaluation. Automated activation is permanently blocked."
 }
 
 

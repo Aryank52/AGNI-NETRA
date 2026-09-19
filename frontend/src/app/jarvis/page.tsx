@@ -76,10 +76,14 @@ export interface ModelProvenance {
   model_version: string;
   model_status: "GOVERNED_ACTIVE_CHAMPION" | "CANDIDATE" | "RETIRED" | "REJECTED";
   is_active: boolean;
-  sha256: string;
+  artifact_sha256: string;
+  sha256?: string;
+  dataset_version: string;
+  dataset_sha256: string;
   feature_schema: string;
   taxonomy_version: string;
   calibration_version: string;
+  production_champion_status: string;
   governance_notice: string;
 }
 
@@ -138,17 +142,21 @@ const AUTHORITATIVE_DATA_SEMANTICS = {
   cea_power_stations: 502,
 };
 
-// Governed Model Provenance Baseline
+// Governed Model Provenance Baseline (WP8 Hardened)
 const DEFAULT_MODEL_PROVENANCE: ModelProvenance = {
   model_id: "xgb-v3.0-real-candidate",
   model_version: "3.0.0-candidate",
   model_status: "CANDIDATE",
   is_active: false,
-  sha256: "eb7824e6e58eb61f376a4dadb804984950f624e8",
-  feature_schema: "v3.0-enterprise-50-features",
-  taxonomy_version: "2025.1",
-  calibration_version: "isotonic-v1",
-  governance_notice: "Candidate model strictly in validation. Production inference uses governed champion.",
+  artifact_sha256: "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",
+  sha256: "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",
+  dataset_version: "v3.2-real-final",
+  dataset_sha256: "9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e",
+  feature_schema: "v3.2",
+  taxonomy_version: "7-class-v1",
+  calibration_version: "balanced-platt-v3.0",
+  production_champion_status: "NO_GOVERNED_PRODUCTION_CHAMPION_CONFIGURED",
+  governance_notice: "No governed production champion configured. Candidate model xgb-v3.0-real-candidate held under shadow evaluation. Automated activation is permanently blocked.",
 };
 
 const LIFECYCLE_STAGES = [
@@ -920,27 +928,37 @@ export default function JarvisOperationalConsole() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-300">
                   <div>
-                    Model ID: <strong className="text-slate-100">xgb-v3.0-real-candidate</strong>
+                    Model ID: <strong className="text-slate-100">{structuredResponse?.model_provenance?.model_id || DEFAULT_MODEL_PROVENANCE.model_id}</strong>
                   </div>
                   <div>
-                    Active Flag: <strong className="text-rose-400">FALSE (Not Authorized as Champion)</strong>
+                    Active Flag: <strong className="text-rose-400">FALSE (Candidate Only)</strong>
                   </div>
                   <div>
-                    Feature Schema: <strong className="text-slate-100">v3.0-enterprise-50-features</strong>
+                    Production Champion: <strong className="text-amber-300">None Configured</strong>
                   </div>
                   <div>
-                    Taxonomy Version: <strong className="text-slate-100">2025.1</strong>
+                    Feature Schema: <strong className="text-slate-100">{structuredResponse?.model_provenance?.feature_schema || DEFAULT_MODEL_PROVENANCE.feature_schema}</strong>
                   </div>
                   <div>
-                    Calibration: <strong className="text-slate-100">isotonic-v1</strong>
+                    Dataset Version: <strong className="text-slate-100">{structuredResponse?.model_provenance?.dataset_version || DEFAULT_MODEL_PROVENANCE.dataset_version}</strong>
                   </div>
                   <div>
-                    Artifact SHA-256: <code className="text-cyan-300 text-[10px]">eb7824e6e58...</code>
+                    Calibration: <strong className="text-slate-100">{structuredResponse?.model_provenance?.calibration_version || DEFAULT_MODEL_PROVENANCE.calibration_version}</strong>
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    Artifact SHA-256: <code className="text-cyan-300 text-[10px]" title={structuredResponse?.model_provenance?.artifact_sha256 || DEFAULT_MODEL_PROVENANCE.artifact_sha256}>
+                      {(structuredResponse?.model_provenance?.artifact_sha256 || DEFAULT_MODEL_PROVENANCE.artifact_sha256).slice(0, 32)}...
+                    </code>
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    Dataset SHA-256: <code className="text-cyan-300 text-[10px]" title={structuredResponse?.model_provenance?.dataset_sha256 || DEFAULT_MODEL_PROVENANCE.dataset_sha256}>
+                      {(structuredResponse?.model_provenance?.dataset_sha256 || DEFAULT_MODEL_PROVENANCE.dataset_sha256).slice(0, 32)}...
+                    </code>
                   </div>
                 </div>
 
                 <div className="text-[10px] text-amber-400/90 pt-1 border-t border-slate-800/60">
-                  Governed Notice: Candidate model strictly under shadow evaluation. Automated activation is hard-disabled.
+                  Governed Notice: {structuredResponse?.model_provenance?.governance_notice || DEFAULT_MODEL_PROVENANCE.governance_notice}
                 </div>
               </div>
             </div>
