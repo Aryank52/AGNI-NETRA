@@ -1207,3 +1207,173 @@ class HistoricalComparisonOut(BaseModel):
     historical_relationship: str
     answers: Dict[str, str] = Field(default_factory=dict)
 
+
+# ------------------------------------------------------------------------------
+# Proactive Fire Prevention & Root-Cause Intelligence Schemas
+# ------------------------------------------------------------------------------
+
+class RootCauseHypothesisOut(BaseModel):
+    id: str
+    case_id: str
+    category: str
+    title: str
+    description: str
+    status: str
+    confidence_score: float
+    evidence_strength: float
+    supporting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    contradicting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    spatial_relevance: float
+    temporal_relevance: float
+    historical_recurrence: float
+    source_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PreventionRecommendationOut(BaseModel):
+    id: str
+    case_id: str
+    hypothesis_category: Optional[str] = None
+    recommendation: str
+    reason: str
+    supporting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    risk_relevance: str
+    responsible_authority_category: str
+    urgency: str
+    expected_prevention_objective: str
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuthorityDirectoryOut(BaseModel):
+    id: str
+    name: str
+    category: str
+    state: str
+    district: Optional[str] = None
+    jurisdiction: str
+    contact_role: str
+    official_endpoint: Optional[str] = None
+    is_verified: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PreventionCaseOut(BaseModel):
+    id: str
+    case_number: str
+    event_id: Optional[str] = None
+    event_code: Optional[str] = None
+    title: str
+    status: str
+    latitude: float
+    longitude: float
+    state: str
+    district: str
+    subdistrict: Optional[str] = None
+    facility_id: Optional[str] = None
+    facility_name: Optional[str] = None
+    recurrence_score: float
+    persistence_score: float
+    baseline_deviation_ratio: float
+    prevention_priority: str
+    evidence_strength_score: float
+    confidence_score: float
+    summary: Optional[str] = None
+    spatial_context: Dict[str, Any] = Field(default_factory=dict)
+    industrial_context: Dict[str, Any] = Field(default_factory=dict)
+    environmental_context: Dict[str, Any] = Field(default_factory=dict)
+    material_context: Dict[str, Any] = Field(default_factory=dict)
+    agency_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    external_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    unknowns: List[str] = Field(default_factory=list)
+    missing_data: List[str] = Field(default_factory=list)
+    conflicting_sources: List[str] = Field(default_factory=list)
+    human_review_required: bool
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+    hypotheses: List[RootCauseHypothesisOut] = Field(default_factory=list)
+    recommendations: List[PreventionRecommendationOut] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PreventionCaseListOut(BaseModel):
+    total_count: int
+    page: int
+    limit: int
+    total_pages: int
+    items: List[PreventionCaseOut]
+
+
+class PreventionAnalysisRequest(BaseModel):
+    event_ref: str
+    radius_km: float = 15.0
+    include_environmental: bool = True
+
+
+class PreventionReportCreateRequest(BaseModel):
+    case_id: str
+    review_notes: Optional[str] = None
+
+
+class PreventionReportApproveRequest(BaseModel):
+    review_notes: Optional[str] = None
+
+
+class PreventionReportSendRequest(BaseModel):
+    recipient_authority_id: Optional[str] = None
+    recipient_name: str
+    recipient_role: str
+    recipient_organization: str
+    delivery_channel: str = "SECURE_PORTAL"
+    notes: Optional[str] = None
+
+
+class ReportDeliveryAuditOut(BaseModel):
+    id: str
+    report_id: str
+    recipient_authority_id: Optional[str] = None
+    recipient_name: str
+    recipient_role: str
+    recipient_organization: str
+    delivery_channel: str
+    dispatched_by_user_id: str
+    dispatched_by_user_email: str
+    dispatched_by_user_role: str
+    delivery_status: str
+    delivery_timestamp: datetime
+    audit_hash: str
+    notes: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PreventionReportOut(BaseModel):
+    id: str
+    report_number: str
+    case_id: str
+    title: str
+    status: str
+    executive_summary: str
+    sections_data: Dict[str, Any] = Field(default_factory=dict)
+    pdf_path: Optional[str] = None
+    generated_by: str
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    review_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    deliveries: List[ReportDeliveryAuditOut] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+

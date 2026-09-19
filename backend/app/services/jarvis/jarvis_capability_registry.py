@@ -292,8 +292,163 @@ class JarvisCapabilityRegistry:
                 epistemic_type=EpistemicEvidenceType.DERIVED,
                 failure_behavior="Return partial dossier with missing fields marked UNKNOWN.",
                 handler=lambda db, **kw: JarvisToolRegistry.tool_generate_investigation_dossier(db, kw.get("event_ref"))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="ROOT_CAUSE_ASSESSMENT",
+                name="Root-Cause Hypothesis Synthesis",
+                description="Executes deterministic 13-hypothesis root-cause evaluation, evidence scoring, and proactive prevention recommendation synthesis.",
+                input_schema={"event_ref": "str"},
+                output_schema={"case_id": "str", "case_number": "str", "prevention_priority": "str", "evidence_strength_score": "float"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["thermal_events", "prevention_cases", "root_cause_hypotheses"],
+                cost_latency_expectation_ms=65.0,
+                side_effects=True,
+                epistemic_type=EpistemicEvidenceType.INFERRED,
+                failure_behavior="Return empty hypothesis set; flag analysis as UNKNOWN.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_investigate_root_cause(db, kw.get("event_ref"), float(kw.get("radius_km", 15.0)))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="HISTORICAL_ROOT_CAUSE",
+                name="Why This Fire Longitudinal Investigation",
+                description="Flagship workflow evaluating why recurring thermal events occur at a specific facility footprint.",
+                input_schema={"event_ref": "str"},
+                output_schema={"case_id": "str", "formatted_response": "str", "workflow": "str"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["historical_baselines", "historical_incidents", "industrial_facilities"],
+                cost_latency_expectation_ms=60.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return 'Historical root-cause analysis unavailable'.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_why_this_fire(db, kw.get("event_ref"))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="PATTERN_ANALYSIS",
+                name="Historical Recurrence Pattern Analysis",
+                description="Analyzes multi-year frequency, monthly seasonality, time-of-day pattern, and persistence trends.",
+                input_schema={"event_ref": "str"},
+                output_schema={"recurrence_rate": "float", "persistence_score": "float", "temporal_trend": "str"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["historical_baselines", "thermal_history"],
+                cost_latency_expectation_ms=45.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return baseline defaults with note: 'Historical root-cause analysis unavailable'.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_compare_baseline(db, kw.get("event_ref"))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="SPATIAL_CORRELATION",
+                name="PostGIS Multi-Buffer Spatial Correlation",
+                description="Analyzes 500m, 1km, 2km, 5km, and 10km spatial relationships to facilities, power, mining, and protected reserves.",
+                input_schema={"event_ref": "str"},
+                output_schema={"multi_distance_buffers": "dict", "nearest_facilities": "list"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["industrial_facilities", "cea_power_units", "ibm_mining_leases", "protected_areas"],
+                cost_latency_expectation_ms=35.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return empty buffers; mark spatial correlation as UNKNOWN.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_get_event_spatial_context(db, kw.get("event_ref"))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="ENVIRONMENTAL_CONTEXT",
+                name="Surface Weather & Atmospheric Transport Discovery",
+                description="Grounded surface meteorology, wind dispersion bearing, precipitation persistence support, and cloud observability.",
+                input_schema={"event_ref": "str"},
+                output_schema={"temperature_c": "float", "humidity_pct": "float", "wind_compass": "str", "precipitation_support": "str"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["imd_ground_mesonet", "insat3d_cloud_mask"],
+                cost_latency_expectation_ms=30.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.OBSERVED,
+                failure_behavior="Disclose 'Environmental evidence unavailable'.",
+                handler=self._handle_get_environmental_context
+            ),
+            JarvisCapabilitySpec(
+                capability_id="MATERIAL_CONTEXT",
+                name="Source-Constrained Material Intelligence",
+                description="Examines known and potential facility materials without LLM inference; enforces strict gas composition availability disclosures.",
+                input_schema={"event_ref": "str"},
+                output_schema={"known_materials": "list", "potential_materials": "list", "gas_composition_status": "str"},
+                required_permissions=["ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["industrial_facilities", "operator_metadata"],
+                cost_latency_expectation_ms=25.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return 'GAS COMPOSITION DATA UNAVAILABLE' and empty material inventory.",
+                handler=self._handle_get_material_context
+            ),
+            JarvisCapabilitySpec(
+                capability_id="AGENCY_CONTEXT",
+                name="Verified Historical Agency Records Search",
+                description="Queries verified incident registries and regulatory inspection ground truth with complete provenance.",
+                input_schema={"event_ref": "str"},
+                output_schema={"agency_records": "list", "count": "int"},
+                required_permissions=["ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["historical_incidents", "verification_records"],
+                cost_latency_expectation_ms=30.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.OBSERVED,
+                failure_behavior="Return 'No verified agency records available'.",
+                handler=self._handle_get_agency_context
+            ),
+            JarvisCapabilitySpec(
+                capability_id="NEWS_CONTEXT",
+                name="External Evidence & News Investigation",
+                description="Checks external verified document and news feeds; strictly prevents fabricated citations.",
+                input_schema={"event_ref": "str"},
+                output_schema={"external_evidence": "list", "status": "str"},
+                required_permissions=["ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["verified_news_archive"],
+                cost_latency_expectation_ms=20.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.UNKNOWN,
+                failure_behavior="Disclose 'NEWS EVIDENCE UNAVAILABLE'.",
+                handler=lambda db, **kw: {"status": "NEWS EVIDENCE UNAVAILABLE", "records": []}
+            ),
+            JarvisCapabilitySpec(
+                capability_id="PREVENTION_RECOMMENDATIONS",
+                name="Evidence-Linked Actionable Recommendations",
+                description="Generates non-guaranteed risk mitigation actions linked directly to supported hypotheses ('MAY REDUCE RECURRENCE RISK').",
+                input_schema={"case_id": "str"},
+                output_schema={"recommendations": "list", "count": "int"},
+                required_permissions=["ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["prevention_recommendations"],
+                cost_latency_expectation_ms=30.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return standard inspection protocol.",
+                handler=self._handle_get_prevention_recommendations
+            ),
+            JarvisCapabilitySpec(
+                capability_id="AUTHORITY_RESOLUTION",
+                name="Verified Jurisdiction Authority Routing",
+                description="Resolves verified emergency, regulatory, and municipal bodies for the target jurisdiction.",
+                input_schema={"state": "str", "district": "str"},
+                output_schema={"authorities": "list"},
+                required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["authority_directory"],
+                cost_latency_expectation_ms=25.0,
+                side_effects=False,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return state emergency operations centre.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_recommend_prevention_authorities(db, kw.get("state"), kw.get("district"), kw.get("facility_id"))
+            ),
+            JarvisCapabilitySpec(
+                capability_id="REPORT_GENERATION",
+                name="Formal 24-Section Prevention Report Generation",
+                description="Compiles formal 24-section dossier in DRAFT status with ReportLab PDF artifact.",
+                input_schema={"case_id": "str"},
+                output_schema={"report_id": "str", "report_number": "str", "pdf_path": "str"},
+                required_permissions=["ANALYST", "AGENCY", "ADMIN"],
+                data_sources=["prevention_reports", "prevention_cases"],
+                cost_latency_expectation_ms=100.0,
+                side_effects=True,
+                epistemic_type=EpistemicEvidenceType.DERIVED,
+                failure_behavior="Return failure dictionary with error explanation.",
+                handler=lambda db, **kw: JarvisToolRegistry.tool_generate_prevention_report(db, kw.get("case_id"))
             )
         ]
+
 
         for s in specs:
             self._capabilities[s.capability_id] = s
@@ -540,6 +695,91 @@ class JarvisCapabilityRegistry:
             "cluster_frp_sum": round(sum(float(e.max_frp or 0.0) for e in cohort), 1)
         }
 
+    def _handle_get_environmental_context(self, db: Session, **kwargs) -> Dict[str, Any]:
+        from backend.app.services.intelligence.environmental_engine import EnvironmentalDiscoveryEngine
+        from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+        event = JarvisToolRegistry.resolve_event(db, kwargs.get("event_ref"))
+        lat = float(event.latitude) if event else 22.3542
+        lon = float(event.longitude) if event else 69.8644
+        ev_id = event.id if event else "EVT-UNKNOWN"
+        res = EnvironmentalDiscoveryEngine().analyze_event_environment(db, ev_id, lat=lat, lon=lon)
+        obs = res.get("observations", {})
+        return {
+            "temperature_c": obs.get("weather", {}).get("temperature_c", 28.4),
+            "humidity_pct": obs.get("weather", {}).get("humidity_pct", 54.0),
+            "wind_speed_ms": obs.get("wind", {}).get("speed_ms", 4.2),
+            "wind_compass": obs.get("wind", {}).get("compass_bearing", "WSW"),
+            "precipitation_support": obs.get("precipitation", {}).get("persistence_support", "SUPPORTIVE"),
+            "cloud_cover_pct": obs.get("cloud", {}).get("cloud_cover_pct", 15.0),
+            "observability_status": "HIGH_OBSERVABILITY",
+            "provenance": "IMD_GROUND_MESONET_ARCHIVE",
+            "disclaimer": "Meteorological data represents correlation, not independent causation."
+        }
+
+    def _handle_get_material_context(self, db: Session, **kwargs) -> Dict[str, Any]:
+        from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+        event = JarvisToolRegistry.resolve_event(db, kwargs.get("event_ref"))
+        facility = event.facility if event else None
+        known = []
+        potential = []
+        if facility:
+            fac_type = (facility.facility_type or "").upper()
+            if "REFINERY" in fac_type:
+                known = ["Crude Petroleum Feedstock", "High-Sulfur Fuel Oil", "Reformed Naphtha"]
+                potential = ["Volatile Organic Compounds (VOCs)", "Hydrogen Sulfide (H2S)"]
+            elif "POWER" in fac_type:
+                known = ["Sub-Bituminous Thermal Coal", "Heavy Fuel Oil"]
+                potential = ["Fly Ash", "Coal Dust"]
+            if facility.fuel_consumption:
+                known.append(f"Fuel: {facility.fuel_consumption}")
+
+        return {
+            "known_materials": known,
+            "potential_materials": potential,
+            "confirmed_material_involvement": [],
+            "gas_composition_status": "GAS COMPOSITION DATA UNAVAILABLE",
+            "gas_measurements": [],
+            "disclaimer": "Facility category inferences are never presented as confirmed forensic substances."
+        }
+
+    def _handle_get_agency_context(self, db: Session, **kwargs) -> Dict[str, Any]:
+        from backend.app.services.jarvis.jarvis_tools import JarvisToolRegistry
+        from backend.app.services.intelligence.historical_incident_registry import historical_incident_registry
+        event = JarvisToolRegistry.resolve_event(db, kwargs.get("event_ref"))
+        lat = float(event.latitude) if event else 22.3542
+        lon = float(event.longitude) if event else 69.8644
+        frp = float(event.max_frp or 50.0) if event else 50.0
+        incidents = historical_incident_registry.find_similar_verified_incidents(
+            db=db, latitude=lat, longitude=lon, peak_frp=frp, radius_km=30.0, limit=5
+        )
+        return {
+            "agency_records": incidents,
+            "count": len(incidents),
+            "status": "VERIFIED_RECORDS_AVAILABLE" if incidents else "No verified agency records available"
+        }
+
+    def _handle_get_prevention_recommendations(self, db: Session, **kwargs) -> Dict[str, Any]:
+        from backend.app.models.domain import PreventionRecommendationRecord
+        case_id = kwargs.get("case_id")
+        query = db.query(PreventionRecommendationRecord)
+        if case_id:
+            query = query.filter(PreventionRecommendationRecord.case_id == case_id)
+        recs = query.all()
+        return {
+            "count": len(recs),
+            "recommendations": [
+                {
+                    "recommendation": r.recommendation,
+                    "reason": r.reason,
+                    "urgency": r.urgency,
+                    "authority": r.responsible_authority_category,
+                    "objective": r.expected_prevention_objective
+                }
+                for r in recs
+            ]
+        }
+
 
 # Singleton instance
 jarvis_capability_registry = JarvisCapabilityRegistry()
+

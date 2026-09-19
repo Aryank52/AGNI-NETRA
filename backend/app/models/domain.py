@@ -1735,3 +1735,178 @@ class IncidentLifecycleTransitionRecord(Base):
     correlation_id = Column(String(100), index=True, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     meta_info = Column(JSON, default=dict)
+
+
+# =================================================================================
+# Proactive Fire Prevention & Root-Cause Intelligence Extension Models
+# =================================================================================
+
+class PreventionCase(Base):
+    """
+    Core workspace entity for proactive fire prevention and longitudinal root-cause analysis.
+    Aggregates spatial, industrial, historical, environmental, and material evidence
+    to formulate structured hypotheses, prevention recommendations, and formal review dossiers.
+    """
+    __tablename__ = "prevention_cases"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    case_number = Column(String(50), unique=True, nullable=False, index=True)
+    event_id = Column(String(100), index=True, nullable=True)
+    event_code = Column(String(100), index=True, nullable=True)
+    title = Column(String(255), nullable=False)
+    status = Column(String(50), default="OPEN", index=True, nullable=False)  # OPEN, IN_INVESTIGATION, HYPOTHESIZED, RECOMMENDATIONS_PREPARED, UNDER_REVIEW, APPROVED, DELIVERED, CLOSED
+    latitude = Column(Float, nullable=False, index=True)
+    longitude = Column(Float, nullable=False, index=True)
+    state = Column(String(100), index=True, nullable=False)
+    district = Column(String(100), index=True, nullable=False)
+    subdistrict = Column(String(100), nullable=True)
+    facility_id = Column(String(36), ForeignKey("industrial_facilities.id", ondelete="SET NULL"), nullable=True, index=True)
+    facility_name = Column(String(255), nullable=True)
+    recurrence_score = Column(Float, default=0.0)
+    persistence_score = Column(Float, default=0.0)
+    baseline_deviation_ratio = Column(Float, default=0.0)
+    prevention_priority = Column(String(50), default="STANDARD", index=True, nullable=False)  # CRITICAL, HIGH, ELEVATED, STANDARD
+    evidence_strength_score = Column(Float, default=0.0)  # Transparent 0.0 - 1.0 aggregate
+    confidence_score = Column(Float, default=0.0)
+    summary = Column(Text, nullable=True)
+    spatial_context = Column(JSON, default=dict)
+    industrial_context = Column(JSON, default=dict)
+    environmental_context = Column(JSON, default=dict)
+    material_context = Column(JSON, default=dict)
+    agency_evidence = Column(JSON, default=list)
+    external_evidence = Column(JSON, default=list)
+    unknowns = Column(JSON, default=list)
+    missing_data = Column(JSON, default=list)
+    conflicting_sources = Column(JSON, default=list)
+    human_review_required = Column(Boolean, default=True)
+    created_by = Column(String(100), default="JARVIS")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    facility = relationship("IndustrialFacility", backref="prevention_cases")
+    hypotheses = relationship("RootCauseHypothesisRecord", back_populates="prevention_case", cascade="all, delete-orphan")
+    recommendations = relationship("PreventionRecommendationRecord", back_populates="prevention_case", cascade="all, delete-orphan")
+    reports = relationship("PreventionReportRecord", back_populates="prevention_case", cascade="all, delete-orphan")
+
+
+class RootCauseHypothesisRecord(Base):
+    """
+    Structured hypothesis regarding contributing root-cause factors.
+    Strictly deterministic and grounded in structured evidence.
+    Distinguishes correlation from confirmed causation.
+    """
+    __tablename__ = "root_cause_hypotheses"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    case_id = Column(String(36), ForeignKey("prevention_cases.id", ondelete="CASCADE"), index=True, nullable=False)
+    category = Column(String(100), index=True, nullable=False)  # 13 categories
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    status = Column(String(50), default="PLAUSIBLE", index=True, nullable=False)  # SUPPORTED, PLAUSIBLE, WEAKLY_SUPPORTED, CONTRADICTED, UNKNOWN
+    confidence_score = Column(Float, default=0.5)
+    evidence_strength = Column(Float, default=0.5)
+    supporting_evidence = Column(JSON, default=list)
+    contradicting_evidence = Column(JSON, default=list)
+    spatial_relevance = Column(Float, default=0.0)
+    temporal_relevance = Column(Float, default=0.0)
+    historical_recurrence = Column(Float, default=0.0)
+    source_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    prevention_case = relationship("PreventionCase", back_populates="hypotheses")
+
+
+class PreventionRecommendationRecord(Base):
+    """
+    Evidence-linked actionable recommendation for proactive fire prevention.
+    Strictly adopts non-guarantee phrasing: "MAY REDUCE RECURRENCE RISK".
+    """
+    __tablename__ = "prevention_recommendations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    case_id = Column(String(36), ForeignKey("prevention_cases.id", ondelete="CASCADE"), index=True, nullable=False)
+    hypothesis_category = Column(String(100), nullable=True)
+    recommendation = Column(Text, nullable=False)
+    reason = Column(Text, nullable=False)
+    supporting_evidence = Column(JSON, default=list)
+    risk_relevance = Column(String(100), nullable=False)
+    responsible_authority_category = Column(String(100), index=True, nullable=False)
+    urgency = Column(String(50), default="MEDIUM", index=True, nullable=False)  # IMMEDIATE, HIGH, MEDIUM, LOW
+    expected_prevention_objective = Column(Text, nullable=False)
+    status = Column(String(50), default="PROPOSED", index=True, nullable=False)  # PROPOSED, ACCEPTED, REJECTED, IMPLEMENTED
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    prevention_case = relationship("PreventionCase", back_populates="recommendations")
+
+
+class AuthorityDirectoryRecord(Base):
+    """
+    Authoritative registry of verified regulatory, administrative, and emergency authorities.
+    Zero synthetic contacts: uses verified Indian jurisdiction mapping.
+    """
+    __tablename__ = "authority_directory"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    category = Column(String(100), index=True, nullable=False)  # LOCAL_FIRE_SERVICE, DISTRICT_ADMINISTRATION, STATE_DISASTER_MANAGEMENT, POLLUTION_CONTROL_AUTHORITY, INDUSTRIAL_SAFETY_AUTHORITY, ENVIRONMENTAL_AUTHORITY, MUNICIPAL_LOCAL_BODY, FACILITY_OPERATOR
+    state = Column(String(100), index=True, nullable=False)
+    district = Column(String(100), index=True, nullable=True)
+    jurisdiction = Column(String(255), nullable=False)
+    contact_role = Column(String(255), nullable=False)
+    official_endpoint = Column(String(255), nullable=True)
+    is_verified = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class PreventionReportRecord(Base):
+    """
+    Formal 24-section Root-Cause & Fire Prevention Intelligence Report dossier.
+    Tracks state machine from DRAFT -> REVIEW -> APPROVE -> DELIVERED.
+    """
+    __tablename__ = "prevention_reports"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    report_number = Column(String(50), unique=True, index=True, nullable=False)
+    case_id = Column(String(36), ForeignKey("prevention_cases.id", ondelete="CASCADE"), index=True, nullable=False)
+    title = Column(String(255), nullable=False)
+    status = Column(String(50), default="DRAFT", index=True, nullable=False)  # DRAFT, UNDER_REVIEW, APPROVED, REJECTED, DELIVERED
+    executive_summary = Column(Text, nullable=False)
+    sections_data = Column(JSON, default=dict)  # Full 24 structured sections
+    pdf_path = Column(String(500), nullable=True)
+    generated_by = Column(String(100), default="JARVIS")
+    reviewed_by = Column(String(100), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    approved_by = Column(String(100), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    review_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    prevention_case = relationship("PreventionCase", back_populates="reports")
+    deliveries = relationship("ReportDeliveryAudit", back_populates="report", cascade="all, delete-orphan")
+
+
+class ReportDeliveryAudit(Base):
+    """
+    Immutable cryptographic audit ledger of all human-approved external report dispatches.
+    Zero autonomous delivery: strictly requires authenticated human approval.
+    """
+    __tablename__ = "report_delivery_audits"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    report_id = Column(String(36), ForeignKey("prevention_reports.id", ondelete="CASCADE"), index=True, nullable=False)
+    recipient_authority_id = Column(String(36), nullable=True)
+    recipient_name = Column(String(255), nullable=False)
+    recipient_role = Column(String(255), nullable=False)
+    recipient_organization = Column(String(255), nullable=False)
+    delivery_channel = Column(String(50), default="SECURE_PORTAL")
+    dispatched_by_user_id = Column(String(36), nullable=False)
+    dispatched_by_user_email = Column(String(255), nullable=False)
+    dispatched_by_user_role = Column(String(100), nullable=False)
+    delivery_status = Column(String(50), default="SENT", nullable=False)
+    delivery_timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    audit_hash = Column(String(128), nullable=False)
+    notes = Column(Text, nullable=True)
+
+    report = relationship("PreventionReportRecord", back_populates="deliveries")
+

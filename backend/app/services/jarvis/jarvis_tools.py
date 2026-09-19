@@ -1184,6 +1184,253 @@ class JarvisToolRegistry:
             }
 
     @staticmethod
+    def tool_investigate_root_cause(
+        db: Session,
+        event_ref: str,
+        radius_km: float = 15.0
+    ) -> Dict[str, Any]:
+        """
+        Executes end-to-end evidence-based root-cause analysis and formats the canonical
+        12-block JARVIS structured response.
+        """
+        from backend.app.services.intelligence.root_cause_intelligence_service import root_cause_intelligence_service
+        from backend.app.services.intelligence.authority_registry_service import authority_registry_service
+
+        case = root_cause_intelligence_service.analyze_event_root_cause(db, event_ref, radius_km=radius_km)
+        authorities = authority_registry_service.resolve_authorities(db, state=case.state, district=case.district, facility=case.facility)
+
+        # 12-block structured response formatting (Section 13)
+        supported_hypotheses = [h for h in case.hypotheses if h.status in ["SUPPORTED", "PLAUSIBLE"]]
+        top_factors = [f"{h.category}: {h.title} (Confidence: {h.confidence_score:.2f})" for h in supported_hypotheses[:3]]
+
+        supp_ev_lines = []
+        for h in case.hypotheses:
+            if h.supporting_evidence:
+                supp_ev_lines.extend(h.supporting_evidence[:2])
+
+        contra_ev_lines = []
+        for h in case.hypotheses:
+            if h.contradicting_evidence:
+                contra_ev_lines.extend(h.contradicting_evidence[:2])
+
+        env_lines = [
+            f"Temperature: {case.environmental_context.get('surface_temperature_c', 'N/A')}°C",
+            f"Humidity: {case.environmental_context.get('relative_humidity_pct', 'N/A')}%",
+            f"Wind: {case.environmental_context.get('wind_speed_ms', 'N/A')} m/s ({case.environmental_context.get('wind_compass', 'N/A')})",
+            f"Precipitation Support: {case.environmental_context.get('precipitation_persistence_support', 'N/A')}",
+            f"Observability: {case.environmental_context.get('observability_status', 'N/A')}"
+        ]
+
+        mat_lines = [
+            f"Known Materials: {', '.join(case.material_context.get('known_materials', [])) or 'None cataloged'}",
+            f"Potential Materials: {', '.join(case.material_context.get('potential_materials', [])) or 'None cataloged'}",
+            f"Gas Composition: {case.material_context.get('gas_composition_status', 'GAS COMPOSITION DATA UNAVAILABLE')}"
+        ]
+
+        missing_lines = (case.unknowns or []) + (case.missing_data or [])
+
+        recs_lines = [
+            f"[{r.urgency}] [{r.responsible_authority_category}] {r.recommendation} ({r.expected_prevention_objective})"
+            for r in case.recommendations[:4]
+        ]
+
+        auth_lines = [
+            f"{a.get('name')} ({a.get('category')}) — Jurisdiction: {a.get('jurisdiction')}"
+            for a in authorities[:3]
+        ]
+
+        formatted_text = f"""PREVENTION ASSESSMENT
+Event {case.event_code} at {case.facility_name} ({case.district}, {case.state}).
+Prevention Priority: {case.prevention_priority} | Evidence Strength: {case.evidence_strength_score:.2f}/1.00
+HISTORICAL CORRELATION DOES NOT IMPLY CAUSATION.
+
+CURRENT EVENT
+Radiative Power: {case.baseline_deviation_ratio:.1f}x baseline ratio. Location: {case.latitude:.4f} N, {case.longitude:.4f} E.
+Facility: {case.facility_name} (Type: {case.industrial_context.get('facility_type', 'N/A')}).
+
+HISTORICAL PATTERN
+Recurrence: {case.recurrence_score:.1f} episodes/year.
+Persistence Index: {case.persistence_score:.2f}.
+Longitudinal Baseline FRP: {case.baseline_deviation_ratio:.1f}x mean baseline.
+
+STRONGEST SUPPORTED FACTORS
+{chr(10).join('• ' + f for f in top_factors) if top_factors else '• Insufficient cross-source factors to isolate a primary driver.'}
+
+ROOT-CAUSE HYPOTHESES
+{chr(10).join(f'• [{h.status}] {h.title} (Evidence Strength: {h.evidence_strength:.2f})' for h in case.hypotheses[:6])}
+
+SUPPORTING EVIDENCE
+{chr(10).join('• ' + e for e in supp_ev_lines[:5]) if supp_ev_lines else '• No corroborating evidence on file.'}
+
+CONTRADICTING EVIDENCE
+{chr(10).join('• ' + c for c in contra_ev_lines[:5]) if contra_ev_lines else '• No contradictory indicators detected.'}
+
+ENVIRONMENTAL CONTEXT
+{chr(10).join('• ' + e for e in env_lines)}
+
+MATERIAL / SUBSTANCE CONTEXT
+{chr(10).join('• ' + m for m in mat_lines)}
+
+UNKNOWN / MISSING DATA
+{chr(10).join('• ' + m for m in missing_lines[:5])}
+
+PREVENTIVE RECOMMENDATIONS
+{chr(10).join('• ' + r for r in recs_lines)}
+
+RESPONSIBLE AUTHORITY
+{chr(10).join('• ' + a for a in auth_lines)}
+
+HUMAN REVIEW REQUIRED
+Automated delivery prohibited. Case {case.case_number} registered in DRAFT state awaiting formal analyst review."""
+
+        return {
+            "case_id": case.id,
+            "case_number": case.case_number,
+            "event_code": case.event_code,
+            "prevention_priority": case.prevention_priority,
+            "evidence_strength_score": case.evidence_strength_score,
+            "formatted_response": formatted_text,
+            "summary": case.summary,
+            "hypotheses_count": len(case.hypotheses),
+            "recommendations_count": len(case.recommendations),
+            "human_review_required": True
+        }
+
+    @staticmethod
+    def tool_why_this_fire(db: Session, event_ref: str) -> Dict[str, Any]:
+        """
+        Executes the flagship 'WHY THIS FIRE?' proactive investigation workflow.
+        """
+        from backend.app.services.intelligence.root_cause_intelligence_service import root_cause_intelligence_service
+
+        case = root_cause_intelligence_service.analyze_event_root_cause(db, event_ref)
+
+        supported_hypotheses = [h for h in case.hypotheses if h.status in ["SUPPORTED", "PLAUSIBLE"]]
+        top_factors = [f"{h.category}: {h.title}" for h in supported_hypotheses[:3]]
+        recs = [f"{r.recommendation} ({r.expected_prevention_objective})" for r in case.recommendations[:3]]
+
+        formatted_text = f"""WHY THIS EVENT IS IMPORTANT
+{case.event_code} represents a '{case.prevention_priority}' priority event at {case.facility_name} ({case.district}, {case.state}).
+Radiative heat output is {case.baseline_deviation_ratio:.1f}x higher than the historical baseline for this facility footprint.
+
+WHAT WE OBSERVE
+Coordinates: {case.latitude:.4f} N, {case.longitude:.4f} E.
+Industrial Asset: {case.facility_name} (Sector: {case.industrial_context.get('master_sector', 'Industrial')}).
+Land Cover: {case.spatial_context.get('land_cover', 'Industrial')}.
+Weather: {case.environmental_context.get('surface_temperature_c', 'N/A')}°C, Wind {case.environmental_context.get('wind_speed_ms', 'N/A')} m/s {case.environmental_context.get('wind_compass', 'N/A')}.
+
+WHAT HAS HAPPENED HISTORICALLY
+Historical Recurrence: {case.recurrence_score:.1f} episodes per year.
+Persistence: {case.persistence_score:.2f}.
+Baseline Variance: Historical FRP mean is {round(float(case.baseline_deviation_ratio), 1)}x lower than current observation.
+Ground Truth: {len(case.agency_evidence)} verified historical ground truth incidents recorded within the district perimeter.
+HISTORICAL CORRELATION DOES NOT IMPLY CAUSATION.
+
+STRONGEST CONTRIBUTING FACTORS
+{chr(10).join('• ' + f for f in top_factors)}
+
+WHAT IS NOT PROVEN
+• Specific unit overpressure or mechanical spark has not been forensically verified from orbit.
+• Gas Composition: {case.material_context.get('gas_composition_status')}.
+• Model predictions and correlations must not be confused with verified physical ground causation.
+
+WHAT EVIDENCE IS MISSING
+{chr(10).join('• ' + m for m in (case.missing_data or ['Ground optical/thermal CCTV stream', 'Stack spectrometry measurements'])[:4])}
+
+WHAT SHOULD BE INVESTIGATED NEXT
+• Request on-site facility logbook for elevated flaring headers during the detection timestamp.
+• Coordinate with DISH and Regional Fire Service for valve and seal pressure checks.
+• Verify whether planned process maintenance or unexpected off-gas trip occurred.
+
+WHAT PREVENTIVE ACTIONS SHOULD BE CONSIDERED
+{chr(10).join('• ' + r for r in recs)}"""
+
+        return {
+            "case_id": case.id,
+            "case_number": case.case_number,
+            "event_code": case.event_code,
+            "facility_name": case.facility_name,
+            "prevention_priority": case.prevention_priority,
+            "formatted_response": formatted_text,
+            "workflow": "WHY_THIS_FIRE"
+        }
+
+    @staticmethod
+    def tool_get_prevention_case(db: Session, case_ref: str) -> Dict[str, Any]:
+        """
+        Retrieves full details of a PreventionCase by UUID or case number.
+        """
+        from backend.app.models.domain import PreventionCase
+        case = db.query(PreventionCase).filter(
+            (PreventionCase.id == case_ref) | (PreventionCase.case_number == case_ref)
+        ).first()
+        if not case:
+            return {"found": False, "error": f"Prevention case '{case_ref}' not found."}
+
+        return {
+            "found": True,
+            "id": case.id,
+            "case_number": case.case_number,
+            "event_code": case.event_code,
+            "title": case.title,
+            "status": case.status,
+            "prevention_priority": case.prevention_priority,
+            "evidence_strength_score": case.evidence_strength_score,
+            "summary": case.summary,
+            "hypotheses": [
+                {
+                    "category": h.category,
+                    "title": h.title,
+                    "status": h.status,
+                    "confidence_score": h.confidence_score,
+                    "evidence_strength": h.evidence_strength
+                }
+                for h in case.hypotheses
+            ],
+            "recommendations": [
+                {
+                    "recommendation": r.recommendation,
+                    "urgency": r.urgency,
+                    "authority": r.responsible_authority_category,
+                    "objective": r.expected_prevention_objective
+                }
+                for r in case.recommendations
+            ]
+        }
+
+    @staticmethod
+    def tool_recommend_prevention_authorities(
+        db: Session,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+        facility_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Resolves responsible administrative, environmental, and emergency authorities for a jurisdiction.
+        """
+        from backend.app.services.intelligence.authority_registry_service import authority_registry_service
+        from backend.app.models.domain import IndustrialFacility
+        fac = db.query(IndustrialFacility).filter(IndustrialFacility.id == facility_id).first() if facility_id else None
+        return authority_registry_service.resolve_authorities(db, state=state, district=district, facility=fac)
+
+    @staticmethod
+    def tool_generate_prevention_report(db: Session, case_id: str) -> Dict[str, Any]:
+        """
+        Compiles the formal 24-section Root-Cause & Fire Prevention Intelligence Report.
+        """
+        from backend.app.services.prevention_report_generator import prevention_report_generator
+        report = prevention_report_generator.create_draft_report(db, case_id)
+        return {
+            "report_id": report.id,
+            "report_number": report.report_number,
+            "status": report.status,
+            "title": report.title,
+            "pdf_path": report.pdf_path,
+            "sections_count": len(report.sections_data)
+        }
+
+
+    @staticmethod
     def get_registered_tools() -> List[JarvisToolInfo]:
         """
         Returns catalog of all registered, typed, and permission-controlled tools.
@@ -1512,6 +1759,101 @@ class JarvisToolRegistry:
                 is_dispatch=False,
                 audit_required=True,
                 read_only=True
+            ),
+            JarvisToolInfo(
+                name="tool_investigate_root_cause",
+                purpose="Execute deterministic 13-hypothesis root-cause investigation and generate 12-block proactive prevention assessment.",
+                capability="ROOT_CAUSE_ASSESSMENT",
+                input_schema={"type": "object", "properties": {"event_ref": {"type": "string"}, "radius_km": {"type": "number"}}, "required": ["event_ref"]},
+                output_schema={"type": "object", "properties": {"case_id": {"type": "string"}, "formatted_response": {"type": "string"}}},
+                required_permissions=["ANALYST", "OPERATOR", "ADMIN"],
+                side_effects=True,
+                risk_level="LOW",
+                dependencies=["tool_get_event"],
+                description="Generates deterministic root-cause hypotheses and evidence-linked prevention recommendations.",
+                agent="JARVIS",
+                parameters={"event_ref": "str", "radius_km": "float"},
+                required_role="ANALYST",
+                is_mutation=True,
+                is_dispatch=False,
+                audit_required=True,
+                read_only=False
+            ),
+            JarvisToolInfo(
+                name="tool_why_this_fire",
+                purpose="Execute flagship 'Why This Fire?' structured investigation examining 13 operational and environmental dimensions.",
+                capability="HISTORICAL_ROOT_CAUSE",
+                input_schema={"type": "object", "properties": {"event_ref": {"type": "string"}}, "required": ["event_ref"]},
+                output_schema={"type": "object", "properties": {"case_id": {"type": "string"}, "formatted_response": {"type": "string"}}},
+                required_permissions=["ANALYST", "OPERATOR", "ADMIN"],
+                side_effects=False,
+                risk_level="LOW",
+                dependencies=["tool_get_event"],
+                description="Answers 'Why this event is important, what we observe, historical patterns, and missing evidence'.",
+                agent="JARVIS",
+                parameters={"event_ref": "str"},
+                required_role="ANALYST",
+                is_mutation=False,
+                is_dispatch=False,
+                audit_required=True,
+                read_only=True
+            ),
+            JarvisToolInfo(
+                name="tool_get_prevention_case",
+                purpose="Retrieve full prevention case dossier with hypotheses, evidence matrices, and recommendations.",
+                capability="ROOT_CAUSE_ASSESSMENT",
+                input_schema={"type": "object", "properties": {"case_ref": {"type": "string"}}, "required": ["case_ref"]},
+                output_schema={"type": "object", "properties": {"found": {"type": "boolean"}, "case_number": {"type": "string"}}},
+                required_permissions=["ANALYST", "OPERATOR", "ADMIN"],
+                side_effects=False,
+                risk_level="LOW",
+                dependencies=[],
+                description="Retrieves a stored prevention case dossier by ID or case number.",
+                agent="JARVIS",
+                parameters={"case_ref": "str"},
+                required_role="ANALYST",
+                is_mutation=False,
+                is_dispatch=False,
+                audit_required=True,
+                read_only=True
+            ),
+            JarvisToolInfo(
+                name="tool_recommend_prevention_authorities",
+                purpose="Resolve verified responsible regulatory, safety, and emergency authorities based on event jurisdiction.",
+                capability="AUTHORITY_RESOLUTION",
+                input_schema={"type": "object", "properties": {"state": {"type": "string"}, "district": {"type": "string"}}},
+                output_schema={"type": "array", "items": {"type": "object"}},
+                required_permissions=["ANALYST", "OPERATOR", "ADMIN"],
+                side_effects=False,
+                risk_level="LOW",
+                dependencies=[],
+                description="Maps verified authorities (Fire, DISH, GPCB, DM, Facility) for prevention case routing.",
+                agent="JARVIS",
+                parameters={"state": "Optional[str]", "district": "Optional[str]", "facility_id": "Optional[str]"},
+                required_role="ANALYST",
+                is_mutation=False,
+                is_dispatch=False,
+                audit_required=True,
+                read_only=True
+            ),
+            JarvisToolInfo(
+                name="tool_generate_prevention_report",
+                purpose="Compile formal 24-section Root-Cause & Fire Prevention Intelligence Report dossier in DRAFT state.",
+                capability="REPORT_GENERATION",
+                input_schema={"type": "object", "properties": {"case_id": {"type": "string"}}, "required": ["case_id"]},
+                output_schema={"type": "object", "properties": {"report_id": {"type": "string"}, "report_number": {"type": "string"}, "pdf_path": {"type": "string"}}},
+                required_permissions=["ANALYST", "OPERATOR", "ADMIN"],
+                side_effects=True,
+                risk_level="LOW",
+                dependencies=["tool_get_prevention_case"],
+                description="Generates formal 24-section prevention report with ReportLab PDF.",
+                agent="JARVIS",
+                parameters={"case_id": "str"},
+                required_role="ANALYST",
+                is_mutation=True,
+                is_dispatch=False,
+                audit_required=True,
+                read_only=False
             )
         ]
 
@@ -1530,4 +1872,10 @@ JarvisToolRegistry.get_human_verification_queue = JarvisToolRegistry.tool_get_hu
 JarvisToolRegistry.get_system_status = JarvisToolRegistry.tool_get_system_status
 JarvisToolRegistry.generate_investigation_dossier = JarvisToolRegistry.tool_generate_investigation_dossier
 JarvisToolRegistry.compare_candidate_events = JarvisToolRegistry.tool_compare_candidate_events
+JarvisToolRegistry.investigate_root_cause = JarvisToolRegistry.tool_investigate_root_cause
+JarvisToolRegistry.why_this_fire = JarvisToolRegistry.tool_why_this_fire
+JarvisToolRegistry.get_prevention_case = JarvisToolRegistry.tool_get_prevention_case
+JarvisToolRegistry.recommend_prevention_authorities = JarvisToolRegistry.tool_recommend_prevention_authorities
+JarvisToolRegistry.generate_prevention_report = JarvisToolRegistry.tool_generate_prevention_report
+
 
