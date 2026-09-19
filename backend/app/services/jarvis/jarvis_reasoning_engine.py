@@ -57,13 +57,15 @@ class JarvisReasoningEngine:
 
     ADVERSARIAL_INJECTION_PATTERNS = [
         r"ignore\s+(all\s+)?(previous\s+)?rules",
-        r"activate\s+(the\s+)?(new\s+)?model",
-        r"dispatch\s+(emergency|fire|police|authorities)",
-        r"treat\s+.*candidate\s+as\s+authoritative",
-        r"ignore\s+(the\s+)?geographic\s+restriction",
+        r"activate\s+(the\s+)?(new\s+|candidate\s+)?model",
+        r"dispatch\s+(emergency|fire|police|authorities|response)",
+        r"treat\s+.*candidate.*authoritative",
+        r"ignore\s+(the\s+)?(geographic\s+restriction|india\s+boundary)",
         r"drop\s+table",
         r"delete\s+from",
         r"execute\s+sql",
+        r"run\s+shell",
+        r"delete\s+.*investigation",
         r"system\s*\(",
         r"__import__"
     ]
