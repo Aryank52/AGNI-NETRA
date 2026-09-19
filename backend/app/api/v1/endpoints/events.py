@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, text
 
 from backend.app.core.database import get_db, IS_POSTGRESQL, haversine_distance_meters
-from backend.app.api.deps import require_agency, require_analyst, get_optional_current_user
+from backend.app.api.deps import require_agency, require_analyst, get_optional_current_user, get_current_active_user
 from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature, User
 from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut, EventTraceLineageOut
 from backend.app.services.lineage_service import generate_event_trace_lineage
@@ -19,7 +19,7 @@ router = APIRouter()
 def get_thermal_events(
     response: Response,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,
@@ -72,6 +72,11 @@ def get_thermal_events(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page size limit must be between 1 and 1000.")
     if offset < 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Offset cannot be negative.")
+    if current_user.role == "PUBLIC":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public users are restricted from internal intelligence endpoints. Please use the public hazard map."
+        )
 
     query = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),

@@ -1221,8 +1221,8 @@ class RootCauseHypothesisOut(BaseModel):
     status: str
     confidence_score: float
     evidence_strength: float
-    supporting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
-    contradicting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    supporting_evidence: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
+    contradicting_evidence: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     spatial_relevance: float
     temporal_relevance: float
     historical_recurrence: float
@@ -1238,7 +1238,7 @@ class PreventionRecommendationOut(BaseModel):
     hypothesis_category: Optional[str] = None
     recommendation: str
     reason: str
-    supporting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    supporting_evidence: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     risk_relevance: str
     responsible_authority_category: str
     urgency: str
@@ -1289,8 +1289,8 @@ class PreventionCaseOut(BaseModel):
     industrial_context: Dict[str, Any] = Field(default_factory=dict)
     environmental_context: Dict[str, Any] = Field(default_factory=dict)
     material_context: Dict[str, Any] = Field(default_factory=dict)
-    agency_evidence: List[Dict[str, Any]] = Field(default_factory=list)
-    external_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    agency_evidence: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
+    external_evidence: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     unknowns: List[str] = Field(default_factory=list)
     missing_data: List[str] = Field(default_factory=list)
     conflicting_sources: List[str] = Field(default_factory=list)

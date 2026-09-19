@@ -302,7 +302,7 @@ class JarvisCapabilityRegistry:
                 required_permissions=["PUBLIC", "ANALYST", "AGENCY", "ADMIN"],
                 data_sources=["thermal_events", "prevention_cases", "root_cause_hypotheses"],
                 cost_latency_expectation_ms=65.0,
-                side_effects=True,
+                side_effects=False,
                 epistemic_type=EpistemicEvidenceType.INFERRED,
                 failure_behavior="Return empty hypothesis set; flag analysis as UNKNOWN.",
                 handler=lambda db, **kw: JarvisToolRegistry.tool_investigate_root_cause(db, kw.get("event_ref"), float(kw.get("radius_km", 15.0)))
@@ -442,7 +442,7 @@ class JarvisCapabilityRegistry:
                 required_permissions=["ANALYST", "AGENCY", "ADMIN"],
                 data_sources=["prevention_reports", "prevention_cases"],
                 cost_latency_expectation_ms=100.0,
-                side_effects=True,
+                side_effects=False,
                 epistemic_type=EpistemicEvidenceType.DERIVED,
                 failure_behavior="Return failure dictionary with error explanation.",
                 handler=lambda db, **kw: JarvisToolRegistry.tool_generate_prevention_report(db, kw.get("case_id"))

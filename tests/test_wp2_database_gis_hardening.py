@@ -327,14 +327,23 @@ def test_scenario_10_gis_endpoint_contract():
 def test_scenario_11_large_result_pagination():
     """
     Verifies that /api/v1/events implements server-side pagination (limit / offset).
+    Requires ANALYST role per WP8 RBAC specification.
     """
-    res = client.get("/api/v1/events?page=1&limit=5")
-    assert res.status_code == 200
-    data = res.json()
-    assert "items" in data
-    assert len(data["items"]) <= 5
-    assert "total_count" in data
-    assert "total_pages" in data
+    from backend.app.api.deps import get_current_active_user
+    from backend.app.models.domain import User
+    app.dependency_overrides[get_current_active_user] = lambda: User(
+        id="usr-ana-001", email="analyst@agninetra.gov.in", role="ANALYST", is_active=True
+    )
+    try:
+        res = client.get("/api/v1/events?page=1&limit=5")
+        assert res.status_code == 200
+        data = res.json()
+        assert "items" in data
+        assert len(data["items"]) <= 5
+        assert "total_count" in data
+        assert "total_pages" in data
+    finally:
+        app.dependency_overrides.clear()
 
 
 # =========================================================================

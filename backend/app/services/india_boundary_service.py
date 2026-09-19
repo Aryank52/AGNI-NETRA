@@ -143,49 +143,105 @@ class IndiaBoundaryService:
                 return m["name"]
         return "OUTSIDE_INDIA"
 
-    def _get_sqlite_state_shapes(self, db: Session) -> List[Tuple[str, str, Any]]:
-        """Loads and caches Shapely shapes from SQLite admin_boundaries table for fallback mode."""
+    @staticmethod
+    def normalize_state_name(name: Optional[str]) -> Optional[str]:
+        """
+        Normalizes unicode diacritics (e.g. Gujarāt -> Gujarat) and canonicalizes Indian administrative names.
+        """
+        if not name:
+            return name
+        import unicodedata
+        normalized = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').decode('utf-8').strip()
+        canonical_map = {
+            "Orissa": "Odisha",
+            "Pondicherry": "Puducherry",
+            "Uttaranchal": "Uttarakhand"
+        }
+        return canonical_map.get(normalized, normalized)
+
+    def _get_sqlite_state_shapes(self, db: Optional[Session] = None) -> List[Tuple[str, str, Any]]:
+        """Loads and caches Shapely shapes from SQLite/fallback admin_boundaries table."""
         if self._sqlite_state_shapes is not None:
             return self._sqlite_state_shapes
 
         shapes = []
-        try:
-            rows = db.execute(text("SELECT state_code, normalized_name, geom FROM admin_boundaries WHERE admin_level = 1;")).fetchall()
-            for code, name, geom_raw in rows:
-                if not geom_raw:
-                    continue
-                if isinstance(geom_raw, str):
-                    try:
-                        g_dict = json.loads(geom_raw)
-                        s = shape(g_dict)
-                        shapes.append((code or "IND", name, s))
-                    except Exception:
-                        pass
-        except Exception as e:
-            logger.warning(f"Could not load state shapes from SQLite: {e}")
+        if db is not None:
+            try:
+                rows = db.execute(text("SELECT state_code, normalized_name, geom FROM admin_boundaries WHERE admin_level = 1;")).fetchall()
+                for code, name, geom_raw in rows:
+                    if not geom_raw:
+                        continue
+                    if isinstance(geom_raw, str):
+                        try:
+                            g_dict = json.loads(geom_raw)
+                            s = shape(g_dict)
+                            shapes.append((code or "IND", name, s))
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.debug(f"Could not load state shapes from session: {e}")
+
+        if not shapes and os.path.exists("agni_netra.db"):
+            import sqlite3
+            try:
+                conn = sqlite3.connect("agni_netra.db")
+                cur = conn.cursor()
+                cur.execute("SELECT state_code, normalized_name, geom FROM admin_boundaries WHERE admin_level = 1;")
+                for code, name, geom_raw in cur.fetchall():
+                    if geom_raw:
+                        try:
+                            g_dict = json.loads(geom_raw)
+                            s = shape(g_dict)
+                            shapes.append((code or "IND", name, s))
+                        except Exception:
+                            pass
+                conn.close()
+            except Exception as e:
+                logger.warning(f"Could not load state shapes from local agni_netra.db: {e}")
+
         self._sqlite_state_shapes = shapes
         return shapes
 
-    def _get_sqlite_district_shapes(self, db: Session) -> List[Tuple[str, str, str, Any]]:
-        """Loads and caches Shapely shapes for districts from SQLite admin_boundaries table."""
+    def _get_sqlite_district_shapes(self, db: Optional[Session] = None) -> List[Tuple[str, str, str, Any]]:
+        """Loads and caches Shapely shapes for districts from SQLite/fallback admin_boundaries table."""
         if self._sqlite_district_shapes is not None:
             return self._sqlite_district_shapes
 
         shapes = []
-        try:
-            rows = db.execute(text("SELECT district_code, normalized_name, state_name, geom FROM admin_boundaries WHERE admin_level = 2;")).fetchall()
-            for code, name, st_name, geom_raw in rows:
-                if not geom_raw:
-                    continue
-                if isinstance(geom_raw, str):
-                    try:
-                        g_dict = json.loads(geom_raw)
-                        s = shape(g_dict)
-                        shapes.append((code or "DIST", name, st_name, s))
-                    except Exception:
-                        pass
-        except Exception as e:
-            logger.warning(f"Could not load district shapes from SQLite: {e}")
+        if db is not None:
+            try:
+                rows = db.execute(text("SELECT district_code, normalized_name, state_name, geom FROM admin_boundaries WHERE admin_level = 2;")).fetchall()
+                for code, name, st_name, geom_raw in rows:
+                    if not geom_raw:
+                        continue
+                    if isinstance(geom_raw, str):
+                        try:
+                            g_dict = json.loads(geom_raw)
+                            s = shape(g_dict)
+                            shapes.append((code or "DIST", name, st_name, s))
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.debug(f"Could not load district shapes from session: {e}")
+
+        if not shapes and os.path.exists("agni_netra.db"):
+            import sqlite3
+            try:
+                conn = sqlite3.connect("agni_netra.db")
+                cur = conn.cursor()
+                cur.execute("SELECT district_code, normalized_name, state_name, geom FROM admin_boundaries WHERE admin_level = 2;")
+                for code, name, st_name, geom_raw in cur.fetchall():
+                    if geom_raw:
+                        try:
+                            g_dict = json.loads(geom_raw)
+                            s = shape(g_dict)
+                            shapes.append((code or "DIST", name, st_name, s))
+                        except Exception:
+                            pass
+                conn.close()
+            except Exception as e:
+                logger.warning(f"Could not load district shapes from local agni_netra.db: {e}")
+
         self._sqlite_district_shapes = shapes
         return shapes
 
@@ -285,13 +341,15 @@ class IndiaBoundaryService:
                     LEFT JOIN dt ON TRUE
                     LEFT JOIN sub ON TRUE;
                 """)
-                row = db.execute(query, {"lat": lat, "lon": lon}).fetchone()
-                if row and row[0]:
-                    state = row[0]
-                    district = row[1] if row[1] else "UNKNOWN"
-                    subdistrict = row[2] if row[2] else None
-                    return True, state, district, subdistrict
-                return False, None, None, None
+                try:
+                    row = db.execute(query, {"lat": lat, "lon": lon}).fetchone()
+                    if row and row[0]:
+                        state = self.normalize_state_name(row[0])
+                        district = self.normalize_state_name(row[1]) if row[1] else "UNKNOWN"
+                        subdistrict = self.normalize_state_name(row[2]) if row[2] else None
+                        return True, state, district, subdistrict
+                except Exception as pg_err:
+                    logger.debug(f"PostGIS boundary containment query failed ({pg_err}), trying Shapely fallback.")
 
             # SQLite / Test Mode: Authoritative Shapely Evaluation using admin_boundaries polygons
             state_shapes = self._get_sqlite_state_shapes(db)
@@ -309,9 +367,9 @@ class IndiaBoundaryService:
                     district_shapes = self._get_sqlite_district_shapes(db)
                     for d_code, d_name, d_st, ds in district_shapes:
                         if ds.contains(pt):
-                            matched_dist = d_name
+                            matched_dist = self.normalize_state_name(d_name) or "UNKNOWN"
                             break
-                    return True, matched_state, matched_dist, None
+                    return True, self.normalize_state_name(matched_state), matched_dist, None
                 return False, None, None, None
 
             # If no admin_boundaries table could be loaded at all, fail safe without guessing
