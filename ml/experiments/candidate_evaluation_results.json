@@ -1,0 +1,657 @@
+[
+  {
+    "model_name": "xgb-v3.0-real-candidate",
+    "accuracy": 0.6989,
+    "balanced_accuracy": 0.7401,
+    "macro_f1": 0.6444,
+    "weighted_f1": 0.7098,
+    "macro_precision": 0.7069,
+    "macro_recall": 0.7401,
+    "log_loss": 0.6916,
+    "brier_score": 0.0634,
+    "ece": 0.0956,
+    "spatial_groupkfold_macro_f1": 0.5825,
+    "class_metrics": {
+      "Industrial Fire": {
+        "precision": 0.5769,
+        "recall": 1.0,
+        "f1": 0.7317,
+        "support": 30
+      },
+      "Gas Flare": {
+        "precision": 0.7647,
+        "recall": 0.3824,
+        "f1": 0.5098,
+        "support": 34
+      },
+      "Forest Fire": {
+        "precision": 0.1852,
+        "recall": 1.0,
+        "f1": 0.3125,
+        "support": 5
+      },
+      "Agricultural Burning": {
+        "precision": 1.0,
+        "recall": 0.9756,
+        "f1": 0.9877,
+        "support": 41
+      },
+      "Mining Activity": {
+        "precision": 0.8182,
+        "recall": 0.5625,
+        "f1": 0.6667,
+        "support": 16
+      },
+      "Other Thermal Source": {
+        "precision": 0.8966,
+        "recall": 0.52,
+        "f1": 0.6582,
+        "support": 50
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        40,
+        0,
+        1
+      ],
+      [
+        0,
+        4,
+        1,
+        0,
+        9,
+        2
+      ],
+      [
+        1,
+        0,
+        21,
+        0,
+        2,
+        26
+      ]
+    ],
+    "selective_prediction": {
+      "tier1": {
+        "count": 73,
+        "coverage": 0.4148,
+        "selective_accuracy": 0.9726,
+        "error_rate": 0.0274,
+        "action": "AUTO_DISPATCH_CANDIDATE"
+      },
+      "tier2": {
+        "count": 95,
+        "coverage": 0.5398,
+        "selective_accuracy": 0.5158,
+        "action": "ANALYST_REVIEW_QUEUE"
+      },
+      "tier3_abstain": {
+        "count": 8,
+        "abstention_rate": 0.0455,
+        "residual_accuracy": 0.375,
+        "action": "UNCERTAINTY_HUMAN_GROUNDING"
+      }
+    },
+    "latency_ms": {
+      "mean": 2.99,
+      "p50": 2.22,
+      "p95": 7.09
+    },
+    "artifact_sha256": "81ca22bdb23d08d751ebe9a40eee1e005e43f31f20a4d29e42b16cfb6ddb6ccb",
+    "artifact_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\models\\candidates\\xgb_v3.0_candidate.joblib",
+    "model_family": "XGBoost",
+    "version": "xgb-v3.0-real-candidate"
+  },
+  {
+    "model_name": "xgb-v3.1-balanced-weights",
+    "accuracy": 0.6989,
+    "balanced_accuracy": 0.7393,
+    "macro_f1": 0.648,
+    "weighted_f1": 0.7115,
+    "macro_precision": 0.7163,
+    "macro_recall": 0.7393,
+    "log_loss": 0.6953,
+    "brier_score": 0.0637,
+    "ece": 0.1037,
+    "spatial_groupkfold_macro_f1": 0.5825,
+    "class_metrics": {
+      "Industrial Fire": {
+        "precision": 0.5769,
+        "recall": 1.0,
+        "f1": 0.7317,
+        "support": 30
+      },
+      "Gas Flare": {
+        "precision": 0.7647,
+        "recall": 0.3824,
+        "f1": 0.5098,
+        "support": 34
+      },
+      "Forest Fire": {
+        "precision": 0.1852,
+        "recall": 1.0,
+        "f1": 0.3125,
+        "support": 5
+      },
+      "Agricultural Burning": {
+        "precision": 1.0,
+        "recall": 0.9512,
+        "f1": 0.975,
+        "support": 41
+      },
+      "Mining Activity": {
+        "precision": 0.9,
+        "recall": 0.5625,
+        "f1": 0.6923,
+        "support": 16
+      },
+      "Other Thermal Source": {
+        "precision": 0.871,
+        "recall": 0.54,
+        "f1": 0.6667,
+        "support": 50
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        39,
+        0,
+        2
+      ],
+      [
+        0,
+        4,
+        1,
+        0,
+        9,
+        2
+      ],
+      [
+        1,
+        0,
+        21,
+        0,
+        1,
+        27
+      ]
+    ],
+    "selective_prediction": {
+      "tier1": {
+        "count": 73,
+        "coverage": 0.4148,
+        "selective_accuracy": 0.9726,
+        "error_rate": 0.0274,
+        "action": "AUTO_DISPATCH_CANDIDATE"
+      },
+      "tier2": {
+        "count": 91,
+        "coverage": 0.517,
+        "selective_accuracy": 0.5165,
+        "action": "ANALYST_REVIEW_QUEUE"
+      },
+      "tier3_abstain": {
+        "count": 12,
+        "abstention_rate": 0.0682,
+        "residual_accuracy": 0.4167,
+        "action": "UNCERTAINTY_HUMAN_GROUNDING"
+      }
+    },
+    "latency_ms": {
+      "mean": 1.61,
+      "p50": 1.52,
+      "p95": 2.12
+    },
+    "artifact_sha256": "74fde4047114f0f74490c58a976a2e5f0994d91518a4a6c963061e2eff1aee88",
+    "artifact_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\models\\candidates\\xgb_v3.1_weighted_candidate.joblib",
+    "model_family": "XGBoost",
+    "version": "xgb-v3.1-balanced-weights"
+  },
+  {
+    "model_name": "xgb-v3.2-refined",
+    "accuracy": 0.6932,
+    "balanced_accuracy": 0.7289,
+    "macro_f1": 0.6379,
+    "weighted_f1": 0.7045,
+    "macro_precision": 0.7099,
+    "macro_recall": 0.7289,
+    "log_loss": 0.6944,
+    "brier_score": 0.0634,
+    "ece": 0.0855,
+    "spatial_groupkfold_macro_f1": 0.5844,
+    "class_metrics": {
+      "Industrial Fire": {
+        "precision": 0.5769,
+        "recall": 1.0,
+        "f1": 0.7317,
+        "support": 30
+      },
+      "Gas Flare": {
+        "precision": 0.7647,
+        "recall": 0.3824,
+        "f1": 0.5098,
+        "support": 34
+      },
+      "Forest Fire": {
+        "precision": 0.1852,
+        "recall": 1.0,
+        "f1": 0.3125,
+        "support": 5
+      },
+      "Agricultural Burning": {
+        "precision": 1.0,
+        "recall": 0.9512,
+        "f1": 0.975,
+        "support": 41
+      },
+      "Mining Activity": {
+        "precision": 0.8889,
+        "recall": 0.5,
+        "f1": 0.64,
+        "support": 16
+      },
+      "Other Thermal Source": {
+        "precision": 0.8438,
+        "recall": 0.54,
+        "f1": 0.6585,
+        "support": 50
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        39,
+        0,
+        2
+      ],
+      [
+        0,
+        4,
+        1,
+        0,
+        8,
+        3
+      ],
+      [
+        1,
+        0,
+        21,
+        0,
+        1,
+        27
+      ]
+    ],
+    "selective_prediction": {
+      "tier1": {
+        "count": 76,
+        "coverage": 0.4318,
+        "selective_accuracy": 0.9342,
+        "error_rate": 0.0658,
+        "action": "AUTO_DISPATCH_CANDIDATE"
+      },
+      "tier2": {
+        "count": 89,
+        "coverage": 0.5057,
+        "selective_accuracy": 0.5281,
+        "action": "ANALYST_REVIEW_QUEUE"
+      },
+      "tier3_abstain": {
+        "count": 11,
+        "abstention_rate": 0.0625,
+        "residual_accuracy": 0.3636,
+        "action": "UNCERTAINTY_HUMAN_GROUNDING"
+      }
+    },
+    "latency_ms": {
+      "mean": 1.87,
+      "p50": 1.81,
+      "p95": 2.42
+    },
+    "artifact_sha256": "ac3fc11164edc53bcbfe8d0033c1be6f2bffba20cef7d46dc9c2fcd7e09b6915",
+    "artifact_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\models\\candidates\\xgb_v3.2_refined_candidate.joblib",
+    "model_family": "XGBoost",
+    "version": "xgb-v3.2-refined"
+  },
+  {
+    "model_name": "rf-v3.0-real-candidate",
+    "accuracy": 0.6705,
+    "balanced_accuracy": 0.7014,
+    "macro_f1": 0.6066,
+    "weighted_f1": 0.6796,
+    "macro_precision": 0.6892,
+    "macro_recall": 0.7014,
+    "log_loss": 1.7301,
+    "brier_score": 0.0848,
+    "ece": 0.1524,
+    "spatial_groupkfold_macro_f1": 0.5882,
+    "class_metrics": {
+      "Industrial Fire": {
+        "precision": 0.5769,
+        "recall": 1.0,
+        "f1": 0.7317,
+        "support": 30
+      },
+      "Gas Flare": {
+        "precision": 0.7222,
+        "recall": 0.3824,
+        "f1": 0.5,
+        "support": 34
+      },
+      "Forest Fire": {
+        "precision": 0.1724,
+        "recall": 1.0,
+        "f1": 0.2941,
+        "support": 5
+      },
+      "Agricultural Burning": {
+        "precision": 1.0,
+        "recall": 0.9512,
+        "f1": 0.975,
+        "support": 41
+      },
+      "Mining Activity": {
+        "precision": 0.8571,
+        "recall": 0.375,
+        "f1": 0.5217,
+        "support": 16
+      },
+      "Other Thermal Source": {
+        "precision": 0.8065,
+        "recall": 0.5,
+        "f1": 0.6173,
+        "support": 50
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        39,
+        0,
+        2
+      ],
+      [
+        0,
+        4,
+        2,
+        0,
+        6,
+        4
+      ],
+      [
+        1,
+        1,
+        22,
+        0,
+        1,
+        25
+      ]
+    ],
+    "selective_prediction": {
+      "tier1": {
+        "count": 138,
+        "coverage": 0.7841,
+        "selective_accuracy": 0.7319,
+        "error_rate": 0.2681,
+        "action": "AUTO_DISPATCH_CANDIDATE"
+      },
+      "tier2": {
+        "count": 34,
+        "coverage": 0.1932,
+        "selective_accuracy": 0.4412,
+        "action": "ANALYST_REVIEW_QUEUE"
+      },
+      "tier3_abstain": {
+        "count": 4,
+        "abstention_rate": 0.0227,
+        "residual_accuracy": 0.5,
+        "action": "UNCERTAINTY_HUMAN_GROUNDING"
+      }
+    },
+    "latency_ms": {
+      "mean": 98.28,
+      "p50": 96.99,
+      "p95": 123.82
+    },
+    "artifact_sha256": "985cc0a00f8f08640396760219c71953dc4e5b1eb2e10b5118fb303cab20e223",
+    "artifact_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\models\\candidates\\rf_v3.0_candidate.joblib",
+    "model_family": "RandomForest",
+    "version": "rf-v3.0-real-candidate"
+  },
+  {
+    "model_name": "et-v3.0-candidate",
+    "accuracy": 0.642,
+    "balanced_accuracy": 0.6684,
+    "macro_f1": 0.5702,
+    "weighted_f1": 0.66,
+    "macro_precision": 0.6856,
+    "macro_recall": 0.6684,
+    "log_loss": 1.4004,
+    "brier_score": 0.0895,
+    "ece": 0.115,
+    "spatial_groupkfold_macro_f1": 0.4822,
+    "class_metrics": {
+      "Industrial Fire": {
+        "precision": 0.5556,
+        "recall": 1.0,
+        "f1": 0.7143,
+        "support": 30
+      },
+      "Gas Flare": {
+        "precision": 0.7222,
+        "recall": 0.3824,
+        "f1": 0.5,
+        "support": 34
+      },
+      "Forest Fire": {
+        "precision": 0.1429,
+        "recall": 1.0,
+        "f1": 0.25,
+        "support": 5
+      },
+      "Agricultural Burning": {
+        "precision": 1.0,
+        "recall": 0.878,
+        "f1": 0.9351,
+        "support": 41
+      },
+      "Mining Activity": {
+        "precision": 0.8,
+        "recall": 0.25,
+        "f1": 0.381,
+        "support": 16
+      },
+      "Other Thermal Source": {
+        "precision": 0.8929,
+        "recall": 0.5,
+        "f1": 0.641,
+        "support": 50
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        0,
+        2,
+        36,
+        0,
+        1
+      ],
+      [
+        0,
+        4,
+        6,
+        0,
+        4,
+        2
+      ],
+      [
+        1,
+        1,
+        22,
+        0,
+        1,
+        25
+      ]
+    ],
+    "selective_prediction": {
+      "tier1": {
+        "count": 127,
+        "coverage": 0.7216,
+        "selective_accuracy": 0.6772,
+        "error_rate": 0.3228,
+        "action": "AUTO_DISPATCH_CANDIDATE"
+      },
+      "tier2": {
+        "count": 43,
+        "coverage": 0.2443,
+        "selective_accuracy": 0.5814,
+        "action": "ANALYST_REVIEW_QUEUE"
+      },
+      "tier3_abstain": {
+        "count": 6,
+        "abstention_rate": 0.0341,
+        "residual_accuracy": 0.3333,
+        "action": "UNCERTAINTY_HUMAN_GROUNDING"
+      }
+    },
+    "latency_ms": {
+      "mean": 101.27,
+      "p50": 90.35,
+      "p95": 158.67
+    },
+    "artifact_sha256": "866d1647979c138b069b08ae138e77490e372900e613791b959ba73aa5f59bf3",
+    "artifact_path": "E:\\PROJECTS\\AGNI-NETRA\\ml\\models\\candidates\\et_v3.0_candidate.joblib",
+    "model_family": "ExtraTrees",
+    "version": "et-v3.0-candidate"
+  }
+]

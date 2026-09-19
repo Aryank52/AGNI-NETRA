@@ -693,11 +693,19 @@ class MLModelRegistry(Base):
     algorithm = Column(String(50), nullable=False)  # XGBoost, Random Forest, Isolation Forest
     metrics = Column(JSON, default=dict)            # accuracy, macro_f1, brier_score, spatial_holdout_f1, temporal_holdout_f1, confusion_matrix
     artifact_path = Column(String(255), nullable=False)
-    status = Column(String(50), default="CANDIDATE")  # TRAINING, VALIDATION, CANDIDATE, APPROVED, ACTIVE, RETIRED
+    status = Column(String(50), default="CANDIDATE")  # TRAINING, VALIDATION, CANDIDATE, APPROVED, ACTIVE, RETIRED, REJECTED
     is_active = Column(Boolean, default=False)
     trained_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    model_family = Column(String(50), nullable=True)
+    training_period = Column(String(100), nullable=True)
+    feature_schema_version = Column(String(50), nullable=True, default="v3.2")
+    taxonomy_version = Column(String(50), nullable=True, default="7-class-v1")
+    calibration_version = Column(String(50), nullable=True)
+    artifact_sha256 = Column(String(64), nullable=True)
+    created_by = Column(String(100), nullable=True, default="SYSTEM_PIPELINE")
     approved_by = Column(String(100), nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    approval_timestamp = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
 
 

@@ -1046,6 +1046,10 @@ class JarvisToolRegistry:
             },
             "ml_governance": {
                 "champion_model": "xgb-v3.0-real-candidate",
+                "champion_candidate": "xgb-v3.0-real-candidate",
+                "model_status": "CANDIDATE",
+                "is_active": False,
+                "artifact_sha256": "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",
                 "calibrator": "balanced-platt-v3.0",
                 "baseline_model": "rf-v3.0-real-candidate",
                 "gate_status": "CANDIDATE_DEPLOYED_IN_CONTROLLED_MODE"

@@ -29,6 +29,7 @@ if WORKSPACE_DIR not in sys.path:
     sys.path.insert(0, WORKSPACE_DIR)
 
 from backend.app.core.database import engine
+from backend.app.services.ml.model_governance_service import model_governance_service
 
 FEATURE_COLUMNS = [
     "frp_max", "frp_avg", "frp_std",
@@ -64,6 +65,9 @@ class ProductionThermalInferenceService:
         self.model_version = "xgb-v3.0-real-candidate"
         self.calibrator_version = "balanced-platt-v3.0"
         self.dataset_lineage = "v3.2-real-final"
+        self.feature_schema_version = "v3.2"
+        self.taxonomy_version = "7-class-v1"
+        self.artifact_sha256 = None
         
         self.xgb_model = None
         self.platt_calibrator = None
@@ -74,7 +78,7 @@ class ProductionThermalInferenceService:
         self.load_artifacts()
 
     def load_artifacts(self) -> bool:
-        """Loads champion XGBoost, Platt calibrator, RF baseline, and SHAP explainer."""
+        """Loads champion XGBoost, Platt calibrator, RF baseline, and SHAP explainer with integrity validation and warmup."""
         try:
             xgb_path = os.path.join(self.model_dir, "xgb_v3_real_candidate.joblib")
             platt_path = os.path.join(self.model_dir, "xgb_v3_calibrated_candidate.joblib")
@@ -82,15 +86,25 @@ class ProductionThermalInferenceService:
             shap_path = os.path.join(self.model_dir, "shap_explainer_v3.joblib")
 
             if os.path.exists(xgb_path):
-                self.xgb_model = joblib.load(xgb_path)
+                self.xgb_model = model_governance_service.secure_load_artifact(xgb_path)
+                self.artifact_sha256 = model_governance_service.compute_file_sha256(xgb_path)
             if os.path.exists(platt_path):
-                self.platt_calibrator = joblib.load(platt_path)
+                self.platt_calibrator = model_governance_service.secure_load_artifact(platt_path)
             if os.path.exists(rf_path):
-                self.rf_model = joblib.load(rf_path)
+                self.rf_model = model_governance_service.secure_load_artifact(rf_path)
             if os.path.exists(shap_path):
-                self.shap_explainer = joblib.load(shap_path)
+                self.shap_explainer = model_governance_service.secure_load_artifact(shap_path)
 
             self.is_loaded = (self.xgb_model is not None and self.platt_calibrator is not None)
+
+            # Pre-warm SHAP TreeExplainer to eliminate cold-start latency penalty on first user request
+            if self.shap_explainer is not None and self.xgb_model is not None:
+                try:
+                    warmup_vec = np.zeros((1, len(FEATURE_COLUMNS)), dtype=np.float32)
+                    _ = self.shap_explainer.shap_values(warmup_vec)
+                except Exception as w_err:
+                    pass
+
             return self.is_loaded
         except Exception as e:
             print(f"[ProductionInferenceService] Warning: Failed to load models: {e}")
@@ -358,6 +372,8 @@ class ProductionThermalInferenceService:
             "confidence": round(top1_prob, 4),
             "confidence_margin": round(margin, 4),
             "uncertainty": uncertainty,
+            "model_version": self.model_version,
+            "artifact_sha256": self.artifact_sha256,
             "class_probabilities": class_probabilities,
             "raw_probabilities": raw_probabilities,
             "routing_tier": routing_tier,
@@ -368,8 +384,11 @@ class ProductionThermalInferenceService:
             "feature_snapshot": feat_dict,
             "model_lineage": {
                 "model_version": self.model_version,
+                "artifact_sha256": self.artifact_sha256,
                 "calibrator_version": self.calibrator_version,
                 "dataset_version": self.dataset_lineage,
+                "feature_schema_version": self.feature_schema_version,
+                "taxonomy_version": self.taxonomy_version,
                 "fallback_invoked": fallback_invoked,
                 "error": error_msg
             },
