@@ -689,12 +689,16 @@ class NormalizedObjective(BaseModel):
     primary_focus: Optional[str] = "INDUSTRIAL"
     analysis_types: List[str] = Field(default_factory=lambda: ["ABNORMALITY", "PERSISTENCE", "RISK", "EVIDENCE", "HYPOTHESES", "UNCERTAINTY"])
     is_valid_sovereign_scope: bool = True
+    location_category: str = "UNKNOWN_LOCATION"  # EXPLICIT_USER_LOCATION | RESOLVED_LOCATION | AUTHORITATIVE_GIS_LOCATION | UNKNOWN_LOCATION | OUT_OF_DOMAIN_LOCATION
+    parsed_latitude: Optional[float] = None
+    parsed_longitude: Optional[float] = None
     rejection_reason: Optional[str] = None
     requires_reassessment: bool = False
     requires_change_explanation: bool = False
     requires_contradiction_analysis: bool = False
     requires_uncertainty_explanation: bool = False
     requires_next_best_evidence: bool = False
+
 
 
 

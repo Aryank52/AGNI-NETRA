@@ -280,10 +280,15 @@ def get_public_hazard_map(
     query = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.risk),
         joinedload(ThermalEvent.prediction)
-    ).filter(ThermalEvent.status == "ACTIVE")
+    ).filter(
+        ThermalEvent.status == "ACTIVE",
+        ThermalEvent.state != "OUTSIDE_INDIA",
+        ThermalEvent.state != "FOREIGN"
+    )
 
     if state and state.upper() not in ["ALL", "INDIA"]:
         query = query.filter(ThermalEvent.state.ilike(f"%{state}%"))
+
 
     events = query.order_by(ThermalEvent.max_frp.desc()).limit(50).all()
 

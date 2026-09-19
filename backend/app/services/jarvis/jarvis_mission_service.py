@@ -62,9 +62,9 @@ class JarvisObjectiveNormalizer:
     ]
 
     FOREIGN_TERRITORIES = [
-        "sri lanka", "colombo", "pakistan", "lahore", "karachi", "china",
-        "tibet", "nepal", "bhutan", "bangladesh", "dhaka", "myanmar",
-        "afghanistan", "maldives", "usa", "europe", "kathmandu"
+        "sri lanka", "colombo", "pakistan", "lahore", "karachi", "islamabad", "china",
+        "tibet", "nepal", "bhutan", "bangladesh", "dhaka", "chittagong", "myanmar", "yangon",
+        "afghanistan", "kabul", "maldives", "usa", "europe", "kathmandu", "thimphu", "dubai", "london"
     ]
 
     @classmethod
@@ -73,7 +73,42 @@ class JarvisObjectiveNormalizer:
         cmd_lower = text_clean.lower()
         context = context or {}
 
-        # 1. Check Sovereign Scope Integrity
+        # 1. Parse and validate explicit geographic coordinates in objective text
+        coord_pattern = r"(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)"
+        coord_match = re.search(coord_pattern, text_clean)
+        parsed_lat = None
+        parsed_lon = None
+        loc_category = "UNKNOWN_LOCATION"
+
+        if coord_match:
+            try:
+                c1 = float(coord_match.group(1))
+                c2 = float(coord_match.group(2))
+                # Distinguish lat, lon
+                if -90.0 <= c1 <= 90.0 and -180.0 <= c2 <= 180.0:
+                    parsed_lat, parsed_lon = c1, c2
+                elif -90.0 <= c2 <= 90.0 and -180.0 <= c1 <= 180.0:
+                    parsed_lat, parsed_lon = c2, c1
+
+                if parsed_lat is not None and parsed_lon is not None:
+                    is_inside, st, dt, _ = india_boundary_service.is_point_inside_india(parsed_lat, parsed_lon)
+                    if not is_inside:
+                        detected_neighbor = india_boundary_service.detect_neighboring_country(parsed_lat, parsed_lon)
+                        return NormalizedObjective(
+                            intent="REJECTED_OUT_OF_SCOPE",
+                            raw_objective=text_clean,
+                            country="FOREIGN",
+                            is_valid_soovereign_scope=False,
+                            location_category="OUT_OF_DOMAIN_LOCATION",
+                            parsed_latitude=parsed_lat,
+                            parsed_longitude=parsed_lon,
+                            rejection_reason=f"Coordinates ({parsed_lat}, {parsed_lon}) are outside the Sovereign Territory of India (identified as {detected_neighbor}). AGNI-NETRA operational intelligence is strictly restricted to sovereign Indian territory."
+                        )
+                    loc_category = "AUTHORITATIVE_GIS_LOCATION"
+            except Exception:
+                pass
+
+        # 2. Check Sovereign Scope Integrity against Foreign Named Territories
         for foreign in cls.FOREIGN_TERRITORIES:
             if re.search(rf"\b{foreign}\b", cmd_lower):
                 return NormalizedObjective(
@@ -81,18 +116,21 @@ class JarvisObjectiveNormalizer:
                     raw_objective=text_clean,
                     country="FOREIGN",
                     is_valid_sovereign_scope=False,
+                    location_category="OUT_OF_DOMAIN_LOCATION",
                     rejection_reason=f"Geographic scope '{foreign.title()}' is outside the Sovereign Territory of India. AGNI-NETRA operational intelligence is strictly restricted to sovereign Indian territory."
                 )
 
-        # 2. Extract State / Region / District
+        # 3. Extract State / Region / District
         extracted_state = None
         extracted_district = context.get("district")
         for state in cls.INDIAN_STATES:
             if re.search(rf"\b{state}\b", cmd_lower):
                 extracted_state = state.title()
+                loc_category = "AUTHORITATIVE_GIS_LOCATION"
                 break
         if not extracted_state and context.get("current_region"):
             extracted_state = context["current_region"]
+            loc_category = "EXPLICIT_USER_LOCATION"
 
         entities = []
         if "mundra" in cmd_lower:
@@ -100,19 +138,22 @@ class JarvisObjectiveNormalizer:
             if not extracted_state:
                 extracted_state = "Gujarat"
             entities.append("Mundra")
+            loc_category = "AUTHORITATIVE_GIS_LOCATION"
         elif "korba" in cmd_lower:
             extracted_district = "Korba"
             if not extracted_state:
                 extracted_state = "Chhattisgarh"
             entities.append("Korba")
+            loc_category = "AUTHORITATIVE_GIS_LOCATION"
 
-        # 3. Extract Time Range & Temporal Window
+        # 4. Extract Time Range & Temporal Window
         time_range = "LAST_30_DAYS"
         if any(w in cmd_lower for w in ["last 48 hours", "48 hours", "48h", "2 days"]):
             time_range = "LAST_48_HOURS"
         elif any(w in cmd_lower for w in ["last 24 hours", "24 hours", "24h", "today"]):
             time_range = "LAST_24_HOURS"
         elif any(w in cmd_lower for w in ["last 72 hours", "72 hours", "72h", "3 days"]):
+
             time_range = "LAST_72_HOURS"
         elif any(w in cmd_lower for w in ["last 7 days", "7 days", "week", "7d"]):
             time_range = "LAST_7_DAYS"
@@ -206,12 +247,16 @@ class JarvisObjectiveNormalizer:
             primary_focus=primary_focus,
             analysis_types=["ABNORMALITY", "PERSISTENCE", "RISK", "EVIDENCE", "HYPOTHESES", "UNCERTAINTY"],
             is_valid_sovereign_scope=True,
+            location_category=loc_category,
+            parsed_latitude=parsed_lat,
+            parsed_longitude=parsed_lon,
             requires_reassessment=requires_reassessment,
             requires_change_explanation=requires_change_explanation,
             requires_contradiction_analysis=requires_contradiction_analysis,
             requires_uncertainty_explanation=requires_uncertainty_explanation,
             requires_next_best_evidence=requires_next_best_evidence
         )
+
 
 
 

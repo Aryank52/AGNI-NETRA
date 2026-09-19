@@ -51,10 +51,12 @@ class HardenedIngestionService:
 
     def validate_observation(
         self,
-        record: Dict[str, Any]
+        record: Dict[str, Any],
+        db: Optional[Session] = None
     ) -> Tuple[bool, Optional[IngestionFailureCategory], Optional[str]]:
         """
-        Validates telemetry physics, coordinate envelope, and mandatory identity fields.
+        Validates telemetry physics, coordinate envelope, mandatory identity fields,
+        and authoritative sovereign India boundary containment.
         """
         # 1. Mandatory Coordinates & Timestamp
         if "latitude" not in record or "longitude" not in record:
@@ -66,13 +68,32 @@ class HardenedIngestionService:
         except (ValueError, TypeError):
             return False, IngestionFailureCategory.INVALID_COORDINATE, "Non-numeric coordinate values"
 
+        import math
+        if math.isnan(lat) or math.isnan(lon) or math.isinf(lat) or math.isinf(lon):
+            return False, IngestionFailureCategory.INVALID_COORDINATE, "NaN or infinite coordinate values"
+
         # Check geodetic coordinate bounds (-90 to 90, -180 to 180)
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             return False, IngestionFailureCategory.INVALID_COORDINATE, f"Coordinates ({lat}, {lon}) exceed global geodetic bounds"
 
-        # Check India operational bounding box
+        # Coarse geographic box check
         if not (INDIA_LAT_MIN <= lat <= INDIA_LAT_MAX and INDIA_LON_MIN <= lon <= INDIA_LON_MAX):
-            return False, IngestionFailureCategory.INVALID_COORDINATE, f"Coordinates ({lat}, {lon}) outside India operational bounds"
+            from backend.app.services.india_boundary_service import india_boundary_service
+            neighbor = india_boundary_service.detect_neighboring_country(lat, lon)
+            return False, IngestionFailureCategory.INVALID_COORDINATE, f"SOVEREIGN_OUT_OF_DOMAIN: Coordinates ({lat}, {lon}) outside India operational bounds ({neighbor})"
+
+        # Authoritative Sovereign India Boundary Containment Check
+        from backend.app.services.india_boundary_service import india_boundary_service
+        is_inside, state_name, district_name, _ = india_boundary_service.is_point_inside_india(lat, lon, db=db)
+        if not is_inside:
+            neighbor = india_boundary_service.detect_neighboring_country(lat, lon)
+            return False, IngestionFailureCategory.INVALID_COORDINATE, f"SOVEREIGN_OUT_OF_DOMAIN: Point ({lat}, {lon}) lies outside sovereign India boundary (identified as {neighbor})"
+
+        if isinstance(record, dict):
+            record["admin_state"] = state_name
+            record["admin_district"] = district_name or "UNKNOWN"
+            record["country"] = "India"
+            record["sovereign_filter"] = "PASS_SOVEREIGN_INDIA"
 
         # 2. Timestamp Validation
         ts_val = record.get("acq_timestamp") or record.get("observation_time")
@@ -173,8 +194,9 @@ class HardenedIngestionService:
             else:
                 rec_dict = dict(item)
 
-            # Step 1: Physical and Geodetic Validation
-            is_valid, err_cat, err_msg = self.validate_observation(rec_dict)
+            # Step 1: Physical and Geodetic Validation (including Authoritative Sovereign Containment)
+            is_valid, err_cat, err_msg = self.validate_observation(rec_dict, db=db)
+
             if not is_valid:
                 quarantined_count += 1
                 dead_letter_service.record_quarantine(
@@ -315,8 +337,11 @@ class HardenedIngestionService:
             "completed_at": completed_at.isoformat(),
             "records_received": len(records),
             "records_valid": len(accepted_observations),
+            "records_accepted": len(accepted_observations),
             "records_rejected": quarantined_count,
+            "records_quarantined": quarantined_count,
             "records_duplicate": duplicate_count,
+
             "records_failed": failed_count,
             "records_processed": len(accepted_observations),
             "events_created": events_created,

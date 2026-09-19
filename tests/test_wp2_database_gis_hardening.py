@@ -394,11 +394,11 @@ def test_scenario_15_graceful_degradation_behavior():
     Verifies that when spatial features encounter missing data or fallback zones,
     the pipeline completes safely without crashing.
     """
-    # Remote point with no industrial facilities within 50km
+    # Remote point with no industrial facilities within 50km (Jaisalmer desert, India)
     remote_obs = [
         {
-            "latitude": 28.0000,
-            "longitude": 71.0000,
+            "latitude": 27.0000,
+            "longitude": 71.5000,
             "brightness": 315.0,
             "frp": 30.0,
             "confidence": 75.0,
