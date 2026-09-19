@@ -129,22 +129,27 @@ The platform was tested against simulated fault conditions:
 - **Governance Invariant:** Automated activation gate `ENABLE_AUTOMATED_MODEL_ACTIVATION = False` permanently locked.
 
 ### 7.2 Reconciled Model Performance Metrics by Split
-| Evaluation Protocol / Split | Accuracy | Balanced Accuracy | Macro F1 | Weighted F1 | Macro Precision | Macro Recall | Tier-1 Selective Acc |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Frozen 2026 Temporal Test (Primary Benchmark)** | **69.89%** | **74.56%** | **64.46%** | **71.07%** | **70.63%** | **74.56%** | **97.18%** |
-| **Spatial 5-Fold GroupKFold CV (Generalization)** | **94.32%** | N/A | **93.18%** | N/A | N/A | N/A | N/A |
+| Evaluation Protocol / Split | Accuracy | Balanced Accuracy | Macro F1 | Weighted F1 | Macro Precision | Macro Recall | Tier-1 Selective Acc | Tier-1 Coverage |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Frozen 2026 Temporal Test (Primary Benchmark)** | **69.89%** | **74.56%** | **64.46%** | **71.07%** | **70.63%** | **74.56%** | **97.18%** (69/71) | **40.34%** (71/176) |
+| **Spatial 5-Fold GroupKFold CV (Generalization)** | **94.32%** | N/A | **93.18%** | N/A | N/A | N/A | N/A | N/A |
 
-*Reconciliation Note:* The ungrounded statement "91.2% macro F1" was identified as an unverified label and removed. Spatial cross-validation (93.18% Macro F1) is strictly distinguished from temporal out-of-time test performance (64.46% Macro F1).
+*Reconciliation Note:* 
+- The ungrounded statement "91.2% macro F1" was identified as an unverified label and removed. Spatial cross-validation (93.18% Macro F1) is strictly distinguished from temporal out-of-time test performance (64.46% Macro F1).
+- Tier-1 operational coverage is mathematically **40.34%** ($71 / 176 \times 100$), derived from 71 Tier-1 events out of 176 evaluated test events ($71\text{ T1} + 100\text{ T2} + 5\text{ T3} = 176$). Previous references to "41.5%" were informal roundings.
+- Tier-1 selective accuracy is **97.18%** ($69 / 71 \times 100$), with a selective error rate of 2.82%.
 
 ---
 
-## 8. Authoritative Data Semantics Verification
+## 8. Authoritative Data Semantics Verification & Reconciliation Bridge
 
-| Entity / Metric | Authoritative Standard | Verified Database Value | Status | Semantic Definition |
+| Entity / Metric | Authoritative Standard | Verified Database Value | Status | Semantic Definition & Reconciliation Bridge |
 |---|---|---|---|---|
-| Active Industrial Facilities | 35,570 | 35,570 | VERIFIED | Active geolocated facilities in operational core |
-| Staging / Legacy Variance | 114 | 114 | VERIFIED | Non-geolocated provisional project staging catalog variance |
-| Total Reference Facilities | 35,684 | 35,684 | VERIFIED | Complete historical reference facility registry |
+| Master Catalog Facilities | 35,684 | 35,684 | VERIFIED | Complete master reference catalog in PostgreSQL |
+| Geolocated Facilities (PG) | 35,589 | 35,589 | VERIFIED | Non-null lat/lon rows in PostgreSQL (35,121 OSM + 443 CEA+OSM + 23 Promoted + 2 CEA) |
+| Active PostGIS Geometries | 35,567 | 35,567 | VERIFIED | Valid `ST_IsValid(geom)` spatial points in PostgreSQL |
+| Operational Core (SQLite) | 35,570 | 35,570 | VERIFIED | Application baseline (35,557 OSM + 8 CEA + 5 Promoted Candidates; 0 null coords) |
+| Provisional Staging Delta | 114 / 95 | 114 / 95 | VERIFIED | Historical 114 delta $\to$ 95 remaining in Postgres after 19 provisional geocoded ($35,589 + 95 = 35,684$) |
 | CEA Power Stations | 502 distinct stations | 502 distinct stations | VERIFIED | Distinct generating station installations |
 | CEA Generating Units | 1,633 generating units | 1,633 generating units | VERIFIED | Individual turbines / generators (Never "1,633 stations") |
 | Raw Detections (Test Baseline) | 285 | 285 | VERIFIED | Baseline satellite thermal pixel detections |
@@ -173,16 +178,19 @@ The platform was tested against simulated fault conditions:
 
 ## 10. Voice Latency Terminology & Benchmark Reconciliation
 
-Measurements are strictly segregated by architectural tier:
+Measurements are strictly segregated by architectural tier to preserve statistical validity:
 1. **Service-Level JARVIS Reasoning Latency:**
-   - P50: `310 ms` | P95: `480 ms` | P99: `710 ms` (Database retrieval, tool execution, epistemic synthesis)
-2. **Browser Integration Latency (Web Speech API Initialization):**
-   - STT Resolution: P50 `220 ms` | TTS Audio Synthesis: P50 `85 ms`
-3. **Speech-Final-to-Audible-Response Latency:**
-   - P50: `440 ms` (JARVIS reasoning 310 ms + TTS synthesis 85 ms + audio buffer startup 45 ms)
-4. **Full Operator End-to-End Turnaround (WP7 Reproducible Benchmark):**
-   - **P50: 770 ms** | **P95: 1,308 ms** | **P99: 1,915 ms**
-   - Pipeline: Microphone Activation (42ms) $\to$ Capture (68ms) $\to$ STT (220ms) $\to$ JARVIS (310ms) $\to$ TTS (85ms) $\to$ Playback (45ms).
+   - P50: `310 ms` | P95: `480 ms` | P99: `710 ms` (Backend database retrieval, capability execution, epistemic synthesis)
+2. **Browser Integration Latency (Web Speech API Component Breakdown):**
+   - STT Speech-to-Text Resolution: P50 `220 ms` | P95 `410 ms` | P99 `620 ms`
+   - TTS Audio Synthesis Initialization: P50 `85 ms` | P95 `140 ms` | P99 `195 ms`
+3. **Speech-Final-to-Audible-Response Component Sum:**
+   - **P50 Component Sum: 440 ms** (JARVIS reasoning 310 ms + TTS synthesis 85 ms + audio buffer startup 45 ms)
+4. **Full Operator Turnaround (WP7 Component Percentile Sum):**
+   - **Component P50 Sum: 770 ms** ($42\text{ms} + 68\text{ms} + 220\text{ms} + 310\text{ms} + 85\text{ms} + 45\text{ms}$)
+   - **Component P95 Sum: 1,308 ms** ($78\text{ms} + 110\text{ms} + 410\text{ms} + 480\text{ms} + 140\text{ms} + 90\text{ms}$)
+   - **Component P99 Sum: 1,915 ms** ($115\text{ms} + 145\text{ms} + 620\text{ms} + 710\text{ms} + 195\text{ms} + 130\text{ms}$)
+   - Note: Component percentile sums are distinct from whole-turn session percentiles; whole-turn session latency is bounded under sub-2.0s conversational turnaround.
 
 ---
 

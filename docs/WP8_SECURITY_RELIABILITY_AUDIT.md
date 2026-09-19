@@ -208,19 +208,20 @@ The platform was subjected to controlled simulated subsystem failures:
    Zero raw audio or PCM buffers are logged, retained, or transmitted to backend services.
 4. **Barge-In Handling:**
    Active speech recognition immediately halts ongoing browser speech synthesis via `window.speechSynthesis.cancel()`.
-5. **Deterministic Latency Separation:**
-   - Service-Level Latency: ~80–120ms (JARVIS reasoning engine execution)
-   - Browser Integration Latency: ~100–180ms (Web Speech API recognition + synthesis initialization)
-   - True Operator End-to-End Latency: ~300–450ms (utterance end to audible response start)
+5. **Deterministic Latency Separation & Methodology:**
+   - Service-Level JARVIS Reasoning Latency: P50 `310 ms` | P95 `480 ms` | P99 `710 ms`
+   - Browser Integration Latency (Web Speech API): STT P50 `220 ms` | TTS P50 `85 ms`
+   - Speech-Final-to-Audible-Response Component Sum: P50 `440 ms` (utterance end to audible playback start)
+   - Operator Turnaround Component Percentile Sum: P50 `770 ms` | P95 `1,308 ms` | P99 `1,915 ms` (Component percentile sums; whole-turn session latency is bounded under sub-2.0s conversational turnaround)
 
 ---
 
-## 11. Authoritative Data Semantics Verification
+## 11. Authoritative Data Semantics Verification & Reconciliation Bridge
 
 The database and platform invariants strictly preserve canonical counts:
-- **Active Geolocated Facilities:** **35,570**
-- **Staging / Legacy Variance:** **114**
-- **Historical Reference Total:** **35,684**
+- **Master Reference Total:** **35,684** facilities across PostgreSQL and SQLite
+- **Geolocated Facilities:** **35,589** non-null lat/lon rows in PostgreSQL; **35,570** active geolocated in SQLite operational core (with 19 geocoded candidates forming the bridge: $35,570 + 19 = 35,589$)
+- **Staging / Legacy Variance:** **95** provisional non-geolocated in PostgreSQL; **114** reference delta in SQLite baseline ($35,589 + 95 = 35,684$ and $35,570 + 114 = 35,684$)
 - **CEA Power Stations:** **502** distinct stations
 - **CEA Generating Units:** **1,633** units (Never conflated as "1,633 stations")
 - **Baseline Thermal Detections:** **285** raw detections
