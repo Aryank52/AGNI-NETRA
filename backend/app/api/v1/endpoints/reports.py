@@ -31,7 +31,7 @@ def download_event_pdf_report(
         joinedload(ThermalEvent.risk),
         joinedload(ThermalEvent.features),
         joinedload(ThermalEvent.facility)
-    ).filter(ThermalEvent.id == event_id).first()
+    ).filter((ThermalEvent.id == event_id) | (ThermalEvent.event_code == event_id)).first()
 
     if not event:
         raise HTTPException(status_code=404, detail="Thermal event not found")
@@ -149,5 +149,137 @@ def export_events_csv(
     return Response(
         content=csv_data,
         media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/event/{event_id}/json")
+def get_event_json_report(
+    event_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst)
+):
+    """
+    Exports single event intelligence report as structured JSON with full cryptographic digest,
+    provenance, risk, prediction, facility, and audit metadata.
+    """
+    if not event_id or ".." in event_id or "/" in event_id or "\\" in event_id or "\x00" in event_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event identifier format.")
+
+    event = db.query(ThermalEvent).options(
+        joinedload(ThermalEvent.prediction),
+        joinedload(ThermalEvent.risk),
+        joinedload(ThermalEvent.features),
+        joinedload(ThermalEvent.facility)
+    ).filter(
+        (ThermalEvent.id == event_id) | (ThermalEvent.event_code == event_id)
+    ).first()
+
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event '{event_id}' not found.")
+
+    report_dict = {
+        "report_type": "INTELLIGENCE_REPORT_JSON",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_by": current_user.email if current_user else "ANALYST",
+        "sovereign_scope": "Republic of India (EPSG:4326)",
+        "event": {
+            "id": event.id,
+            "event_code": event.event_code,
+            "latitude": event.latitude,
+            "longitude": event.longitude,
+            "state": event.state,
+            "district": event.district,
+            "max_frp": event.max_frp,
+            "avg_frp": event.avg_frp,
+            "detection_count": event.detection_count,
+            "facility_status": event.facility_status,
+            "nearest_facility_distance_m": event.nearest_facility_distance_m,
+            "first_seen": event.first_seen.isoformat() if event.first_seen else None,
+            "last_seen": event.last_seen.isoformat() if event.last_seen else None,
+            "is_simulation": getattr(event, "is_simulation", False)
+        },
+        "classification": {
+            "predicted_class": event.prediction.predicted_class if event.prediction else "Unclassified",
+            "confidence": event.prediction.confidence if event.prediction else None,
+            "model_version": event.prediction.model_version if event.prediction else "xgb-v3.0-real-candidate",
+            "explanation_summary": event.prediction.explanation_summary if event.prediction else None
+        },
+        "risk": {
+            "risk_score": event.risk.risk_score if event.risk else 50.0,
+            "risk_level": event.risk.risk_level if event.risk else "MODERATE",
+            "intensity_subscore": getattr(event.risk, "intensity_subscore", None) if event.risk else None,
+            "persistence_subscore": getattr(event.risk, "persistence_subscore", None) if event.risk else None,
+            "proximity_subscore": getattr(event.risk, "proximity_subscore", None) if event.risk else None
+        },
+        "facility": {
+            "id": event.facility.id if event.facility else None,
+            "name": event.facility.name if event.facility else None,
+            "facility_type": event.facility.facility_type if event.facility else None,
+            "sector": getattr(event.facility, "sector", None) if event.facility else None
+        }
+    }
+
+    import hashlib
+    digest = hashlib.sha256(json.dumps(report_dict, sort_keys=True).encode("utf-8")).hexdigest()
+    report_dict["sha256_digest"] = digest
+
+    filename = f"AGNI_NETRA_Report_{event.event_code}.json"
+    return Response(
+        content=json.dumps(report_dict, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/export/json")
+def export_events_json(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+    state: Optional[str] = None,
+    risk_level: Optional[str] = None
+):
+    """
+    Exports filtered thermal events to JSON format with full provenance.
+    """
+    query = db.query(ThermalEvent).options(
+        joinedload(ThermalEvent.prediction),
+        joinedload(ThermalEvent.risk),
+        joinedload(ThermalEvent.features),
+        joinedload(ThermalEvent.facility)
+    )
+    if state and state != "ALL":
+        query = query.filter(ThermalEvent.state.ilike(f"%{state}%"))
+    if risk_level and risk_level != "ALL":
+        query = query.join(ThermalEvent.risk).filter(ThermalEvent.risk.has(risk_level=risk_level))
+
+    events = query.limit(200).all()
+
+    results = []
+    for e in events:
+        results.append({
+            "event_code": e.event_code,
+            "state": e.state,
+            "district": e.district,
+            "latitude": round(e.latitude, 5),
+            "longitude": round(e.longitude, 5),
+            "max_frp_mw": round(e.max_frp, 1),
+            "avg_frp_mw": round(e.avg_frp, 1) if e.avg_frp else None,
+            "predicted_class": e.prediction.predicted_class if e.prediction else "Uncertain",
+            "confidence": round(e.prediction.confidence, 3) if e.prediction else 0.8,
+            "risk_level": e.risk.risk_level if e.risk else "LOW",
+            "risk_score": round(e.risk.risk_score, 1) if e.risk else 50.0,
+            "facility_name": e.facility.name if e.facility else None,
+            "facility_status": e.facility_status,
+            "detection_count": e.detection_count,
+            "first_seen": e.first_seen.isoformat() if e.first_seen else None,
+            "last_seen": e.last_seen.isoformat() if e.last_seen else None,
+            "is_simulation": getattr(e, "is_simulation", False)
+        })
+
+    filename = f"AGNI_NETRA_Events_Export_{datetime.now(timezone.utc).strftime('%Y%m%d')}.json"
+    return Response(
+        content=json.dumps({"total_count": len(results), "events": results}, indent=2),
+        media_type="application/json",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )

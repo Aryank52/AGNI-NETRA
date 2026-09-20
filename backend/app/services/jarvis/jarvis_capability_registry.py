@@ -779,7 +779,235 @@ class JarvisCapabilityRegistry:
             ]
         }
 
+    def get_intelligence_registry(self) -> Dict[str, Any]:
+        """
+        Canonical 21-domain AGNI-NETRA Intelligence Context Registry (A through U).
+        Enables JARVIS Single Master Orchestrator to understand what intelligence exists,
+        its epistemic tier, freshness, authority, and data provenance.
+        """
+        domains = {
+            "THERMAL_OBSERVATION": {
+                "domain_code": "A",
+                "name": "Thermal Observation",
+                "description": "Satellite-derived thermal observations, FRP, brightness temperature, acquisition timestamp, sensor/provider, coordinates, observation quality, provenance.",
+                "capabilities": ["GET_EVENT"],
+                "data_sources": ["thermal_detections", "thermal_events"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "Near-Real-Time (<15 min orbit-to-telemetry)",
+                "governance_rule": "Radiometric observation constitutes inferred thermal radiance, NOT forensic ground truth."
+            },
+            "INGESTION": {
+                "domain_code": "B",
+                "name": "Ingestion & Stream Pipeline",
+                "description": "Multi-provider telemetry ingestion, status, retries, checkpoints, watermark, duplicates, quarantine, replay, delivery count, provider health.",
+                "capabilities": ["GET_SYSTEM_STATUS"],
+                "data_sources": ["ingestion_checkpoints", "quarantined_telemetry", "ingestion_stream_metrics"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "Continuous streaming (sub-second)",
+                "governance_rule": "Deterministic checkpointing; zero telemetry dropped; foreign or corrupt coordinates quarantined."
+            },
+            "GEOGRAPHIC_INTELLIGENCE": {
+                "domain_code": "C",
+                "name": "Geographic Intelligence & Sovereign Boundaries",
+                "description": "India sovereign boundary, state, district, subdistrict, facility spatial containment, nearest assets, buffer analysis, coordinate validation.",
+                "capabilities": ["VALIDATE_COORDINATES", "GET_ADMIN_HIERARCHY"],
+                "data_sources": ["admin_boundaries", "india_boundary_service"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "Static authoritative reference (LGD 2024 / geoBoundaries)",
+                "governance_rule": "Zero hardcoded state guessing; foreign coordinates strictly rejected and quarantined."
+            },
+            "GIS_CONTEXT": {
+                "domain_code": "D",
+                "name": "GIS Context & Spatial Layers",
+                "description": "Every available GIS layer: thermal events, industrial facilities, thermal density, administrative boundaries, forest, Bhuvan LULC, CEA power, mining, protected/compliance areas.",
+                "capabilities": ["GET_SPATIAL_CONTEXT", "GET_LULC_CONTEXT", "GET_PROTECTED_AREA_CONTEXT"],
+                "data_sources": ["admin_boundaries", "industrial_facilities", "cea_power_units", "ibm_auctioned_blocks", "lulc_spatial_features"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Synchronized PostGIS / SQLite R-Tree indices",
+                "governance_rule": "Spatial proximity does not assert liability; correlation != causation."
+            },
+            "INDUSTRIAL_INTELLIGENCE": {
+                "domain_code": "E",
+                "name": "Industrial Facility Intelligence",
+                "description": "35,570 active operational facilities, 35,684 reference facilities, facility type, proximity, industrial category, recurring thermal activity, risk exposure.",
+                "capabilities": ["GET_INDUSTRIAL_CONTEXT", "GET_SPATIAL_CONTEXT"],
+                "data_sources": ["industrial_facilities", "compliance_records"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Authoritative registry baseline",
+                "governance_rule": "Uncataloged facilities remain explicitly labeled UNCATALOGED; zero phantom assignments."
+            },
+            "POWER_INTELLIGENCE": {
+                "domain_code": "F",
+                "name": "Power Infrastructure Intelligence",
+                "description": "502 distinct CEA power stations, 1,633 generating units, station/unit distinction, spatial relationships, nearby thermal events.",
+                "capabilities": ["GET_POWER_CONTEXT"],
+                "data_sources": ["cea_power_units", "cea_power_stations"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Authoritative CEA registry 2024",
+                "governance_rule": "Distinguish power station boundary from individual boiler/generator generating units."
+            },
+            "MINING_INTELLIGENCE": {
+                "domain_code": "G",
+                "name": "Mining Cadastral Intelligence",
+                "description": "Mining sites/context, spatial relationships, historical recurrence, association with thermal activity.",
+                "capabilities": ["GET_MINING_CONTEXT"],
+                "data_sources": ["ibm_mining_leases", "ibm_mineral_blocks"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Indian Bureau of Mines (IBM) authoritative cadastral records",
+                "governance_rule": "Mining lease boundaries are cadastral limits, not verified ignition causes."
+            },
+            "HISTORICAL_INTELLIGENCE": {
+                "domain_code": "H",
+                "name": "Historical Intelligence & Baselines",
+                "description": "Historical incidents, 30-day baseline, recurrence, persistence, annual trend, monthly trend, time-of-day distribution, FRP history, similar events, spatial recurrence.",
+                "capabilities": ["GET_HISTORICAL_BASELINE", "PATTERN_ANALYSIS", "HISTORICAL_ROOT_CAUSE"],
+                "data_sources": ["historical_baselines", "historical_incidents", "thermal_events"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "6-year multi-sensor archive (8.22M detections)",
+                "governance_rule": "CORRELATION != CAUSATION; longitudinal presence is evidence, not fault."
+            },
+            "ANOMALY_INTELLIGENCE": {
+                "domain_code": "I",
+                "name": "Anomaly Detection Intelligence",
+                "description": "Baseline deviation, anomaly score, intensity, persistence, recurrence, contextual abnormality.",
+                "capabilities": ["GET_ANOMALY_SCORE"],
+                "data_sources": ["isolation_forest_v1.joblib", "historical_baselines"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Real-time anomaly evaluation per observation cycle",
+                "governance_rule": "High anomaly score indicates statistical divergence, not necessarily catastrophic emergency."
+            },
+            "ML_INTELLIGENCE": {
+                "domain_code": "J",
+                "name": "Machine Learning Intelligence & Governance",
+                "description": "Current model: xgb-v3.0-real-candidate, status: CANDIDATE, is_active: FALSE. Zero governed production champion configured. Classification, confidence, probabilities, calibration, SHAP, provenance, artifact SHA, dataset SHA, feature schema, taxonomy.",
+                "capabilities": ["GET_MODEL_PREDICTION", "GET_MODEL_PROVENANCE", "GET_SHAP_EXPLANATION"],
+                "data_sources": ["ml_model_registry", "xgb_v3.0_candidate.joblib"],
+                "epistemic_tier": "INFERRED",
+                "freshness": "Shadow evaluation only; zero production champion active",
+                "governance_rule": "Never present candidate inference as ground truth. Automated model activation permanently disabled."
+            },
+            "RISK_INTELLIGENCE": {
+                "domain_code": "K",
+                "name": "Risk Intelligence & 5-Factor Evaluation",
+                "description": "Risk = 30% Intensity + 25% Abnormality + 20% Exposure + 15% Persistence + 10% Context. Tiers: CRITICAL >= 75, HIGH >= 55, MODERATE >= 35, LOW < 35.",
+                "capabilities": ["GET_RISK"],
+                "data_sources": ["risk_scores", "thermal_events"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Computed deterministically upon event clustering",
+                "governance_rule": "Immutable mathematical formula. Risk is evaluated separately from operational Priority."
+            },
+            "PRIORITY": {
+                "domain_code": "L",
+                "name": "Operational Priority Scoring",
+                "description": "Priority model inputs: Risk (40%), Confidence (20%), Infrastructure Vulnerability (30%), Verification Urgency (10%).",
+                "capabilities": ["GET_PRIORITY"],
+                "data_sources": ["thermal_events", "risk_scores"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Real-time priority dispatch queue calculation",
+                "governance_rule": "Never combine Risk and Priority into one unexplained value."
+            },
+            "LIFECYCLE": {
+                "domain_code": "M",
+                "name": "Incident Lifecycle Management",
+                "description": "Audited 12-state lifecycle: OBSERVED -> VALIDATING -> CONTEXTUALIZING -> ANALYZING -> CLASSIFYING -> ASSESSING -> CORRELATING -> INVESTIGATING -> INTELLIGENCE_READY -> REQUIRES_HUMAN_VERIFICATION -> VERIFIED -> CONTESTED -> RESOLVED.",
+                "capabilities": ["GET_EVENT_LIFECYCLE"],
+                "data_sources": ["lifecycle_transitions", "thermal_events"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "State transition event journal",
+                "governance_rule": "State transitions are append-only with immutable transition history."
+            },
+            "EPISTEMIC_INTELLIGENCE": {
+                "domain_code": "N",
+                "name": "Epistemic Intelligence & Separation",
+                "description": "Strict 6-way epistemic separation: OBSERVED, DERIVED, INFERRED, UNKNOWN, MISSING, CONFLICTING. Rules: INFERRED != OBSERVED, MISSING != UNKNOWN factual certainty, CORRELATED != CAUSAL, MODEL OUTPUT != GROUND TRUTH.",
+                "capabilities": ["EPISTEMIC_SYNTHESIS"],
+                "data_sources": ["all_intelligence_streams"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "Universal architectural constraint",
+                "governance_rule": "Never conflate probabilistic inferences with physical satellite observations."
+            },
+            "HUMAN_VERIFICATION": {
+                "domain_code": "O",
+                "name": "Human Verification & Ground Truth",
+                "description": "AI assistance -> evidence -> analyst review -> verification/contest -> audit. Human verification remains authoritative.",
+                "capabilities": ["GET_VERIFICATION_HISTORY"],
+                "data_sources": ["verification_records", "audit_logs"],
+                "epistemic_tier": "OBSERVED",
+                "freshness": "Analyst-verified ground truth verdicts",
+                "governance_rule": "Human verification overrides AI inference in all downstream analytics."
+            },
+            "PREVENTION_INTELLIGENCE": {
+                "domain_code": "P",
+                "name": "Proactive Prevention Intelligence",
+                "description": "Prevention Case, Root Cause Hypotheses, Evidence, Historical Pattern, Environmental Context, Material Context, Recommendations, Responsible Authorities, Report, Approval, Delivery.",
+                "capabilities": ["ROOT_CAUSE_ASSESSMENT", "HISTORICAL_ROOT_CAUSE"],
+                "data_sources": ["prevention_cases", "root_cause_hypotheses", "prevention_recommendations"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Active prevention cases synchronized with thermal incidents",
+                "governance_rule": "Focuses on proactive industrial risk mitigation rather than purely reactive suppression."
+            },
+            "ROOT_CAUSE_INTELLIGENCE": {
+                "domain_code": "Q",
+                "name": "Deterministic Root-Cause Hypotheses",
+                "description": "13 deterministic hypotheses. Supporting/contradicting evidence, spatial/temporal relevance, confidence, evidence strength, status: SUPPORTED, PLAUSIBLE, WEAKLY_SUPPORTED, CONTRADICTED, UNKNOWN.",
+                "capabilities": ["ROOT_CAUSE_ASSESSMENT"],
+                "data_sources": ["root_cause_hypotheses", "prevention_cases"],
+                "epistemic_tier": "INFERRED",
+                "freshness": "Analysis of Competing Hypotheses (ACH) deterministic evaluation",
+                "governance_rule": "Never claim an unverified hypothesis as confirmed cause."
+            },
+            "PREVENTION_RECOMMENDATIONS": {
+                "domain_code": "R",
+                "name": "Actionable Prevention Recommendations",
+                "description": "Recommendation, reason, supporting evidence, risk relevance, responsible authority, urgency, prevention objective. Always uses 'MAY REDUCE RECURRENCE RISK'. Never guarantees prevention.",
+                "capabilities": ["PREVENTION_RECOMMENDATIONS"],
+                "data_sources": ["prevention_recommendations"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Grounded to supported hypotheses",
+                "governance_rule": "Always use 'MAY REDUCE RECURRENCE RISK'. Never guarantee prevention."
+            },
+            "REPORTING": {
+                "domain_code": "S",
+                "name": "Governed Reporting & Document Generation",
+                "description": "Intelligence Report, Compliance Report, Root Cause Report, Prevention Report. Generation, preview, provenance, approval, delivery, audit. ReportLab PDF and JSON export.",
+                "capabilities": ["REPORT_GENERATION"],
+                "data_sources": ["prevention_reports", "audit_logs"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "DRAFT -> REVIEW -> APPROVAL -> DISPATCH",
+                "governance_rule": "JARVIS cannot independently send. Human approval strictly required before external delivery."
+            },
+            "AUTHORITY_INTELLIGENCE": {
+                "domain_code": "T",
+                "name": "Authority Hierarchy & Jurisdiction Routing",
+                "description": "Authority hierarchy: Central, State, District, Operator. Verified jurisdiction mapping. Never invent an authority or contact.",
+                "capabilities": ["AUTHORITY_RESOLUTION"],
+                "data_sources": ["authority_directory", "admin_boundaries"],
+                "epistemic_tier": "DERIVED",
+                "freshness": "Authoritative local and state government directory (LGD)",
+                "governance_rule": "Zero hallucinated contacts or email addresses."
+            },
+            "AGNI_SAT": {
+                "domain_code": "U",
+                "name": "AGNI-SAT Virtual Satellite Digital Twin",
+                "description": "AGNI-SAT = SIMULATED DIGITAL TWIN. SIMULATED TELEMETRY ONLY. Distinguishes LIVE AGNI-NETRA INTELLIGENCE from AGNI-SAT SIMULATION. 12 executable scenarios.",
+                "capabilities": ["RUN_SIMULATION_SCENARIO", "CALCULATE_ORBITAL_PASS"],
+                "data_sources": ["satellite_telemetry_logs", "simulation_scenarios"],
+                "epistemic_tier": "INFERRED",
+                "freshness": "Orbital mechanics simulation (10-stage processing pipeline)",
+                "governance_rule": "All simulation outputs must clearly indicate SIMULATED."
+            }
+        }
+        return {
+            "version": "2.0.0",
+            "total_domains": len(domains),
+            "domains": domains,
+            "capabilities_count": len(self._capabilities),
+            "single_master": "JARVIS Single Master Intelligence Orchestrator",
+            "zero_external_llm_invariant": True
+        }
+
 
 # Singleton instance
 jarvis_capability_registry = JarvisCapabilityRegistry()
+
 

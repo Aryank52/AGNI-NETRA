@@ -64,6 +64,7 @@ deployment/.env
 *.dump
 agni_netra.db
 storage_cache/
+backend/app/cache/
 artifacts/
 database/backups/
 

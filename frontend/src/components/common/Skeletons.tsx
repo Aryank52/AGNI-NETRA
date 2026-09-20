@@ -13,6 +13,26 @@ export function StatSkeleton() {
 }
 
 export function CardSkeleton({ lines = 3, count = 1 }: { lines?: number; count?: number }) {
+  if (count === 1) {
+    return (
+      <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 animate-pulse space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-32 bg-slate-800 rounded"></div>
+          <div className="h-4 w-16 bg-slate-800/60 rounded"></div>
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: lines }).map((_, i) => (
+            <div
+              key={i}
+              className="h-3 bg-slate-800/50 rounded"
+              style={{ width: `${85 - i * 15}%` }}
+            ></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const cards = Array.from({ length: count }).map((_, cIdx) => (
     <div key={cIdx} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 animate-pulse space-y-3">
       <div className="flex items-center justify-between">
@@ -31,7 +51,6 @@ export function CardSkeleton({ lines = 3, count = 1 }: { lines?: number; count?:
     </div>
   ));
 
-  if (count === 1) return cards[0];
   return <>{cards}</>;
 }
 

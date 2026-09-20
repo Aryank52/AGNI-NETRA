@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -159,6 +159,27 @@ const DEFAULT_MODEL_PROVENANCE: ModelProvenance = {
   governance_notice: "No governed production champion configured. Candidate model xgb-v3.0-real-candidate held under shadow evaluation. Automated activation is permanently blocked.",
 };
 
+const GOLDEN_QUESTIONS = [
+  "What is happening?",
+  "Why is the risk critical?",
+  "What changed from the baseline?",
+  "What historical events are similar?",
+  "Which industrial facilities are nearby?",
+  "What power infrastructure is nearby?",
+  "What mining activity exists here?",
+  "Why is the event classified this way?",
+  "What evidence supports that classification?",
+  "What is unknown?",
+  "What information is missing?",
+  "Why might this location experience repeated thermal activity?",
+  "What are the strongest root-cause hypotheses?",
+  "What evidence contradicts those hypotheses?",
+  "What preventive measures may reduce recurrence risk?",
+  "Which authority should review the case?",
+  "Generate a prevention report.",
+  "Show this event on the map."
+];
+
 const LIFECYCLE_STAGES = [
   { id: 1, name: "New Intelligence", description: "Thermal observation validated, clustered, contextualized" },
   { id: 2, name: "JARVIS Observing", description: "Single-Master Observer evaluating state change & risk threshold" },
@@ -184,6 +205,7 @@ export default function JarvisOperationalConsole() {
   });
   const [activeItems, setActiveItems] = useState<ActiveIntelligenceItem[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<ActiveIntelligenceItem | null>(null);
+  const [worldState, setWorldState] = useState<any>(null);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "CRITICAL" | "HIGH" | "CHANGED" | "UNCERTAIN">("ALL");
   const [observerStatus, setObserverStatus] = useState<ObserverStatus | null>(null);
 
@@ -215,35 +237,44 @@ export default function JarvisOperationalConsole() {
     onError: handleVoiceError,
     autoSpeak: autoSpeak,
   });
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
 
-  // Load Live Situation Snapshot
-  const loadWorldState = useCallback(async () => {
+  const situationRef = useRef(situation);
+  situationRef.current = situation;
+
+  // Load Live Situation Snapshot & Full World State
+  const loadWorldState = useCallback(async (eventRef?: string) => {
     try {
       setLoading(true);
-      const data = await fetchApi<any>("/jarvis/world-state");
+      const url = eventRef ? `/jarvis/world-state?event_ref=${encodeURIComponent(eventRef)}` : "/jarvis/world-state";
+      const data = await fetchApi<any>(url);
       if (data && data.current_situation) {
         setSituation(data.current_situation);
         setActiveItems(data.active_intelligence || []);
-        if (data.active_intelligence && data.active_intelligence.length > 0 && !selectedEvent) {
-          setSelectedEvent(data.active_intelligence[0]);
+        if (data.world_state) {
+          setWorldState(data.world_state);
+        }
+        if (data.active_intelligence && data.active_intelligence.length > 0) {
+          setSelectedEvent((prev) => {
+            if (eventRef) {
+              const match = data.active_intelligence.find(
+                (i: any) => i.event_code.toLowerCase() === eventRef.toLowerCase() || i.event_id === eventRef
+              );
+              return match || prev || data.active_intelligence[0];
+            }
+            return prev || data.active_intelligence[0];
+          });
         }
       }
       setLastRefreshed(new Date().toLocaleTimeString());
       setErrorMsg(null);
     } catch (err: any) {
       console.warn("World state fetch fallback:", err.message);
-      setSituation({
-        critical: 3,
-        high: 7,
-        changed: 5,
-        uncertain: 4,
-        requires_verification: 6,
-        total_active: 44,
-      });
     } finally {
       setLoading(false);
     }
-  }, [selectedEvent]);
+  }, []);
 
   // Load JARVIS Observer Status
   const loadObserverStatus = useCallback(async () => {
@@ -258,7 +289,7 @@ export default function JarvisOperationalConsole() {
         agent_id: "JARVIS-MASTER-OBSERVER-01",
         active_agent_count: 1,
         is_master: true,
-        total_observed_events: situation.total_active || 1,
+        total_observed_events: situationRef.current.total_active || 1,
         investigation_threshold: 60.0,
         consequential_actions_enabled: false,
         operational_dispatch_gate_blocked: true,
@@ -266,7 +297,7 @@ export default function JarvisOperationalConsole() {
         current_focus: "Continuous thermal monitoring across sovereign India",
       });
     }
-  }, [situation.total_active]);
+  }, []);
 
   // Determine current lifecycle stage index (1..7)
   const currentLifecycleStage = useMemo((): number => {
@@ -292,29 +323,45 @@ export default function JarvisOperationalConsole() {
       if (data && data.notifications && data.notifications.length > 0) {
         const notif = data.notifications[0];
         setProactiveAlert(notif.text);
-        if (!voice.isMuted && autoSpeak) {
-          voice.speak(notif.text);
+        if (!voiceRef.current.isMuted && autoSpeak) {
+          voiceRef.current.speak(notif.text);
         }
       }
     } catch {
       // ignore
     }
-  }, [voice, autoSpeak]);
+  }, [autoSpeak]);
+
+  // Stable references for non-looping timer polling
+  const loadWorldStateRef = useRef(loadWorldState);
+  loadWorldStateRef.current = loadWorldState;
+  const loadObserverStatusRef = useRef(loadObserverStatus);
+  loadObserverStatusRef.current = loadObserverStatus;
+  const checkProactiveAlertsRef = useRef(checkProactiveAlerts);
+  checkProactiveAlertsRef.current = checkProactiveAlerts;
 
   useEffect(() => {
-    loadWorldState();
-    loadObserverStatus();
+    loadWorldStateRef.current();
+    loadObserverStatusRef.current();
 
     const timer = setInterval(() => {
       if (autoRefresh) {
-        loadWorldState();
-        loadObserverStatus();
-        checkProactiveAlerts();
+        loadWorldStateRef.current();
+        loadObserverStatusRef.current();
+        checkProactiveAlertsRef.current();
       }
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [autoRefresh, loadWorldState, loadObserverStatus, checkProactiveAlerts]);
+  }, [autoRefresh]);
+
+  const handleSelectEvent = (item: ActiveIntelligenceItem) => {
+    setSelectedEvent(item);
+    loadWorldState(item.event_code);
+    if (consoleState === "IDLE") {
+      setConsoleState("OBSERVING");
+    }
+  };
 
   // Execute Grounded JARVIS Interaction
   const executeJarvisQuery = async (queryText: string) => {
@@ -487,7 +534,7 @@ export default function JarvisOperationalConsole() {
               </span>
 
               <button
-                onClick={loadWorldState}
+                onClick={() => loadWorldState()}
                 disabled={loading}
                 aria-label="Refresh operational state"
                 title="Refresh State"
@@ -781,6 +828,35 @@ export default function JarvisOperationalConsole() {
             </div>
           </div>
 
+          {/* 18 CANONICAL OPERATIONAL QUESTIONS PALETTE */}
+          <div className="bg-slate-900/60 border border-slate-800/90 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center justify-between font-mono text-xs text-slate-300">
+              <span className="font-bold flex items-center gap-2 text-cyan-400">
+                <HelpCircle className="w-4 h-4 text-cyan-400" />
+                JARVIS INTELLIGENCE INQUIRIES (18 CANONICAL QUESTIONS)
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Target: <strong className="text-amber-300">{selectedEvent?.event_code || "Active Focus"}</strong>
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {GOLDEN_QUESTIONS.map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => executeJarvisQuery(q)}
+                  disabled={loading}
+                  className="text-left px-2.5 py-1.5 rounded-lg bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/90 hover:border-cyan-500/50 text-[11px] font-mono text-slate-300 hover:text-cyan-200 transition-all cursor-pointer flex items-center justify-between gap-1 group"
+                >
+                  <span className="truncate">
+                    <span className="text-amber-400/80 mr-1.5 font-bold">{(idx + 1).toString().padStart(2, "0")}.</span>
+                    {q}
+                  </span>
+                  <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* DUAL COLUMN OPERATIONAL WORKSPACE */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* LEFT COLUMN: ACTIVE INTELLIGENCE & HISTORICAL BASELINE (7 Cols) */}
@@ -804,7 +880,7 @@ export default function JarvisOperationalConsole() {
                     {filteredItems.slice(0, 6).map((item) => (
                       <div
                         key={item.event_id}
-                        onClick={() => setSelectedEvent(item)}
+                        onClick={() => handleSelectEvent(item)}
                         className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                           selectedEvent?.event_id === item.event_id
                             ? "bg-slate-900 border-amber-400/60 shadow-md"

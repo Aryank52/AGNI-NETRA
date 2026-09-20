@@ -1062,7 +1062,8 @@ class IndiaIntelligenceService:
         ctx = matched["nearest_context"]
         st = matched["administrative"]["state"]
         dist = matched["administrative"]["district"]
-        fac_name = ctx.get("osm_industrial", {}).get("name", "Industrial Boundary")
+        osm_ind = ctx.get("osm_industrial") or {}
+        fac_name = osm_ind.get("name", "Industrial Boundary")
 
         return {
             "event_id": matched["event_id"],
@@ -1073,7 +1074,7 @@ class IndiaIntelligenceService:
                     f"Mean FRP: {obs['avg_frp_mw']} MW (Peak: {obs['max_frp_mw']} MW) at coordinates [{matched['coordinates']['latitude']:.4f}, {matched['coordinates']['longitude']:.4f}]."
                 ),
                 "spatial_proximity": (
-                    f"Located in {dist}, {st}, within {ctx.get('osm_industrial', {}).get('distance_m', 1500)}m of {fac_name}. "
+                    f"Located in {dist}, {st}, within {osm_ind.get('distance_m', 1500)}m of {fac_name}. "
                     f"Correlated with Survey of India administrative boundary and designated industrial cadastre."
                 ),
                 "persistence_pattern": (

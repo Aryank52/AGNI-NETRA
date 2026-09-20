@@ -25,7 +25,7 @@ Provides:
 import time
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -406,10 +406,11 @@ class IndiaDatasetInventoryService:
             SELECT COUNT(*) FROM ingestion_records WHERE jurisdiction = 'Sri Lanka';
         """)).scalar() or 0
 
+        cutoff_dt = datetime.now(timezone.utc) + timedelta(hours=1)
         future_timestamps_ingestion = db.execute(text("""
             SELECT COUNT(*) FROM ingestion_records 
-            WHERE observation_time > (NOW() + INTERVAL '1 hour');
-        """)).scalar() or 0
+            WHERE observation_time > :cutoff;
+        """), {"cutoff": cutoff_dt.isoformat()}).scalar() or 0
 
         duplicate_records_ingestion = db.execute(text("""
             SELECT COUNT(*) FROM ingestion_records WHERE dedup_status = 'EXACT_DUPLICATE';
