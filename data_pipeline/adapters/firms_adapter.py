@@ -13,6 +13,12 @@ from data_pipeline.adapters.base import (
 from backend.app.core.config import settings
 
 
+import random
+from backend.app.services.ingestion.failure_taxonomy import (
+    IngestionFailureCategory, ProviderHealthState, sanitize_error_message
+)
+
+
 # Supported NASA FIRMS Sensors
 DEFAULT_FIRMS_SENSORS = [
     "VIIRS_NOAA21_NRT",
@@ -40,9 +46,9 @@ class FIRMSAdapter(ThermalSourceAdapter):
     Features:
     - Bounding-box and national country queries
     - Multi-sensor configurable ingestion
-    - Retry logic with exponential backoff & rate-limiting protection
+    - Bounded retry logic with exponential backoff & jitter
     - India territory polygon clipping
-    - Duplicate detection via spatial-temporal coordinate hash
+    - Structured failure classification and provider health state
     - Standardized SourceProvenance & DataQuality indicators
     """
 
@@ -53,8 +59,13 @@ class FIRMSAdapter(ThermalSourceAdapter):
     ):
         self.api_key = (api_key if api_key is not None else settings.FIRMS_MAP_KEY).strip()
         self.base_url = base_url.rstrip("/")
-        self._max_retries = 4
+        self._max_retries = 3
         self._backoff_factor = 2.0
+        self.consecutive_failures = 0
+        self.last_error_category: Optional[IngestionFailureCategory] = None
+        self.health_state = (
+            ProviderHealthState.HEALTHY if self.api_key else ProviderHealthState.DEGRADED
+        )
 
     @property
     def source_name(self) -> str:
@@ -65,14 +76,18 @@ class FIRMSAdapter(ThermalSourceAdapter):
         Validates FIRMS API availability and authentication status.
         """
         if not self.api_key:
+            self.health_state = ProviderHealthState.DEGRADED
+            self.last_error_category = IngestionFailureCategory.AUTHENTICATION_FAILURE
             return {
                 "source": self.source_name,
                 "status": "NOT_CONFIGURED",
+                "health_state": ProviderHealthState.DEGRADED.value,
                 "configured": False,
                 "message": "FIRMS_MAP_KEY environment variable is not set. Operating in verified demo mode.",
                 "latency_ms": 0,
                 "last_success": None,
                 "last_failure": None,
+                "last_error_category": IngestionFailureCategory.AUTHENTICATION_FAILURE.value,
                 "records_processed": 0
             }
 
@@ -83,47 +98,100 @@ class FIRMSAdapter(ThermalSourceAdapter):
             latency = int((time.time() - start_time) * 1000)
 
             if resp.status_code == 200:
+                self.consecutive_failures = 0
+                self.health_state = ProviderHealthState.HEALTHY
+                self.last_error_category = None
                 return {
                     "source": self.source_name,
                     "status": "HEALTHY",
+                    "health_state": ProviderHealthState.HEALTHY.value,
                     "configured": True,
                     "message": "NASA EOSDIS FIRMS API is online and authenticated.",
                     "latency_ms": latency,
                     "last_success": datetime.now(timezone.utc).isoformat(),
                     "last_failure": None,
+                    "last_error_category": None,
                     "records_processed": 1420
                 }
             elif resp.status_code in (401, 403):
+                self.consecutive_failures += 1
+                self.health_state = ProviderHealthState.FAILED
+                self.last_error_category = IngestionFailureCategory.AUTHENTICATION_FAILURE
                 return {
                     "source": self.source_name,
                     "status": "UNAUTHORIZED",
+                    "health_state": ProviderHealthState.FAILED.value,
                     "configured": True,
                     "message": "Invalid FIRMS_MAP_KEY credentials.",
                     "latency_ms": latency,
                     "last_success": None,
                     "last_failure": datetime.now(timezone.utc).isoformat(),
+                    "last_error_category": IngestionFailureCategory.AUTHENTICATION_FAILURE.value,
                     "records_processed": 0
                 }
-            else:
+            elif resp.status_code == 429:
+                self.consecutive_failures += 1
+                self.health_state = ProviderHealthState.DEGRADED
+                self.last_error_category = IngestionFailureCategory.PROVIDER_RATE_LIMITED
                 return {
                     "source": self.source_name,
                     "status": "DEGRADED",
+                    "health_state": ProviderHealthState.DEGRADED.value,
+                    "configured": True,
+                    "message": "NASA FIRMS API rate limit reached (HTTP 429).",
+                    "latency_ms": latency,
+                    "last_success": None,
+                    "last_failure": datetime.now(timezone.utc).isoformat(),
+                    "last_error_category": IngestionFailureCategory.PROVIDER_RATE_LIMITED.value,
+                    "records_processed": 0
+                }
+            else:
+                self.consecutive_failures += 1
+                self.health_state = ProviderHealthState.DEGRADED
+                self.last_error_category = IngestionFailureCategory.PROVIDER_UNAVAILABLE
+                return {
+                    "source": self.source_name,
+                    "status": "DEGRADED",
+                    "health_state": ProviderHealthState.DEGRADED.value,
                     "configured": True,
                     "message": f"NASA API returned HTTP {resp.status_code}",
                     "latency_ms": latency,
                     "last_success": None,
                     "last_failure": datetime.now(timezone.utc).isoformat(),
+                    "last_error_category": IngestionFailureCategory.PROVIDER_UNAVAILABLE.value,
                     "records_processed": 0
                 }
-        except Exception as e:
+        except httpx.TimeoutException:
+            self.consecutive_failures += 1
+            self.health_state = ProviderHealthState.DEGRADED
+            self.last_error_category = IngestionFailureCategory.PROVIDER_TIMEOUT
             return {
                 "source": self.source_name,
-                "status": "UNAVAILABLE",
+                "status": "DEGRADED",
+                "health_state": ProviderHealthState.DEGRADED.value,
                 "configured": True,
-                "message": f"Connection error: {str(e)}",
+                "message": "Connection to NASA FIRMS API timed out.",
                 "latency_ms": int((time.time() - start_time) * 1000),
                 "last_success": None,
                 "last_failure": datetime.now(timezone.utc).isoformat(),
+                "last_error_category": IngestionFailureCategory.PROVIDER_TIMEOUT.value,
+                "records_processed": 0
+            }
+        except Exception as e:
+            self.consecutive_failures += 1
+            self.health_state = ProviderHealthState.UNAVAILABLE
+            self.last_error_category = IngestionFailureCategory.PROVIDER_UNAVAILABLE
+            safe_msg = sanitize_error_message(str(e))
+            return {
+                "source": self.source_name,
+                "status": "UNAVAILABLE",
+                "health_state": ProviderHealthState.UNAVAILABLE.value,
+                "configured": True,
+                "message": f"Connection error: {safe_msg}",
+                "latency_ms": int((time.time() - start_time) * 1000),
+                "last_success": None,
+                "last_failure": datetime.now(timezone.utc).isoformat(),
+                "last_error_category": IngestionFailureCategory.PROVIDER_UNAVAILABLE.value,
                 "records_processed": 0
             }
 
@@ -214,11 +282,14 @@ class FIRMSAdapter(ThermalSourceAdapter):
         if date_str:
             url += f"/{date_str}"
 
-        # Execute HTTP GET with Exponential Backoff (1s, 2s, 4s, 8s)
+        # Execute HTTP GET with Exponential Backoff and Jitter (bounded max 3 retries)
         for attempt in range(1, self._max_retries + 1):
             try:
                 resp = httpx.get(url, timeout=15.0)
                 if resp.status_code == 200:
+                    self.consecutive_failures = 0
+                    self.health_state = ProviderHealthState.HEALTHY
+                    self.last_error_category = None
                     raw_obs = self.parse_csv_content(
                         resp.text,
                         source_name=active_sensor,
@@ -230,14 +301,60 @@ class FIRMSAdapter(ThermalSourceAdapter):
                         raw_obs = [o for o in raw_obs if o.acq_timestamp > incremental_since]
                     return self.deduplicate(raw_obs)
                 elif resp.status_code == 429:
-                    # Rate limit encountered: backoff and retry
-                    time.sleep(self._backoff_factor ** attempt)
-                    continue
+                    self.consecutive_failures += 1
+                    self.last_error_category = IngestionFailureCategory.PROVIDER_RATE_LIMITED
+                    self.health_state = ProviderHealthState.DEGRADED
+                    if attempt < self._max_retries:
+                        jitter = random.uniform(0.1, 0.6)
+                        time.sleep((self._backoff_factor ** attempt) + jitter)
+                        continue
+                    else:
+                        break
+                elif resp.status_code in (401, 403):
+                    self.consecutive_failures += 1
+                    self.last_error_category = IngestionFailureCategory.AUTHENTICATION_FAILURE
+                    self.health_state = ProviderHealthState.FAILED
+                    # Non-retryable
+                    break
+                elif resp.status_code >= 500:
+                    self.consecutive_failures += 1
+                    self.last_error_category = IngestionFailureCategory.PROVIDER_UNAVAILABLE
+                    self.health_state = ProviderHealthState.DEGRADED
+                    if attempt < self._max_retries:
+                        jitter = random.uniform(0.1, 0.6)
+                        time.sleep((self._backoff_factor ** attempt) + jitter)
+                        continue
+                    else:
+                        break
+                else:
+                    self.consecutive_failures += 1
+                    self.last_error_category = IngestionFailureCategory.UNKNOWN_FAILURE
+                    break
+            except httpx.TimeoutException:
+                self.consecutive_failures += 1
+                self.last_error_category = IngestionFailureCategory.PROVIDER_TIMEOUT
+                self.health_state = ProviderHealthState.DEGRADED
+                if attempt < self._max_retries:
+                    jitter = random.uniform(0.1, 0.6)
+                    time.sleep((self._backoff_factor ** attempt) + jitter)
                 else:
                     break
-            except (httpx.TimeoutException, httpx.RequestError):
+            except httpx.RequestError:
+                self.consecutive_failures += 1
+                self.last_error_category = IngestionFailureCategory.PROVIDER_UNAVAILABLE
+                self.health_state = ProviderHealthState.UNAVAILABLE
                 if attempt < self._max_retries:
-                    time.sleep(self._backoff_factor ** attempt)
+                    jitter = random.uniform(0.1, 0.6)
+                    time.sleep((self._backoff_factor ** attempt) + jitter)
+                else:
+                    break
+            except Exception:
+                self.consecutive_failures += 1
+                self.last_error_category = IngestionFailureCategory.PROVIDER_UNAVAILABLE
+                self.health_state = ProviderHealthState.DEGRADED
+                if attempt < self._max_retries:
+                    jitter = random.uniform(0.1, 0.6)
+                    time.sleep((self._backoff_factor ** attempt) + jitter)
                 else:
                     break
 

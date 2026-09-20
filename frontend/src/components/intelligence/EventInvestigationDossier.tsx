@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { formatNumber, formatFrp, formatPercent, formatDistance, safeArray } from "@/lib/formatters";
 import { 
   Flame, ShieldAlert, Cpu, Activity, 
@@ -133,6 +134,14 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
           </div>
           <div className="flex items-center gap-2">
             <RiskBadge level={risk_assessment?.risk_level || "LOW"} score={risk_assessment?.risk_score} />
+            <Link
+              href={`/dashboard/prevention?eventId=${event_code || eventId}`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[11px] font-bold transition-all shadow-sm"
+              title="Investigate Root-Cause & Fire Prevention Intelligence"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Why This Fire? (Prevention)</span>
+            </Link>
             <a
               href={`${API_BASE_URL}/reports/event/${eventId}/download`}
               target="_blank"

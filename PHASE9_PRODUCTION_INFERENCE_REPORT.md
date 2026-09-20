@@ -1,9 +1,11 @@
 # AGNI-NETRA — PHASE 9: PRODUCTION INFERENCE SERVICE PROMOTION & VALIDATION
 **Execution Date**: 2026-09-01 20:40:10 UTC  
 **Status**: **`PHASE_9_COMPLETE`**  
-**Production Champion Model**: `xgb-v3.0-real-candidate` + `Balanced Platt Calibrator`  
+**Candidate Model Evaluated**: `xgb-v3.0-real-candidate` + `Balanced Platt Calibrator`  
+**Governance State**: *No governed production champion configured* (`status = CANDIDATE`, `is_active = FALSE`)  
 **Dataset Lineage**: `v3.2-real-final`  
 **Operational Invariant**: **`is_active = FALSE`** / **`is_operational_dispatch = FALSE`** (Controlled Stage)
+*(Superseded Note: Phase 9 evaluated candidate promotion; per WP8 governance invariants, automated model activation is permanently blocked and no production champion is active).*
 
 ---
 

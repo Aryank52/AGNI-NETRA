@@ -88,12 +88,15 @@ class AutonomousIntelligenceCore:
         to_state: IncidentLifecycleState,
         subsystem: str,
         rationale: str,
-        correlation_id: str,
+        correlation_id: Optional[str] = None,
         incident_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         db: Optional[Session] = None
     ) -> IncidentLifecycleTransition:
         """Appends an immutable, audited lifecycle state transition and persists to DB if session provided."""
+        if not correlation_id:
+            correlation_id = f"corr-{uuid.uuid4().hex[:8]}"
+
         trans = IncidentLifecycleTransition(
             event_id=event_id,
             incident_id=incident_id,
@@ -218,21 +221,34 @@ class AutonomousIntelligenceCore:
             else:
                 obs_dict = vars(obs) if hasattr(obs, "__dict__") else {}
 
-            lat = float(obs_dict.get("latitude", 0.0))
-            lon = float(obs_dict.get("longitude", 0.0))
-            frp = float(obs_dict.get("frp", 0.0) or 0.0)
+            try:
+                lat_raw = obs_dict.get("latitude")
+                lon_raw = obs_dict.get("longitude")
+                if lat_raw is None or lon_raw is None:
+                    continue
+                lat = float(lat_raw)
+                lon = float(lon_raw)
+                frp = float(obs_dict.get("frp", 0.0) or 0.0)
+            except (ValueError, TypeError):
+                continue
+
             acq_ts = obs_dict.get("acq_timestamp") or datetime.now(timezone.utc).isoformat()
             sensor = str(obs_dict.get("sensor", "VIIRS"))
 
-            # Physical envelope check
+            # Physical envelope and authoritative sovereign India containment check
             if not (INDIA_LAT_MIN <= lat <= INDIA_LAT_MAX and INDIA_LON_MIN <= lon <= INDIA_LON_MAX):
+                continue
+            from backend.app.services.india_boundary_service import india_boundary_service
+            if not india_boundary_service.is_within_india(lat, lon, db=db):
                 continue
             if frp < 0.0 or frp > 15000.0:
                 continue
 
+
             fp = f"{sensor}:{lat:.4f}:{lon:.4f}:{acq_ts}"
             if fp in self._processed_fingerprints:
                 continue
+
             self._processed_fingerprints.add(fp)
 
             valid_detections.append({
@@ -306,9 +322,12 @@ class AutonomousIntelligenceCore:
             is_cluster_simulation = any(d.get("is_simulation", False) for d in c_dets)
 
             event_id = str(uuid.uuid4())
-            state = lookup_state(c_lat, c_lon) or "Gujarat"
-            district = lookup_district(c_lat, c_lon) or "Kutch"
-            state_code = state[:3].upper() if state else "IND"
+            from backend.app.services.india_boundary_service import india_boundary_service
+            is_in, resolved_st, resolved_dt, _ = india_boundary_service.is_point_inside_india(c_lat, c_lon, db=db)
+            state = resolved_st if (is_in and resolved_st) else "UNKNOWN"
+            district = resolved_dt if (is_in and resolved_dt) else "UNKNOWN"
+            state_code = state[:3].upper() if state and state != "UNKNOWN" else "IND"
+
             first_dt = _parse_dt(cluster.get("first_seen"))
             last_dt = _parse_dt(cluster.get("last_seen"))
             dt_str = last_dt.strftime("%Y%m%d")
@@ -621,8 +640,14 @@ class AutonomousIntelligenceCore:
             db.add(alert_obj)
 
             t_db_start = time.perf_counter()
-            db.commit()
+            try:
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to commit autonomous event {evt_code} transaction: {e}", exc_info=True)
+                continue
             db_commit_duration_ms += (time.perf_counter() - t_db_start) * 1000.0
+
 
             why_it_matters = (
                 f"New thermal event {evt_code} detected in {district}, {state}. "

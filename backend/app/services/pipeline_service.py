@@ -88,17 +88,24 @@ class ThermalPipelineService:
 
         stage_timings = dict(autonomous_intelligence_core.last_stage_timings)
         detections_stored = autonomous_intelligence_core.last_detections_stored
+        processing_id = f"proc-{uuid.uuid4().hex[:8]}"
         created_event_ids = [o.event_id for o in outcomes]
+        created_event_codes = [o.event_code for o in outcomes]
 
         return {
             "status": "SUCCESS",
             "events_created": len(created_event_ids),
             "event_ids": created_event_ids,
+            "event_codes": created_event_codes,
             "detections_stored": detections_stored,
             "source": source_name,
+            "correlation_id": corr_id,
+            "processing_id": processing_id,
+            "lifecycle_run_id": corr_id,
             "stage_timings_ms": stage_timings,
             "processed_at": datetime.now(timezone.utc).isoformat()
         }
+
 
 
 pipeline_service = ThermalPipelineService()

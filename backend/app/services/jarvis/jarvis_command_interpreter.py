@@ -2975,430 +2975,430 @@ class LocalDeterministicProvider(BaseLLMProvider):
         if is_data_truth_query:
             primary_goal = "DATA_TRUTH"
             intent = CommandIntent.STATUS
-        elif is_phase23_investigate_top:
+        if primary_goal == "QUERY" and (is_phase23_investigate_top):
             primary_goal = "SITUATIONAL_INVESTIGATE_TOP"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase23_60s_brief:
+        if primary_goal == "QUERY" and (is_phase23_60s_brief):
             primary_goal = "SITUATIONAL_60S_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_what_changed:
+        if primary_goal == "QUERY" and (is_phase23_what_changed):
             primary_goal = "SITUATIONAL_WHAT_CHANGED"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_what_needs_attention:
+        if primary_goal == "QUERY" and (is_phase23_what_needs_attention):
             primary_goal = "SITUATIONAL_WHAT_NEEDS_ATTENTION"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_regional_brief:
+        if primary_goal == "QUERY" and (is_phase23_regional_brief):
             primary_goal = "SITUATIONAL_REGIONAL_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_industrial_brief:
+        if primary_goal == "QUERY" and (is_phase23_industrial_brief):
             primary_goal = "SITUATIONAL_INDUSTRIAL_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_trend_summary:
+        if primary_goal == "QUERY" and (is_phase23_trend_summary):
             primary_goal = "SITUATIONAL_TREND_SUMMARY"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_explain_attention:
+        if primary_goal == "QUERY" and (is_phase23_explain_attention):
             primary_goal = "SITUATIONAL_ATTENTION_EXPLANATION"
             intent = CommandIntent.EXPLAIN
-        elif is_phase23_executive_brief:
+        if primary_goal == "QUERY" and (is_phase23_executive_brief):
             primary_goal = "SITUATIONAL_EXECUTIVE_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_analyst_brief:
+        if primary_goal == "QUERY" and (is_phase23_analyst_brief):
             primary_goal = "SITUATIONAL_ANALYST_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase23_india_brief:
+        if primary_goal == "QUERY" and (is_phase23_india_brief):
             primary_goal = "SITUATIONAL_INDIA_BRIEF"
             intent = CommandIntent.SITUATIONAL_AWARENESS
-        elif is_phase22_mission:
+        if primary_goal == "QUERY" and (is_phase22_mission):
             primary_goal = "PHASE22_MISSION_ORCHESTRATION"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase20_triage_queue:
+        if primary_goal == "QUERY" and (is_phase20_triage_queue):
             primary_goal = "PHASE20_TRIAGE_QUEUE"
             intent = CommandIntent.RANK
-        elif is_phase20_explain_triage:
+        if primary_goal == "QUERY" and (is_phase20_explain_triage):
             primary_goal = "PHASE20_EXPLAIN_TRIAGE"
             intent = CommandIntent.EXPLAIN
-        elif is_phase20_missing_evidence:
+        if primary_goal == "QUERY" and (is_phase20_missing_evidence):
             primary_goal = "PHASE20_MISSING_EVIDENCE"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase20_summarize_investigation:
+        if primary_goal == "QUERY" and (is_phase20_summarize_investigation):
             primary_goal = "PHASE20_SUMMARIZE_INVESTIGATION"
             intent = CommandIntent.SUMMARIZE
-        elif is_phase20_investigation_diff:
+        if primary_goal == "QUERY" and (is_phase20_investigation_diff):
             primary_goal = "PHASE20_INVESTIGATION_DIFF"
             intent = CommandIntent.COMPARE
-        elif is_phase20_plausible_hypotheses:
+        if primary_goal == "QUERY" and (is_phase20_plausible_hypotheses):
             primary_goal = "PHASE20_PLAUSIBLE_HYPOTHESES"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase20_contradicting_evidence:
+        if primary_goal == "QUERY" and (is_phase20_contradicting_evidence):
             primary_goal = "PHASE20_CONTRADICTING_EVIDENCE"
             intent = CommandIntent.EXPLAIN
-        elif is_phase20_next_verification:
+        if primary_goal == "QUERY" and (is_phase20_next_verification):
             primary_goal = "PHASE20_NEXT_VERIFICATION"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase20_compare_incidents:
+        if primary_goal == "QUERY" and (is_phase20_compare_incidents):
             primary_goal = "PHASE20_COMPARE_INCIDENTS"
             intent = CommandIntent.COMPARE
-        elif is_phase20_generate_report:
+        if primary_goal == "QUERY" and (is_phase20_generate_report):
             primary_goal = "PHASE20_GENERATE_REPORT"
             intent = CommandIntent.GENERATE_REPORT
-        elif is_phase19_persistent_hotspots:
+        if primary_goal == "QUERY" and (is_phase19_persistent_hotspots):
             primary_goal = "PHASE19_PERSISTENT_HOTSPOTS"
             intent = CommandIntent.RANK
-        elif is_phase19_state_abnormal_activity:
+        if primary_goal == "QUERY" and (is_phase19_state_abnormal_activity):
             primary_goal = "PHASE19_STATE_ABNORMAL_ACTIVITY"
             intent = CommandIntent.QUERY
-        elif is_phase19_industrial_recurrence:
+        if primary_goal == "QUERY" and (is_phase19_industrial_recurrence):
             primary_goal = "PHASE19_INDUSTRIAL_RECURRENCE"
             intent = CommandIntent.QUERY
-        elif is_phase19_power_plant_persistence:
+        if primary_goal == "QUERY" and (is_phase19_power_plant_persistence):
             primary_goal = "PHASE19_POWER_PLANT_PERSISTENCE"
             intent = CommandIntent.QUERY
-        elif is_phase19_mining_comparison:
+        if primary_goal == "QUERY" and (is_phase19_mining_comparison):
             primary_goal = "PHASE19_MINING_COMPARISON"
             intent = CommandIntent.COMPARE
-        elif is_phase19_district_unusual_activity:
+        if primary_goal == "QUERY" and (is_phase19_district_unusual_activity):
             primary_goal = "PHASE19_DISTRICT_UNUSUAL_ACTIVITY"
             intent = CommandIntent.QUERY
-        elif is_phase19_priority_explanation:
+        if primary_goal == "QUERY" and (is_phase19_priority_explanation):
             primary_goal = "PHASE19_PRIORITY_EXPLANATION"
             intent = CommandIntent.EXPLAIN
-        elif is_phase19_why_this_event_matters:
+        if primary_goal == "QUERY" and (is_phase19_why_this_event_matters):
             primary_goal = "PHASE19_WHY_THIS_EVENT_MATTERS"
             intent = CommandIntent.EXPLAIN
-        elif is_phase19_incident_evidence:
+        if primary_goal == "QUERY" and (is_phase19_incident_evidence):
             primary_goal = "PHASE19_INCIDENT_EVIDENCE"
             intent = CommandIntent.EXPLAIN
-        elif is_phase19_hotspot_change_detection:
+        if primary_goal == "QUERY" and (is_phase19_hotspot_change_detection):
             primary_goal = "PHASE19_HOTSPOT_CHANGE_DETECTION"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase19_next_best_evidence:
+        if primary_goal == "QUERY" and (is_phase19_next_best_evidence):
             primary_goal = "PHASE19_NEXT_BEST_EVIDENCE"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase19_intelligence_report:
+        if primary_goal == "QUERY" and (is_phase19_intelligence_report):
             primary_goal = "PHASE19_INTELLIGENCE_REPORT"
             intent = CommandIntent.GENERATE_REPORT
-        elif is_security_sql_refusal:
+        if primary_goal == "QUERY" and (is_security_sql_refusal):
             primary_goal = "SAFETY_SQL_REFUSAL"
             intent = CommandIntent.QUERY
-        elif is_security_shell_refusal:
+        if primary_goal == "QUERY" and (is_security_shell_refusal):
             primary_goal = "SAFETY_SHELL_REFUSAL"
             intent = CommandIntent.QUERY
-        elif is_safety_dispatch_refusal:
+        if primary_goal == "QUERY" and (is_safety_dispatch_refusal):
             primary_goal = "SAFETY_DISPATCH_REFUSAL"
             intent = CommandIntent.DISPATCH_REQUEST
-        elif is_safety_model_activation_refusal:
+        if primary_goal == "QUERY" and (is_safety_model_activation_refusal):
             primary_goal = "SAFETY_MODEL_ACTIVATION_REFUSAL"
             intent = CommandIntent.QUERY
-        elif is_safety_hitl_bypass_refusal:
+        if primary_goal == "QUERY" and (is_safety_hitl_bypass_refusal):
             primary_goal = "SAFETY_HITL_BYPASS_REFUSAL"
             intent = CommandIntent.VERIFY
-        elif is_causation_claim_query:
+        if primary_goal == "QUERY" and (is_causation_claim_query):
             primary_goal = "NON_CAUSAL_ASSOCIATION_DISCLOSURE"
             intent = CommandIntent.EXPLAIN
-        elif is_unavailable_imagery_query:
+        if primary_goal == "QUERY" and (is_unavailable_imagery_query):
             primary_goal = "UNAVAILABLE_PROVIDER_DISCLOSURE"
             intent = CommandIntent.QUERY
-        elif is_phase18_out_of_scope_rejection:
+        if primary_goal == "QUERY" and (is_phase18_out_of_scope_rejection):
             primary_goal = "PHASE18_OUT_OF_SCOPE_REJECTION"
             intent = CommandIntent.QUERY
-        elif is_phase18_highest_risk_india:
+        if primary_goal == "QUERY" and (is_phase18_highest_risk_india):
             primary_goal = "PHASE18_HIGHEST_RISK_INDUSTRIAL_INDIA"
             intent = CommandIntent.RANK
-        elif is_phase18_power_plants_persistence:
+        if primary_goal == "QUERY" and (is_phase18_power_plants_persistence):
             primary_goal = "PHASE18_POWER_PLANTS_PERSISTENCE"
             intent = CommandIntent.QUERY
-        elif is_phase18_state_investigation:
+        if primary_goal == "QUERY" and (is_phase18_state_investigation):
             primary_goal = "PHASE18_STATE_INVESTIGATION"
             intent = CommandIntent.INVESTIGATE
-        elif is_phase18_state_comparison:
+        if primary_goal == "QUERY" and (is_phase18_state_comparison):
             primary_goal = "PHASE18_STATE_COMPARISON"
             intent = CommandIntent.COMPARE
-        elif is_phase18_mining_persistence:
+        if primary_goal == "QUERY" and (is_phase18_mining_persistence):
             primary_goal = "PHASE18_MINING_PERSISTENCE"
             intent = CommandIntent.QUERY
-        elif is_phase18_risk_explanation:
+        if primary_goal == "QUERY" and (is_phase18_risk_explanation):
             primary_goal = "PHASE18_RISK_EXPLANATION"
             intent = CommandIntent.EXPLAIN
-        elif is_phase18_evidence_dossier:
+        if primary_goal == "QUERY" and (is_phase18_evidence_dossier):
             primary_goal = "PHASE18_EVIDENCE_DOSSIER"
             intent = CommandIntent.EXPLAIN
-        elif is_phase18_intelligence_report:
+        if primary_goal == "QUERY" and (is_phase18_intelligence_report):
             primary_goal = "PHASE18_INTELLIGENCE_REPORT"
             intent = CommandIntent.GENERATE_REPORT
-        elif is_section_30_phase17_acceptance:
+        if primary_goal == "QUERY" and (is_section_30_phase17_acceptance):
             primary_goal = "SECTION_30_PHASE17_PRIMARY_ACCEPTANCE"
-        elif is_section_31_phase17_acceptance:
+        if primary_goal == "QUERY" and (is_section_31_phase17_acceptance):
             primary_goal = "SECTION_31_PHASE17_SECOND_ACCEPTANCE"
-        elif is_section_32_phase17_acceptance:
+        if primary_goal == "QUERY" and (is_section_32_phase17_acceptance):
             primary_goal = "SECTION_32_PHASE17_THIRD_ACCEPTANCE"
-        elif is_live_operational_providers_query:
+        if primary_goal == "QUERY" and (is_live_operational_providers_query):
             primary_goal = "LIVE_OPERATIONAL_PROVIDERS"
-        elif is_live_nasa_firms_status_query:
+        if primary_goal == "QUERY" and (is_live_nasa_firms_status_query):
             primary_goal = "LIVE_NASA_FIRMS_STATUS"
-        elif is_retrieve_live_sample_query:
+        if primary_goal == "QUERY" and (is_retrieve_live_sample_query):
             primary_goal = "RETRIEVE_LIVE_SAMPLE"
-        elif is_latest_real_observations_query:
+        if primary_goal == "QUERY" and (is_latest_real_observations_query):
             primary_goal = "LATEST_REAL_OBSERVATIONS"
-        elif is_why_copernicus_commercial_unavailable:
+        if primary_goal == "QUERY" and (is_why_copernicus_commercial_unavailable):
             primary_goal = "EXPLAIN_COPERNICUS_COMMERCIAL_UNAVAILABLE"
-        elif is_live_observation_provenance_query:
+        if primary_goal == "QUERY" and (is_live_observation_provenance_query):
             primary_goal = "LIVE_OBSERVATION_PROVENANCE"
-        elif is_live_data_freshness_query:
+        if primary_goal == "QUERY" and (is_live_data_freshness_query):
             primary_goal = "LIVE_DATA_FRESHNESS"
-        elif is_sentinel2_imagery_query:
+        if primary_goal == "QUERY" and (is_sentinel2_imagery_query):
             primary_goal = "SENTINEL2_IMAGERY_CHECK"
-        elif is_section_47_phase16_acceptance:
+        if primary_goal == "QUERY" and (is_section_47_phase16_acceptance):
             primary_goal = "SECTION_47_PHASE16_DATA_READINESS"
-        elif is_section_48_phase16_acceptance:
+        if primary_goal == "QUERY" and (is_section_48_phase16_acceptance):
             primary_goal = "SECTION_48_PHASE16_INGESTION_PROVENANCE"
-        elif is_section_49_phase16_acceptance:
+        if primary_goal == "QUERY" and (is_section_49_phase16_acceptance):
             primary_goal = "SECTION_49_PHASE16_STALE_DATASETS"
-        elif is_data_ingestion_status:
+        if primary_goal == "QUERY" and (is_data_ingestion_status):
             primary_goal = "DATA_INGESTION_STATUS"
-        elif is_data_freshness_query:
+        if primary_goal == "QUERY" and (is_data_freshness_query):
             primary_goal = "DATA_FRESHNESS_QUERY"
-        elif is_dataset_coverage_query:
+        if primary_goal == "QUERY" and (is_dataset_coverage_query):
             primary_goal = "DATASET_COVERAGE_QUERY"
-        elif is_latest_ingestion_batches:
+        if primary_goal == "QUERY" and (is_latest_ingestion_batches):
             primary_goal = "LATEST_INGESTION_BATCHES"
-        elif is_explain_provider_unavailable:
+        if primary_goal == "QUERY" and (is_explain_provider_unavailable):
             primary_goal = "EXPLAIN_PROVIDER_UNAVAILABLE"
-        elif is_show_quarantined_records:
+        if primary_goal == "QUERY" and (is_show_quarantined_records):
             primary_goal = "SHOW_QUARANTINED_RECORDS"
-        elif is_observation_ingestion_provenance:
+        if primary_goal == "QUERY" and (is_observation_ingestion_provenance):
             primary_goal = "OBSERVATION_INGESTION_PROVENANCE"
-        elif is_dataset_global_or_partial:
+        if primary_goal == "QUERY" and (is_dataset_global_or_partial):
             primary_goal = "DATASET_GLOBAL_OR_PARTIAL"
-        elif is_latest_successful_ingestion:
+        if primary_goal == "QUERY" and (is_latest_successful_ingestion):
             primary_goal = "LATEST_SUCCESSFUL_INGESTION"
-        elif is_identify_stale_sources:
+        if primary_goal == "QUERY" and (is_identify_stale_sources):
             primary_goal = "IDENTIFY_STALE_SOURCES"
-        elif is_section_23_phase14_acceptance:
+        if primary_goal == "QUERY" and (is_section_23_phase14_acceptance):
             primary_goal = "SECTION_23_PHASE14_ACCEPTANCE"
-        elif is_section_24_phase14_acceptance:
+        if primary_goal == "QUERY" and (is_section_24_phase14_acceptance):
             primary_goal = "SECTION_24_PHASE14_ACCEPTANCE"
-        elif is_section_25_phase14_acceptance:
+        if primary_goal == "QUERY" and (is_section_25_phase14_acceptance):
             primary_goal = "SECTION_25_PHASE14_ACCEPTANCE"
-        elif is_case_timeline:
+        if primary_goal == "QUERY" and (is_case_timeline):
             primary_goal = "CASE_TIMELINE"
-        elif is_assessment_history:
+        if primary_goal == "QUERY" and (is_assessment_history):
             primary_goal = "ASSESSMENT_HISTORY"
-        elif is_unresolved_evidence_requests:
+        if primary_goal == "QUERY" and (is_unresolved_evidence_requests):
             primary_goal = "UNRESOLVED_EVIDENCE_REQUESTS"
-        elif is_analyst_decisions:
+        if primary_goal == "QUERY" and (is_analyst_decisions):
             primary_goal = "ANALYST_DECISIONS"
-        elif is_human_verification_status:
+        if primary_goal == "QUERY" and (is_human_verification_status):
             primary_goal = "HUMAN_VERIFICATION_STATUS"
-        elif is_mark_evidence_reviewed:
+        if primary_goal == "QUERY" and (is_mark_evidence_reviewed):
             primary_goal = "MARK_EVIDENCE_REVIEWED"
-        elif is_request_more_evidence:
+        if primary_goal == "QUERY" and (is_request_more_evidence):
             primary_goal = "REQUEST_MORE_EVIDENCE"
-        elif is_open_case:
+        if primary_goal == "QUERY" and (is_open_case):
             primary_goal = "OPEN_CASE"
-        elif is_section_31_phase13_acceptance:
+        if primary_goal == "QUERY" and (is_section_31_phase13_acceptance):
             primary_goal = "SECTION_31_PHASE13_ACCEPTANCE"
 
-        elif is_section_32_phase13_acceptance:
+        if primary_goal == "QUERY" and (is_section_32_phase13_acceptance):
             primary_goal = "SECTION_32_PHASE13_ACCEPTANCE"
-        elif is_section_33_phase13_acceptance:
+        if primary_goal == "QUERY" and (is_section_33_phase13_acceptance):
             primary_goal = "SECTION_33_PHASE13_ACCEPTANCE"
-        elif is_phase13_general_synthesis:
+        if primary_goal == "QUERY" and (is_phase13_general_synthesis):
             primary_goal = "GLOBAL_INTELLIGENCE_SYNTHESIS"
-        elif is_section_28_phase12_acceptance:
+        if primary_goal == "QUERY" and (is_section_28_phase12_acceptance):
             primary_goal = "SECTION_28_PHASE12_ACCEPTANCE"
-        elif is_find_related_events:
+        if primary_goal == "QUERY" and (is_find_related_events):
             primary_goal = "FIND_RELATED_EVENTS"
-        elif is_identify_nearest_related:
+        if primary_goal == "QUERY" and (is_identify_nearest_related):
             primary_goal = "IDENTIFY_NEAREST_RELATED"
-        elif is_determine_same_incident:
+        if primary_goal == "QUERY" and (is_determine_same_incident):
             primary_goal = "DETERMINE_SAME_INCIDENT"
-        elif is_correlate_spatially_temporally:
+        if primary_goal == "QUERY" and (is_correlate_spatially_temporally):
             primary_goal = "CORRELATE_SPATIALLY_TEMPORALLY"
-        elif is_identify_recurring_clusters:
+        if primary_goal == "QUERY" and (is_identify_recurring_clusters):
             primary_goal = "IDENTIFY_RECURRING_CLUSTERS"
-        elif is_determine_persistent_pattern:
+        if primary_goal == "QUERY" and (is_determine_persistent_pattern):
             primary_goal = "DETERMINE_PERSISTENT_PATTERN"
-        elif is_identify_sequential_downwind:
+        if primary_goal == "QUERY" and (is_identify_sequential_downwind):
             primary_goal = "IDENTIFY_SEQUENTIAL_DOWNWIND"
-        elif is_show_incident_supporting_evidence:
+        if primary_goal == "QUERY" and (is_show_incident_supporting_evidence):
             primary_goal = "SHOW_INCIDENT_SUPPORTING_EVIDENCE"
-        elif is_show_incident_contradicting_evidence:
+        if primary_goal == "QUERY" and (is_show_incident_contradicting_evidence):
             primary_goal = "SHOW_INCIDENT_CONTRADICTING_EVIDENCE"
-        elif is_compare_competing_incident_hypotheses:
+        if primary_goal == "QUERY" and (is_compare_competing_incident_hypotheses):
             primary_goal = "COMPARE_INCIDENT_HYPOTHESES"
-        elif is_explain_why_events_related:
+        if primary_goal == "QUERY" and (is_explain_why_events_related):
             primary_goal = "EXPLAIN_WHY_EVENTS_RELATED"
-        elif is_tell_independent_events:
+        if primary_goal == "QUERY" and (is_tell_independent_events):
             primary_goal = "TELL_INDEPENDENT_EVENTS"
-        elif is_section_26_phase11_acceptance:
+        if primary_goal == "QUERY" and (is_section_26_phase11_acceptance):
             primary_goal = "SECTION_26_PHASE11_ACCEPTANCE"
-        elif is_explain_why_reached_assessment:
+        if primary_goal == "QUERY" and (is_explain_why_reached_assessment):
             primary_goal = "EXPLAIN_ASSESSMENT"
-        elif is_show_evidence_supporting:
+        if primary_goal == "QUERY" and (is_show_evidence_supporting):
             primary_goal = "SHOW_SUPPORTING_EVIDENCE"
-        elif is_show_evidence_contradicting:
+        if primary_goal == "QUERY" and (is_show_evidence_contradicting):
             primary_goal = "SHOW_CONTRADICTING_EVIDENCE"
-        elif is_show_strongest_evidence:
+        if primary_goal == "QUERY" and (is_show_strongest_evidence):
             primary_goal = "SHOW_STRONGEST_EVIDENCE"
-        elif is_show_evidence_chain:
+        if primary_goal == "QUERY" and (is_show_evidence_chain):
             primary_goal = "SHOW_EVIDENCE_CHAIN"
-        elif is_compare_competing_hypotheses:
+        if primary_goal == "QUERY" and (is_compare_competing_hypotheses):
             primary_goal = "COMPARE_COMPETING_HYPOTHESES"
-        elif is_tell_evidence_nature:
+        if primary_goal == "QUERY" and (is_tell_evidence_nature):
             primary_goal = "SHOW_EVIDENCE_NATURE"
-        elif is_show_what_changed_assessment:
+        if primary_goal == "QUERY" and (is_show_what_changed_assessment):
             primary_goal = "SHOW_WHAT_CHANGED_ASSESSMENT"
-        elif is_show_what_would_change_assessment:
+        if primary_goal == "QUERY" and (is_show_what_would_change_assessment):
             primary_goal = "SHOW_WHAT_WOULD_CHANGE_ASSESSMENT"
-        elif is_show_provenance_chain:
+        if primary_goal == "QUERY" and (is_show_provenance_chain):
             primary_goal = "SHOW_PROVENANCE_CHAIN"
-        elif is_identify_non_independent_evidence:
+        if primary_goal == "QUERY" and (is_identify_non_independent_evidence):
             primary_goal = "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
-        elif is_verify_evidence_graph_and_explain_metrics:
+        if primary_goal == "QUERY" and (is_verify_evidence_graph_and_explain_metrics):
             primary_goal = "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"
-        elif is_provenance_authenticity_audit:
+        if primary_goal == "QUERY" and (is_provenance_authenticity_audit):
             primary_goal = "PROVENANCE_AUTHENTICITY_AUDIT"
-        elif is_section_30_phase10_acceptance:
+        if primary_goal == "QUERY" and (is_section_30_phase10_acceptance):
             primary_goal = "SECTION_30_PHASE10_ACCEPTANCE"
-        elif is_analyze_environmental_conditions:
+        if primary_goal == "QUERY" and (is_analyze_environmental_conditions):
             primary_goal = "ANALYZE_ENVIRONMENTAL_CONDITIONS"
-        elif is_show_weather_context:
+        if primary_goal == "QUERY" and (is_show_weather_context):
             primary_goal = "SHOW_WEATHER_CONTEXT"
-        elif is_determine_weather_effects:
+        if primary_goal == "QUERY" and (is_determine_weather_effects):
             primary_goal = "DETERMINE_WEATHER_EFFECTS"
-        elif is_check_cross_modal_corroboration:
+        if primary_goal == "QUERY" and (is_check_cross_modal_corroboration):
             primary_goal = "CHECK_CROSS_MODAL_CORROBORATION"
-        elif is_compare_optical_observations:
+        if primary_goal == "QUERY" and (is_compare_optical_observations):
             primary_goal = "COMPARE_OPTICAL_OBSERVATIONS"
-        elif is_check_sar_corroboration:
+        if primary_goal == "QUERY" and (is_check_sar_corroboration):
             primary_goal = "CHECK_SAR_CORROBORATION"
-        elif is_identify_supporting_environmental:
+        if primary_goal == "QUERY" and (is_identify_supporting_environmental):
             primary_goal = "IDENTIFY_SUPPORTING_ENVIRONMENTAL"
-        elif is_identify_environmental_conflicts:
+        if primary_goal == "QUERY" and (is_identify_environmental_conflicts):
             primary_goal = "IDENTIFY_ENVIRONMENTAL_CONFLICTS"
-        elif is_missing_environmental_data:
+        if primary_goal == "QUERY" and (is_missing_environmental_data):
             primary_goal = "MISSING_ENVIRONMENTAL_DATA"
-        elif is_highest_value_observation:
+        if primary_goal == "QUERY" and (is_highest_value_observation):
             primary_goal = "HIGHEST_VALUE_OBSERVATION"
-        elif is_environmental_provenance:
+        if primary_goal == "QUERY" and (is_environmental_provenance):
             primary_goal = "ENVIRONMENTAL_PROVENANCE"
-        elif is_environmental_coverage:
+        if primary_goal == "QUERY" and (is_environmental_coverage):
             primary_goal = "ENVIRONMENTAL_COVERAGE"
-        elif is_section_26_phase9_acceptance:
+        if primary_goal == "QUERY" and (is_section_26_phase9_acceptance):
             primary_goal = "SECTION_26_PHASE9_ACCEPTANCE"
-        elif is_analyze_historical_behavior:
+        if primary_goal == "QUERY" and (is_analyze_historical_behavior):
             primary_goal = "ANALYZE_HISTORICAL_BEHAVIOR"
-        elif is_determine_persistence:
+        if primary_goal == "QUERY" and (is_determine_persistence):
             primary_goal = "DETERMINE_PERSISTENCE"
-        elif is_determine_recurrence:
+        if primary_goal == "QUERY" and (is_determine_recurrence):
             primary_goal = "DETERMINE_RECURRENCE"
-        elif is_compare_historical_baseline:
+        if primary_goal == "QUERY" and (is_compare_historical_baseline):
             primary_goal = "COMPARE_HISTORICAL_BASELINE"
-        elif is_determine_temporal_anomaly:
+        if primary_goal == "QUERY" and (is_determine_temporal_anomaly):
             primary_goal = "DETERMINE_TEMPORAL_ANOMALY"
-        elif is_determine_seasonality:
+        if primary_goal == "QUERY" and (is_determine_seasonality):
             primary_goal = "DETERMINE_SEASONALITY"
-        elif is_show_day_night:
+        if primary_goal == "QUERY" and (is_show_day_night):
             primary_goal = "SHOW_DAY_NIGHT_BEHAVIOR"
-        elif is_explain_temporal_evidence:
+        if primary_goal == "QUERY" and (is_explain_temporal_evidence):
             primary_goal = "EXPLAIN_TEMPORAL_EVIDENCE"
-        elif is_missing_historical_data:
+        if primary_goal == "QUERY" and (is_missing_historical_data):
             primary_goal = "SHOW_MISSING_HISTORICAL_DATA"
-        elif is_reduce_temporal_uncertainty:
+        if primary_goal == "QUERY" and (is_reduce_temporal_uncertainty):
             primary_goal = "REDUCE_TEMPORAL_UNCERTAINTY"
-        elif is_combine_all_evidence:
+        if primary_goal == "QUERY" and (is_combine_all_evidence):
             primary_goal = "COMBINE_ALL_EVIDENCE"
-        elif is_temporal_provenance:
+        if primary_goal == "QUERY" and (is_temporal_provenance):
             primary_goal = "TEMPORAL_PROVENANCE"
-        elif is_temporal_coverage:
+        if primary_goal == "QUERY" and (is_temporal_coverage):
             primary_goal = "TEMPORAL_COVERAGE"
-        elif is_section_24_phase8_acceptance:
+        if primary_goal == "QUERY" and (is_section_24_phase8_acceptance):
             primary_goal = "SECTION_24_PHASE8_ACCEPTANCE"
-        elif is_section_28_acceptance:
+        if primary_goal == "QUERY" and (is_section_28_acceptance):
             primary_goal = "SECTION_28_ACCEPTANCE"
-        elif is_show_all_context:
+        if primary_goal == "QUERY" and (is_show_all_context):
             primary_goal = "SHOW_ALL_CONTEXT"
-        elif is_investigate_industrial_context:
+        if primary_goal == "QUERY" and (is_investigate_industrial_context):
             primary_goal = "INVESTIGATE_INDUSTRIAL_CONTEXT"
-        elif is_associate_facility_context:
+        if primary_goal == "QUERY" and (is_associate_facility_context):
             primary_goal = "ASSOCIATE_FACILITY_CONTEXT"
-        elif is_mining_context_support:
+        if primary_goal == "QUERY" and (is_mining_context_support):
             primary_goal = "MINING_CONTEXT_SUPPORT"
-        elif is_landcover_protected_context:
+        if primary_goal == "QUERY" and (is_landcover_protected_context):
             primary_goal = "LANDCOVER_PROTECTED_CONTEXT"
-        elif is_global_context_available:
+        if primary_goal == "QUERY" and (is_global_context_available):
             primary_goal = "GLOBAL_CONTEXT_AVAILABLE"
-        elif is_missing_context_sources:
+        if primary_goal == "QUERY" and (is_missing_context_sources):
             primary_goal = "MISSING_CONTEXT_SOURCES"
-        elif is_conflicting_context_evidence:
+        if primary_goal == "QUERY" and (is_conflicting_context_evidence):
             primary_goal = "CONFLICTING_CONTEXT_EVIDENCE"
-        elif is_strongest_context_explanations:
+        if primary_goal == "QUERY" and (is_strongest_context_explanations):
             primary_goal = "STRONGEST_CONTEXT_EXPLANATIONS"
-        elif is_reduce_uncertainty_context:
+        if primary_goal == "QUERY" and (is_reduce_uncertainty_context):
             primary_goal = "REDUCE_UNCERTAINTY_CONTEXT"
-        elif is_context_provenance:
+        if primary_goal == "QUERY" and (is_context_provenance):
             primary_goal = "CONTEXT_PROVENANCE"
-        elif is_thermal_sources_support:
+        if primary_goal == "QUERY" and (is_thermal_sources_support):
             primary_goal = "THERMAL_SOURCES_SUPPORT"
-        elif is_multiple_sources_support:
+        if primary_goal == "QUERY" and (is_multiple_sources_support):
             primary_goal = "MULTIPLE_THERMAL_SOURCES_SUPPORT"
-        elif is_source_disagreements:
+        if primary_goal == "QUERY" and (is_source_disagreements):
             primary_goal = "SOURCE_DISAGREEMENTS"
-        elif is_thermal_provenance:
+        if primary_goal == "QUERY" and (is_thermal_provenance):
             primary_goal = "THERMAL_SOURCE_PROVENANCE"
-        elif is_thermal_coverage:
+        if primary_goal == "QUERY" and (is_thermal_coverage):
             primary_goal = "THERMAL_COVERAGE_QUERY"
-        elif is_investigate_all_thermal:
+        if primary_goal == "QUERY" and (is_investigate_all_thermal):
             primary_goal = "INVESTIGATE_ALL_THERMAL_SOURCES"
-        elif is_section_24_acceptance:
+        if primary_goal == "QUERY" and (is_section_24_acceptance):
             primary_goal = "SECTION_24_ACCEPTANCE"
-        elif is_sources_used:
+        if primary_goal == "QUERY" and (is_sources_used):
             primary_goal = "SOURCES_USED"
-        elif is_coverage_query:
+        if primary_goal == "QUERY" and (is_coverage_query):
             primary_goal = "GEOGRAPHIC_COVERAGE"
-        elif is_missing_sources:
+        if primary_goal == "QUERY" and (is_missing_sources):
             primary_goal = "MISSING_SOURCES"
-        elif is_coverage_sufficiency:
+        if primary_goal == "QUERY" and (is_coverage_sufficiency):
             primary_goal = "COVERAGE_SUFFICIENCY"
-        elif is_source_provenance:
+        if primary_goal == "QUERY" and (is_source_provenance):
             primary_goal = "SOURCE_PROVENANCE"
-        elif is_complex_acceptance:
+        if primary_goal == "QUERY" and (is_complex_acceptance):
             primary_goal = "COMPLEX_OPERATIONAL_ACCEPTANCE"
-        elif is_operator_summary:
+        if primary_goal == "QUERY" and (is_operator_summary):
             primary_goal = "OPERATOR_INTELLIGENCE_SUMMARY"
-        elif is_analyst_prioritization:
+        if primary_goal == "QUERY" and (is_analyst_prioritization):
             primary_goal = "ANALYST_PRIORITIZATION"
-        elif is_priority_explanation:
+        if primary_goal == "QUERY" and (is_priority_explanation):
             primary_goal = "EXPLAIN_PRIORITY"
-        elif is_evidence_conflict:
+        if primary_goal == "QUERY" and (is_evidence_conflict):
             primary_goal = "DETECT_CONFLICTS"
-        elif is_what_could_change:
+        if primary_goal == "QUERY" and (is_what_could_change):
             primary_goal = "WHAT_COULD_CHANGE"
-        elif is_evidence_strength:
+        if primary_goal == "QUERY" and (is_evidence_strength):
             primary_goal = "ASSESS_EVIDENCE_STRENGTH"
-        elif is_uncertainty:
+        if primary_goal == "QUERY" and (is_uncertainty):
             primary_goal = "ASSESS_UNCERTAINTY"
-        elif entities.get("is_multi_constraint_query"):
+        if primary_goal == "QUERY" and (entities.get("is_multi_constraint_query")):
             primary_goal = "MULTI_CONSTRAINT_SEARCH"
-        elif is_what_remains:
+        if primary_goal == "QUERY" and (is_what_remains):
             primary_goal = "WHAT_REMAINS"
-        elif is_why_stopped:
+        if primary_goal == "QUERY" and (is_why_stopped):
             primary_goal = "WHY_STOPPED"
-        elif is_what_do_you_know:
+        if primary_goal == "QUERY" and (is_what_do_you_know):
             primary_goal = "WHAT_KNOWN"
-        elif is_summarize_inv:
+        if primary_goal == "QUERY" and (is_summarize_inv):
             primary_goal = "SUMMARIZE_INVESTIGATION"
-        elif is_explain_selection:
+        if primary_goal == "QUERY" and (is_explain_selection):
             primary_goal = "EXPLAIN_SELECTION"
-        elif is_continue_inv:
+        if primary_goal == "QUERY" and (is_continue_inv):
             primary_goal = "CONTINUE_INVESTIGATION"
-        elif is_top_cands_investigate:
+        if primary_goal == "QUERY" and (is_top_cands_investigate):
             primary_goal = "INVESTIGATE_TOP_CANDIDATES"
-        elif entities.get("select_candidate"):
+        if primary_goal == "QUERY" and (entities.get("select_candidate")):
             primary_goal = "SELECT_CANDIDATE"
-        elif is_target_verification:
+        if primary_goal == "QUERY" and (is_target_verification):
             primary_goal = "CHECK_VERIFICATION"
-        elif entities.get("is_multi_compare"):
+        if primary_goal == "QUERY" and (entities.get("is_multi_compare")):
             primary_goal = "MULTI_EVENT_COMPARE"
         elif (
             entities.get("baseline_condition")
@@ -3408,29 +3408,29 @@ class LocalDeterministicProvider(BaseLLMProvider):
             and not entities.get("require_dossier")
         ):
             primary_goal = "MULTI_CONSTRAINT_FILTER"
-        elif entities.get("surgical_stop") or entities.get("strict_stopping"):
+        if primary_goal == "QUERY" and (entities.get("surgical_stop") or entities.get("strict_stopping")):
             primary_goal = "SURGICAL_EXPLANATION"
-        elif "suspicious" in cmd and ("explain" in cmd or "why" in cmd or "find" in cmd) and not entities.get("event_ref"):
+        if primary_goal == "QUERY" and ("suspicious" in cmd and ("explain" in cmd or "why" in cmd or "find" in cmd) and not entities.get("event_ref")):
             primary_goal = "IDENTIFY_AND_EXPLAIN_SUSPICIOUS"
-        elif entities.get("require_dossier") or intent == CommandIntent.GENERATE_REPORT:
+        if primary_goal == "QUERY" and (entities.get("require_dossier") or intent == CommandIntent.GENERATE_REPORT):
             primary_goal = "GENERATE_DOSSIER"
-        elif is_risk_explanation or (intent == CommandIntent.EXPLAIN and entities.get("explain_type") == "RISK"):
+        if primary_goal == "QUERY" and (is_risk_explanation or (intent == CommandIntent.EXPLAIN and entities.get("explain_type") == "RISK")):
             primary_goal = "EXPLAIN_RISK"
-        elif entities.get("require_explain_shap") or (intent == CommandIntent.EXPLAIN and entities.get("explain_type") == "SHAP"):
+        if primary_goal == "QUERY" and (entities.get("require_explain_shap") or (intent == CommandIntent.EXPLAIN and entities.get("explain_type") == "SHAP")):
             primary_goal = "EXPLAIN_SHAP"
-        elif is_baseline_comparison or (intent == CommandIntent.COMPARE and not entities.get("is_multi_compare")):
+        if primary_goal == "QUERY" and (is_baseline_comparison or (intent == CommandIntent.COMPARE and not entities.get("is_multi_compare"))):
             primary_goal = "COMPARE_BASELINE"
-        elif is_evidence_req or entities.get("require_evidence_summary") or intent == CommandIntent.SUMMARIZE:
+        if primary_goal == "QUERY" and (is_evidence_req or entities.get("require_evidence_summary") or intent == CommandIntent.SUMMARIZE):
             primary_goal = "SHOW_EVIDENCE"
-        elif entities.get("event_ref"):
+        if primary_goal == "QUERY" and (entities.get("event_ref")):
             primary_goal = "INVESTIGATE_TARGET"
-        elif intent == CommandIntent.LOCATE:
+        if primary_goal == "QUERY" and (intent == CommandIntent.LOCATE):
             primary_goal = "LOCATE_ANOMALIES"
 
         requested_output = "SYNTHESIS"
         if primary_goal == "GENERATE_DOSSIER":
             requested_output = "DOSSIER_PDF"
-        elif primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES", "SECTION_31_PHASE17_SECOND_ACCEPTANCE"]:
+        if primary_goal == "QUERY" and (primary_goal in ["MULTI_EVENT_COMPARE", "INVESTIGATE_TOP_CANDIDATES", "SECTION_31_PHASE17_SECOND_ACCEPTANCE"]):
             requested_output = "COMPARISON"
         elif primary_goal in [
             "EXPLAIN_RISK", "EXPLAIN_SHAP", "EXPLAIN_SELECTION", "IDENTIFY_AND_EXPLAIN_SUSPICIOUS",
@@ -3482,7 +3482,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SITUATIONAL_INDIA_BRIEF"
         ]:
             requested_output = "SITUATIONAL_BRIEF"
-        elif primary_goal in ["PHASE22_MISSION_ORCHESTRATION", "SITUATIONAL_INVESTIGATE_TOP"]:
+        if primary_goal == "QUERY" and (primary_goal in ["PHASE22_MISSION_ORCHESTRATION", "SITUATIONAL_INVESTIGATE_TOP"]):
             requested_output = "MISSION_INTELLIGENCE_REPORT"
 
         stopping_condition = "SUFFICIENT_EVIDENCE_FOR_OBJECTIVE"
@@ -3503,7 +3503,7 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "TELL_INDEPENDENT_EVENTS"
         ]:
             stopping_condition = "SECTION_28_PHASE12_INCIDENT_CORRELATION_EVALUATED_AND_HALT"
-        elif primary_goal in ["SECTION_26_PHASE11_ACCEPTANCE", "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"]:
+        if primary_goal == "QUERY" and (primary_goal in ["SECTION_26_PHASE11_ACCEPTANCE", "VERIFY_EVIDENCE_GRAPH_EXPLAIN_METRICS"]):
             stopping_condition = "SECTION_26_PHASE11_EVIDENCE_GRAPH_EVALUATED_AND_HALT"
         elif primary_goal in [
             "EXPLAIN_ASSESSMENT", "SHOW_SUPPORTING_EVIDENCE", "SHOW_CONTRADICTING_EVIDENCE",
@@ -3512,23 +3512,23 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "SHOW_PROVENANCE_CHAIN", "IDENTIFY_NON_INDEPENDENT_EVIDENCE"
         ]:
             stopping_condition = "EVIDENCE_GRAPH_INTELLIGENCE_REPORTED_AND_HALT"
-        elif primary_goal == "PROVENANCE_AUTHENTICITY_AUDIT":
+        if primary_goal == "QUERY" and (primary_goal == "PROVENANCE_AUTHENTICITY_AUDIT"):
             stopping_condition = "PROVENANCE_AUTHENTICITY_AUDITED_AND_HALT"
-        elif primary_goal == "SECTION_30_PHASE10_ACCEPTANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_30_PHASE10_ACCEPTANCE"):
             stopping_condition = "SECTION_30_PHASE10_EVALUATED_AND_HALT"
-        elif primary_goal == "ANALYZE_ENVIRONMENTAL_CONDITIONS":
+        if primary_goal == "QUERY" and (primary_goal == "ANALYZE_ENVIRONMENTAL_CONDITIONS"):
             stopping_condition = "ENVIRONMENTAL_CONDITIONS_EVALUATED_AND_HALT"
-        elif primary_goal == "CHECK_CROSS_MODAL_CORROBORATION":
+        if primary_goal == "QUERY" and (primary_goal == "CHECK_CROSS_MODAL_CORROBORATION"):
             stopping_condition = "CROSS_MODAL_EVALUATED_AND_HALT"
-        elif primary_goal == "IDENTIFY_ENVIRONMENTAL_CONFLICTS":
+        if primary_goal == "QUERY" and (primary_goal == "IDENTIFY_ENVIRONMENTAL_CONFLICTS"):
             stopping_condition = "ENVIRONMENTAL_CONFLICTS_EVALUATED_AND_HALT"
-        elif primary_goal == "SHOW_WEATHER_CONTEXT":
+        if primary_goal == "QUERY" and (primary_goal == "SHOW_WEATHER_CONTEXT"):
             stopping_condition = "WEATHER_CONTEXT_REPORTED_AND_HALT"
-        elif primary_goal == "COMPARE_OPTICAL_OBSERVATIONS":
+        if primary_goal == "QUERY" and (primary_goal == "COMPARE_OPTICAL_OBSERVATIONS"):
             stopping_condition = "OPTICAL_OBSERVATIONS_EVALUATED_AND_HALT"
-        elif primary_goal == "CHECK_SAR_CORROBORATION":
+        if primary_goal == "QUERY" and (primary_goal == "CHECK_SAR_CORROBORATION"):
             stopping_condition = "SAR_CORROBORATION_EVALUATED_AND_HALT"
-        elif primary_goal == "MISSING_ENVIRONMENTAL_DATA":
+        if primary_goal == "QUERY" and (primary_goal == "MISSING_ENVIRONMENTAL_DATA"):
             stopping_condition = "MISSING_ENVIRONMENTAL_DATA_REPORTED_AND_HALT"
         elif primary_goal in [
             "DETERMINE_WEATHER_EFFECTS",
@@ -3536,13 +3536,13 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "ENVIRONMENTAL_PROVENANCE", "ENVIRONMENTAL_COVERAGE"
         ]:
             stopping_condition = "ENVIRONMENTAL_INTELLIGENCE_REPORTED_AND_HALT"
-        elif primary_goal == "HIGHEST_VALUE_OBSERVATION":
+        if primary_goal == "QUERY" and (primary_goal == "HIGHEST_VALUE_OBSERVATION"):
             stopping_condition = "HIGHEST_VALUE_OBSERVATION_RECOMMENDED_AND_HALT"
-        elif primary_goal == "SECTION_26_PHASE9_ACCEPTANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_26_PHASE9_ACCEPTANCE"):
             stopping_condition = "SECTION_26_PHASE9_HISTORICAL_TEMPORAL_EVALUATED_AND_HALT"
-        elif primary_goal == "SECTION_24_PHASE8_ACCEPTANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_24_PHASE8_ACCEPTANCE"):
             stopping_condition = "SECTION_24_PHASE8_CROSS_DOMAIN_EVALUATED_AND_HALT"
-        elif primary_goal == "SECTION_28_ACCEPTANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_28_ACCEPTANCE"):
             stopping_condition = "SECTION_28_MULTI_PROVIDER_EVALUATED_AND_HALT"
         elif primary_goal in [
             "ANALYZE_HISTORICAL_BEHAVIOR", "SHOW_DAY_NIGHT_BEHAVIOR", "SHOW_MISSING_HISTORICAL_DATA",
@@ -3555,11 +3555,11 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "REDUCE_TEMPORAL_UNCERTAINTY"
         ]:
             stopping_condition = "TEMPORAL_ANALYSIS_EVALUATED_AND_HALT"
-        elif primary_goal == "SECTION_47_PHASE16_DATA_READINESS":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_47_PHASE16_DATA_READINESS"):
             stopping_condition = "GLOBAL_DATA_READINESS_EVALUATED_AND_HALT"
-        elif primary_goal == "SECTION_48_PHASE16_INGESTION_PROVENANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_48_PHASE16_INGESTION_PROVENANCE"):
             stopping_condition = "INGESTION_PROVENANCE_TRACED_AND_HALT"
-        elif primary_goal == "SECTION_49_PHASE16_STALE_DATASETS":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_49_PHASE16_STALE_DATASETS"):
             stopping_condition = "STALE_DATASETS_IDENTIFIED_AND_HALT"
         elif primary_goal in [
             "DATA_INGESTION_STATUS", "DATA_FRESHNESS_QUERY", "DATASET_COVERAGE_QUERY",
@@ -3568,47 +3568,47 @@ class LocalDeterministicProvider(BaseLLMProvider):
             "LATEST_SUCCESSFUL_INGESTION", "IDENTIFY_STALE_SOURCES"
         ]:
             stopping_condition = "DATA_GOVERNANCE_REPORTED_AND_HALT"
-        elif primary_goal == "COMBINE_ALL_EVIDENCE":
+        if primary_goal == "QUERY" and (primary_goal == "COMBINE_ALL_EVIDENCE"):
             stopping_condition = "ALL_EVIDENCE_COMBINED_AND_HALT"
-        elif primary_goal in ["SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]:
+        if primary_goal == "QUERY" and (primary_goal in ["SHOW_ALL_CONTEXT", "LANDCOVER_PROTECTED_CONTEXT", "GLOBAL_CONTEXT_AVAILABLE", "MISSING_CONTEXT_SOURCES", "CONFLICTING_CONTEXT_EVIDENCE", "CONTEXT_PROVENANCE"]):
             stopping_condition = "CONTEXT_INTELLIGENCE_REPORTED_AND_HALT"
-        elif primary_goal in ["ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]:
+        if primary_goal == "QUERY" and (primary_goal in ["ASSOCIATE_FACILITY_CONTEXT", "MINING_CONTEXT_SUPPORT", "STRONGEST_CONTEXT_EXPLANATIONS", "REDUCE_UNCERTAINTY_CONTEXT"]):
             stopping_condition = "CONTEXTUAL_EXPLANATION_REPORTED_AND_HALT"
-        elif primary_goal == "INVESTIGATE_INDUSTRIAL_CONTEXT":
+        if primary_goal == "QUERY" and (primary_goal == "INVESTIGATE_INDUSTRIAL_CONTEXT"):
             stopping_condition = "INDUSTRIAL_CONTEXT_EVALUATED_AND_HALT"
-        elif primary_goal in ["THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]:
+        if primary_goal == "QUERY" and (primary_goal in ["THERMAL_SOURCES_SUPPORT", "MULTIPLE_THERMAL_SOURCES_SUPPORT", "SOURCE_DISAGREEMENTS", "THERMAL_SOURCE_PROVENANCE", "THERMAL_COVERAGE_QUERY"]):
             stopping_condition = "THERMAL_INTELLIGENCE_REPORTED_AND_HALT"
-        elif primary_goal == "INVESTIGATE_ALL_THERMAL_SOURCES":
+        if primary_goal == "QUERY" and (primary_goal == "INVESTIGATE_ALL_THERMAL_SOURCES"):
             stopping_condition = "ALL_THERMAL_SOURCES_EVALUATED_AND_HALT"
-        elif primary_goal == "SECTION_24_ACCEPTANCE":
+        if primary_goal == "QUERY" and (primary_goal == "SECTION_24_ACCEPTANCE"):
             stopping_condition = "SECTION_24_VERIFICATION_EVALUATED_AND_HALT"
-        elif primary_goal in ["SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE"]:
+        if primary_goal == "QUERY" and (primary_goal in ["SOURCES_USED", "GEOGRAPHIC_COVERAGE", "MISSING_SOURCES", "COVERAGE_SUFFICIENCY", "SOURCE_PROVENANCE"]):
             stopping_condition = "PROVIDER_AUDIT_REPORTED_AND_HALT"
-        elif primary_goal == "GENERATE_DOSSIER":
+        if primary_goal == "QUERY" and (primary_goal == "GENERATE_DOSSIER"):
             stopping_condition = "GENERATE_DOSSIER_AND_HALT"
-        elif primary_goal == "MULTI_EVENT_COMPARE":
+        if primary_goal == "QUERY" and (primary_goal == "MULTI_EVENT_COMPARE"):
             stopping_condition = "IDENTIFY_STRONGEST_CASE_AND_HALT"
-        elif primary_goal == "INVESTIGATE_TOP_CANDIDATES":
+        if primary_goal == "QUERY" and (primary_goal == "INVESTIGATE_TOP_CANDIDATES"):
             stopping_condition = "INVESTIGATE_COHORT_AND_HALT"
-        elif primary_goal == "WHAT_REMAINS":
+        if primary_goal == "QUERY" and (primary_goal == "WHAT_REMAINS"):
             stopping_condition = "OPERATIONAL_STATUS_REPORTED_AND_HALT"
-        elif primary_goal == "WHY_STOPPED":
+        if primary_goal == "QUERY" and (primary_goal == "WHY_STOPPED"):
             stopping_condition = "STOPPING_TRACE_EXPLAINED_AND_HALT"
-        elif primary_goal in ["WHAT_KNOWN", "SUMMARIZE_INVESTIGATION"]:
+        if primary_goal == "QUERY" and (primary_goal in ["WHAT_KNOWN", "SUMMARIZE_INVESTIGATION"]):
             stopping_condition = "KNOWLEDGE_SYNTHESIS_REPORTED_AND_HALT"
-        elif primary_goal == "EXPLAIN_SELECTION":
+        if primary_goal == "QUERY" and (primary_goal == "EXPLAIN_SELECTION"):
             stopping_condition = "SELECTION_RATIONALE_EXPLAINED_AND_HALT"
-        elif primary_goal == "CHECK_VERIFICATION":
+        if primary_goal == "QUERY" and (primary_goal == "CHECK_VERIFICATION"):
             stopping_condition = "VERIFICATION_STATUS_EVALUATED_AND_HALT"
-        elif primary_goal == "MULTI_CONSTRAINT_FILTER":
+        if primary_goal == "QUERY" and (primary_goal == "MULTI_CONSTRAINT_FILTER"):
             stopping_condition = "FILTER_MATCHING_CANDIDATES_AND_HALT"
-        elif primary_goal == "SURGICAL_EXPLANATION":
+        if primary_goal == "QUERY" and (primary_goal == "SURGICAL_EXPLANATION"):
             stopping_condition = "SUFFICIENT_EVIDENCE_FOR_CLASSIFICATION_AND_RISK"
-        elif entities.get("strict_stopping"):
+        if primary_goal == "QUERY" and (entities.get("strict_stopping")):
             stopping_condition = "SUFFICIENT_EVIDENCE_FOR_REQUESTED_DIMENSIONS_AND_HALT"
-        elif primary_goal == "EXPLAIN_RISK":
+        if primary_goal == "QUERY" and (primary_goal == "EXPLAIN_RISK"):
             stopping_condition = "SUFFICIENT_EVIDENCE_FOR_RISK_EXPLANATION_AND_HALT"
-        elif primary_goal == "COMPARE_BASELINE":
+        if primary_goal == "QUERY" and (primary_goal == "COMPARE_BASELINE"):
             stopping_condition = "SUFFICIENT_EVIDENCE_FOR_BASELINE_COMPARISON_AND_HALT"
 
         constraints_list = []

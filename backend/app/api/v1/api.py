@@ -3,12 +3,14 @@ from backend.app.api.v1.endpoints import (
     auth, events, facilities, candidates, anomalies,
     risk, alerts, verification, analytics, reports,
     ingestion, ml, admin, baselines, portals, model_registry,
-    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis, jarvis, intelligence, investigations, data, inventory, india_intelligence, analyst, data_truth
+    satellite_simulator, historical, evidence, mining, geography, lulc, forest, health, gis, jarvis, intelligence, investigations, data, inventory, india_intelligence, analyst, data_truth, prevention
 )
 
 api_router = APIRouter()
 
+api_router.include_router(prevention.router, prefix="/prevention", tags=["Proactive Fire Prevention & Root-Cause Intelligence"])
 api_router.include_router(analyst.router, prefix="/analyst", tags=["Analyst Workflow, Operational Validation & Decision Effectiveness"])
+
 api_router.include_router(data.router, prefix="/data", tags=["Global Data Ingestion & Governance"])
 api_router.include_router(inventory.router, prefix="/inventory", tags=["India Dataset Inventory & Quality Governance"])
 api_router.include_router(india_intelligence.router, prefix="/intelligence/india", tags=["India Operational Intelligence & Depth Analytics"])

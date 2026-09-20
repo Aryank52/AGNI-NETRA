@@ -56,6 +56,18 @@ class JarvisCapability(str, Enum):
     EVIDENCE_FUSION = "EVIDENCE_GRAPH"
     MULTI_EVENT_CORRELATION = "CROSS_SOURCE_CORRELATION"
     REPORT_GENERATION = "REPORTING"
+    # Prevention & Root-Cause Extension Capabilities
+    HISTORICAL_ROOT_CAUSE = "HISTORICAL_ROOT_CAUSE"
+    PATTERN_ANALYSIS = "PATTERN_ANALYSIS"
+    SPATIAL_CORRELATION = "SPATIAL_CORRELATION"
+    ENVIRONMENTAL_CONTEXT = "ENVIRONMENTAL_CONTEXT"
+    MATERIAL_CONTEXT = "MATERIAL_CONTEXT"
+    AGENCY_CONTEXT = "AGENCY_CONTEXT"
+    NEWS_CONTEXT = "NEWS_CONTEXT"
+    ROOT_CAUSE_ASSESSMENT = "ROOT_CAUSE_ASSESSMENT"
+    PREVENTION_RECOMMENDATIONS = "PREVENTION_RECOMMENDATIONS"
+    AUTHORITY_RESOLUTION = "AUTHORITY_RESOLUTION"
+
 
 
 class AgentType(str, Enum):
@@ -108,7 +120,10 @@ class CommandIntent(str, Enum):
     DISPATCH_REQUEST = "DISPATCH_REQUEST"
     SYNTHESIZE = "SYNTHESIZE"
     SITUATIONAL_AWARENESS = "SITUATIONAL_AWARENESS"
+    PREVENTION_ASSESSMENT = "PREVENTION_ASSESSMENT"
+    ROOT_CAUSE = "ROOT_CAUSE"
     GENERAL = "GENERAL"
+
 
 
 class CommandObjective(BaseModel):
@@ -689,12 +704,16 @@ class NormalizedObjective(BaseModel):
     primary_focus: Optional[str] = "INDUSTRIAL"
     analysis_types: List[str] = Field(default_factory=lambda: ["ABNORMALITY", "PERSISTENCE", "RISK", "EVIDENCE", "HYPOTHESES", "UNCERTAINTY"])
     is_valid_sovereign_scope: bool = True
+    location_category: str = "UNKNOWN_LOCATION"  # EXPLICIT_USER_LOCATION | RESOLVED_LOCATION | AUTHORITATIVE_GIS_LOCATION | UNKNOWN_LOCATION | OUT_OF_DOMAIN_LOCATION
+    parsed_latitude: Optional[float] = None
+    parsed_longitude: Optional[float] = None
     rejection_reason: Optional[str] = None
     requires_reassessment: bool = False
     requires_change_explanation: bool = False
     requires_contradiction_analysis: bool = False
     requires_uncertainty_explanation: bool = False
     requires_next_best_evidence: bool = False
+
 
 
 

@@ -2,10 +2,12 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { ThermalEvent } from "@/types";
 import { GISLayerState, LayerOpacityState, DEFAULT_LAYER_OPACITIES } from "./LayerControl";
 import { fetchApi } from "@/lib/api";
 import { formatNumber, formatFrp, formatPercent } from "@/lib/formatters";
+import { AlertTriangle, EyeOff } from "lucide-react";
 
 interface MapLibreViewProps {
   events: ThermalEvent[];
@@ -18,6 +20,33 @@ interface MapLibreViewProps {
   targetCoordinates?: { lat: number; lon: number; zoom?: number } | null;
   onNavigateEntity?: (entity: { lat: number; lon: number; zoom?: number }) => void;
 }
+
+// Sovereign India Bounding Box check for operational events
+const isWithinIndiaBbox = (lat: number, lon: number): boolean => {
+  return (
+    typeof lat === "number" &&
+    typeof lon === "number" &&
+    !isNaN(lat) &&
+    !isNaN(lon) &&
+    lat >= 6.0 &&
+    lat <= 37.5 &&
+    lon >= 68.0 &&
+    lon <= 97.5
+  );
+};
+
+// Clean Dark Vector Style Specification used as offline fallback
+const MINIMAL_DARK_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    {
+      id: "background",
+      type: "background",
+      paint: { "background-color": "#060913" },
+    },
+  ],
+};
 
 // State Centroids and Zooms for Quick Focus
 const STATE_CENTROIDS: Record<string, { center: [number, number]; zoom: number }> = {
@@ -40,6 +69,17 @@ const STATE_CENTROIDS: Record<string, { center: [number, number]; zoom: number }
   Haryana: { center: [76.0856, 29.0588], zoom: 7.2 },
   India: { center: [80.5, 22.0], zoom: 4.15 },
   ALL: { center: [80.5, 22.0], zoom: 4.15 },
+};
+
+// Robust WebGL support detector
+const isWebGlAvailable = (): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(window.WebGLRenderingContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")));
+  } catch (e) {
+    return false;
+  }
 };
 
 export default function MapLibreView({
@@ -65,6 +105,8 @@ export default function MapLibreView({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const [baseMapDegraded, setBaseMapDegraded] = useState<boolean>(false);
+  const [isWebGlSupported, setIsWebGlSupported] = useState<boolean>(true);
   const selectedMarkerRef = useRef<maplibregl.Marker | null>(null);
   const debounceTimerRef = useRef<any>(null);
 
@@ -72,36 +114,65 @@ export default function MapLibreView({
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
+    if (!isWebGlAvailable()) {
+      setIsWebGlSupported(false);
+      setBaseMapDegraded(true);
+      return;
+    }
+
     const initial = STATE_CENTROIDS[selectedState] || STATE_CENTROIDS.India;
 
-    const m = new maplibregl.Map({
-      container: mapContainer.current,
-      style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-      center: initial.center,
-      zoom: initial.zoom,
-      attributionControl: false,
-      renderWorldCopies: false,
-    });
+    try {
+      const m = new maplibregl.Map({
+        container: mapContainer.current,
+        style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+        center: initial.center,
+        zoom: initial.zoom,
+        attributionControl: false,
+        renderWorldCopies: false,
+      });
 
-    m.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
-    m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+      // 4-second style load timeout fallback
+      const styleTimeout = setTimeout(() => {
+        if (!mapLoaded && m && !m.isStyleLoaded()) {
+          try {
+            m.setStyle(MINIMAL_DARK_STYLE);
+            setBaseMapDegraded(true);
+          } catch (e) {}
+        }
+      }, 4000);
 
-    m.on("load", () => {
-      m.resize();
-      setMapLoaded(true);
-      setupGisLayers(m);
-    });
+      m.on("error", (e) => {
+        if (e.error && (e.error.message?.includes("style") || e.error.message?.includes("WebGL") || e.error.message?.includes("tile"))) {
+          setBaseMapDegraded(true);
+        }
+      });
 
-    map.current = m;
-    if (typeof window !== "undefined") {
-      (window as any)._map = m;
+      m.on("load", () => {
+        clearTimeout(styleTimeout);
+        m.resize();
+        setMapLoaded(true);
+        setupGisLayers(m);
+      });
+
+      m.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
+      m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+
+      map.current = m;
+      if (typeof window !== "undefined") {
+        (window as any)._map = m;
+      }
+    } catch (err) {
+      console.warn("MapLibre GL initialization error, falling back to degraded canvas:", err);
+      setIsWebGlSupported(false);
+      setBaseMapDegraded(true);
     }
 
     return () => {
-      if (typeof window !== "undefined" && (window as any)._map === m) {
+      if (typeof window !== "undefined" && (window as any)._map === map.current) {
         (window as any)._map = null;
       }
-      m.remove();
+      map.current?.remove();
       map.current = null;
     };
   }, []);
@@ -742,7 +813,14 @@ export default function MapLibreView({
     const m = map.current;
 
     const validEvents = Array.isArray(events)
-      ? events.filter((e) => typeof e?.longitude === "number" && typeof e?.latitude === "number" && !isNaN(e.longitude) && !isNaN(e.latitude))
+      ? events.filter(
+          (e) =>
+            typeof e?.longitude === "number" &&
+            typeof e?.latitude === "number" &&
+            !isNaN(e.longitude) &&
+            !isNaN(e.latitude) &&
+            isWithinIndiaBbox(e.latitude, e.longitude)
+        )
       : [];
 
     const features = validEvents.map((e) => ({
@@ -900,9 +978,88 @@ export default function MapLibreView({
       .addTo(map.current);
   }, [selectedEventId, events, mapLoaded]);
 
+  const validEvents = Array.isArray(events)
+    ? events.filter(
+        (e) =>
+          typeof e?.longitude === "number" &&
+          typeof e?.latitude === "number" &&
+          !isNaN(e.longitude) &&
+          !isNaN(e.latitude) &&
+          isWithinIndiaBbox(e.latitude, e.longitude)
+      )
+    : [];
+
   return (
     <div className="relative w-full h-full bg-slate-950 overflow-hidden">
-      <div ref={mapContainer} className="w-full h-full" />
+      {/* Degraded Base Map Status Banner */}
+      {baseMapDegraded && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-amber-950/90 border border-amber-500/50 text-amber-200 px-4 py-2 rounded shadow-xl backdrop-blur text-xs flex items-center gap-2 font-mono">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span>Base map unavailable. Event coordinates and intelligence data remain available.</span>
+        </div>
+      )}
+
+      {/* Empty State Overlay */}
+      {validEvents.length === 0 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-full text-xs font-mono shadow backdrop-blur flex items-center gap-2">
+          <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+          <span>No operational thermal events in current geographic scope</span>
+        </div>
+      )}
+
+      {/* Primary MapLibre GL Canvas */}
+      {isWebGlSupported ? (
+        <div ref={mapContainer} className="w-full h-full" />
+      ) : (
+        /* WebGL Fallback Interactive Coordinate Projection Canvas */
+        <div className="w-full h-full relative flex flex-col items-center justify-center bg-[#070b14] p-4">
+          <div className="text-center mb-2">
+            <span className="text-xs font-mono text-amber-400 uppercase tracking-wider font-semibold">
+              Authoritative Coordinate Geometry Grid (EPSG:4326 Sovereign India Extent)
+            </span>
+          </div>
+          <svg
+            viewBox="68.0 6.0 29.5 31.5"
+            className="w-full h-[85%] border border-slate-800 rounded bg-[#0b0f19]/80 shadow-inner"
+            style={{ transform: "scaleY(-1)" }}
+          >
+            {/* Background Grid Lines */}
+            {[70, 75, 80, 85, 90, 95].map((x) => (
+              <line key={x} x1={x} y1={6} x2={x} y2={37.5} stroke="#1e293b" strokeWidth="0.08" strokeDasharray="0.3 0.3" />
+            ))}
+            {[10, 15, 20, 25, 30, 35].map((y) => (
+              <line key={y} x1={68} y1={y} x2={97.5} y2={y} stroke="#1e293b" strokeWidth="0.08" strokeDasharray="0.3 0.3" />
+            ))}
+            {/* Event Markers */}
+            {validEvents.map((ev) => {
+              const isSelected = ev.id === selectedEventId;
+              const color =
+                ev.risk?.risk_level === "CRITICAL" ? "#ef4444" :
+                ev.risk?.risk_level === "HIGH" ? "#f97316" :
+                ev.risk?.risk_level === "MODERATE" ? "#eab308" : "#10b981";
+              return (
+                <g
+                  key={ev.id}
+                  className="cursor-pointer transition-transform hover:scale-125"
+                  onClick={() => onSelectEvent?.(ev)}
+                >
+                  {isSelected && (
+                    <circle cx={ev.longitude} cy={ev.latitude} r={0.8} fill="#f59e0b" opacity={0.4} />
+                  )}
+                  <circle
+                    cx={ev.longitude}
+                    cy={ev.latitude}
+                    r={isSelected ? 0.45 : 0.28}
+                    fill={color}
+                    stroke="#ffffff"
+                    strokeWidth={0.06}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      )}
     </div>
   );
 }

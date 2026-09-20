@@ -80,9 +80,16 @@ def parse_bbox(bbox_str: Optional[str]) -> Optional[Dict[str, float]]:
             detail=f"Latitude values must be between -90.0 and 90.0 (received min_lat={min_lat}, max_lat={max_lat})"
         )
     if min_lon > max_lon:
-        min_lon, max_lon = max_lon, min_lon
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid BBOX coordinate order: min_lon ({min_lon}) cannot exceed max_lon ({max_lon})"
+        )
     if min_lat > max_lat:
-        min_lat, max_lat = max_lat, min_lat
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid BBOX coordinate order: min_lat ({min_lat}) cannot exceed max_lat ({max_lat})"
+        )
+
 
     return {
         "min_lon": min_lon,

@@ -19,19 +19,27 @@ def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> 
     return R * c
 
 
-def validate_coordinates(lat: float, lon: float) -> bool:
+def validate_coordinates(lat: float, lon: float, check_sovereign: bool = True) -> bool:
     """
-    Validates if coordinates are valid float numbers and within India focus bounds.
+    Validates if coordinates are valid float numbers and (optionally) within authoritative
+    sovereign India polygon boundaries.
     """
     try:
+        if lat is None or lon is None:
+            return False
         lat = float(lat)
         lon = float(lon)
+        if math.isnan(lat) or math.isnan(lon) or math.isinf(lat) or math.isinf(lon):
+            return False
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             return False
-        # Extended India boundary box
-        return (5.0 <= lat <= 39.0 and 65.0 <= lon <= 100.0)
+        if check_sovereign:
+            from backend.app.services.india_boundary_service import india_boundary_service
+            return india_boundary_service.is_within_india(lat, lon)
+        return True
     except Exception:
         return False
+
 
 
 def compute_cluster_geometry(points: List[Tuple[float, float]]) -> Dict[str, Any]:
@@ -157,21 +165,43 @@ INDIAN_STATES_BOUNDS = {
 
 def lookup_state(lat: float, lon: float) -> str:
     """
-    Performs spatial containment lookup for Indian state.
+    Performs authoritative spatial containment lookup for Indian state via PostGIS / boundary service.
+    Returns 'UNKNOWN' if outside India or unresolvable.
     """
-    for state, bounds in INDIAN_STATES_BOUNDS.items():
-        if (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-            bounds["min_lon"] <= lon <= bounds["max_lon"]):
-            return state
-    return "National / Other"
+    try:
+        from backend.app.services.india_boundary_service import india_boundary_service
+        is_in, state_name, _, _ = india_boundary_service.is_point_inside_india(lat, lon)
+        if is_in and state_name and state_name != "UNKNOWN":
+            return state_name
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return state
+        return "UNKNOWN"
+    except Exception:
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return state
+        return "UNKNOWN"
 
 
 def lookup_district(lat: float, lon: float) -> Optional[str]:
     """
-    Resolves district context from spatial coordinates.
+    Resolves authoritative district context from spatial coordinates.
+    Returns 'UNKNOWN' if inside India but district cannot be confidently assigned.
+    Returns None if outside sovereign India.
     """
-    for state, bounds in INDIAN_STATES_BOUNDS.items():
-        if (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-            bounds["min_lon"] <= lon <= bounds["max_lon"]):
-            return bounds.get("district")
-    return None
+    try:
+        from backend.app.services.india_boundary_service import india_boundary_service
+        is_in, _, district_name, _ = india_boundary_service.is_point_inside_india(lat, lon)
+        if is_in and district_name and district_name != "UNKNOWN":
+            return district_name
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return bounds.get("district", "UNKNOWN")
+        return None
+    except Exception:
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return bounds.get("district", "UNKNOWN")
+        return None
+

@@ -28,6 +28,7 @@ export default function Sidebar() {
 
   // 2. INTELLIGENCE (Analyst & Admin)
   const intelligence = [
+    { label: "Prevention Intelligence", href: "/dashboard/prevention", icon: ShieldAlert, badge: "NEW" },
     { label: "Thermal Anomalies", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
     { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity, badge: "PERSIST" },
     { label: "Industrial Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },

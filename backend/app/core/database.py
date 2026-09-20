@@ -82,6 +82,9 @@ engine_kwargs: Dict[str, Any] = {
 if IS_SQLITE_TEST:
     connect_args["check_same_thread"] = False
     engine_kwargs["connect_args"] = connect_args
+    engine_kwargs["pool_size"] = 25
+    engine_kwargs["max_overflow"] = 50
+    engine_kwargs["pool_timeout"] = 60.0
 else:
     # Production PostgreSQL + PostGIS Connection Pool
     engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
