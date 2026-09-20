@@ -2,7 +2,7 @@
 **Release Version**: `1.0.0-final-freeze`  
 **Git Branch**: `stabilization/final-release-freeze`  
 **Verification Date**: 2026-09-20  
-**Release Readiness**: 100% READY FOR RELEASE FREEZE  
+**Release Readiness**: Final controlled release baseline  
 
 ---
 
@@ -17,8 +17,8 @@
 ### 2. DATABASE
 - [x] **PostgreSQL 16 Engine**: Operational on port 5432 with active connection pooling and health checks.
 - [x] **Baseline Persistence**: 35,684 total industrial facilities (35,589 geolocated, 95 unlocated).
-- [x] **Power Infrastructure**: 502 CEA power stations and exactly 1,633 generating units verified.
-- [x] **Dual-Store Integrity**: SQLite operational database reconciled with PostgreSQL 16 PostGIS baseline.
+- [x] **Power Infrastructure**: 502 CEA power stations and exactly 1,633 generating units verified (never "1,633 stations").
+- [x] **Dual-Store Integrity**: Reconciled dual-store semantics: 88 canonical operational clustered events (82 active, 6 verified) in SQLite core; 264 evaluation/benchmark snapshot records in PostgreSQL; 344 pre-freeze audit rows (372 current rows) in SQLite accumulated event store; 285 raw baseline detections (1,167 raw pixel detections).
 - **Status**: **VERIFIED**
 
 ### 3. GIS
@@ -93,12 +93,14 @@
 ### 13. REPORTS
 - [x] **24-Section Standard**: Full incident dossiers generated with all 24 statutory sections.
 - [x] **Binary Artifact Generation**: ReportLab PDF generator produces downloadable, tamper-evident regulatory documents.
-- [x] **Cryptographic Hash**: Reports sealed with SHA-256 integrity digest upon approval.
+- [x] **Cryptographic Hash**: Reports sealed with SHA-256 integrity digest upon approval (`611e847be7d7...`).
+- [x] **Report Delivery Scope**: Strictly **REPORT DELIVERY ONLY** (regulatory advisory PDF distribution to statutory bodies like GPCB Jamnagar). Permanently decoupled from emergency tactical or physical dispatch.
 - **Status**: **VERIFIED**
 
 ### 14. VERIFICATION
 - [x] **Human-in-the-Loop Gate**: Draft reports require explicit manual approval by an authorized Analyst.
 - [x] **Digital Attestation**: Reviewer identity, credentials, timestamp, and review remarks permanently recorded.
+- [x] **Simulation Actor Transparency**: Seeded test identity Priya Verma explicitly marked as **TEST / SIMULATION ACTOR**; never misrepresented as live statutory authority.
 - [x] **Unapproved Lockdown**: Unapproved reports cannot be delivered to external regulatory bodies.
 - **Status**: **VERIFIED**
 
@@ -122,6 +124,7 @@
 - **Status**: **VERIFIED**
 
 ### 18. CI / CD
+- [x] **GitHub Actions Pipeline**: `AGNI-NETRA PR Quality & Safety Gate` audited. Frontend CI PASSED; Backend CI Flake8 syntax error resolved in code (`0 errors`).
 - [x] **Top-Level Acceptance Suite**: `python tests/run_all_tests.py` -> **7/7 PASSED (100%)**.
 - [x] **Work Package Regression Suite**: `pytest tests/test_wp*.py tests/test_rbac*.py tests/test_prevention*.py` -> **212/212 PASSED (100%)**.
 - [x] **Zero Test Failures**: Entire repository test surface clean.
@@ -166,4 +169,7 @@
 
 ## Conclusion
 
-All 24 domains meet 100% of specification criteria. The repository is verified, stabilized, and frozen for production release.
+All 24 domains verified against the **Final controlled release baseline**. All release evidence, database counts, and safety gates are grounded in primary code and database truth.
+
+**FINAL RELEASE STATUS: PASS WITH DOCUMENTED LIMITATIONS**
+

@@ -92,8 +92,11 @@ A comprehensive audit of both PostgreSQL 16 PostGIS and SQLite operational store
 - **CEA Power Stations & Units**:
   - Exactly `502` distinct power stations and `1,633` generating units verified in PostgreSQL.
 - **Thermal Benchmark & Operational Clustered Events**:
-  - PostgreSQL historical benchmark snapshots: `264` records.
-  - SQLite operational clustered events: `344` records (including canonical golden event `EVT-GUJ-20260916-150D`).
+  - Canonical Operational Clustered Baseline: `88` events (`82` active hotspots + `6` analyst-verified incidents, including canonical golden event `EVT-GUJ-20260916-150D`).
+  - Raw Thermal Detections Baseline: `285` raw detections (`1,167` raw pixel detections in SQLite `thermal_detections` store).
+  - Operational Alerts Baseline: `88` alerts dispatched from operational clusters.
+  - PostgreSQL Evaluation Benchmark Snapshots: `264` records preserved in PostgreSQL `thermal_events` evaluation table.
+  - SQLite Accumulated Event Records: `344` records at pre-freeze audit snapshot (`372` total rows currently accumulated across automated test runs and simulation suites).
 - **Spatial Boundaries**:
   - Diacritic normalization (`Gujarāt` -> `Gujarat`) implemented in `india_boundary_service.py`.
   - Fail-safe fallback to Shapely geometry with local SQLite boundary storage active if PostgreSQL admin table is offline.
@@ -104,7 +107,7 @@ A comprehensive audit of both PostgreSQL 16 PostGIS and SQLite operational store
 
 - **Model Identifier**: `xgb-v3.0-real-candidate`
 - **Registry Status**: `CANDIDATE` (is_active=`False`)
-- **Active Champion**: None configured (`"No governed production champion configured"`)
+- **Active Champion**: None configured (`"No governed production champion configured."`)
 - **Artifact SHA-256**: `c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8`
 - **Dataset SHA-256**: `9677c6d65ef8f2ab388160079e868ed2bf17307a9e462e1fba26517ae9bedd0e`
 - **Governed Metrics**:
@@ -119,4 +122,7 @@ A comprehensive audit of both PostgreSQL 16 PostGIS and SQLite operational store
 
 ## 6. Audit Conclusion & Release Sign-Off
 
-All components, database invariants, ML governance barriers, and epistemic guardrails are fully functional, resilient, and non-violable. The system is approved for release freeze.
+All components, database invariants, ML governance barriers, and epistemic guardrails are verified and non-violable. The release is certified under the **Final controlled release baseline**.
+
+**FINAL AUDIT STATUS: PASS WITH DOCUMENTED LIMITATIONS**
+
