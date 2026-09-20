@@ -5,7 +5,7 @@
 **Authority:** AGNI-NETRA Architectural Board  
 **Target Repository:** `E:\PROJECTS\AGNI-NETRA`  
 **Git Branch:** `stabilization/final-release-freeze`  
-**Anchor Commit (Frozen Baseline):** `26ce92e8c8c19b220c1597bac64343617500b0b3`  
+**Anchor Commit (Frozen Baseline):** `1fbbea2362b882676722d41b52a514d3a0429780`  
 **Release Posture:** Final controlled release baseline  
 
 ---
@@ -26,9 +26,9 @@ The following unified matrix provides the authoritative single source of truth a
 | | API Gateway | FastAPI `0.141.1` | Pydantic v2 / Starlette |
 | | Database Engine | PostgreSQL `16.15` / SQLite Core | Dual-store: PostgreSQL 5432 & `agni_netra.db` |
 | | Spatial Extension | PostGIS `3.4.2` | GEOS 3.12.1, PROJ 9.3.1 (EPSG:4326) |
-| **CI / CD Validation** | GitHub Actions Workflow | `AGNI-NETRA PR Quality & Safety Gate` | Remote Run ID: `35476031757` |
-| | Frontend CI Job | Next.js 15, TypeScript & Assets | **PASS** (Compiled and typechecked clean) |
-| | Backend CI Job | FastAPI, PostGIS & ML Validation | **RESOLVED IN SOURCE** (Flake8 syntax error fixed; 0 errors) |
+| **CI / CD Validation** | GitHub Actions Workflow | `AGNI-NETRA PR Quality & Safety Gate` | Remote Run ID: `35495202892` (**ALL PASS / SUCCESS**) |
+| | Frontend CI Job | Next.js 15, TypeScript & Assets | **PASS** (Exit Code 0, typechecked clean, production build succeeded) |
+| | Backend CI Job | FastAPI, PostGIS & ML Validation | **PASS** (Flake8 syntax & AST clean, Core Acceptance Suite 7/7 passed) |
 | | Local Acceptance Tests | Core Acceptance Suite | **7/7 PASSED (100%)** (`tests/run_all_tests.py`) |
 | | Local WP Regression | Full WP1–WP8 Regression Suite | **212/212 PASSED (100%)** (`pytest`) |
 | | Production Build | Static Route Optimization | **32/32 Routes Built (0 errors)** |
@@ -121,10 +121,14 @@ An audit of the database stores confirms the precise semantic distinction betwee
 └──────────────────────────────────────┴─────────┴───────────────────────────────────────┘
 ```
 
-**Key Takeaway:**
-- The canonical operational baseline comprises **88** clustered events (**82** active hotspots and **6** verified incidents).
+**Key Takeaway & Semantic Distinctions:**
+- The canonical operational baseline comprises **88** clustered events (**82** active hotspots and **6** analyst-verified incidents).
 - The **264** figure represents the frozen historical benchmark snapshot in PostgreSQL.
-- The **344** figure was the count of SQLite event table rows at the time of the pre-freeze audit snapshot (88 baseline events + 256 test simulation records). With subsequent test runs, the table currently holds **372** records.
+- The **344** figure was the count of SQLite event table rows at the time of the pre-freeze audit snapshot (88 baseline events + 256 test simulation records). With subsequent test runs, the table accumulated **372** records.
+- **CRITICAL SEMANTIC DISTINCTION (Detections vs Rows):**
+  - **285 operational/test-baseline thermal detections**: Represents the canonical operational test fixture detections used for baseline ingestion and clustering validation.
+  - **1,167 SQLite stored thermal pixel/detection rows**: Represents the total physical satellite pixel records persisted in SQLite `thermal_detections` storage.
+  - *These two metrics represent entirely distinct semantic layers and MUST NOT be presented as the same metric.*
 
 ---
 
@@ -186,17 +190,24 @@ The Tri-Tier Human-in-the-Loop (HITL) routing policy was evaluated on the frozen
 
 ## 3. GitHub Actions CI Status & Resolution
 
-1. **Remote Workflow Audited**: `AGNI-NETRA PR Quality & Safety Gate` (`.github/workflows/pr-checks.yml`), Run ID `35476031757` on branch `stabilization/final-release-freeze`.
-2. **Job Breakdown**:
-   - `Frontend CI (Next.js 15, TypeScript & Assets)`: **SUCCESS**
-   - `Backend CI (FastAPI, PostGIS & ML Validation)`: **FAILED** at step `Python Flake8 Linting & Syntax Checks`.
-3. **Flake8 Defect Root Cause**:
-   - `backend/app/api/v1/endpoints/jarvis.py`: undefined `datetime` and `timezone` on lines 620, 631.
-   - `backend/app/services/india_boundary_service.py`: undefined `os` on lines 184, 227.
-4. **Resolution & Local Gate Verification**:
-   - Missing imports added to both modules.
-   - Local command executed: `python -m flake8 backend --count --select=E9,F63,F7,F82 --show-source --statistics`.
-   - Result: **0 syntax/name errors (Exit Code 0)**.
+1. **Remote Workflow Executed**: `AGNI-NETRA PR Quality & Safety Gate` (`.github/workflows/pr-checks.yml`), **Run ID `35495202892`** on branch `stabilization/final-release-freeze`.
+2. **Final Remote Status**: **ALL JOBS PASSED (GREEN CI — 100% SUCCESS)**
+   - `Frontend CI (Next.js 15, TypeScript & Assets)`: **PASS (SUCCESS)** (Node.js 22, TypeScript 5.9 strict typecheck, Next.js 15.5.24 production build across all 32 routes).
+   - `Backend CI (FastAPI, PostGIS & ML Validation)`: **PASS (SUCCESS)** (Python 3.11, flake8 syntax & mccabe analyzer 0 errors, PostgreSQL 16 / PostGIS service, Core Acceptance Suite 7/7 passed, GIS contract tests passed).
+3. **Resolved Inconsistencies & Fix Lineage**:
+   - `backend/app/api/v1/endpoints/jarvis.py`: Added missing `datetime` and `timezone` imports.
+   - `backend/app/services/india_boundary_service.py`: Added missing `os` import; added transaction `rollback()` on aborted PostgreSQL transactions, and geometric bounding-box fallback when running against unseeded CI database containers.
+   - `backend/app/services/jarvis/jarvis_command_interpreter.py`: Eliminated AST recursion depth crash in flake8 `mccabe` analyzer by flattening 197 consecutive nested `elif` branches to flat `if` conditions.
+   - `backend/app/services/spatial_engine.py`: Enhanced `lookup_state` and `lookup_district` with fallback to `INDIAN_STATES_BOUNDS` for unseeded CI container environments.
+4. **Local and Remote Verification Summary**:
+   - Remote GitHub Actions Run ID: **`35495202892`** -> **`conclusion: success`** (Frontend: **PASS**, Backend: **PASS**).
+   - Local Acceptance Tests: `tests/run_all_tests.py` -> **7/7 PASSED (100%)**.
+   - Prevention Intelligence: `tests/test_prevention_intelligence.py` -> **17/17 PASSED (100%)**.
+   - RBAC Security: `tests/test_rbac_access.py` -> **11/11 PASSED (100%)**.
+   - Security Resilience: `tests/test_phase15_security_resilience.py` -> **30/30 PASSED (100%)**.
+   - Auth Security: `tests/test_auth.py` -> **3/3 PASSED (100%)**.
+   - Frontend Typecheck: `npm.cmd run typecheck` -> **0 errors (Exit Code 0)**.
+   - Frontend Production Build: `npx.cmd next build` -> **32/32 routes compiled (Exit Code 0)**.
 
 ---
 

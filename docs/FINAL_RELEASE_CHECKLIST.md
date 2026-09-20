@@ -18,7 +18,7 @@
 - [x] **PostgreSQL 16 Engine**: Operational on port 5432 with active connection pooling and health checks.
 - [x] **Baseline Persistence**: 35,684 total industrial facilities (35,589 geolocated, 95 unlocated).
 - [x] **Power Infrastructure**: 502 CEA power stations and exactly 1,633 generating units verified (never "1,633 stations").
-- [x] **Dual-Store Integrity**: Reconciled dual-store semantics: 88 canonical operational clustered events (82 active, 6 verified) in SQLite core; 264 evaluation/benchmark snapshot records in PostgreSQL; 344 pre-freeze audit rows (372 current rows) in SQLite accumulated event store; 285 raw baseline detections (1,167 raw pixel detections).
+- [x] **Dual-Store Integrity**: Reconciled dual-store semantics: 35,570 active operational facilities (SQLite core), 35,684 reference facilities (PostgreSQL master catalog), 502 CEA power stations, 1,633 CEA generating units; 88 canonical operational clustered events (82 active, 6 verified); 88 operational alerts; 264 evaluation benchmark records. Explicitly distinguished 285 operational/test-baseline thermal detections from 1,167 SQLite stored thermal pixel/detection rows (never conflated).
 - **Status**: **VERIFIED**
 
 ### 3. GIS
@@ -124,9 +124,14 @@
 - **Status**: **VERIFIED**
 
 ### 18. CI / CD
-- [x] **GitHub Actions Pipeline**: `AGNI-NETRA PR Quality & Safety Gate` audited. Frontend CI PASSED; Backend CI Flake8 syntax error resolved in code (`0 errors`).
+- [x] **GitHub Actions Pipeline**: `AGNI-NETRA PR Quality & Safety Gate` verified GREEN (**Run ID `35495202892`**).
+  - Frontend CI: **PASS (SUCCESS)** (Node.js 22, TypeScript 5.9, Next.js 15.5.24 production build)
+  - Backend CI: **PASS (SUCCESS)** (Python 3.11, flake8 syntax & mccabe 0 errors, PostGIS 16 container, Acceptance Suite 7/7)
+  - All Required Security / Safety Gates: **PASS (SUCCESS)**
 - [x] **Top-Level Acceptance Suite**: `python tests/run_all_tests.py` -> **7/7 PASSED (100%)**.
-- [x] **Work Package Regression Suite**: `pytest tests/test_wp*.py tests/test_rbac*.py tests/test_prevention*.py` -> **212/212 PASSED (100%)**.
+- [x] **Prevention Intelligence Suite**: `pytest tests/test_prevention_intelligence.py` -> **17/17 PASSED (100%)**.
+- [x] **RBAC Security Suite**: `pytest tests/test_rbac_access.py` -> **11/11 PASSED (100%)**.
+- [x] **Security Resilience Suite**: `pytest tests/test_phase15_security_resilience.py` -> **30/30 PASSED (100%)**.
 - [x] **Zero Test Failures**: Entire repository test surface clean.
 - **Status**: **VERIFIED**
 
