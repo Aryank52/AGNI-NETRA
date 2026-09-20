@@ -1258,8 +1258,9 @@ class AuthorityDirectoryOut(BaseModel):
     jurisdiction: str
     contact_role: str
     official_endpoint: Optional[str] = None
-    is_verified: bool
-    created_at: datetime
+    is_verified: bool = True
+    relevance: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

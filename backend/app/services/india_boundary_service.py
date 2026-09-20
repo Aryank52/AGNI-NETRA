@@ -160,10 +160,21 @@ class IndiaBoundaryService:
         }
         return canonical_map.get(normalized, normalized)
 
-    def _get_sqlite_state_shapes(self, db: Optional[Session] = None) -> List[Tuple[str, str, Any]]:
-        """Loads and caches Shapely shapes from SQLite/fallback admin_boundaries table."""
+    def _get_sqlite_state_shapes(self, db: Optional[Session] = None) -> List[Tuple]:
+        """Loads and caches Shapely shapes from SQLite/fallback admin_boundaries table with bounding boxes."""
         if self._sqlite_state_shapes is not None:
             return self._sqlite_state_shapes
+
+        import pickle
+        cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache")
+        cache_file = os.path.join(cache_dir, "state_shapes.pkl")
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "rb") as f:
+                    self._sqlite_state_shapes = pickle.load(f)
+                    return self._sqlite_state_shapes
+            except Exception as e:
+                logger.debug(f"Could not load state shapes cache: {e}")
 
         shapes = []
         if db is not None:
@@ -176,7 +187,7 @@ class IndiaBoundaryService:
                         try:
                             g_dict = json.loads(geom_raw)
                             s = shape(g_dict)
-                            shapes.append((code or "IND", name, s))
+                            shapes.append((code or "IND", name, s, s.bounds))
                         except Exception:
                             pass
             except Exception as e:
@@ -197,20 +208,39 @@ class IndiaBoundaryService:
                         try:
                             g_dict = json.loads(geom_raw)
                             s = shape(g_dict)
-                            shapes.append((code or "IND", name, s))
+                            shapes.append((code or "IND", name, s, s.bounds))
                         except Exception:
                             pass
                 conn.close()
             except Exception as e:
                 logger.warning(f"Could not load state shapes from local agni_netra.db: {e}")
 
+        if shapes:
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                with open(cache_file, "wb") as f:
+                    pickle.dump(shapes, f)
+            except Exception as e:
+                logger.debug(f"Could not write state shapes cache: {e}")
+
         self._sqlite_state_shapes = shapes
         return shapes
 
-    def _get_sqlite_district_shapes(self, db: Optional[Session] = None) -> List[Tuple[str, str, str, Any]]:
-        """Loads and caches Shapely shapes for districts from SQLite/fallback admin_boundaries table."""
+    def _get_sqlite_district_shapes(self, db: Optional[Session] = None) -> List[Tuple]:
+        """Loads and caches Shapely shapes for districts from SQLite/fallback admin_boundaries table with bounding boxes."""
         if self._sqlite_district_shapes is not None:
             return self._sqlite_district_shapes
+
+        import pickle
+        cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache")
+        cache_file = os.path.join(cache_dir, "district_shapes.pkl")
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "rb") as f:
+                    self._sqlite_district_shapes = pickle.load(f)
+                    return self._sqlite_district_shapes
+            except Exception as e:
+                logger.debug(f"Could not load district shapes cache: {e}")
 
         shapes = []
         if db is not None:
@@ -223,7 +253,7 @@ class IndiaBoundaryService:
                         try:
                             g_dict = json.loads(geom_raw)
                             s = shape(g_dict)
-                            shapes.append((code or "DIST", name, st_name, s))
+                            shapes.append((code or "DIST", name, st_name, s, s.bounds))
                         except Exception:
                             pass
             except Exception as e:
@@ -244,12 +274,20 @@ class IndiaBoundaryService:
                         try:
                             g_dict = json.loads(geom_raw)
                             s = shape(g_dict)
-                            shapes.append((code or "DIST", name, st_name, s))
+                            shapes.append((code or "DIST", name, st_name, s, s.bounds))
                         except Exception:
                             pass
                 conn.close()
             except Exception as e:
                 logger.warning(f"Could not load district shapes from local agni_netra.db: {e}")
+
+        if shapes:
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                with open(cache_file, "wb") as f:
+                    pickle.dump(shapes, f)
+            except Exception as e:
+                logger.debug(f"Could not write district shapes cache: {e}")
 
         self._sqlite_district_shapes = shapes
         return shapes
@@ -369,7 +407,12 @@ class IndiaBoundaryService:
             if state_shapes:
                 pt = Point(lon, lat)
                 matched_state = None
-                for code, name, s in state_shapes:
+                for item in state_shapes:
+                    code, name, s = item[0], item[1], item[2]
+                    bounds = item[3] if len(item) > 3 else s.bounds
+                    minx, miny, maxx, maxy = bounds
+                    if not (minx <= lon <= maxx and miny <= lat <= maxy):
+                        continue
                     if s.contains(pt):
                         matched_state = name
                         break
@@ -378,7 +421,15 @@ class IndiaBoundaryService:
                     # Attempt district match
                     matched_dist = "UNKNOWN"
                     district_shapes = self._get_sqlite_district_shapes(db)
-                    for d_code, d_name, d_st, ds in district_shapes:
+                    norm_matched = self.normalize_state_name(matched_state).lower()
+                    for d_item in district_shapes:
+                        d_code, d_name, d_st, ds = d_item[0], d_item[1], d_item[2], d_item[3]
+                        if d_st and self.normalize_state_name(d_st).lower() != norm_matched:
+                            continue
+                        d_bounds = d_item[4] if len(d_item) > 4 else ds.bounds
+                        d_minx, d_miny, d_maxx, d_maxy = d_bounds
+                        if not (d_minx <= lon <= d_maxx and d_miny <= lat <= d_maxy):
+                            continue
                         if ds.contains(pt):
                             matched_dist = self.normalize_state_name(d_name) or "UNKNOWN"
                             break

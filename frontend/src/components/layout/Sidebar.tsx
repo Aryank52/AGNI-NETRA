@@ -17,75 +17,69 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  // 1. COMMAND CENTER (Analyst & Admin)
-  const commandCenter = [
-    { label: "JARVIS Command Console", href: "/jarvis", icon: Terminal, badge: "AI OPS" },
-    { label: "National Overview", href: "/dashboard", icon: Map, badge: "LIVE" },
-    { label: "Live Hotspot Events", href: "/dashboard/events", icon: Flame, badge: "NRT" },
-    { label: "Alert Queue", href: "/dashboard/alerts", icon: Bell, badge: "QUEUE" },
+  // 1. OPERATIONS
+  const operationsNav = [
+    { label: "Command Center", href: "/dashboard", icon: Map, badge: "LIVE" },
+    { label: "Live Intelligence", href: "/dashboard/events", icon: Flame, badge: "NRT" },
+    { label: "Thermal Events", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
+    { label: "Alerts Queue", href: "/dashboard/alerts", icon: Bell, badge: "QUEUE" },
     { label: "Analyst Verification", href: "/dashboard/verification", icon: CheckSquare, badge: "HITL" },
   ];
 
-  // 2. INTELLIGENCE (Analyst & Admin)
-  const intelligence = [
+  // 2. INTELLIGENCE
+  const intelligenceNav = [
+    { label: "JARVIS Command", href: "/jarvis", icon: Terminal, badge: "AI OPS" },
+    { label: "Historical Baselines", href: "/dashboard/baselines", icon: Layers, badge: "HIST" },
     { label: "Prevention Intelligence", href: "/dashboard/prevention", icon: ShieldAlert, badge: "NEW" },
-    { label: "Thermal Anomalies", href: "/dashboard/anomalies", icon: AlertOctagon, badge: "RADAR" },
-    { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity, badge: "PERSIST" },
-    { label: "Industrial Atlas", href: "/dashboard/atlas", icon: Globe, badge: "ATLAS" },
-    { label: "Facilities Directory", href: "/dashboard/facilities", icon: Factory },
+    { label: "Multi-Horizon Analytics", href: "/dashboard/analytics", icon: BarChart3, badge: "TRENDS" },
+    { label: "Risk Assessment", href: "/dashboard/risk", icon: Shield, badge: "FORMULA" },
+  ];
+
+  // 3. GIS & ASSETS
+  const gisNav = [
+    { label: "Live Geospatial Map", href: "/dashboard", icon: Globe, badge: "GIS" },
+    { label: "Industrial Atlas", href: "/dashboard/atlas", icon: Building2, badge: "ATLAS" },
+    { label: "Facility Directory", href: "/dashboard/facilities", icon: Factory },
     { label: "Candidate Discovery", href: "/dashboard/candidates", icon: Search, badge: "USP" },
+    { label: "Persistent Sources", href: "/dashboard/persistent-sources", icon: Activity, badge: "PERSIST" },
   ];
 
-  // 3. ANALYTICS (Analyst & Admin)
-  const analytics = [
-    { label: "Multi-Horizon Analytics", href: "/dashboard/analytics", icon: BarChart3, badge: "2022-26" },
-    { label: "Risk Assessment", href: "/dashboard/risk", icon: ShieldAlert, badge: "FORMULA" },
+  // 4. SIMULATION
+  const simulationNav = [
+    { label: "AGNI-SAT Digital Twin", href: "/dashboard/mission-control", icon: Radio, badge: "SIM" },
+  ];
+
+  // 5. REPORTING
+  const reportingNav = [
     { label: "Intelligence Reports", href: "/dashboard/reports", icon: FileText },
-    { label: "Thermal Baselines", href: "/dashboard/baselines", icon: Layers, badge: "ENHANCED" },
+    { label: "Compliance Reports", href: "/dashboard/reports?tab=compliance", icon: Scale, badge: "AUDIT" },
   ];
 
-  // 4. MISSION (Analyst & Admin)
-  const mission = [
-    { label: "AGNI-SAT Mission Control", href: "/dashboard/mission-control", icon: Radio, badge: "SIMULATION" },
+  // 6. SYSTEM (Admin)
+  const systemNav = [
+    { label: "Ingestion Health", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
+    { label: "Data Truth & Lineage", href: "/admin/data-truth", icon: Layers, badge: "TRUTH" },
+    { label: "ML Governance", href: "/admin/models", icon: Cpu, badge: "REGISTRY" },
+    { label: "Audit & Security", href: "/admin/datasets", icon: ShieldCheck, badge: "AUDIT" },
+    { label: "System Health", href: "/admin", icon: Settings, badge: "OPS" },
   ];
 
-  // 5. AGENCY EMERGENCY RESPONSE (Agency Specific)
+  // 7. AGENCY EMERGENCY RESPONSE (Agency Specific)
   const agencyEmergencyResponse = [
     { label: "Response Center", href: "/portal/agency", icon: ShieldAlert, badge: "OPS" },
     { label: "Active Alerts", href: "/dashboard/alerts", icon: Bell, badge: "LIVE" },
     { label: "Priority Incidents", href: "/dashboard/events", icon: Flame, badge: "URGENT" },
     { label: "Operational Map", href: "/dashboard", icon: Map, badge: "GIS" },
-  ];
-
-  // 6. AGENCY SITUATIONAL AWARENESS (Agency Specific)
-  const agencySituational = [
     { label: "Regional Baselines", href: "/dashboard/baselines", icon: Layers, badge: "STATE" },
     { label: "Incident Reports", href: "/dashboard/reports", icon: FileText, badge: "ARCHIVE" },
   ];
 
-  // 7. PUBLIC SAFETY (Public Specific)
+  // 8. PUBLIC SAFETY (Public Specific)
   const publicSafetyNav = [
     { label: "Safety Status Overview", href: "/portal/public", icon: Eye, badge: "STATUS" },
     { label: "Current Hazard Alerts", href: "/portal/public#alerts", icon: Bell, badge: "ADVISORY" },
     { label: "Public Safety Map", href: "/portal/public#map", icon: Map, badge: "REGIONAL" },
     { label: "Citizen Safety Guidance", href: "/portal/public#guidance", icon: ShieldCheck, badge: "GUIDE" },
-  ];
-
-  // 8. 4 DISTINCT OPERATIONAL PORTALS (Cleaned - No Researcher / No Industry)
-  const operationalPortals = [
-    { label: "Analyst Workstation", href: "/dashboard", icon: Map, badge: "INTEL" },
-    { label: "Agency Response Center", href: "/portal/agency", icon: ShieldAlert, badge: "RESPONSE" },
-    { label: "Public Safety Portal", href: "/portal/public", icon: Eye, badge: "PUBLIC" },
-    { label: "System Administration", href: "/admin", icon: Settings, badge: "ADMIN" },
-  ];
-
-  // 9. ADMINISTRATION (Admin Restricted)
-  const administration = [
-    { label: "Data Truth & Governance", href: "/admin/data-truth", icon: Scale, badge: "TRUTH" },
-    { label: "Data Ingestion", href: "/admin/data-sources", icon: Database, badge: "INGEST" },
-    { label: "Model Governance", href: "/admin/models", icon: Cpu, badge: "REGISTRY" },
-    { label: "Datasets & Lineage", href: "/admin/datasets", icon: Layers, badge: "DATA" },
-    { label: "System Administration", href: "/admin", icon: Settings, badge: "GOV" },
   ];
 
   const renderNavGroup = (title: string, items: any[]) => (
@@ -145,31 +139,28 @@ export default function Sidebar() {
         {role === "AGENCY" ? (
           <>
             {renderNavGroup("Emergency Response", agencyEmergencyResponse)}
-            {renderNavGroup("Situational Awareness", agencySituational)}
-            {renderNavGroup("Decision Portals", operationalPortals)}
           </>
         ) : role === "PUBLIC" ? (
           <>
             {renderNavGroup("Public Safety", publicSafetyNav)}
-            {renderNavGroup("Decision Portals", operationalPortals)}
           </>
         ) : role === "ADMIN" ? (
           <>
-            {renderNavGroup("Command Center", commandCenter)}
-            {renderNavGroup("Intelligence", intelligence)}
-            {renderNavGroup("Analytics", analytics)}
-            {renderNavGroup("Mission", mission)}
-            {renderNavGroup("Administration", administration)}
-            {renderNavGroup("Decision Portals", operationalPortals)}
+            {renderNavGroup("Operations", operationsNav)}
+            {renderNavGroup("Intelligence", intelligenceNav)}
+            {renderNavGroup("GIS & Cadastre", gisNav)}
+            {renderNavGroup("Simulation", simulationNav)}
+            {renderNavGroup("Reporting", reportingNav)}
+            {renderNavGroup("System Administration", systemNav)}
           </>
         ) : (
-          /* Default: ANALYST (or full intelligence workstation) */
+          /* Default: ANALYST */
           <>
-            {renderNavGroup("Command Center", commandCenter)}
-            {renderNavGroup("Intelligence", intelligence)}
-            {renderNavGroup("Analytics", analytics)}
-            {renderNavGroup("Mission", mission)}
-            {renderNavGroup("Decision Portals", operationalPortals)}
+            {renderNavGroup("Operations", operationsNav)}
+            {renderNavGroup("Intelligence", intelligenceNav)}
+            {renderNavGroup("GIS & Cadastre", gisNav)}
+            {renderNavGroup("Simulation", simulationNav)}
+            {renderNavGroup("Reporting", reportingNav)}
           </>
         )}
 

@@ -187,8 +187,13 @@ export default function MissionControlPage() {
     m.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
     m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
+    m.on("error", (e) => {
+      console.warn("Mission control map degraded:", e?.error?.message);
+    });
+
     m.on("load", async () => {
       try {
+        m.resize();
         // Load orbital ground track
         const trackData = await fetchApi<any>("/satellite/ground-track?hours_ahead=3.0");
         if (m.getSource("ground-track")) return;
@@ -314,7 +319,8 @@ export default function MissionControlPage() {
 
     try {
       const res = await fetchApi<ScenarioExecutionResult>(`/satellite/scenarios/${sc.id}/run`, {
-        method: "POST"
+        method: "POST",
+        timeoutMs: 60000,
       });
       clearInterval(stepInterval);
       setExecutionStep(21);
@@ -326,7 +332,7 @@ export default function MissionControlPage() {
       setMissionNotice({ type: "success", message: `Scenario "${selectedScenario.name}" executed successfully through synthetic telemetry pipeline.` });
     } catch (err: any) {
       clearInterval(stepInterval);
-      setMissionNotice({ type: "error", message: `Simulation execution failed: ${err.message}` });
+      setMissionNotice({ type: "error", message: `Simulation execution failed at stage ${executionStep}: ${err.message}` });
     } finally {
       setIsExecuting(false);
     }

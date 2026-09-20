@@ -58,11 +58,19 @@ function PreventionDashboardContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApi<PreventionCaseSummary[]>("/prevention/cases");
-      setCases(data || []);
+      const data = await fetchApi<any>("/prevention/cases");
+      const caseList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.cases)
+        ? data.cases
+        : [];
+      setCases(caseList);
     } catch (err: any) {
       console.error("Failed to load prevention cases:", err);
       setError(err?.message || "Failed to load prevention intelligence cases.");
+      setCases([]);
     } finally {
       setLoading(false);
     }
@@ -103,8 +111,11 @@ function PreventionDashboardContent() {
     }
   };
 
+  // Safe cases array fallback
+  const safeCases = Array.isArray(cases) ? cases : [];
+
   // Filtered cases
-  const filteredCases = cases.filter((c) => {
+  const filteredCases = safeCases.filter((c) => {
     if (selectedPriority !== "ALL" && c.prevention_priority !== selectedPriority) return false;
     if (selectedStatus !== "ALL" && c.status !== selectedStatus) return false;
     if (searchQuery.trim()) {
@@ -119,13 +130,13 @@ function PreventionDashboardContent() {
   });
 
   // KPI calculations
-  const totalCases = cases.length;
-  const criticalCases = cases.filter(c => c.prevention_priority === "CRITICAL").length;
-  const avgRecurrence = cases.length > 0 
-    ? (cases.reduce((acc, c) => acc + (c.recurrence_score || 0), 0) / cases.length).toFixed(1)
+  const totalCases = safeCases.length;
+  const criticalCases = safeCases.filter(c => c.prevention_priority === "CRITICAL").length;
+  const avgRecurrence = safeCases.length > 0 
+    ? (safeCases.reduce((acc, c) => acc + (c.recurrence_score || 0), 0) / safeCases.length).toFixed(1)
     : "0.0";
-  const avgEvidence = cases.length > 0
-    ? Math.round((cases.reduce((acc, c) => acc + (c.evidence_strength_score || 0), 0) / cases.length) * 100)
+  const avgEvidence = safeCases.length > 0
+    ? Math.round((safeCases.reduce((acc, c) => acc + (c.evidence_strength_score || 0), 0) / safeCases.length) * 100)
     : 0;
 
   return (

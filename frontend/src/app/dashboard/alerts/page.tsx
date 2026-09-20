@@ -410,9 +410,7 @@ export default function AlertsPage() {
           <div className="space-y-3">
             {loading && (
               <div className="space-y-3">
-                <CardSkeleton />
-                <CardSkeleton />
-                <CardSkeleton />
+                <CardSkeleton count={3} />
               </div>
             )}
 
@@ -426,14 +424,15 @@ export default function AlertsPage() {
             )}
 
             {!loading &&
-              displayAlerts.map((alertItem) => {
+              displayAlerts.map((alertItem, aIdx) => {
                 const isTier1 = alertItem.routing_tier === "TIER_1_AUTO_DISPATCH_CANDIDATE";
                 const isTier2 = alertItem.routing_tier === "TIER_2_ANALYST_REVIEW_QUEUE";
                 const priority = alertItem.priority_score ?? 50.0;
+                const stableKey = alertItem.id || `alert-queue-${alertItem.event_id || aIdx}-${aIdx}`;
 
                 return (
                   <div
-                    key={alertItem.id}
+                    key={stableKey}
                     className="p-4 rounded-2xl bg-agni-card border border-agni-border hover:border-slate-700 transition-all space-y-3"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">

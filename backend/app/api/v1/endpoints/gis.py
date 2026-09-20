@@ -598,9 +598,10 @@ def get_mining_geojson(
             params["mineral"] = f"%{mineral.strip()}%"
         where_sql = " AND ".join(where_parts)
 
+        geom_expr = "ST_AsGeoJSON(geom)" if IS_POSTGRESQL else "geom"
         block_rows = db.execute(text(f"""
             SELECT id, block_name, state, district, mineral, preferred_bidder,
-                   ST_AsGeoJSON(geom) as geojson, firms_count_2km
+                   {geom_expr} as geojson, firms_count_2km
             FROM ibm_auctioned_blocks
             WHERE {where_sql}
             LIMIT :limit;
@@ -743,9 +744,10 @@ def get_protected_areas_geojson(
     where_sql = " AND ".join(where_parts)
     features = []
     try:
+        geom_expr = "ST_AsGeoJSON(ST_Simplify(geom, 0.005))" if IS_POSTGRESQL else "geom"
         query_sql = f"""
             SELECT id, pa_name, pa_type, state, district, established_year, area_sqkm,
-                   ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
+                   {geom_expr} as geojson
             FROM protected_areas
             WHERE {where_sql}
             LIMIT :limit;
@@ -803,9 +805,10 @@ def get_lulc_geojson(
     where_sql = " AND ".join(where_parts)
     features = []
     try:
+        geom_expr = "ST_AsGeoJSON(ST_Simplify(geom, 0.005))" if IS_POSTGRESQL else "geom"
         query_sql = f"""
             SELECT id, canonical_class, feature_name, state, district, area_sqkm,
-                   ST_AsGeoJSON(ST_Simplify(geom, 0.005)) as geojson
+                   {geom_expr} as geojson
             FROM lulc_spatial_features
             WHERE {where_sql}
             LIMIT :limit;
@@ -853,30 +856,28 @@ def get_admin_states_geojson(
     """
     features = []
     try:
-        rows = db.execute(text("""
+        geom_expr = "ST_AsGeoJSON(ST_Simplify(b.geom, :simplify))" if IS_POSTGRESQL else "b.geom"
+        rows = db.execute(text(f"""
             SELECT b.id, b.state_code, b.normalized_name as state_name,
-                   ST_AsGeoJSON(ST_Simplify(b.geom, :simplify)) as geojson
+                   {geom_expr} as geojson
             FROM admin_boundaries b
             WHERE b.admin_level = 1 AND b.geom IS NOT NULL
             ORDER BY b.normalized_name ASC;
         """), {"simplify": simplify}).fetchall()
 
         for r in rows:
-            if r[3]:
-                try:
-                    geom = json.loads(r[3])
-                    features.append({
-                        "type": "Feature",
-                        "geometry": geom,
-                        "properties": {
-                            "id": r[0],
-                            "state_code": r[1],
-                            "state_name": r[2],
-                            "layer": "admin_states"
-                        }
-                    })
-                except Exception:
-                    pass
+            geom = parse_geojson_geometry(r[3])
+            if geom:
+                features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "id": r[0],
+                        "state_code": r[1],
+                        "state_name": r[2],
+                        "layer": "admin_states"
+                    }
+                })
     except Exception:
         pass
 
@@ -906,9 +907,10 @@ def get_admin_districts_geojson(
         params["state"] = state.strip()
 
     where_sql = " AND ".join(where_parts)
+    geom_expr = "ST_AsGeoJSON(ST_Simplify(b.geom, :simplify))" if IS_POSTGRESQL else "b.geom"
     query_sql = f"""
         SELECT b.id, b.district_code, b.normalized_name as district_name, b.state_name,
-               ST_AsGeoJSON(ST_Simplify(b.geom, :simplify)) as geojson
+               {geom_expr} as geojson
         FROM admin_boundaries b
         WHERE {where_sql}
         LIMIT :limit;
@@ -917,22 +919,19 @@ def get_admin_districts_geojson(
     try:
         rows = db.execute(text(query_sql), params).fetchall()
         for r in rows:
-            if r[4]:
-                try:
-                    geom = json.loads(r[4])
-                    features.append({
-                        "type": "Feature",
-                        "geometry": geom,
-                        "properties": {
-                            "id": r[0],
-                            "district_code": r[1],
-                            "district_name": r[2],
-                            "state_name": r[3],
-                            "layer": "admin_districts"
-                        }
-                    })
-                except Exception:
-                    pass
+            geom = parse_geojson_geometry(r[4])
+            if geom:
+                features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "id": r[0],
+                        "district_code": r[1],
+                        "district_name": r[2],
+                        "state_name": r[3],
+                        "layer": "admin_districts"
+                    }
+                })
     except Exception:
         pass
 

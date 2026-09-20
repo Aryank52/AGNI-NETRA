@@ -368,6 +368,7 @@ def send_report(
 
 
 @router.get("/reports/{report_id}/download")
+@router.get("/reports/{report_id}/pdf")
 def download_prevention_report_pdf(
     report_id: str,
     db: Session = Depends(get_db)

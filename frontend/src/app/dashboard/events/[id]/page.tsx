@@ -394,6 +394,15 @@ export default function EventDetailPage() {
               </Link>
 
               <Link
+                href={`/dashboard/prevention?event_id=${event.event_code || event.id}`}
+                className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 flex items-center gap-1.5 transition-colors font-semibold shadow-sm"
+                title="Launch Proactive Prevention & Deterministic Root-Cause Analysis"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                <span>Why This Fire?</span>
+              </Link>
+
+              <Link
                 href={`/dashboard/verification?event_id=${event.id}`}
                 className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors"
               >

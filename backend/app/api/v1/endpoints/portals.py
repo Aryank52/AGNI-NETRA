@@ -159,12 +159,13 @@ def get_industry_portal_facilities(
 
     counts = {}
     if fac_ids:
-        rows = db.execute(text("""
-            SELECT facility_id, COUNT(*) 
-            FROM thermal_events 
-            WHERE facility_id = ANY(:ids) 
-            GROUP BY facility_id;
-        """), {"ids": fac_ids}).fetchall()
+        from sqlalchemy import func
+        rows = (
+            db.query(ThermalEvent.facility_id, func.count(ThermalEvent.id))
+            .filter(ThermalEvent.facility_id.in_(fac_ids))
+            .group_by(ThermalEvent.facility_id)
+            .all()
+        )
         counts = {r[0]: r[1] for r in rows}
 
     results = []

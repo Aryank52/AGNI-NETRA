@@ -62,7 +62,7 @@ def test_complete_e2e_decision_support_journey():
         assert "persistent_sources_count" in kpis
 
         # State filter query (Gujarat)
-        events_resp = client.get("/api/v1/events?state=Gujarat&limit=10")
+        events_resp = client.get("/api/v1/events?state=Gujarat&limit=10", headers=headers)
         assert events_resp.status_code == 200
         raw_events = events_resp.json()
         events_list = raw_events["items"] if isinstance(raw_events, dict) and "items" in raw_events else raw_events
@@ -71,7 +71,7 @@ def test_complete_e2e_decision_support_journey():
         # =========================================================================
         # 3. TACTICAL MAP & GEOJSON
         # =========================================================================
-        geo_resp = client.get("/api/v1/events/geojson")
+        geo_resp = client.get("/api/v1/events/geojson", headers=headers)
         assert geo_resp.status_code == 200
         geo = geo_resp.json()
         assert geo["type"] == "FeatureCollection"
@@ -83,7 +83,7 @@ def test_complete_e2e_decision_support_journey():
         target_event = events_list[0]
         event_id = target_event["id"]
 
-        dossier_resp = client.get(f"/api/v1/events/{event_id}")
+        dossier_resp = client.get(f"/api/v1/events/{event_id}", headers=headers)
         assert dossier_resp.status_code == 200
         dossier = dossier_resp.json()
         assert "event_code" in dossier
@@ -105,7 +105,7 @@ def test_complete_e2e_decision_support_journey():
         # =========================================================================
         # 5. HUMAN-IN-THE-LOOP (HITL) VERIFICATION
         # =========================================================================
-        verif_queue_resp = client.get("/api/v1/verification/queue")
+        verif_queue_resp = client.get("/api/v1/verification/queue", headers=headers)
         assert verif_queue_resp.status_code == 200
 
         submit_verif_resp = client.post("/api/v1/verification", json={
@@ -145,7 +145,7 @@ def test_complete_e2e_decision_support_journey():
         # =========================================================================
         # 7. AUTOMATED PDF REPORT GENERATION
         # =========================================================================
-        pdf_resp = client.get(f"/api/v1/reports/event/{event_id}/download")
+        pdf_resp = client.get(f"/api/v1/reports/event/{event_id}/download", headers=headers)
         assert pdf_resp.status_code == 200
         assert pdf_resp.headers["content-type"] == "application/pdf"
         assert pdf_resp.content.startswith(b"%PDF-")
@@ -154,12 +154,12 @@ def test_complete_e2e_decision_support_journey():
         # 8. SPECIALIZED PORTALS (RESEARCH, INDUSTRY, PUBLIC)
         # =========================================================================
         # Research Portal
-        res_resp = client.get("/api/v1/portals/research/overview")
+        res_resp = client.get("/api/v1/portals/research/overview", headers=headers)
         assert res_resp.status_code == 200
         assert res_resp.json()["feature_dimensions"] == 18
 
         # Industry Portal
-        ind_resp = client.get("/api/v1/portals/industry/facilities")
+        ind_resp = client.get("/api/v1/portals/industry/facilities", headers=headers)
         assert ind_resp.status_code == 200
 
         # Public Portal
@@ -167,7 +167,7 @@ def test_complete_e2e_decision_support_journey():
         assert pub_resp.status_code == 200
 
         # Thermal Baselines Grid
-        base_resp = client.get("/api/v1/baselines/grid-cells")
+        base_resp = client.get("/api/v1/baselines/grid-cells", headers=headers)
         assert base_resp.status_code == 200
         assert len(base_resp.json()) >= 5
 
@@ -196,7 +196,7 @@ def test_complete_e2e_decision_support_journey():
         assert len(logs) > 0
 
         # Verify system health
-        health_resp = client.get("/api/v1/admin/system-health")
+        health_resp = client.get("/api/v1/admin/system-health", headers=admin_headers)
         assert health_resp.status_code == 200
         assert health_resp.json()["status"] == "HEALTHY"
 

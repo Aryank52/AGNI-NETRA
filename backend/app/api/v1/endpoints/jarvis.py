@@ -84,6 +84,33 @@ def get_jarvis_system_status(
     return JarvisToolRegistry.tool_get_system_status(db)
 
 
+@router.get("/world-state")
+def get_jarvis_world_state(
+    event_ref: Optional[str] = Query(None, description="Optional focused event code or UUID"),
+    state_filter: Optional[str] = Query(None, description="Optional state filter"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns live sovereign India situation snapshot and complete 18-dimension JarvisWorldState
+    grounded strictly in database state across all 21 intelligence domains.
+    """
+    from backend.app.services.jarvis.jarvis_world_state import jarvis_world_state
+    return jarvis_world_state.get_world_state_summary(db, state_filter=state_filter, event_ref=event_ref)
+
+
+@router.get("/intelligence-registry")
+def get_jarvis_intelligence_registry(
+    current_user: Optional[User] = Depends(get_optional_current_user)
+) -> Dict[str, Any]:
+    """
+    Returns the canonical 21-domain AGNI-NETRA Intelligence Context Registry (A through U).
+    Exposes domain definitions, data sources, epistemic tiers, and single-master orchestration bounds.
+    """
+    from backend.app.services.jarvis.jarvis_capability_registry import jarvis_capability_registry
+    return jarvis_capability_registry.get_intelligence_registry()
+
+
 @router.get("/session/{session_id}", response_model=SessionContext)
 def get_session_context(
     session_id: str,
