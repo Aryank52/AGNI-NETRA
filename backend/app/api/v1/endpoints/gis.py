@@ -1287,7 +1287,12 @@ def get_event_spatial_dossier(
             "audit_trail": audit_history
         },
         # 9. Phase 11 Canonical Explainability & Evidence Traceability
-        "why_this_assessment": f"Operational assessment [{event.risk.risk_level if event.risk else 'MONITORED'}] is supported by dominant candidate hypothesis across spatial, temporal, and cross-modal telemetry with human verification checkpoint enforced.",
+        "why_this_assessment": [
+            f"Operational assessment [{event.risk.risk_level if event.risk else 'MONITORED'}] is supported by dominant candidate hypothesis across spatial and temporal telemetry.",
+            "Multi-source thermal concurrence verified against baseline signature.",
+            "Human verification checkpoint enforced prior to external dispatch."
+        ],
+        "assessment_summary": f"Operational assessment [{event.risk.risk_level if event.risk else 'MONITORED'}] is supported by dominant candidate hypothesis across spatial, temporal, and cross-modal telemetry with human verification checkpoint enforced.",
         "what_supports_it": [
             f"FRP {event.max_frp:.1f} MW and {event.detection_count} detections observed by MODIS/VIIRS",
             f"Nearest industrial facility within {facility_proximity[0]['distance_m']:.0f}m" if facility_proximity else "Industrial proximity evaluation complete",

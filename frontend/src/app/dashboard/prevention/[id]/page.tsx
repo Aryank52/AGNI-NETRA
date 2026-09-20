@@ -71,16 +71,22 @@ interface CaseDetail {
 
 interface Authority {
   id: string;
+  name?: string;
   authority_name: string;
-  department_name: string;
-  jurisdiction_level: string;
+  department_name?: string;
+  jurisdiction_level?: string;
+  jurisdiction?: string;
   state: string;
   district?: string;
   category: string;
+  contact_role?: string;
+  official_endpoint?: string;
   official_email?: string;
   official_phone?: string;
   nodal_officer_designation?: string;
   compliance_portal_url?: string;
+  relevance?: string;
+  is_verified?: boolean;
 }
 
 interface ReportRecord {
@@ -705,24 +711,27 @@ export default function PreventionCaseDetailPage({ params }: { params: Promise<{
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700 uppercase font-bold">
-                          {a.category} • {a.jurisdiction_level}
+                          {a.category} • {a.jurisdiction_level || a.jurisdiction || (a.district ? `${a.district}, ${a.state}` : a.state)}
                         </span>
                         <h4 className="text-sm font-bold text-white mt-1.5">
-                          {a.authority_name}
+                          {a.authority_name || a.name || "Jurisdictional Regulatory Authority"}
                         </h4>
-                        <p className="text-xs text-slate-400">{a.department_name}</p>
+                        <p className="text-xs text-slate-400">{a.department_name || a.jurisdiction || "Statutory Environmental & Fire Safety Jurisdiction"}</p>
                       </div>
                     </div>
 
                     <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-1 font-mono">
-                      {a.nodal_officer_designation && (
+                      <div className="text-slate-300">
+                        <span className="text-slate-400">Jurisdiction:</span> {a.district ? `${a.district}, ` : ""}{a.state}
+                      </div>
+                      {(a.nodal_officer_designation || a.contact_role) && (
                         <div className="text-slate-300">
-                          <span className="text-slate-400">Nodal Officer:</span> {a.nodal_officer_designation}
+                          <span className="text-slate-400">Nodal Officer:</span> {a.nodal_officer_designation || a.contact_role}
                         </div>
                       )}
-                      {a.official_email && (
+                      {(a.official_email || a.official_endpoint) && (
                         <div className="text-slate-300">
-                          <span className="text-slate-400">Official Email:</span> {a.official_email}
+                          <span className="text-slate-400">Official Contact:</span> {a.official_email || a.official_endpoint}
                         </div>
                       )}
                       {a.official_phone && (
@@ -974,15 +983,15 @@ export default function PreventionCaseDetailPage({ params }: { params: Promise<{
                     const sel = authorities.find(a => a.id === e.target.value);
                     setSelectedAuthorityId(e.target.value);
                     if (sel) {
-                      setRecipientOrg(sel.authority_name);
-                      setRecipientRole(sel.nodal_officer_designation || "Jurisdictional Officer");
+                      setRecipientOrg(sel.authority_name || sel.name || "Jurisdictional Authority");
+                      setRecipientRole(sel.nodal_officer_designation || sel.contact_role || "Jurisdictional Officer");
                     }
                   }}
                   className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-white focus:border-amber-500 focus:outline-none"
                 >
                   <option value="">-- Choose Jurisdictional Authority --</option>
                   {authorities.map(a => (
-                    <option key={a.id} value={a.id}>{a.authority_name} ({a.category})</option>
+                    <option key={a.id} value={a.id}>{a.authority_name || a.name} ({a.category})</option>
                   ))}
                 </select>
               </div>

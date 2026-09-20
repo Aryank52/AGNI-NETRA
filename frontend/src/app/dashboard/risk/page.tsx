@@ -22,9 +22,11 @@ export default function RiskIntelligencePage() {
   const [criticalEvents, setCriticalEvents] = useState<ThermalEvent[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadRiskData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [critData, sumData] = await Promise.all([
         fetchApi<ThermalEvent[]>("/risk/critical"),
@@ -32,8 +34,9 @@ export default function RiskIntelligencePage() {
       ]);
       setCriticalEvents(critData || []);
       setSummary(sumData);
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to load risk intelligence:", err);
+      setError(err?.message || "Risk intelligence service temporarily unavailable.");
     } finally {
       setLoading(false);
     }
@@ -161,6 +164,23 @@ export default function RiskIntelligencePage() {
               <div className="space-y-3">
                 <CardSkeleton />
                 <CardSkeleton />
+              </div>
+            ) : error ? (
+              <div className="p-8 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-center space-y-3">
+                <ShieldAlert className="w-10 h-10 text-amber-400 mx-auto" />
+                <div className="font-mono text-sm font-bold text-amber-300 uppercase tracking-wider">
+                  RISK DATA UNAVAILABLE
+                </div>
+                <p className="text-xs text-slate-400 max-w-md mx-auto font-sans">
+                  The national risk intelligence service is temporarily experiencing latency or undergoing refresh. Other command and analytical systems remain operational.
+                </p>
+                <button
+                  onClick={loadRiskData}
+                  className="px-4 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono inline-flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  RETRY EVALUATION
+                </button>
               </div>
             ) : criticalEvents.length === 0 ? (
               <EmptyState

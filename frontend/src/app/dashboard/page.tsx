@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import LayerControl, { 
@@ -40,7 +40,14 @@ const MapLibreView = dynamic(() => import("@/components/map/MapLibreView"), {
 
 function DashboardContent() {
   const { user } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (user && user.role === "PUBLIC") {
+      router.replace("/portal/public");
+    }
+  }, [user, router]);
 
   // State & Data
   const [events, setEvents] = useState<ThermalEvent[]>([]);
@@ -156,6 +163,10 @@ function DashboardContent() {
 
   // Load Clustered Events & Command Center Data
   const loadData = async (isBackground = false) => {
+    if (user && user.role === "PUBLIC") {
+      setLoading(false);
+      return;
+    }
     if (!isBackground) setLoading(true);
     setApiError(null);
     try {
@@ -169,35 +180,35 @@ function DashboardContent() {
       if (dataMode === "LIVE") params.append("is_demo", "false");
       if (dataMode === "DEMO") params.append("is_demo", "true");
 
-      params.append("page", page.toString());
-      params.append("limit", limit.toString());
+      let fetchEventsPromise: Promise<any>;
 
-      const mapParams = new URLSearchParams();
-      if (selectedState !== "ALL" && selectedState !== "India") mapParams.append("state", selectedState);
-      if (selectedDistrict !== "ALL") mapParams.append("district", selectedDistrict);
-      if (riskFilter !== "ALL") mapParams.append("risk_level", riskFilter);
-      if (classFilter !== "ALL") mapParams.append("event_type", classFilter);
-      if (statusFilter !== "ALL") mapParams.append("status", statusFilter);
-      if (minFrp > 0) mapParams.append("min_frp", minFrp.toString());
-      if (dataMode === "LIVE") mapParams.append("is_demo", "false");
-      if (dataMode === "DEMO") mapParams.append("is_demo", "true");
-      mapParams.append("limit", "500");
+      if (page === 1) {
+        params.append("limit", "250");
+        fetchEventsPromise = fetchApi<any>(`/events?${params.toString()}`);
+      } else {
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        fetchEventsPromise = fetchApi<any>(`/events?${params.toString()}`);
+      }
 
-      const [eventsData, ccData, mapEventsData] = await Promise.all([
-        fetchApi<any>(`/events?${params.toString()}`),
+      const [eventsData, ccData] = await Promise.all([
+        fetchEventsPromise,
         fetchApi<CommandCenterData>("/analytics/command-center").catch(() => null),
-        fetchApi<any>(`/events?${mapParams.toString()}`).catch(() => null),
       ]);
 
       const items = safeArray<ThermalEvent>(eventsData);
-      setEvents(items);
-      const allMapItems = safeArray<ThermalEvent>(mapEventsData);
-      setMapEvents(allMapItems.length > 0 ? allMapItems : items);
+      if (page === 1) {
+        setMapEvents(items);
+        setEvents(items.slice(0, limit));
+      } else {
+        setEvents(items);
+      }
       setTotalCount(eventsData?.total_count ?? items.length);
-      setTotalPages(eventsData?.total_pages ?? Math.max(1, Math.ceil(items.length / limit)));
+      setTotalPages(eventsData?.total_pages ?? Math.max(1, Math.ceil((eventsData?.total_count ?? items.length) / limit)));
 
-      if (items.length > 0 && (!selectedEvent || !items.some((e) => e.id === selectedEvent.id))) {
-        setSelectedEvent(items[0]);
+      const activeItems = page === 1 ? items.slice(0, limit) : items;
+      if (activeItems.length > 0 && (!selectedEvent || !activeItems.some((e) => e.id === selectedEvent.id))) {
+        setSelectedEvent(activeItems[0]);
       }
 
       if (ccData) {

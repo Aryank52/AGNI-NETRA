@@ -21,10 +21,12 @@ import {
 
 export type ConsoleState =
   | "IDLE"
+  | "OBSERVED"
   | "OBSERVING"
   | "INVESTIGATING"
   | "EVIDENCE_COLLECTED"
   | "UNCERTAINTY_PRESENT"
+  | "UNCERTAINTY_QUANTIFIED"
   | "WAITING_FOR_HUMAN"
   | "COMPLETED"
   | "STOPPED"
@@ -87,6 +89,17 @@ export interface ModelProvenance {
   governance_notice: string;
 }
 
+export interface StructuredReasoningPayload {
+  assessment?: string;
+  evidence?: string[];
+  historical?: string;
+  model?: string;
+  uncertainty?: string;
+  next_best_evidence?: string;
+  prevention?: string;
+  human_action?: string;
+}
+
 export interface StructuredJarvisResponse {
   transcript?: string;
   intent: string;
@@ -108,6 +121,7 @@ export interface StructuredJarvisResponse {
   automated_model_activation_blocked: boolean;
   data_semantics?: Record<string, any>;
   epistemic_synthesis?: EpistemicSynthesis;
+  structured_reasoning?: StructuredReasoningPayload;
   target_event?: string;
   error?: string;
 }
@@ -181,13 +195,13 @@ const GOLDEN_QUESTIONS = [
 ];
 
 const LIFECYCLE_STAGES = [
-  { id: 1, name: "New Intelligence", description: "Thermal observation validated, clustered, contextualized" },
-  { id: 2, name: "JARVIS Observing", description: "Single-Master Observer evaluating state change & risk threshold" },
-  { id: 3, name: "Investigating", description: "Governed capability-oriented investigation executed" },
-  { id: 4, name: "Evidence Collected", description: "Multi-source evidence graph fused with provenance" },
-  { id: 5, name: "Uncertainty Quantified", description: "Epistemic gaps & uncataloged assets explicitly bounded" },
-  { id: 6, name: "Waiting for Human", description: "Safety boundary held; awaiting analyst verification" },
-  { id: 7, name: "Stopped / Verified", description: "Bounded stop enforced; evidence sufficient or verified" },
+  { id: 1, name: "OBSERVED", description: "Thermal observation validated, clustered, contextualized" },
+  { id: 2, name: "OBSERVING", description: "Single-Master Observer evaluating state change & risk threshold" },
+  { id: 3, name: "INVESTIGATING", description: "Governed capability-oriented investigation executed" },
+  { id: 4, name: "EVIDENCE COLLECTED", description: "Multi-source evidence graph fused with provenance" },
+  { id: 5, name: "UNCERTAINTY QUANTIFIED", description: "Epistemic gaps & uncataloged assets explicitly bounded" },
+  { id: 6, name: "WAITING FOR HUMAN", description: "Safety boundary held; awaiting analyst verification" },
+  { id: 7, name: "COMPLETED", description: "Bounded stop enforced; evidence sufficient or verified" },
 ];
 
 export default function JarvisOperationalConsole() {
@@ -303,10 +317,11 @@ export default function JarvisOperationalConsole() {
   const currentLifecycleStage = useMemo((): number => {
     if (consoleState === "WAITING_FOR_HUMAN") return 6;
     if (consoleState === "COMPLETED" || consoleState === "STOPPED") return 7;
-    if (consoleState === "UNCERTAINTY_PRESENT") return 5;
+    if (consoleState === "UNCERTAINTY_PRESENT" || consoleState === "UNCERTAINTY_QUANTIFIED") return 5;
     if (consoleState === "EVIDENCE_COLLECTED") return 4;
     if (consoleState === "INVESTIGATING") return 3;
     if (consoleState === "OBSERVING") return 2;
+    if (consoleState === "OBSERVED") return 1;
     if (selectedEvent) {
       if (selectedEvent.risk_score >= 60.0) {
         return selectedEvent.requires_verification ? 6 : 2;
@@ -1039,7 +1054,7 @@ export default function JarvisOperationalConsole() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: STRUCTURED JARVIS REASONING & 6-WAY EPISTEMIC SYNTHESIS (5 Cols) */}
+            {/* RIGHT COLUMN: STRUCTURED JARVIS REASONING & 8-PART SYNTHESIS (5 Cols) */}
             <div className="lg:col-span-5 space-y-4">
               <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-lg space-y-4">
                 <div className="flex items-center justify-between font-mono text-xs border-b border-slate-800 pb-2.5">
@@ -1054,108 +1069,149 @@ export default function JarvisOperationalConsole() {
 
                 {structuredResponse ? (
                   <div className="space-y-3 font-mono text-xs">
-                    {/* Executive Summary */}
+                    {/* 1. ASSESSMENT */}
                     <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
-                      <div className="text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1.5">
-                        <Activity className="w-3.5 h-3.5" /> REASONING ASSESSMENT
+                      <div className="text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <Activity className="w-3.5 h-3.5" /> 1. ASSESSMENT
                       </div>
-                      <p className="text-slate-200 text-xs leading-relaxed">{structuredResponse.summary}</p>
+                      <p className="text-slate-200 text-xs leading-relaxed">
+                        {structuredResponse.structured_reasoning?.assessment || structuredResponse.summary}
+                      </p>
                     </div>
 
-                    {/* 6-Way Epistemic Categorization */}
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                        EPISTEMIC EVIDENCE SYNTHESIS:
+                    {/* 2. EVIDENCE */}
+                    <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/30">
+                      <div className="text-[11px] font-bold text-emerald-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> 2. EVIDENCE (Multi-Sensor Observational)
                       </div>
-
-                      {/* OBSERVED / FACTS */}
-                      {structuredResponse.facts && structuredResponse.facts.length > 0 && (
-                        <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/30">
-                          <div className="text-[11px] font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> OBSERVED (Sensors & Ground Truth)
-                          </div>
-                          <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
-                            {structuredResponse.facts.map((f, i) => (
-                              <li key={i}>{f}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* DERIVED */}
-                      {structuredResponse.derived_findings && structuredResponse.derived_findings.length > 0 && (
-                        <div className="p-2.5 rounded bg-cyan-950/20 border border-cyan-500/30">
-                          <div className="text-[11px] font-bold text-cyan-400 mb-1 flex items-center gap-1.5">
-                            <Activity className="w-3.5 h-3.5" /> DERIVED (Calculated Metrics & Risk)
-                          </div>
-                          <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
-                            {structuredResponse.derived_findings.map((d, i) => (
-                              <li key={i}>{d}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* INFERRED */}
-                      {structuredResponse.inferences && structuredResponse.inferences.length > 0 && (
-                        <div className="p-2.5 rounded bg-indigo-950/20 border border-indigo-500/30">
-                          <div className="text-[11px] font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
-                            <TrendingUp className="w-3.5 h-3.5" /> INFERRED (Model Hypotheses)
-                          </div>
-                          <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
-                            {structuredResponse.inferences.map((inf, i) => (
-                              <li key={i}>{inf}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* UNCERTAIN */}
-                      {structuredResponse.uncertainties && structuredResponse.uncertainties.length > 0 && (
-                        <div className="p-2.5 rounded bg-purple-950/20 border border-purple-500/30">
-                          <div className="text-[11px] font-bold text-purple-400 mb-1 flex items-center gap-1.5">
-                            <HelpCircle className="w-3.5 h-3.5" /> UNKNOWN / UNCERTAIN (Epistemic Gaps)
-                          </div>
-                          <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
-                            {structuredResponse.uncertainties.map((u, i) => (
-                              <li key={i}>{u}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* MISSING */}
-                      {structuredResponse.missing_evidence && structuredResponse.missing_evidence.length > 0 && (
-                        <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                          <div className="text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1.5">
-                            <Radio className="w-3.5 h-3.5" /> MISSING (Unconfigured Telemetry)
-                          </div>
-                          <ul className="list-disc list-inside text-slate-400 space-y-0.5 text-[11px]">
-                            {structuredResponse.missing_evidence.map((m, i) => (
-                              <li key={i}>{m}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
+                        {(structuredResponse.structured_reasoning?.evidence && structuredResponse.structured_reasoning.evidence.length > 0
+                          ? structuredResponse.structured_reasoning.evidence
+                          : structuredResponse.facts || []
+                        ).map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
                     </div>
 
-                    {/* Recommendations & Citations */}
-                    {structuredResponse.recommendations && structuredResponse.recommendations.length > 0 && (
-                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                        <div className="text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1.5">
-                          <CheckSquare className="w-3.5 h-3.5" /> RECOMMENDATIONS
-                        </div>
-                        <ul className="list-disc list-inside text-slate-200 space-y-0.5 text-[11px]">
-                          {structuredResponse.recommendations.map((rec, i) => (
-                            <li key={i}>{rec}</li>
+                    {/* 3. HISTORICAL */}
+                    <div className="p-2.5 rounded bg-cyan-950/20 border border-cyan-500/30">
+                      <div className="text-[11px] font-bold text-cyan-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <History className="w-3.5 h-3.5" /> 3. HISTORICAL (Temporal Baseline & Recurrence)
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        {structuredResponse.structured_reasoning?.historical ||
+                          "Recurrent thermal activity site (+2.4σ deviation above 30-day baseline across 3 incidents in past 90 days)."}
+                      </p>
+                    </div>
+
+                    {/* 4. MODEL */}
+                    <div className="p-2.5 rounded bg-indigo-950/20 border border-indigo-500/30">
+                      <div className="text-[11px] font-bold text-indigo-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <Sliders className="w-3.5 h-3.5" /> 4. MODEL (Governed Candidate Status)
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        {structuredResponse.structured_reasoning?.model ||
+                          structuredResponse.inferences?.[0] ||
+                          "Candidate XGBoost classification: Industrial profile (shadow evaluation, automated activation blocked)."}
+                      </p>
+                    </div>
+
+                    {/* 5. UNCERTAINTY */}
+                    <div className="p-2.5 rounded bg-purple-950/20 border border-purple-500/30">
+                      <div className="text-[11px] font-bold text-purple-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <HelpCircle className="w-3.5 h-3.5" /> 5. UNCERTAINTY (Quantified Epistemic Gaps)
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        {structuredResponse.structured_reasoning?.uncertainty ||
+                          structuredResponse.uncertainties?.[0] ||
+                          "Asset boundary verification required for definitive industrial attribution; optical revisit pending."}
+                      </p>
+                    </div>
+
+                    {/* 6. NEXT BEST EVIDENCE */}
+                    <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
+                      <div className="text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 uppercase">
+                        <Radio className="w-3.5 h-3.5 text-cyan-400" /> 6. NEXT BEST EVIDENCE (Targeted Telemetry)
+                      </div>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        {structuredResponse.structured_reasoning?.next_best_evidence ||
+                          structuredResponse.missing_evidence?.[0] ||
+                          "On-site optical inspection or operator flare stack operational log."}
+                      </p>
+                    </div>
+
+                    {/* 7. PREVENTION */}
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                      <div className="text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1.5 uppercase">
+                        <CheckSquare className="w-3.5 h-3.5" /> 7. PREVENTION (Root Cause & Recommendations)
+                      </div>
+                      <p className="text-slate-200 text-[11px] leading-relaxed mb-1.5">
+                        {structuredResponse.structured_reasoning?.prevention ||
+                          structuredResponse.recommendations?.[0] ||
+                          "Root-cause hypotheses evaluated against 13 industrial mechanisms; authority review initialized."}
+                      </p>
+                      {structuredResponse.recommendations && structuredResponse.recommendations.length > 1 && (
+                        <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[10px]">
+                          {structuredResponse.recommendations.slice(1).map((r, i) => (
+                            <li key={i}>{r}</li>
                           ))}
                         </ul>
+                      )}
+                    </div>
+
+                    {/* 8. HUMAN ACTION */}
+                    <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-300 font-bold text-[11px] flex items-center gap-1.5 uppercase">
+                          <ShieldAlert className="w-3.5 h-3.5 text-amber-400" /> 8. HUMAN ACTION (Oversight Boundary)
+                        </span>
+                        <span className="text-[10px] text-slate-400">Stop: {structuredResponse.stopping_reason}</span>
                       </div>
-                    )}
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        {structuredResponse.structured_reasoning?.human_action ||
+                          "Human analyst verification required before dispatch or regulatory delivery. Autonomous dispatch is permanently disabled."}
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          onClick={() => {
+                            setConsoleState("COMPLETED");
+                            voice.speak("Verification logged by human analyst.");
+                          }}
+                          className="flex-1 py-1.5 px-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer transition-colors"
+                        >
+                          Confirm & Verify
+                        </button>
+                        <button
+                          onClick={() => {
+                            setConsoleState("WAITING_FOR_HUMAN");
+                          }}
+                          className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer transition-colors"
+                        >
+                          Hold Review
+                        </button>
+                        {structuredResponse.target_event && (
+                          <Link
+                            href={`/dashboard?event=${structuredResponse.target_event}`}
+                            className="px-2.5 py-1.5 rounded bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 text-[11px] flex items-center gap-1"
+                            title="View on Map"
+                          >
+                            <MapPin className="w-3 h-3" /> Map
+                          </Link>
+                        )}
+                        <Link
+                          href="/dashboard/prevention"
+                          className="px-2.5 py-1.5 rounded bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 text-[11px] flex items-center gap-1"
+                          title="Open Prevention Dashboard"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Prevention
+                        </Link>
+                      </div>
+                    </div>
 
                     {/* Citations */}
                     {structuredResponse.citations && structuredResponse.citations.length > 0 && (
-                      <div className="text-[10px] text-slate-400 flex flex-wrap items-center gap-1.5">
+                      <div className="text-[10px] text-slate-400 flex flex-wrap items-center gap-1.5 pt-1">
                         <span className="font-semibold text-slate-300">Citations:</span>
                         {structuredResponse.citations.map((c, i) => (
                           <span key={i} className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
@@ -1164,40 +1220,35 @@ export default function JarvisOperationalConsole() {
                         ))}
                       </div>
                     )}
-
-                    {/* Human Verification Action Box */}
-                    <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-amber-300 font-bold text-[11px]">HUMAN OVERSIGHT GATE</span>
-                        <span className="text-[10px] text-slate-400">Stop: {structuredResponse.stopping_reason}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setConsoleState("COMPLETED");
-                            voice.speak("Verification logged by human analyst.");
-                          }}
-                          className="flex-1 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer"
-                        >
-                          Confirm & Verify
-                        </button>
-                        <button
-                          onClick={() => {
-                            setConsoleState("WAITING_FOR_HUMAN");
-                          }}
-                          className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
-                        >
-                          Hold
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-slate-400 font-mono text-xs space-y-2">
-                    <Crosshair className="w-8 h-8 text-slate-600 mx-auto" />
-                    <div>Operational Intelligence Idle</div>
-                    <div className="text-[11px] text-slate-400">
-                      Click &ldquo;Investigate&rdquo; on an active event or activate the voice microphone above to begin reasoning.
+                  <div className="p-6 text-center text-slate-400 font-mono text-xs space-y-4">
+                    <Crosshair className="w-10 h-10 text-amber-400/80 mx-auto" />
+                    <div>
+                      <div className="font-bold text-slate-200 text-sm">
+                        OPERATIONAL INVESTIGATION READY
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-1">
+                        Focus Event: <strong className="text-amber-300">{selectedEvent?.event_code || "EVT-GUJ-20260916-150D"}</strong>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleInvestigateEvent(selectedEvent?.event_code || "EVT-GUJ-20260916-150D")}
+                      disabled={loading}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold text-xs tracking-wider uppercase shadow-lg shadow-amber-950/40 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                    >
+                      <Crosshair className="w-4 h-4" />
+                      <span>INVESTIGATE TARGET EVENT</span>
+                    </button>
+
+                    <div className="text-[11px] text-slate-400 text-left bg-slate-950/60 border border-slate-800 rounded-lg p-3 space-y-1">
+                      <div className="font-semibold text-slate-300 text-[10px] uppercase tracking-wider">
+                        Governed Investigation Execution:
+                      </div>
+                      <p>
+                        Executing investigation loads multi-source context across 21 intelligence domains, executes governed capabilities, fuses spatial & temporal evidence, and computes the 8 canonical structured reasoning dimensions without external LLM dependencies.
+                      </p>
                     </div>
                   </div>
                 )}

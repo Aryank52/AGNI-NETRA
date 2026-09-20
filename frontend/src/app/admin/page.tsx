@@ -385,8 +385,8 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {activeAlerts.slice(0, 3).map((a: any) => (
-                  <div key={a.id} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs font-mono">
+                {activeAlerts.slice(0, 3).map((a: any, aIdx: number) => (
+                  <div key={a.id || a.alert_id || `alert-card-${aIdx}`} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs font-mono">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-bold">{a.alert_id}</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -628,8 +628,8 @@ export default function AdminPage() {
                       { step: "6. EVALUATE", desc: "5 Competing hypotheses" },
                       { step: "7. VERIFY", desc: "Human decision desk" },
                       { step: "8. REPORT", desc: "17-Section signed dossier" },
-                    ].map((st, i) => (
-                      <div key={i} className="p-2.5 rounded-lg bg-slate-950 border border-purple-500/20 flex flex-col items-center justify-center space-y-1">
+                    ].map((st) => (
+                      <div key={st.step} className="p-2.5 rounded-lg bg-slate-950 border border-purple-500/20 flex flex-col items-center justify-center space-y-1">
                         <div className="text-purple-300 font-bold">{st.step}</div>
                         <div className="text-[9px] text-slate-400 font-sans">{st.desc}</div>
                       </div>
@@ -878,7 +878,7 @@ export default function AdminPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-800/60 font-sans">
                           {indiaDistrictsIntelligence.map((dt: any, i: number) => (
-                            <tr key={i} className="hover:bg-slate-800/40 font-mono text-xs">
+                            <tr key={`${dt.state || "st"}-${dt.district || "dt"}-${i}`} className="hover:bg-slate-800/40 font-mono text-xs">
                               <td className="p-2">
                                 <div className="text-white font-semibold">{dt.district}</div>
                                 <div className="text-[10px] text-slate-500">{dt.state}</div>
@@ -968,7 +968,7 @@ export default function AdminPage() {
                               <td className="p-2.5 text-slate-300 text-[11px] font-sans">
                                 {p.associations && p.associations.length > 0 ? (
                                   p.associations.map((a: any, idx: number) => (
-                                    <span key={idx} className="mr-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono">
+                                    <span key={`${a.cadastre_domain || "cad"}-${idx}`} className="mr-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono">
                                       {a.cadastre_domain} ({a.distance_m ? `${(a.distance_m / 1000).toFixed(1)}km` : "adjacent"})
                                     </span>
                                   ))
@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                               {/* Priority Explanation Sentences */}
                               <div className="pt-2 border-t border-slate-800 space-y-1 text-slate-300 font-sans text-xs">
                                 {selectedHotspotPriority.priority_explanation_sentences?.map((sent: string, sIdx: number) => (
-                                  <div key={sIdx} className="flex items-start gap-1.5">
+                                  <div key={`prio-sent-${sIdx}`} className="flex items-start gap-1.5">
                                     <span className="text-cyan-400 shrink-0">•</span>
                                     <span>{sent}</span>
                                   </div>
@@ -1109,7 +1109,7 @@ export default function AdminPage() {
 
                               <div className="space-y-2">
                                 {selectedHotspotHypotheses.competing_hypotheses?.map((h: any, hIdx: number) => (
-                                  <div key={hIdx} className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
+                                  <div key={h.hypothesis || `hypo-${hIdx}`} className="p-2.5 rounded bg-slate-950 border border-slate-800/80 space-y-1">
                                     <div className="flex items-center justify-between">
                                       <span className="text-white font-bold">{h.hypothesis.replace(/_/g, " ")}</span>
                                       <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
@@ -1223,7 +1223,7 @@ export default function AdminPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                       {coverageScorecard.dimensions.map((dim: any, idx: number) => (
-                        <div key={idx} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs font-mono">
+                        <div key={dim.category || `dim-${idx}`} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs font-mono">
                           <div className="flex items-center justify-between">
                             <span className="text-slate-200 font-bold truncate">{dim.category}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
@@ -1266,7 +1266,7 @@ export default function AdminPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-800/60 font-sans">
                           {indiaQualityAudit.audit_results.map((chk: any, i: number) => (
-                            <tr key={i} className="hover:bg-slate-800/40 font-mono text-xs">
+                            <tr key={chk.check || `chk-${i}`} className="hover:bg-slate-800/40 font-mono text-xs">
                               <td className="p-2.5 font-semibold text-slate-200">{chk.check}</td>
                               <td className="p-2.5">
                                 <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
@@ -1831,7 +1831,7 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-slate-800/60">
                   {auditLogs.length > 0 ? (
                     auditLogs.map((l, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/40">
+                      <tr key={l.id || `audit-${l.timestamp}-${l.action}-${idx}`} className="hover:bg-slate-800/40">
                         <td className="p-3 text-slate-400">{l.timestamp?.substring(0, 19) || "Recent"}</td>
                         <td className="p-3 font-bold text-amber-400">{l.action}</td>
                         <td className="p-3 text-slate-300">{l.resource_type || "User"}</td>

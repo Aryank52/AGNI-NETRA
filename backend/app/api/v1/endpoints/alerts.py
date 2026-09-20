@@ -74,6 +74,7 @@ def list_operational_alerts(
 
 
 @router.get("/{alert_id}/dossier")
+@router.get("/{alert_id}/investigation")
 def get_alert_investigation_dossier(
     alert_id: str,
     db: Session = Depends(get_db),
@@ -123,6 +124,7 @@ def acknowledge_alert(
 
 
 @router.post("/{alert_id}/investigate")
+@router.post("/{alert_id}/start-investigation")
 def start_alert_investigation(
     alert_id: str,
     req: ActionRequest,

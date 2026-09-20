@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatNumber, formatFrp, formatPercent, formatDistance, safeArray } from "@/lib/formatters";
+import { formatNumber, formatFrp, formatPercent, formatDistance, safeArray, normalizeAssessmentItems, normalizeAssessmentSummary } from "@/lib/formatters";
 import { 
   Flame, ShieldAlert, Cpu, Activity, 
   Layers, MapPin, Factory, Zap, Pickaxe, 
@@ -507,7 +507,7 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
                 </span>
               </div>
               <p className="text-xs text-slate-200 leading-relaxed font-sans">
-                {why_this_assessment || "Operational assessment derived from multi-sensor thermal telemetry fused with spatial infrastructure proximity."}
+                {normalizeAssessmentSummary(why_this_assessment, "Operational assessment derived from multi-sensor thermal telemetry fused with spatial infrastructure proximity.")}
               </p>
               {/* Epistemic Nature Breakdown Pills */}
               {explainability?.evidence_nature_breakdown && (
@@ -727,20 +727,20 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
               <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1 text-xs">
                 <span className="font-bold text-emerald-400 text-[10px] font-mono block">WHY THIS ASSESSMENT?</span>
                 <ul className="space-y-1 text-slate-300 text-[11px] list-disc list-inside">
-                  {(why_this_assessment || [
+                  {normalizeAssessmentItems(why_this_assessment, [
                     "Multi-source thermal concurrence (VIIRS NOAA-20 & SNPP).",
                     "Coordinates lie within industrial refinery perimeter.",
                     "14-day temporal persistence ratio matches routine flaring."
-                  ]).map((w: string, i: number) => <li key={i}>{w}</li>)}
+                  ]).map((w: string, i: number) => <li key={`why-${i}`}>{w}</li>)}
                 </ul>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1 text-xs">
                 <span className="font-bold text-amber-400 text-[10px] font-mono block">WHAT CONTRADICTS IT?</span>
                 <ul className="space-y-1 text-slate-300 text-[11px] list-disc list-inside">
-                  {(what_contradicts_it || [
+                  {normalizeAssessmentItems(what_contradicts_it, [
                     "Peak FRP (+1.45σ) exceeds monthly median baseline.",
                     "14° dispersion variance against surface meteorological station."
-                  ]).map((c: string, i: number) => <li key={i}>{c}</li>)}
+                  ]).map((c: string, i: number) => <li key={`contra-${i}`}>{c}</li>)}
                 </ul>
               </div>
             </div>
