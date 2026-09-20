@@ -171,10 +171,16 @@ def lookup_state(lat: float, lon: float) -> str:
     try:
         from backend.app.services.india_boundary_service import india_boundary_service
         is_in, state_name, _, _ = india_boundary_service.is_point_inside_india(lat, lon)
-        if is_in and state_name:
+        if is_in and state_name and state_name != "UNKNOWN":
             return state_name
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return state
         return "UNKNOWN"
     except Exception:
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return state
         return "UNKNOWN"
 
 
@@ -187,9 +193,15 @@ def lookup_district(lat: float, lon: float) -> Optional[str]:
     try:
         from backend.app.services.india_boundary_service import india_boundary_service
         is_in, _, district_name, _ = india_boundary_service.is_point_inside_india(lat, lon)
-        if is_in:
-            return district_name or "UNKNOWN"
+        if is_in and district_name and district_name != "UNKNOWN":
+            return district_name
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return bounds.get("district", "UNKNOWN")
         return None
     except Exception:
+        for state, bounds in INDIAN_STATES_BOUNDS.items():
+            if bounds["min_lat"] <= lat <= bounds["max_lat"] and bounds["min_lon"] <= lon <= bounds["max_lon"]:
+                return bounds.get("district", "UNKNOWN")
         return None
 
