@@ -153,7 +153,7 @@ export default function CandidateDiscoveryPage() {
                                   : "bg-purple-500/20 text-purple-300 border border-purple-500/40"
                               }`}
                             >
-                              {isPromoted ? "PROMOTED TO CADASTRE" : "INVESTIGATIVE CANDIDATE"}
+                              {isPromoted ? "OFFICIAL CADASTRE (PROMOTED)" : "INVESTIGATIVE CANDIDATE (NOT CONFIRMED FACILITY)"}
                             </span>
                           </div>
                           <div className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
@@ -177,13 +177,14 @@ export default function CandidateDiscoveryPage() {
                             onClick={() => handlePromote(cand.id)}
                             disabled={isPromoting}
                             className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors disabled:opacity-50 font-mono"
+                            title="Human analyst verification required to promote candidate into the official cadastre"
                           >
                             {isPromoting ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             )}
-                            <span>Promote to Official Registry</span>
+                            <span>Promote to Official Cadastre</span>
                           </button>
                         )}
                       </div>

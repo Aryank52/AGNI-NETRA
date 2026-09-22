@@ -10,7 +10,7 @@ import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatter
 import { 
   Factory, Search, MapPin, Clock, 
   Activity, Shield, ChevronRight, CheckCircle2, RefreshCw,
-  Flame, ArrowUpRight, Filter, X
+  Flame, ArrowUpRight, Filter, X, ShieldAlert
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import EmptyState from "@/components/common/EmptyState";
@@ -19,16 +19,19 @@ import { CardSkeleton } from "@/components/common/Skeletons";
 export default function FacilitiesPage() {
   const [facilities, setFacilities] = useState<IndustrialFacility[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
   const loadFacilities = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchApi<IndustrialFacility[]>("/facilities");
-      setFacilities(data);
-    } catch (err) {
+      setFacilities(safeArray<IndustrialFacility>(data));
+    } catch (err: any) {
       console.warn("Failed to load facilities:", err);
+      setError(err?.message || "Failed to load facilities from API");
     } finally {
       setLoading(false);
     }
@@ -169,6 +172,14 @@ export default function FacilitiesPage() {
               <CardSkeleton />
               <CardSkeleton />
             </div>
+          ) : error ? (
+            <EmptyState
+              icon={ShieldAlert}
+              title="Failed to Load Facility Cadastre"
+              description={`The facility registry endpoint could not be reached (${error}). Precomputed operational baselines cannot be verified.`}
+              actionLabel="Retry Connection"
+              onAction={loadFacilities}
+            />
           ) : filtered.length === 0 ? (
             <EmptyState
               title="No Industrial Facilities Found"

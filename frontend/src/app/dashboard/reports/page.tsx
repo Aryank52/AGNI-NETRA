@@ -88,22 +88,41 @@ function ReportsContent() {
     ? events.filter((e) => e.id.toString() === focusedEventId)
     : events;
 
-  // Handler for on-demand generation simulation / trigger
-  const handleGenerateReport = async (reportKey: string, endpoint: string) => {
+  // Handler for on-demand generation and verified artifact download
+  const handleGenerateReport = async (reportKey: string, endpoint: string, filename?: string) => {
     setReportStatuses((prev) => ({
       ...prev,
       [reportKey]: { status: "GENERATING" },
     }));
 
     try {
-      // Small simulated latency to reflect computational pipeline
-      await new Promise((r) => setTimeout(r, 800));
-      window.open(endpoint, "_blank");
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(endpoint, { headers });
+      if (!res.ok) {
+        throw new Error(`Report endpoint returned HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename || `AGNI_NETRA_${reportKey}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
       setReportStatuses((prev) => ({
         ...prev,
         [reportKey]: { status: "READY" },
       }));
     } catch (err: any) {
+      console.error("Report generation/download failed:", err);
       setReportStatuses((prev) => ({
         ...prev,
         [reportKey]: { status: "FAILED", error: err?.message || "Failed to download PDF report" },
@@ -111,12 +130,12 @@ function ReportsContent() {
     }
   };
 
-  const handleRetryReport = async (reportKey: string, endpoint: string) => {
+  const handleRetryReport = async (reportKey: string, endpoint: string, filename?: string) => {
     setReportStatuses((prev) => ({
       ...prev,
       [reportKey]: { status: "RETRY" },
     }));
-    await handleGenerateReport(reportKey, endpoint);
+    await handleGenerateReport(reportKey, endpoint, filename);
   };
 
   return (
@@ -244,7 +263,7 @@ function ReportsContent() {
               {displayedEvents.map((evt) => {
                 const isTarget = focusedEventId && evt.id.toString() === focusedEventId;
                 const reportKey = `event-${evt.id}`;
-                const reportState = reportStatuses[reportKey]?.status || "READY";
+                const reportState = reportStatuses[reportKey]?.status;
                 const downloadUrl = `${API_BASE_URL}/reports/event/${evt.id}/download`;
 
                 return (
@@ -334,13 +353,21 @@ function ReportsContent() {
                             <RefreshCw className="w-3.5 h-3.5" />
                             <span>RETRY</span>
                           </button>
+                        ) : reportState === "READY" ? (
+                          <button
+                            onClick={() => handleGenerateReport(reportKey, downloadUrl)}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all font-mono"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>READY (PDF)</span>
+                          </button>
                         ) : (
                           <button
                             onClick={() => handleGenerateReport(reportKey, downloadUrl)}
                             className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all font-mono"
                           >
                             <Download className="w-3.5 h-3.5" />
-                            <span>PDF</span>
+                            <span>GENERATE PDF</span>
                           </button>
                         )}
                       </div>
@@ -474,7 +501,7 @@ function ReportsContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {preventionCases.map((c: any) => {
                 const reportKey = `prev-${c.id}`;
-                const repState = reportStatuses[reportKey]?.status || "READY";
+                const repState = reportStatuses[reportKey]?.status;
                 const pdfUrl = `${API_BASE_URL}/prevention/cases/${c.id}/root-cause/pdf`;
 
                 return (
@@ -525,13 +552,21 @@ function ReportsContent() {
                           <RefreshCw className="w-3 h-3" />
                           <span>Retry</span>
                         </button>
+                      ) : repState === "READY" ? (
+                        <button
+                          onClick={() => handleGenerateReport(reportKey, pdfUrl)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Ready (PDF)</span>
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleGenerateReport(reportKey, pdfUrl)}
                           className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold flex items-center gap-1 shadow-sm transition-colors"
                         >
                           <Download className="w-3 h-3" />
-                          <span>PDF Dossier</span>
+                          <span>Generate PDF</span>
                         </button>
                       )}
                     </div>

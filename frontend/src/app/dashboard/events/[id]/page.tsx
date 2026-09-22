@@ -976,7 +976,13 @@ export default function EventDetailPage() {
                         Platt Confidence: <strong className="text-emerald-400 font-mono">{formatPercent(pConf, 1)}</strong>
                       </div>
                       <div>
-                        Champion Model: <span className="font-mono text-[10px] text-purple-300">xgb-v3.0-real-candidate</span>
+                        Governed Candidate Model: <span className="font-mono text-[10px] text-purple-300 font-bold">xgb-v3.0-real-candidate</span>
+                      </div>
+                      <div>
+                        Model Status: <span className="font-mono text-[10px] text-amber-300 font-bold">CANDIDATE (ACTIVE: FALSE)</span>
+                      </div>
+                      <div>
+                        Active Champion: <strong className="font-mono text-[10px] text-slate-400">NONE CONFIGURED</strong>
                       </div>
                       <div>
                         Uncertainty Index: <span className="font-mono text-slate-400">0.082 (Low)</span>

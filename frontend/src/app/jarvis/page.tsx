@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
@@ -205,8 +206,10 @@ const LIFECYCLE_STAGES = [
   { id: 7, name: "COMPLETED", description: "Bounded stop enforced; evidence sufficient or verified" },
 ];
 
-export default function JarvisOperationalConsole() {
+function JarvisOperationalConsoleContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlEventId = searchParams.get("event_id") || searchParams.get("eventId") || "";
 
   // Operational Console State
   const [consoleState, setConsoleState] = useState<ConsoleState>("IDLE");
@@ -357,19 +360,19 @@ export default function JarvisOperationalConsole() {
   checkProactiveAlertsRef.current = checkProactiveAlerts;
 
   useEffect(() => {
-    loadWorldStateRef.current();
+    loadWorldStateRef.current(urlEventId || undefined);
     loadObserverStatusRef.current();
 
     const timer = setInterval(() => {
       if (autoRefresh) {
-        loadWorldStateRef.current();
+        loadWorldStateRef.current(urlEventId || undefined);
         loadObserverStatusRef.current();
         checkProactiveAlertsRef.current();
       }
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [autoRefresh]);
+  }, [autoRefresh, urlEventId]);
 
   const handleSelectEvent = (item: ActiveIntelligenceItem) => {
     setSelectedEvent(item);
@@ -1253,5 +1256,22 @@ export default function JarvisOperationalConsole() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function JarvisOperationalConsole() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen bg-slate-950 text-slate-400 items-center justify-center font-mono text-xs">
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p>Initializing Master JARVIS Intelligence Console...</p>
+          </div>
+        </div>
+      }
+    >
+      <JarvisOperationalConsoleContent />
+    </Suspense>
   );
 }
