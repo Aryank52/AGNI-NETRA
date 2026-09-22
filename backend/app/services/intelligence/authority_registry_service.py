@@ -67,15 +67,27 @@ class AuthorityRegistryService:
 
             relevance = "HIGH" if (is_district_match or is_facility_match) else ("MEDIUM" if is_state_match else "ESCALATION")
 
+            endpoint = r.official_endpoint or ""
+            is_email = "@" in endpoint
+            is_phone = bool("+" in endpoint or (endpoint and endpoint.replace("-", "").replace(" ", "").isdigit()))
+            is_url = endpoint.startswith("http")
+
             results.append({
                 "id": r.id,
                 "name": r.name,
+                "authority_name": r.name,
                 "category": r.category,
                 "state": r.state,
                 "district": r.district,
                 "jurisdiction": r.jurisdiction,
+                "jurisdiction_level": "National" if r.state == "National" else ("District" if r.district else "State"),
+                "department_name": r.jurisdiction,
                 "contact_role": r.contact_role,
+                "nodal_officer_designation": r.contact_role,
                 "official_endpoint": r.official_endpoint,
+                "official_email": endpoint if is_email else None,
+                "official_phone": endpoint if is_phone else None,
+                "compliance_portal_url": endpoint if is_url else None,
                 "relevance": relevance,
                 "is_verified": r.is_verified
             })

@@ -7,9 +7,12 @@ import { fetchApi } from "@/lib/api";
 import { formatFrp } from "@/lib/formatters";
 import { 
   BarChart3, PieChart, Activity, 
-  TrendingUp, Layers, MapPin, Calendar, Clock, Sparkles
+  TrendingUp, Layers, MapPin, Calendar, Clock, Sparkles,
+  ShieldAlert, RefreshCw
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeletons";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, Cell, PieChart as RePieChart, Pie,
@@ -24,78 +27,56 @@ export default function AnalyticsPage() {
   const [timeHorizon, setTimeHorizon] = useState<"24H" | "7D" | "30D" | "365D" | "2022-2026">("30D");
   const [timeline, setTimeline] = useState<any[]>([]);
   const [timelineLoading, setTimelineLoading] = useState<boolean>(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    setAnalyticsError(null);
+    try {
+      const [cData, rData, sData, oData] = await Promise.all([
+        fetchApi<any[]>("/analytics/class-distribution"),
+        fetchApi<any[]>("/analytics/risk-distribution"),
+        fetchApi<any[]>("/analytics/state-summary"),
+        fetchApi<any>("/analytics/operational-trends").catch(() => null),
+      ]);
+      setClassDist(cData || []);
+      setRiskDist(rData || []);
+      setStateSummary(sData || []);
+      setOperationalTrends(oData);
+    } catch (err: any) {
+      console.error("Failed to load national analytics:", err);
+      setAnalyticsError(err?.message || "Failed to load national analytics data from API");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadAnalytics = async () => {
-      try {
-        const [cData, rData, sData, oData] = await Promise.all([
-          fetchApi<any[]>("/analytics/class-distribution"),
-          fetchApi<any[]>("/analytics/risk-distribution"),
-          fetchApi<any[]>("/analytics/state-summary"),
-          fetchApi<any>("/analytics/operational-trends").catch(() => null),
-        ]);
-        setClassDist(cData || []);
-        setRiskDist(rData || []);
-        setStateSummary(sData || []);
-        setOperationalTrends(oData);
-      } catch (err) {
-        console.warn("Using sample chart data fallback:", err);
-        setClassDist([
-          { label: "Industrial Fire", count: 6, percentage: 40.0 },
-          { label: "Gas Flare", count: 4, percentage: 26.7 },
-          { label: "Forest Fire", count: 2, percentage: 13.3 },
-          { label: "Agricultural Burning", count: 2, percentage: 13.3 },
-          { label: "Mining Activity", count: 1, percentage: 6.7 },
-        ]);
-        setRiskDist([
-          { level: "CRITICAL", count: 2, color: "#ef4444" },
-          { level: "HIGH", count: 4, color: "#f97316" },
-          { level: "MODERATE", count: 6, color: "#eab308" },
-          { level: "LOW", count: 3, color: "#10b981" },
-        ]);
-        setStateSummary([
-          { state: "Gujarat", event_count: 5, avg_frp: 145.0, high_risk_count: 2 },
-          { state: "Madhya Pradesh", event_count: 3, avg_frp: 185.0, high_risk_count: 2 },
-          { state: "Odisha", event_count: 3, avg_frp: 95.0, high_risk_count: 1 },
-          { state: "Punjab", event_count: 2, avg_frp: 30.0, high_risk_count: 0 },
-          { state: "Chhattisgarh", event_count: 2, avg_frp: 45.0, high_risk_count: 1 },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadAnalytics();
   }, []);
 
-  useEffect(() => {
+  const loadTimeline = () => {
     setTimelineLoading(true);
+    setTimelineError(null);
     fetchApi<any>("/historical/timeline")
       .then((data) => {
         if (data?.timeline && Array.isArray(data.timeline)) {
           setTimeline(data.timeline);
         } else {
-          setTimeline([
-            { period: "2024-08", detection_count: 120, avg_frp: 48.5, max_frp: 180.2 },
-            { period: "2024-09", detection_count: 185, avg_frp: 52.1, max_frp: 210.5 },
-            { period: "2024-10", detection_count: 340, avg_frp: 61.4, max_frp: 320.0 },
-            { period: "2024-11", detection_count: 512, avg_frp: 74.8, max_frp: 450.1 },
-            { period: "2024-12", detection_count: 290, avg_frp: 55.3, max_frp: 240.6 },
-            { period: "2025-01", detection_count: 198, avg_frp: 49.0, max_frp: 195.0 },
-          ]);
+          setTimeline([]);
         }
       })
-      .catch(() => {
-        setTimeline([
-          { period: "2024-08", detection_count: 120, avg_frp: 48.5, max_frp: 180.2 },
-          { period: "2024-09", detection_count: 185, avg_frp: 52.1, max_frp: 210.5 },
-          { period: "2024-10", detection_count: 340, avg_frp: 61.4, max_frp: 320.0 },
-          { period: "2024-11", detection_count: 512, avg_frp: 74.8, max_frp: 450.1 },
-          { period: "2024-12", detection_count: 290, avg_frp: 55.3, max_frp: 240.6 },
-          { period: "2025-01", detection_count: 198, avg_frp: 49.0, max_frp: 195.0 },
-        ]);
+      .catch((err) => {
+        console.warn("Failed to load historical timeline:", err);
+        setTimelineError(err?.message || "Failed to load historical timeline");
       })
       .finally(() => setTimelineLoading(false));
+  };
+
+  useEffect(() => {
+    loadTimeline();
   }, [timeHorizon]);
 
   const COLORS = ["#f59e0b", "#f97316", "#10b981", "#3b82f6", "#a855f7", "#64748b"];
@@ -156,32 +137,68 @@ export default function AnalyticsPage() {
               </span>
             </div>
 
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timeline} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
-                  <defs>
-                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="period" stroke="#64748b" fontSize={10} />
-                  <YAxis stroke="#94a3b8" fontSize={10} />
-                  <Tooltip
-                    contentStyle={{ background: "#0b1426", border: "1px solid #1e2e4f", borderRadius: "8px", fontSize: "11px" }}
-                  />
-                  <Area type="monotone" dataKey="detection_count" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" name="Detections" />
-                  <Line type="monotone" dataKey="avg_frp" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} name="Mean FRP (MW)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-64 w-full flex items-center justify-center">
+              {timelineLoading ? (
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                  <span>Loading temporal horizon telemetry...</span>
+                </div>
+              ) : timelineError ? (
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-rose-400 font-mono">Failed to load temporal trend: {timelineError}</p>
+                  <button
+                    onClick={loadTimeline}
+                    className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold inline-flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry Timeline</span>
+                  </button>
+                </div>
+              ) : timeline.length === 0 ? (
+                <p className="text-xs text-slate-500 font-mono">No observations recorded for the selected temporal horizon.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={timeline} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+                    <defs>
+                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="period" stroke="#64748b" fontSize={10} />
+                    <YAxis stroke="#94a3b8" fontSize={10} />
+                    <Tooltip
+                      contentStyle={{ background: "#0b1426", border: "1px solid #1e2e4f", borderRadius: "8px", fontSize: "11px" }}
+                    />
+                    <Area type="monotone" dataKey="detection_count" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" name="Detections" />
+                    <Line type="monotone" dataKey="avg_frp" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} name="Mean FRP (MW)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Classification Distribution */}
-            <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
-              <div className="border-b border-slate-800 pb-2">
+          {/* Loading or Error States for Analytics Sections */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : analyticsError ? (
+            <EmptyState
+              icon={ShieldAlert}
+              title="Failed to Load National Analytics"
+              description={`The analytics service returned an error (${analyticsError}). National distributions and state breakdowns could not be retrieved.`}
+              actionLabel="Retry Loading Analytics"
+              onAction={loadAnalytics}
+            />
+          ) : (
+            <>
+              {/* Charts Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Classification Distribution */}
+                <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
+                  <div className="border-b border-slate-800 pb-2">
                 <div className="text-[10px] font-mono text-amber-400 uppercase font-bold tracking-wider">
                   QUESTION: Which thermal sources dominate the observation stream?
                 </div>
@@ -278,6 +295,8 @@ export default function AnalyticsPage() {
               </table>
             </div>
           </div>
+          </>
+          )}
         </main>
       </div>
     </div>

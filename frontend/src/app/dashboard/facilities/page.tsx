@@ -10,7 +10,7 @@ import { formatNumber, formatFrp, formatCoord, safeArray } from "@/lib/formatter
 import { 
   Factory, Search, MapPin, Clock, 
   Activity, Shield, ChevronRight, CheckCircle2, RefreshCw,
-  Flame, ArrowUpRight, Filter, X
+  Flame, ArrowUpRight, Filter, X, ShieldAlert
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import EmptyState from "@/components/common/EmptyState";
@@ -19,16 +19,19 @@ import { CardSkeleton } from "@/components/common/Skeletons";
 export default function FacilitiesPage() {
   const [facilities, setFacilities] = useState<IndustrialFacility[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
   const loadFacilities = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchApi<IndustrialFacility[]>("/facilities");
-      setFacilities(data);
-    } catch (err) {
+      setFacilities(safeArray<IndustrialFacility>(data));
+    } catch (err: any) {
       console.warn("Failed to load facilities:", err);
+      setError(err?.message || "Failed to load facilities from API");
     } finally {
       setLoading(false);
     }
@@ -75,6 +78,30 @@ export default function FacilitiesPage() {
               </div>
             }
           />
+
+          {/* Canonical Cadastre Semantics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">Operational Facilities</div>
+              <div className="text-xl font-black text-cyan-400">35,570</div>
+              <div className="text-[10px] text-slate-500">Active baseline tracking</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">Reference Cadastre</div>
+              <div className="text-xl font-black text-white">35,684</div>
+              <div className="text-[10px] text-slate-500">OSM / CPCB verified registry</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">National Geography</div>
+              <div className="text-xl font-black text-amber-400">36 States • 735 Dists</div>
+              <div className="text-[10px] text-slate-500">Administrative boundaries</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">CEA Power Infrastructure</div>
+              <div className="text-xl font-black text-emerald-400">502 Stations</div>
+              <div className="text-[10px] text-emerald-300 font-semibold">1,633 Generating Units</div>
+            </div>
+          </div>
 
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-agni-card border border-agni-border text-xs">
@@ -145,6 +172,14 @@ export default function FacilitiesPage() {
               <CardSkeleton />
               <CardSkeleton />
             </div>
+          ) : error ? (
+            <EmptyState
+              icon={ShieldAlert}
+              title="Failed to Load Facility Cadastre"
+              description={`The facility registry endpoint could not be reached (${error}). Precomputed operational baselines cannot be verified.`}
+              actionLabel="Retry Connection"
+              onAction={loadFacilities}
+            />
           ) : filtered.length === 0 ? (
             <EmptyState
               title="No Industrial Facilities Found"

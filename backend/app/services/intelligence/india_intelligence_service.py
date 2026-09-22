@@ -962,9 +962,9 @@ class IndiaIntelligenceService:
                 "label": "Routine Industrial Gas Flaring",
                 "evaluation_status": "SUPPORTED" if has_industrial and is_persistent else ("PLAUSIBLE" if has_industrial else "CONTRADICTED"),
                 "status": "SUPPORTED" if has_industrial and is_persistent else ("PLAUSIBLE" if has_industrial else "CONTRADICTED"),
-                "eval_summary": f"Spatially associated with industrial asset ({ctx.get('osm_industrial', {}).get('name', 'Industrial Area')}) with confirmed multi-pass persistence." if has_industrial else "No industrial facility within 5km radius.",
+                "eval_summary": f"Spatially associated with industrial asset ({(ctx.get('osm_industrial') or {}).get('name', 'Industrial Area')}) with confirmed multi-pass persistence." if has_industrial else "No industrial facility within 5km radius.",
                 "support_reasons": [
-                    f"Spatially associated with industrial facility ({ctx.get('osm_industrial', {}).get('name', 'N/A')})" if has_industrial else "No industrial facility within 5km.",
+                    f"Spatially associated with industrial facility ({(ctx.get('osm_industrial') or {}).get('name', 'N/A')})" if has_industrial else "No industrial facility within 5km.",
                     f"Temporal persistence confirmed ({der['persistence_category']})" if is_persistent else "Transient signal."
                 ],
                 "confidence_score": 0.88 if has_industrial and is_persistent else 0.35
@@ -1114,7 +1114,7 @@ class IndiaIntelligenceService:
                     "Atmospheric dispersion reanalysis is unconfigured (Copernicus CAMS token missing)."
                 ],
                 "WHAT_SUPPORTS_THE_ASSESSMENT": [
-                    f"PostGIS cadastre match: Within {ctx.get('osm_industrial', {}).get('distance_m', 'N/A')}m of registered industrial facility.",
+                    f"PostGIS cadastre match: Within {osm_ind.get('distance_m', 'N/A')}m of registered industrial facility.",
                     f"Persistence Score of {der['persistence_score']}/10.0 indicating ongoing multi-pass combustion.",
                     f"FRP Z-score of +{der['abnormality_z_score']} relative to 6-year regional baseline."
                 ],

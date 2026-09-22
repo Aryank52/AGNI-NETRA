@@ -57,6 +57,9 @@ function AtlasContent() {
   const [facilityIntel, setFacilityIntel] = useState<any | null>(null);
   const [intelLoading, setIntelLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [statesError, setStatesError] = useState<string | null>(null);
+  const [facilitiesLoading, setFacilitiesLoading] = useState<boolean>(false);
+  const [facilitiesError, setFacilitiesError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"STATES" | "FACILITIES">(urlSearch ? "FACILITIES" : "STATES");
 
   useEffect(() => {
@@ -74,8 +77,9 @@ function AtlasContent() {
       .finally(() => setIntelLoading(false));
   }, [selectedFacility]);
 
-  useEffect(() => {
+  const loadStates = () => {
     setLoading(true);
+    setStatesError(null);
     fetchApi<StateSummary[]>("/geography/states")
       .then((data) => {
         const sorted = safeArray<StateSummary>(data).sort(
@@ -83,11 +87,20 @@ function AtlasContent() {
         );
         setStates(sorted);
       })
-      .catch((err) => console.warn("Failed to load states:", err))
+      .catch((err) => {
+        console.warn("Failed to load states:", err);
+        setStatesError(err?.message || "Failed to load state distribution");
+      })
       .finally(() => setLoading(false));
-  }, []);
+  };
 
   useEffect(() => {
+    loadStates();
+  }, []);
+
+  const loadFacilities = () => {
+    setFacilitiesLoading(true);
+    setFacilitiesError(null);
     const params = new URLSearchParams();
     if (selectedState !== "ALL") params.append("state", selectedState);
     if (searchQuery.trim()) params.append("search", searchQuery.trim());
@@ -95,7 +108,16 @@ function AtlasContent() {
 
     fetchApi<FacilitySummary[]>(`/facilities?${params.toString()}`)
       .then((data) => setFacilities(safeArray<FacilitySummary>(data)))
-      .catch(() => setFacilities([]));
+      .catch((err) => {
+        console.warn("Failed to load facilities:", err);
+        setFacilitiesError(err?.message || "Failed to load facilities directory");
+        setFacilities([]);
+      })
+      .finally(() => setFacilitiesLoading(false));
+  };
+
+  useEffect(() => {
+    loadFacilities();
   }, [selectedState, searchQuery]);
 
   const filteredStates = states.filter((s) => {
@@ -244,87 +266,135 @@ function AtlasContent() {
 
           {/* Tab 1: State Density Table */}
           {activeTab === "STATES" && (
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                    <tr>
-                      <th className="p-3.5">State / UT</th>
-                      <th className="p-3.5 text-right">Official Districts</th>
-                      <th className="p-3.5 text-right">Registered Facilities</th>
-                      <th className="p-3.5 text-right">Spatial Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-sans">
-                    {filteredStates.map((s) => (
-                      <tr key={s.state_name} className="hover:bg-slate-850/50 transition-colors">
-                        <td className="p-3.5 font-bold text-white flex items-center gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>{s.state_name}</span>
-                        </td>
-                        <td className="p-3.5 text-right font-mono text-slate-300">
-                          {s.district_count} districts
-                        </td>
-                        <td className="p-3.5 text-right font-mono text-cyan-400 font-bold">
-                          {s.facility_count.toLocaleString()}
-                        </td>
-                        <td className="p-3.5 text-right">
-                          <Link
-                            href={`/dashboard?state=${encodeURIComponent(s.state_name)}`}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
-                          >
-                            <span>Inspect on Map</span>
-                            <ArrowUpRight className="w-3 h-3" />
-                          </Link>
-                        </td>
+            loading ? (
+              <TableSkeleton rows={8} cols={4} />
+            ) : statesError ? (
+              <EmptyState
+                icon={ShieldAlert}
+                title="Failed to Load State Cadastre"
+                description={`The state boundary distribution could not be loaded (${statesError}). National geospatial summaries are unavailable.`}
+                actionLabel="Retry Loading States"
+                onAction={loadStates}
+              />
+            ) : filteredStates.length === 0 ? (
+              <EmptyState
+                title="No States Found"
+                description="No state records matched your filter."
+                actionLabel="Reset State Filter"
+                onAction={() => setSelectedState("ALL")}
+              />
+            ) : (
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                      <tr>
+                        <th className="p-3.5">State / UT</th>
+                        <th className="p-3.5 text-right">Official Districts</th>
+                        <th className="p-3.5 text-right">Registered Facilities</th>
+                        <th className="p-3.5 text-right">Spatial Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-sans">
+                      {filteredStates.map((s) => (
+                        <tr key={s.state_name} className="hover:bg-slate-850/50 transition-colors">
+                          <td className="p-3.5 font-bold text-white flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>{s.state_name}</span>
+                          </td>
+                          <td className="p-3.5 text-right font-mono text-slate-300">
+                            {s.district_count} districts
+                          </td>
+                          <td className="p-3.5 text-right font-mono text-cyan-400 font-bold">
+                            {s.facility_count.toLocaleString()}
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <Link
+                              href={`/dashboard?state=${encodeURIComponent(s.state_name)}`}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
+                            >
+                              <span>Inspect on Map</span>
+                              <ArrowUpRight className="w-3 h-3" />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* Tab 2: Facilities Directory */}
           {activeTab === "FACILITIES" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {facilities.map((fac) => (
-                <div
-                  key={fac.id}
-                  onClick={() => setSelectedFacility(fac)}
-                  className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all space-y-2 flex flex-col justify-between group"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/20">
-                        {fac.facility_type || "INDUSTRIAL"}
-                      </span>
-                      {fac.environmental_clearance_present && (
-                        <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> EC Granted
+            facilitiesLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+              </div>
+            ) : facilitiesError ? (
+              <EmptyState
+                icon={ShieldAlert}
+                title="Failed to Load Facilities Directory"
+                description={`Industrial facility query failed (${facilitiesError}). Baseline intelligence could not be retrieved.`}
+                actionLabel="Retry Directory Query"
+                onAction={loadFacilities}
+              />
+            ) : facilities.length === 0 ? (
+              <EmptyState
+                title="No Industrial Facilities Found"
+                description="No industrial facilities matched your search and filter criteria."
+                actionLabel="Reset Search & Filters"
+                onAction={() => {
+                  setSearchQuery("");
+                  setSelectedState("ALL");
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {facilities.map((fac) => (
+                  <div
+                    key={fac.id}
+                    onClick={() => setSelectedFacility(fac)}
+                    className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all space-y-2 flex flex-col justify-between group"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/20">
+                          {fac.facility_type || "INDUSTRIAL"}
                         </span>
-                      )}
+                        {fac.environmental_clearance_present && (
+                          <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> EC Granted
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                        {fac.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span>{fac.district ? `${fac.district}, ` : ""}{fac.state}</span>
+                      </div>
                     </div>
-                    <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
-                      {fac.name}
-                    </div>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                      <span>{fac.district ? `${fac.district}, ` : ""}{fac.state}</span>
-                    </div>
-                  </div>
 
-                  <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-slate-500">
-                      Mean FRP: <strong className="text-amber-400">{fac.facility_baseline?.mean_frp ? `${fac.facility_baseline.mean_frp} MW` : "Baseline Active"}</strong>
-                    </span>
-                    <span className="text-cyan-400 text-[10px] group-hover:underline">
-                      View Profile →
-                    </span>
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-500">
+                        Mean FRP: <strong className="text-amber-400">{fac.facility_baseline?.mean_frp ? `${fac.facility_baseline.mean_frp} MW` : "Baseline Active"}</strong>
+                      </span>
+                      <span className="text-cyan-400 text-[10px] group-hover:underline">
+                        View Profile →
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
           )}
 
           {/* Facility Dossier Drawer Modal */}

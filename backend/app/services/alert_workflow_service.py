@@ -384,9 +384,11 @@ class AlertWorkflowService:
         Executes an analyst action, validates state transition, logs immutable audit record,
         and optionally records formal verification.
         """
-        alert = db.query(Alert).filter(Alert.id == alert_id).first()
+        alert = db.query(Alert).filter(or_(Alert.id == alert_id, Alert.event_id == alert_id)).first()
         if not alert:
             raise ValueError(f"Alert {alert_id} not found")
+        # Canonicalize alert_id to actual primary key
+        actual_alert_id = alert.id
 
         prev_state = alert.status
         is_valid, err = self.validate_transition(prev_state, target_state)
@@ -411,7 +413,7 @@ class AlertWorkflowService:
             alert.acknowledged_by = resolved_analyst_id
 
         # Aggregate current evidence snapshot
-        dossier = self.get_alert_investigation_dossier(db, alert_id)
+        dossier = self.get_alert_investigation_dossier(db, actual_alert_id)
 
         # If Verification action, create formal VerificationRecord
         if action == "VERIFY" and ground_truth_class:
@@ -432,7 +434,7 @@ class AlertWorkflowService:
         # Record Immutable Audit Trail
         audit_id = self._log_audit_trail(
             db=db,
-            alert_id=alert_id,
+            alert_id=actual_alert_id,
             event_id=alert.event_id,
             action=action,
             prev_state=prev_state,
@@ -503,12 +505,16 @@ class AlertWorkflowService:
             SELECT id, event_id, alert_level, alert_type, title, description, status,
                    routing_tier, priority_score, predicted_class, confidence, risk_score,
                    created_at, updated_at
-            FROM alerts WHERE id = :aid;
+            FROM alerts 
+            WHERE id = :aid OR event_id = :aid
+            ORDER BY CASE WHEN id = :aid THEN 0 ELSE 1 END
+            LIMIT 1;
         """), {"aid": alert_id}).fetchone()
 
         if not alert_row:
             raise ValueError(f"Alert {alert_id} not found")
 
+        actual_aid = alert_row[0]
         event_id = alert_row[1]
         event = db.query(ThermalEvent).filter(ThermalEvent.id == event_id).first()
         detections = db.query(ThermalDetection).filter(ThermalDetection.event_id == event_id).all()
@@ -532,7 +538,7 @@ class AlertWorkflowService:
             FROM alert_audit_logs
             WHERE alert_id = :aid
             ORDER BY timestamp ASC;
-        """), {"aid": alert_id}).fetchall()
+        """), {"aid": actual_aid}).fetchall()
 
         audit_history = [
             {
@@ -543,7 +549,7 @@ class AlertWorkflowService:
                 "analyst_name": r[4],
                 "notes": r[5],
                 "verification_outcome": r[6],
-                "timestamp": r[7].isoformat() if r[7] else None
+                "timestamp": r[7].isoformat() if hasattr(r[7], "isoformat") else (str(r[7]) if r[7] else None)
             }
             for r in audit_rows
         ]
@@ -560,8 +566,8 @@ class AlertWorkflowService:
                 "status": alert_row[6],
                 "routing_tier": alert_row[7] or "TIER_2_ANALYST_REVIEW_QUEUE",
                 "priority_score": alert_row[8] or 50.0,
-                "created_at": alert_row[12].isoformat() if alert_row[12] else None,
-                "updated_at": alert_row[13].isoformat() if alert_row[13] else None
+                "created_at": alert_row[12].isoformat() if hasattr(alert_row[12], "isoformat") else (str(alert_row[12]) if alert_row[12] else None),
+                "updated_at": alert_row[13].isoformat() if hasattr(alert_row[13], "isoformat") else (str(alert_row[13]) if alert_row[13] else None)
             },
             "thermal_event": {
                 "event_code": event.event_code if event else "Unknown",

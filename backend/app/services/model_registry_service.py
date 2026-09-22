@@ -23,7 +23,11 @@ class ModelRegistryService:
     """
 
     def list_models(self, db: Session) -> List[MLModelRegistry]:
-        return db.query(MLModelRegistry).order_by(MLModelRegistry.trained_at.desc()).all()
+        models = db.query(MLModelRegistry).order_by(MLModelRegistry.trained_at.desc()).all()
+        for m in models:
+            if not isinstance(m.metrics, dict):
+                m.metrics = {}
+        return models
 
     def get_active_model(self, db: Session, algorithm: str = "XGBoost") -> Optional[MLModelRegistry]:
         return db.query(MLModelRegistry).filter(

@@ -995,7 +995,7 @@ export default function MapLibreView({
       {baseMapDegraded && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-amber-950/90 border border-amber-500/50 text-amber-200 px-4 py-2 rounded shadow-xl backdrop-blur text-xs flex items-center gap-2 font-mono">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span>Base map unavailable. Event coordinates and intelligence data remain available.</span>
+          <span><strong>BASE MAP UNAVAILABLE</strong> — Event coordinates, GIS geometry, and intelligence data remain fully available.</span>
         </div>
       )}
 

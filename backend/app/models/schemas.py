@@ -1252,12 +1252,19 @@ class PreventionRecommendationOut(BaseModel):
 class AuthorityDirectoryOut(BaseModel):
     id: str
     name: str
+    authority_name: Optional[str] = None
     category: str
     state: str
     district: Optional[str] = None
     jurisdiction: str
+    jurisdiction_level: Optional[str] = None
+    department_name: Optional[str] = None
     contact_role: str
+    nodal_officer_designation: Optional[str] = None
     official_endpoint: Optional[str] = None
+    official_email: Optional[str] = None
+    official_phone: Optional[str] = None
+    compliance_portal_url: Optional[str] = None
     is_verified: bool = True
     relevance: Optional[str] = None
     created_at: Optional[datetime] = None

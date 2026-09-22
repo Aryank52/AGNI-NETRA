@@ -68,7 +68,7 @@ class JarvisPhase19Service:
                 obs = ev["observed"]
                 der = ev["derived"]
                 ctx = ev["nearest_context"]
-                fac_name = ctx.get("osm_industrial", {}).get("name", "Industrial Boundary")
+                fac_name = (ctx.get("osm_industrial") or {}).get("name", "Industrial Boundary")
                 summary_lines.append(
                     f"| `{ev['event_code']}` | {ev['administrative']['state']} | {ev['administrative']['district']} | "
                     f"`{der['persistence_category']}` | {der['persistence_score']}/10.0 | {obs['detection_count']} passes | "

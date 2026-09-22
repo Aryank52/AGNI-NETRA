@@ -581,6 +581,10 @@ export default function MissionControlPage() {
             {/* TAB CONTENT: VIRTUAL TASKING */}
             {activeTab === "TASKING" && (
               <div className="p-4 space-y-4">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-[11px] text-purple-200 font-mono flex items-center gap-2">
+                  <Info className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>SIMULATED DIGITAL TWIN TASKING ONLY • NO LIVE SATELLITE COMMAND TRANSMISSION</span>
+                </div>
                 <form onSubmit={handleScheduleTask} className="space-y-3">
                   <div>
                     <label className="text-[10px] font-mono uppercase text-slate-400 block mb-1">Target Area of Interest (AOI)</label>

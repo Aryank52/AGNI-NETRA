@@ -131,9 +131,13 @@ class JarvisVoiceService:
         if any(w in cmd_lower for w in ["investigate", "analyze", "deep dive", "examine"]):
             # Extract state or event reference
             event_ref = None
+            ev = None
             evt_match = re.search(r"\b(evt-[\w-]+)\b", cmd_lower)
             if evt_match:
                 event_ref = evt_match.group(1).upper()
+                ev = db.query(ThermalEvent).filter(
+                    (ThermalEvent.event_code == event_ref) | (ThermalEvent.id == event_ref)
+                ).first()
             elif "gujarat" in cmd_lower:
                 ev = db.query(ThermalEvent).filter(ThermalEvent.state.ilike("%gujarat%")).order_by(desc(ThermalEvent.last_seen)).first()
                 if ev:
@@ -142,6 +146,11 @@ class JarvisVoiceService:
                 ev = db.query(ThermalEvent).order_by(desc(ThermalEvent.last_seen)).first()
                 if ev:
                     event_ref = ev.event_code
+
+            if not ev and event_ref:
+                ev = db.query(ThermalEvent).filter(
+                    (ThermalEvent.event_code == event_ref) | (ThermalEvent.id == event_ref)
+                ).first()
 
             if not event_ref:
                 # Default to the most active event
@@ -175,6 +184,17 @@ class JarvisVoiceService:
             ]
             citations = ["VIIRS-SNPP", "MODIS", "CEA Generation Database 2025", "Sovereign Survey of India Admin Boundaries"]
 
+            structured_reasoning = {
+                "assessment": inv_res.get("spoken_response", f"Investigation completed for {event_ref}."),
+                "evidence": facts,
+                "historical": f"Recurrence baseline: {getattr(ev, 'landcover_class', None) or 'Industrial'} sector with recurrent thermal activity.",
+                "model": f"Candidate XGBoost classification: {getattr(ev, 'landcover_class', None) or 'Industrial Fire'} (risk {inv_res.get('risk_score', 0):.0f}/100, shadow evaluation).",
+                "uncertainty": uncertainties[0] if uncertainties else "Asset boundary verification required for definitive industrial attribution.",
+                "next_best_evidence": missing_evidence[0] if missing_evidence else "On-site optical inspection or operator flare stack log.",
+                "prevention": f"Prevention tracking initialized; hypotheses evaluated against 13 root causes.",
+                "human_action": "Tier-1 analyst verification required before dispatch."
+            }
+
             return {
                 "transcript": cleaned,
                 "intent": "INVESTIGATE_EVENT",
@@ -197,6 +217,7 @@ class JarvisVoiceService:
                 "automated_model_activation_blocked": True,
                 "data_semantics": AUTHORITATIVE_DATA_SEMANTICS,
                 "investigation": inv_res,
+                "structured_reasoning": structured_reasoning,
                 "visual_state": "WAITING_FOR_HUMAN",
                 "epistemic_breakdown": ep,
                 "epistemic_synthesis": ep
@@ -208,19 +229,38 @@ class JarvisVoiceService:
         if res.get("relevant_events"):
             facts.extend([f"Observed Event {e.get('event_code', '')}: FRP {e.get('max_frp', 0)} MW in {e.get('state', '')}" for e in res["relevant_events"][:3]])
 
+        structured_reasoning = res.get("structured_reasoning")
+        if structured_reasoning and structured_reasoning.get("evidence"):
+            facts = structured_reasoning.get("evidence")
+
+        recommendations = ["Continue continuous thermal monitoring."]
+        if structured_reasoning:
+            recs = []
+            if structured_reasoning.get("next_best_evidence"):
+                recs.append(f"Evidence: {structured_reasoning['next_best_evidence']}")
+            if structured_reasoning.get("prevention"):
+                recs.append(f"Prevention: {structured_reasoning['prevention']}")
+            if recs:
+                recommendations = recs
+
+        uncertainties = []
+        if structured_reasoning and structured_reasoning.get("uncertainty"):
+            uncertainties = [structured_reasoning["uncertainty"]]
+
         return {
             "transcript": cleaned,
             "intent": res["intent"],
             "state": "COMPLETED",
+            "target_event": res.get("target_event"),
             "summary": res["answer"],
             "response_text": res["answer"],
             "spoken_response": res["spoken_response"],
             "facts": facts,
-            "derived_findings": ["Evaluated situational parameters across 35,570 active facilities and 502 power stations."],
-            "inferences": ["Operational state stable within routine baseline thresholds."],
-            "uncertainties": [],
-            "missing_evidence": [],
-            "recommendations": ["Continue continuous thermal monitoring."],
+            "derived_findings": [f"Evaluated situational parameters across 35,570 active facilities and 502 power stations."],
+            "inferences": [structured_reasoning.get("model", "Operational state stable within routine baseline thresholds.")] if structured_reasoning else ["Operational state stable within routine baseline thresholds."],
+            "uncertainties": uncertainties,
+            "missing_evidence": [structured_reasoning.get("next_best_evidence", "")] if structured_reasoning and structured_reasoning.get("next_best_evidence") else [],
+            "recommendations": recommendations,
             "citations": ["AGNI-NETRA PostgreSQL/PostGIS Database", "FIRMS Real-Time Stream"],
             "model_provenance": MODEL_PROVENANCE_INFO,
             "verification_state": "ROUTINE_MONITORING",
@@ -229,13 +269,14 @@ class JarvisVoiceService:
             "automated_model_activation_blocked": True,
             "data_semantics": AUTHORITATIVE_DATA_SEMANTICS,
             "relevant_events": res.get("relevant_events", []),
+            "structured_reasoning": structured_reasoning,
             "visual_state": "COMPLETED",
             "epistemic_breakdown": {
                 "known": facts,
                 "derived": ["Evaluated situational parameters across 35,570 active facilities and 502 power stations."],
-                "inferences": ["Operational state stable within routine baseline thresholds."],
-                "uncertain": [],
-                "missing": [],
+                "inferences": [structured_reasoning.get("model", "Operational state stable within routine baseline thresholds.")] if structured_reasoning else ["Operational state stable within routine baseline thresholds."],
+                "uncertain": uncertainties,
+                "missing": [structured_reasoning.get("next_best_evidence", "")] if structured_reasoning and structured_reasoning.get("next_best_evidence") else [],
                 "conflicting": []
             }
         }

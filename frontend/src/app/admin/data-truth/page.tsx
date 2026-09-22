@@ -325,7 +325,7 @@ export default function DataTruthGovernancePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {data?.discrepancies_reconciled.map((d, i) => (
-                <div key={i} className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <div key={d.topic || `disc-${i}`} className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-semibold text-amber-400 font-sans">{d.topic}</h4>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">

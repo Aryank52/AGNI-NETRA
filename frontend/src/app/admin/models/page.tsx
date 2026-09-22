@@ -327,7 +327,7 @@ export default function ModelRegistryPage() {
                   </div>
 
                   <div className="text-[11px] text-slate-500 font-mono">
-                    * Tier 1 Auto-Dispatch candidate threshold requires &ge;0.65 probability with &ge;0.20 margin to next class.
+                    * Tier 1 High-Confidence Review threshold requires &ge;0.65 probability with &ge;0.20 margin to next class. Operational dispatch remains blocked by statutory gate (ENABLE_OPERATIONAL_DISPATCH_GATE = False).
                   </div>
                 </div>
               </div>

@@ -264,7 +264,7 @@ def get_event_detail(
 ):
     """
     Retrieves granular intelligence dossier for a single thermal event.
-    Supports lookup by UUID id or standard event_code.
+    Supports lookup by UUID id, standard event_code, or 1-based index (e.g. '1').
     """
     event = db.query(ThermalEvent).options(
         joinedload(ThermalEvent.prediction),
@@ -282,6 +282,15 @@ def get_event_detail(
             joinedload(ThermalEvent.facility),
             joinedload(ThermalEvent.candidate_facility)
         ).filter(ThermalEvent.event_code == event_id).first()
+
+    if not event and event_id.isdigit() and int(event_id) > 0:
+        event = db.query(ThermalEvent).options(
+            joinedload(ThermalEvent.prediction),
+            joinedload(ThermalEvent.risk),
+            joinedload(ThermalEvent.features),
+            joinedload(ThermalEvent.facility),
+            joinedload(ThermalEvent.candidate_facility)
+        ).order_by(ThermalEvent.created_at.desc()).offset(int(event_id) - 1).first()
 
     if not event:
         raise HTTPException(status_code=404, detail="Thermal event not found")

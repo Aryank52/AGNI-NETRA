@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import RiskBadge from "@/components/intelligence/RiskBadge";
 import { ThermalEvent } from "@/types";
 import { fetchApi, API_BASE_URL } from "@/lib/api";
+import { useAuth } from "@/lib/authContext";
 import { formatNumber, formatFrp, formatPercent, formatCoord, formatDistance } from "@/lib/formatters";
 import { 
   Flame, Filter, Search, ChevronRight, Activity, 
@@ -19,6 +21,15 @@ import { TableSkeleton } from "@/components/common/Skeletons";
 import EmptyState from "@/components/common/EmptyState";
 
 export default function EventsInventoryPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && user.role === "PUBLIC") {
+      router.replace("/portal/public");
+    }
+  }, [user, router]);
+
   const [events, setEvents] = useState<ThermalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,6 +44,10 @@ export default function EventsInventoryPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const loadEvents = async () => {
+    if (user && user.role === "PUBLIC") {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams();

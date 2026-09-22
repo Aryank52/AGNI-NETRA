@@ -39,8 +39,23 @@ The AGNI-NETRA frontend user interface has undergone a comprehensive functional 
 
 ### E. List Rendering Key Warnings
 - **Root Cause**: Re-used indices or undefined IDs in dynamic alert and event lists.
-- **Resolution**: Enforced globally unique compound keys (`${event.id}-${event.timestamp}`) across all list mappings.
+- **Resolution**: Enforced globally unique compound keys (`${event.id}-${event.timestamp}`) across all list mappings, including Admin user management tables (`${user.id}-${user.email}`).
 - **Verification**: Zero "Each child in a list should have a unique key prop" warnings.
+
+### F. MapLibre CSS CSP Error Resolution
+- **Root Cause**: External link to `https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css` blocked by strict Content Security Policy.
+- **Resolution**: Removed all external CDN links from `layout.tsx`; imported local MapLibre CSS bundle via `@import "maplibre-gl/dist/maplibre-gl.css";` in `globals.css`.
+- **Verification**: 0 CSP violations in browser console; zero references to `unpkg.com` in codebase.
+
+### G. Event Dossier `.map()` Runtime Error Resolution
+- **Root Cause**: Backend API returning diverse schema shapes (string, object with items/reasons, or null) for `why_this_assessment`, causing `TypeError: .map is not a function`.
+- **Resolution**: Created `normalizeAssessmentItems` and `normalizeAssessmentSummary` in `src/lib/formatters.ts` with typed fallbacks across array, string, and dictionary payloads.
+- **Verification**: Zero uncaught TypeErrors in Event Investigation Dossier.
+
+### H. 403 Forbidden Events Access for Public Sessions
+- **Root Cause**: Browser session initialized as `PUBLIC` repeatedly requesting analyst-only `/api/v1/events` endpoints.
+- **Resolution**: Implemented client layout route guard in `dashboard/layout.tsx` routing `PUBLIC` sessions to `/portal/public`, preventing forbidden API calls while preserving analyst JWT authentication.
+- **Verification**: Zero unauthorized 403 errors in network console.
 
 ---
 

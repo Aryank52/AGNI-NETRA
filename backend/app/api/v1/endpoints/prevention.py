@@ -6,7 +6,7 @@ prevention recommendations, authority routing, and governed report review/approv
 
 import os
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
@@ -249,6 +249,8 @@ def get_case_authorities(
     return auths
 
 
+@router.post("/cases/{case_id}/reports/draft", response_model=PreventionReportOut, status_code=status.HTTP_201_CREATED)
+@router.post("/cases/{case_id}/reports", response_model=PreventionReportOut, status_code=status.HTTP_201_CREATED)
 @router.post("/cases/{case_id}/report", response_model=PreventionReportOut, status_code=status.HTTP_201_CREATED)
 def create_case_report(
     case_id: str,
@@ -266,6 +268,114 @@ def create_case_report(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Report generation failed: {str(e)}")
+
+
+@router.get("/reports/{report_id}/pdf")
+def download_prevention_report_pdf(
+    report_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads formal ReportLab PDF dossier for a prevention report with application/pdf MIME type.
+    """
+    report = db.query(PreventionReportRecord).filter(
+        (PreventionReportRecord.id == report_id) | (PreventionReportRecord.report_number == report_id)
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Report '{report_id}' not found.")
+
+    pdf_bytes = None
+    if report.pdf_path and os.path.exists(report.pdf_path):
+        try:
+            with open(report.pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+        except Exception:
+            pdf_bytes = None
+
+    if not pdf_bytes and report.sections_data:
+        try:
+            pdf_bytes = prevention_report_generator.generate_pdf(report.sections_data)
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"PDF generation error: {str(e)}")
+
+    if not pdf_bytes:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF content unavailable for this report.")
+
+    filename = f"AGNI_NETRA_{report.report_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/cases/{case_id}/root-cause/pdf")
+def download_case_root_cause_pdf(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """
+    Downloads the 24-section Root-Cause and Prevention Report PDF for a specific case.
+    """
+    case = db.query(PreventionCase).filter(
+        (PreventionCase.id == case_id) | (PreventionCase.case_number == case_id)
+    ).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Case '{case_id}' not found.")
+
+    latest_report = db.query(PreventionReportRecord).filter(
+        PreventionReportRecord.case_id == case.id
+    ).order_by(desc(PreventionReportRecord.created_at)).first()
+
+    if not latest_report:
+        # Generate on the fly if needed
+        creator = current_user.full_name if current_user else "JARVIS Intelligence Layer"
+        latest_report = prevention_report_generator.create_draft_report(db, case.id, creator_name=creator)
+
+    return download_prevention_report_pdf(latest_report.id, db=db)
+
+
+@router.get("/reports/{report_id}/audits", response_model=List[ReportDeliveryAuditOut])
+def get_report_audits(
+    report_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns formal delivery and review audits for a report.
+    """
+    report = db.query(PreventionReportRecord).filter(
+        (PreventionReportRecord.id == report_id) | (PreventionReportRecord.report_number == report_id)
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Report '{report_id}' not found.")
+
+    return db.query(ReportDeliveryAudit).filter(
+        ReportDeliveryAudit.report_id == report.id
+    ).order_by(desc(ReportDeliveryAudit.delivery_timestamp)).all()
+
+
+@router.get("/cases/{case_id}/audits", response_model=List[ReportDeliveryAuditOut])
+def get_case_audits(
+    case_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns all report delivery and governance audits associated with a prevention case.
+    """
+    case = db.query(PreventionCase).filter(
+        (PreventionCase.id == case_id) | (PreventionCase.case_number == case_id)
+    ).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Case '{case_id}' not found.")
+
+    report_ids = [r[0] for r in db.query(PreventionReportRecord.id).filter(PreventionReportRecord.case_id == case.id).all()]
+    if not report_ids:
+        return []
+
+    return db.query(ReportDeliveryAudit).filter(
+        ReportDeliveryAudit.report_id.in_(report_ids)
+    ).order_by(desc(ReportDeliveryAudit.delivery_timestamp)).all()
 
 
 @router.get("/cases/{case_id}/reports", response_model=List[PreventionReportOut])

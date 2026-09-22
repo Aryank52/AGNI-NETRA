@@ -73,7 +73,8 @@ AGNI-NETRA's user interface is engineered for real-time situational awareness, r
 - **24-Section Dossiers**: Intelligence, Compliance, Root Cause, and Prevention reports.
 - **PDF Generation**: Live ReportLab rendering returning `application/pdf` sealed with SHA-256 integrity hash.
 - **JSON Export**: Live bulk JSON export and single-event cryptographic JSON dossiers.
-- **Status**: **PASS (Verified via Browser)**
+- **PDF Binary Downloads**: Enabled live ReportLab binary generation returning `application/pdf` for Compliance Dossiers (`/reports/compliance/download`), Prevention Case Dossiers (`/prevention/reports/{id}/pdf`), and Root Cause Summaries (`/prevention/cases/{id}/root-cause/pdf`).
+- **Status**: **PASS (Verified via Browser & API)**
 
 ### I. AGNI-SAT Digital Twin Simulation (`/dashboard/mission-control`)
 - **Digital Twin Invariant**: Prominently displays `"SIMULATED DIGITAL TWIN — SIMULATED TELEMETRY ONLY"`.
@@ -85,14 +86,25 @@ AGNI-NETRA's user interface is engineered for real-time situational awareness, r
 - **Agency Action Center**: Dedicated triage portal for State Pollution Control Boards and Forest Departments with ground-truth verification forms.
 - **Public Safety Hazard Map**: Privacy-preserving view with coordinates rounded to 2 decimal places (~1.1 km) and sensitive facility names redacted.
 - **Admin & Governance**: Invariant locks (`ENABLE_OPERATIONAL_DISPATCH_GATE = False`, `ENABLE_AUTOMATED_MODEL_ACTIVATION = False`) and cryptographic audit logs displayed.
+- **List Keys Fixed**: Replaced non-unique array indexes with compound entity keys (`${user.id}-${user.email}`) across Admin user lists.
 - **Status**: **PASS (Verified via Browser)**
 
 ---
 
-## 3. Console & Build Verification
-- **Hydration Warnings**: 0
-- **Maximum Update Depth Errors**: 0
-- **React Key Warnings**: 0
-- **Uncaught TypeErrors**: 0
-- **TypeScript Errors**: 0 (`tsc --noEmit` exited 0)
-- **Production Build**: Successful
+## 3. Runtime Integration & Console Verification
+
+| Verification Dimension | Expected Contract | Actual Result | Status |
+| :--- | :--- | :--- | :--- |
+| **Hydration Warnings** | 0 warnings | 0 warnings | **PASS** |
+| **React Key Warnings** | 0 warnings | 0 warnings | **PASS** |
+| **Maximum Update Depth** | 0 errors | 0 errors | **PASS** |
+| **Uncaught TypeErrors** | 0 errors | 0 errors (`.map()` on non-array fixed via normalizers) | **PASS** |
+| **MapLibre CSS CSP** | 0 violations | Local CSS bundle imported, 0 unpkg references | **PASS** |
+| **Intelligence Endpoints** | 0 500 errors | Safe null-coalescing on all contextual dictionaries | **PASS** |
+| **Event Auth / RBAC** | 0 403 errors | PUBLIC users auto-redirected; ANALYST token handling verified | **PASS** |
+| **Alert / Prevention APIs**| 0 404 errors | Restored `/alerts/{id}/investigation`, `/prevention/cases/{id}/reports/draft` | **PASS** |
+| **Risk Query Latency** | Interactive (<1s) | Indexed SQL aggregations with PostGIS limits | **PASS** |
+| **TypeScript Typecheck** | 0 errors | `npm run typecheck` passed (0 errors) | **PASS** |
+| **Production Build** | 0 errors | `npm run build` compiled all 33 routes successfully | **PASS** |
+| **Backend Test Suite** | 100% pass | Prevention (17/17), RBAC (11/11), JARVIS (70/70) passed | **PASS** |
+
