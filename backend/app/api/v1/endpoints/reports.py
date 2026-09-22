@@ -33,6 +33,14 @@ def download_event_pdf_report(
         joinedload(ThermalEvent.facility)
     ).filter((ThermalEvent.id == event_id) | (ThermalEvent.event_code == event_id)).first()
 
+    if not event and event_id.isdigit() and int(event_id) > 0:
+        event = db.query(ThermalEvent).options(
+            joinedload(ThermalEvent.prediction),
+            joinedload(ThermalEvent.risk),
+            joinedload(ThermalEvent.features),
+            joinedload(ThermalEvent.facility)
+        ).order_by(ThermalEvent.created_at.desc()).offset(int(event_id) - 1).first()
+
     if not event:
         raise HTTPException(status_code=404, detail="Thermal event not found")
 
