@@ -7,12 +7,13 @@ import Sidebar from "@/components/layout/Sidebar";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/lib/authContext";
 import { useVoiceInterface } from "@/lib/voice/useVoiceInterface";
+import { Lifecycle, EpistemicBadge, StatusBadge } from "@/components/shared";
 import {
   Mic, MicOff, Volume2, VolumeX, Shield, ShieldAlert, AlertTriangle,
   CheckCircle2, RefreshCw, CornerDownLeft, Activity, Cpu, Layers,
   Flame, Radio, Clock, Lock, XCircle, AlertOctagon, ShieldCheck,
   MapPin, ExternalLink, HelpCircle, CheckSquare, Bell, Crosshair,
-  TrendingUp, Pause, History, Database, Sliders, Info, ChevronRight
+  TrendingUp, Pause, History, Database, Sliders, Info, ChevronRight, Terminal
 } from "lucide-react";
 
 // ============================================================================
@@ -843,33 +844,27 @@ export default function JarvisOperationalConsole() {
             </div>
           </div>
 
-          {/* 18 CANONICAL OPERATIONAL QUESTIONS PALETTE */}
-          <div className="bg-slate-900/60 border border-slate-800/90 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between font-mono text-xs text-slate-300">
-              <span className="font-bold flex items-center gap-2 text-cyan-400">
-                <HelpCircle className="w-4 h-4 text-cyan-400" />
-                JARVIS INTELLIGENCE INQUIRIES (18 CANONICAL QUESTIONS)
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Target: <strong className="text-amber-300">{selectedEvent?.event_code || "Active Focus"}</strong>
-              </span>
+          {/* 7-STAGE PIPELINE TRACKER & EVENT SYNCHRONIZATION BANNER */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5 font-mono text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-amber-400" />
+                <span className="font-bold text-slate-200 tracking-wider">
+                  JARVIS MASTER OBSERVATIONAL PIPELINE
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                  SINGLE MASTER
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                <span>Synchronized Target:</span>
+                <strong className="text-amber-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                  {selectedEvent?.event_code || "National Situation"}
+                </strong>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {GOLDEN_QUESTIONS.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => executeJarvisQuery(q)}
-                  disabled={loading}
-                  className="text-left px-2.5 py-1.5 rounded-lg bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/90 hover:border-cyan-500/50 text-[11px] font-mono text-slate-300 hover:text-cyan-200 transition-all cursor-pointer flex items-center justify-between gap-1 group"
-                >
-                  <span className="truncate">
-                    <span className="text-amber-400/80 mr-1.5 font-bold">{(idx + 1).toString().padStart(2, "0")}.</span>
-                    {q}
-                  </span>
-                  <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 shrink-0" />
-                </button>
-              ))}
-            </div>
+
+            <Lifecycle currentStage={consoleState} />
           </div>
 
           {/* DUAL COLUMN OPERATIONAL WORKSPACE */}

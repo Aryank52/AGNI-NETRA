@@ -76,6 +76,30 @@ export default function FacilitiesPage() {
             }
           />
 
+          {/* Canonical Cadastre Semantics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">Operational Facilities</div>
+              <div className="text-xl font-black text-cyan-400">35,570</div>
+              <div className="text-[10px] text-slate-500">Active baseline tracking</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">Reference Cadastre</div>
+              <div className="text-xl font-black text-white">35,684</div>
+              <div className="text-[10px] text-slate-500">OSM / CPCB verified registry</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">National Geography</div>
+              <div className="text-xl font-black text-amber-400">36 States • 735 Dists</div>
+              <div className="text-[10px] text-slate-500">Administrative boundaries</div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+              <div className="text-[10px] text-slate-400 uppercase">CEA Power Infrastructure</div>
+              <div className="text-xl font-black text-emerald-400">502 Stations</div>
+              <div className="text-[10px] text-emerald-300 font-semibold">1,633 Generating Units</div>
+            </div>
+          </div>
+
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-agni-card border border-agni-border text-xs">
             <div className="flex items-center gap-2 flex-1 min-w-[240px]">

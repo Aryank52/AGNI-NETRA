@@ -189,8 +189,8 @@ export default function AlertsPage() {
                 <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center gap-2 text-xs">
                   <Lock className="w-4 h-4 text-amber-400" />
                   <div>
-                    <div className="font-mono font-bold leading-none">DISPATCH GATE: SAFE</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 font-mono">0 Automated Alerts Dispatched</div>
+                    <div className="font-mono font-bold leading-none">DISPATCH GATE: BLOCKED (GATE=FALSE)</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 font-mono">0 Automated Alerts Dispatched • Human Auth Required</div>
                   </div>
                 </div>
 
