@@ -52,7 +52,6 @@ function DashboardContent() {
   // State & Data
   const [events, setEvents] = useState<ThermalEvent[]>([]);
   const [mapEvents, setMapEvents] = useState<ThermalEvent[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
   const [commandCenterData, setCommandCenterData] = useState<CommandCenterData | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ThermalEvent | null>(null);
   const [inspectorTab, setInspectorTab] = useState<"telemetry" | "dossier" | "jarvis">("telemetry");
@@ -164,7 +163,6 @@ function DashboardContent() {
       const items = safeArray<ThermalEvent>(eventsData);
       setMapEvents(items);
       setEvents(items);
-      setTotalCount(eventsData?.total_count ?? items.length);
 
       if (items.length > 0 && (!selectedEvent || !items.some((e) => e.id === selectedEvent.id))) {
         setSelectedEvent(items[0]);
@@ -249,12 +247,12 @@ function DashboardContent() {
     return list;
   }, [events, searchQuery, sortKey, sortDirection]);
 
-  // Canonical SEMANTICS preserved
+  // Canonical SEMANTICS preserved — bound authoritatively to Command Center analytics
   const kpiStats = {
-    hotspots: commandCenterData?.kpis?.total_live_events ?? 82,
-    events: totalCount || 88,
+    hotspots: commandCenterData?.kpis?.active_events ?? 82,
+    events: commandCenterData?.kpis?.total_live_events ?? 88,
     verified: 6, // 6 analyst-verified incidents (canonical invariant)
-    alerts: 88,  // 88 operational alerts queue (canonical invariant)
+    alerts: commandCenterData?.kpis?.total_alerts ?? 88,  // Governed operational alerts queue
   };
 
   // Table Column Definitions
@@ -383,7 +381,7 @@ function DashboardContent() {
               label="Active Thermal Hotspots"
               value={kpiStats.hotspots}
               unit="FIRMS NRT"
-              subtext="VIIRS 375m sensor passes"
+              subtext="Active unclosed thermal hotspots"
               icon={Flame}
               epistemicState="OBSERVED"
               variant="critical"
@@ -392,7 +390,7 @@ function DashboardContent() {
               label="Clustered Thermal Events"
               value={kpiStats.events}
               unit="Events"
-              subtext="Multi-sensor spatio-temporal clusters"
+              subtext="National live spatio-temporal clusters"
               icon={Activity}
               epistemicState="DERIVED"
               variant="high"
@@ -734,7 +732,7 @@ function DashboardContent() {
             actions={
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-mono text-slate-400">
-                  Total Records: <strong className="text-amber-400">{sortedEvents.length}</strong>
+                  Loaded Viewport Records: <strong className="text-amber-400">{sortedEvents.length}</strong>
                 </span>
               </div>
             }
