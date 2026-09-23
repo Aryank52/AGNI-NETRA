@@ -1224,7 +1224,7 @@ class MissionTask(Base):
 class AdminBoundary(Base):
     __tablename__ = "admin_boundaries"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     admin_level = Column(Integer, nullable=False, index=True)  # 1: State/UT, 2: District, 3: Sub-District/Tehsil
     admin_level_name = Column(String(50), nullable=False)      # STATE_UT, DISTRICT, SUBDISTRICT
     admin_code = Column(String(100), nullable=False, index=True)
