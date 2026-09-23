@@ -58,6 +58,9 @@ yarn-error.log*
 *.env.*
 **/.env
 **/.env.*
+frontend/.env.local
+backend/.env
+deployment/.env
 !.env.example
 !**/.env.example
 !deployment/.env.example

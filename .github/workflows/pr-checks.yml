@@ -14,7 +14,7 @@ jobs:
         image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: projectdatabase_2026
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: agni_netra
         ports:
           - 5432:5432
@@ -49,14 +49,14 @@ jobs:
 
       - name: Run Core Acceptance Test Suite
         env:
-          DATABASE_URL: postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra
           SECRET_KEY: test-ci-secret-key-agni-netra-production-2026
         run: |
           python tests/run_all_tests.py
 
       - name: Run Administrative Geography & GIS Layer Contract Tests
         env:
-          DATABASE_URL: postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra
         run: |
           pytest tests/test_administrative_geography.py -v --tb=short || echo "Geospatial suite executed"
 
