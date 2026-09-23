@@ -1,0 +1,1329 @@
+{
+  "admin_boundaries": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "admin_level",
+      "admin_level_name",
+      "admin_code",
+      "name",
+      "normalized_name",
+      "parent_code",
+      "parent_name",
+      "state_code",
+      "state_name",
+      "district_code",
+      "district_name",
+      "subdistrict_code",
+      "geom",
+      "source",
+      "source_document",
+      "source_url",
+      "reference_date",
+      "source_version",
+      "crs",
+      "srid",
+      "is_authoritative",
+      "is_active",
+      "raw_metadata",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": [
+      "geom"
+    ]
+  },
+  "authority_directory": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "name",
+      "category",
+      "state",
+      "district",
+      "jurisdiction",
+      "contact_role",
+      "official_endpoint",
+      "is_verified",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "fsi_sources": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_name",
+      "organization",
+      "dataset_name",
+      "reference_year",
+      "product_version",
+      "access_method",
+      "source_url",
+      "license",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "protected_areas": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "pa_name",
+      "pa_type",
+      "state",
+      "district",
+      "established_year",
+      "area_sqkm",
+      "geom",
+      "legal_status",
+      "source_id",
+      "source_record_id",
+      "reference_date",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": [
+      "geom"
+    ]
+  },
+  "lulc_sources": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_name",
+      "organization",
+      "dataset_name",
+      "resolution_m",
+      "reference_year",
+      "product_version",
+      "access_type",
+      "license",
+      "source_url",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "lulc_classes": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_id",
+      "source_class_code",
+      "source_class_name",
+      "canonical_class",
+      "is_industrial_compatible",
+      "risk_weight",
+      "description",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "lulc_raster_tiles": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_id",
+      "tile_id",
+      "file_path",
+      "geom",
+      "min_lat",
+      "max_lat",
+      "min_lon",
+      "max_lon",
+      "srid",
+      "resolution_m",
+      "reference_year",
+      "checksum",
+      "status",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": [
+      "geom"
+    ]
+  },
+  "lulc_spatial_features": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_id",
+      "class_id",
+      "canonical_class",
+      "feature_name",
+      "state",
+      "district",
+      "geom",
+      "area_sqkm",
+      "source_provenance",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": [
+      "geom"
+    ]
+  },
+  "industrial_facilities": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "name",
+      "facility_type",
+      "status",
+      "source",
+      "source_id",
+      "state",
+      "district",
+      "country",
+      "jurisdiction",
+      "latitude",
+      "longitude",
+      "boundary_geojson",
+      "confidence_score",
+      "operating_hours",
+      "contact_info",
+      "created_at",
+      "updated_at",
+      "industry_id",
+      "industry_name",
+      "nic_code",
+      "master_sector",
+      "sub_sector",
+      "industry_type",
+      "company_name",
+      "facility_name",
+      "plant_name",
+      "city",
+      "industrial_area",
+      "plant_capacity",
+      "production_type",
+      "energy_intensity",
+      "electricity_consumption",
+      "fuel_consumption",
+      "water_consumption",
+      "co2_emissions",
+      "equipment_type",
+      "major_machinery",
+      "operating_status",
+      "enterprise_size",
+      "ownership_type",
+      "data_source",
+      "source_record_id",
+      "source_url",
+      "source_date",
+      "source_file",
+      "source_metadata",
+      "verification_status",
+      "confidence",
+      "last_updated",
+      "prime_mover",
+      "unit_count",
+      "commissioning_year_min",
+      "commissioning_year_max",
+      "cea_project_name",
+      "cea_organisation",
+      "firms_detections_500m",
+      "firms_detections_1km",
+      "firms_detections_2km",
+      "thermal_activity_status",
+      "environmental_clearance_present",
+      "ec_proposal_id",
+      "ec_clearance_type",
+      "ec_clearance_status",
+      "ec_category",
+      "ec_decision_date",
+      "forest_related_flag",
+      "wildlife_related_flag",
+      "crz_related_flag"
+    ],
+    "excluded_source_columns": [
+      "geom"
+    ],
+    "spatial_columns": []
+  },
+  "candidate_facilities": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "name_label",
+      "status",
+      "latitude",
+      "longitude",
+      "state",
+      "district",
+      "industrial_context_score",
+      "persistence_days",
+      "detection_count",
+      "first_detected_at",
+      "last_detected_at",
+      "evidence_summary",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "facility_administrative_context": {
+    "pks": [
+      "facility_id"
+    ],
+    "projected_columns": [
+      "facility_id",
+      "original_state",
+      "original_district",
+      "original_city",
+      "derived_state",
+      "derived_district",
+      "derived_subdistrict",
+      "state_id",
+      "district_id",
+      "subdistrict_id",
+      "has_state_conflict",
+      "has_district_conflict",
+      "spatial_match_method",
+      "administrative_source",
+      "administrative_confidence",
+      "created_at",
+      "last_updated"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "facility_baselines": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "facility_id",
+      "mean_frp",
+      "median_frp",
+      "variance_frp",
+      "max_historical_frp",
+      "frp_distribution",
+      "frequency_days",
+      "day_night_ratio",
+      "status_band",
+      "notes",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "facility_lulc_context": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "facility_id",
+      "primary_lulc_class",
+      "source_lulc_class",
+      "industrial_compatibility",
+      "distance_to_forest_m",
+      "distance_to_agriculture_m",
+      "distance_to_water_m",
+      "distance_to_mining_m",
+      "source_id",
+      "confidence_score",
+      "reference_date",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "facility_forest_context": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "facility_id",
+      "nearest_protected_area_id",
+      "nearest_protected_area_name",
+      "nearest_protected_area_type",
+      "distance_to_protected_area_m",
+      "distance_to_forest_m",
+      "is_inside_esz_10km",
+      "esz_evaluation_status",
+      "forest_context_level",
+      "source_id",
+      "reference_year",
+      "confidence_score",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "historical_baselines": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "facility_id",
+      "grid_cell_id",
+      "mean_frp",
+      "median_frp",
+      "std_frp",
+      "max_historical_frp",
+      "detection_frequency_monthly",
+      "day_night_ratio",
+      "monthly_pattern",
+      "baseline_status",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "historical_incidents": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "incident_code",
+      "linked_event_ids",
+      "latitude",
+      "longitude",
+      "state",
+      "district",
+      "subdistrict",
+      "facility_id",
+      "facility_name",
+      "first_observed_date",
+      "last_observed_date",
+      "peak_frp",
+      "avg_frp",
+      "detection_count",
+      "classification",
+      "status",
+      "verified_cause",
+      "evidence_ids",
+      "source_provenance",
+      "similarity_signature",
+      "verification_record_id",
+      "verified_by",
+      "verified_at",
+      "notes",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "thermal_events": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_code",
+      "latitude",
+      "longitude",
+      "bounding_box",
+      "convex_hull_geojson",
+      "first_seen",
+      "last_seen",
+      "detection_count",
+      "avg_frp",
+      "max_frp",
+      "min_frp",
+      "frp_variance",
+      "avg_brightness",
+      "satellite_count",
+      "facility_id",
+      "candidate_facility_id",
+      "facility_status",
+      "nearest_facility_distance_m",
+      "landcover_class",
+      "state",
+      "district",
+      "country",
+      "jurisdiction",
+      "status",
+      "lifecycle_state",
+      "is_simulation",
+      "is_demo",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "risk_scores": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "risk_score",
+      "risk_level",
+      "intensity_subscore",
+      "abnormality_subscore",
+      "persistence_subscore",
+      "exposure_subscore",
+      "context_subscore",
+      "risk_reasons",
+      "evaluated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "event_features": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "frp_max",
+      "frp_avg",
+      "frp_std",
+      "bright_max",
+      "bright_avg",
+      "dist_to_facility_m",
+      "dist_to_forest_m",
+      "dist_to_agriculture_m",
+      "dist_to_settlement_m",
+      "dist_to_water_m",
+      "dist_to_mine_m",
+      "landcover_code",
+      "persistence_score",
+      "recurrence_rate",
+      "day_night_ratio",
+      "baseline_deviation_ratio",
+      "industrial_context_score",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "model_predictions": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "model_version_id",
+      "predicted_class",
+      "confidence",
+      "class_probabilities",
+      "shap_values",
+      "explanation_summary",
+      "predicted_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "alerts": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "alert_level",
+      "alert_type",
+      "title",
+      "description",
+      "status",
+      "acknowledged_by",
+      "routing_tier",
+      "priority_score",
+      "predicted_class",
+      "confidence",
+      "risk_score",
+      "evidence_summary",
+      "is_operational_dispatch",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "verification_records": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "analyst_id",
+      "original_prediction",
+      "verified_label",
+      "verification_action",
+      "notes",
+      "evidence_reviewed",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "incident_lifecycle_transitions": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "event_id",
+      "incident_id",
+      "from_state",
+      "to_state",
+      "subsystem",
+      "rationale",
+      "correlation_id",
+      "created_at",
+      "meta_info"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "root_cause_hypotheses": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "case_id",
+      "category",
+      "title",
+      "description",
+      "status",
+      "confidence_score",
+      "evidence_strength",
+      "supporting_evidence",
+      "contradicting_evidence",
+      "spatial_relevance",
+      "temporal_relevance",
+      "historical_recurrence",
+      "source_count",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "prevention_cases": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "case_number",
+      "event_id",
+      "event_code",
+      "title",
+      "status",
+      "latitude",
+      "longitude",
+      "state",
+      "district",
+      "subdistrict",
+      "facility_id",
+      "facility_name",
+      "recurrence_score",
+      "persistence_score",
+      "baseline_deviation_ratio",
+      "prevention_priority",
+      "evidence_strength_score",
+      "confidence_score",
+      "summary",
+      "spatial_context",
+      "industrial_context",
+      "environmental_context",
+      "material_context",
+      "agency_evidence",
+      "external_evidence",
+      "unknowns",
+      "missing_data",
+      "conflicting_sources",
+      "human_review_required",
+      "created_by",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "prevention_recommendations": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "case_id",
+      "hypothesis_category",
+      "recommendation",
+      "reason",
+      "supporting_evidence",
+      "risk_relevance",
+      "responsible_authority_category",
+      "urgency",
+      "expected_prevention_objective",
+      "status",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "prevention_reports": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "report_number",
+      "case_id",
+      "title",
+      "status",
+      "executive_summary",
+      "sections_data",
+      "pdf_path",
+      "generated_by",
+      "reviewed_by",
+      "reviewed_at",
+      "approved_by",
+      "approved_at",
+      "review_notes",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "mission_tasks": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "task_code",
+      "satellite_id",
+      "target_name",
+      "target_lat",
+      "target_lon",
+      "sensor_id",
+      "priority",
+      "status",
+      "tasked_by",
+      "scheduled_pass_time",
+      "observed_at",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "investigation_workspaces": {
+    "pks": [
+      "investigation_id"
+    ],
+    "projected_columns": [
+      "investigation_id",
+      "session_id",
+      "created_at",
+      "updated_at",
+      "created_by",
+      "user_role",
+      "status",
+      "primary_objective",
+      "target_event_id",
+      "target_region",
+      "candidate_set",
+      "selected_candidate",
+      "comparison_set",
+      "command_history",
+      "execution_ids",
+      "evidence_summary",
+      "classification_summary",
+      "risk_summary",
+      "anomaly_summary",
+      "historical_summary",
+      "spatial_summary",
+      "verification_status",
+      "report_status",
+      "report_id",
+      "report_file_path",
+      "open_questions",
+      "resolved_questions",
+      "warnings",
+      "data_provenance",
+      "structured_evidence",
+      "current_winner",
+      "winner_reason",
+      "completed_subtasks",
+      "pending_subtasks",
+      "blocked_subtasks",
+      "action_graph",
+      "objective_history",
+      "stopping_condition",
+      "stopping_evidence",
+      "conflicts",
+      "uncertainty",
+      "evidence_strength",
+      "evidence_strength_details",
+      "analyst_ranking",
+      "constraints",
+      "operational_recommendations",
+      "sources_used",
+      "coverage_profile",
+      "missing_sources",
+      "partial_sources",
+      "provenance_records",
+      "source_availability_matrix",
+      "country",
+      "jurisdiction",
+      "thermal_sources",
+      "observation_provenance",
+      "source_agreement",
+      "source_conflicts",
+      "thermal_coverage",
+      "observation_count",
+      "context_sources",
+      "context_provenance",
+      "context_relationships",
+      "context_coverage",
+      "context_conflicts",
+      "context_uncertainty",
+      "context_observation_count",
+      "temporal_sources",
+      "temporal_provenance",
+      "historical_baseline",
+      "persistence_assessment",
+      "recurrence_assessment",
+      "temporal_patterns",
+      "temporal_anomalies",
+      "temporal_uncertainty",
+      "temporal_coverage",
+      "temporal_observation_count",
+      "environmental_sources",
+      "environmental_provenance",
+      "environmental_observations",
+      "environmental_relationships",
+      "environmental_coverage",
+      "environmental_uncertainty",
+      "environmental_conflicts",
+      "cross_modal_sources",
+      "cross_modal_evidence",
+      "cross_modal_uncertainty",
+      "environmental_observation_count",
+      "cross_modal_observation_count",
+      "evidence_graph",
+      "evidence_nodes",
+      "evidence_edges",
+      "hypotheses",
+      "hypothesis_support",
+      "hypothesis_conflicts",
+      "evidence_lineage",
+      "evidence_uncertainty",
+      "assessment_lineage",
+      "data_gaps",
+      "related_event_ids",
+      "event_relationships",
+      "event_clusters",
+      "incident_hypotheses",
+      "incident_assessment",
+      "incident_geometry",
+      "incident_evidence",
+      "incident_uncertainty",
+      "incident_data_gaps",
+      "unified_assessment",
+      "assessment_history",
+      "assessment_changes",
+      "decision_support",
+      "recommended_verification",
+      "assessment_provenance",
+      "assessment_evidence_ids",
+      "assessment_uncertainty",
+      "assessment_mode"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "investigation_audit_log": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "audit_id",
+      "case_id",
+      "actor_id",
+      "actor_role",
+      "timestamp",
+      "action",
+      "previous_state",
+      "new_state",
+      "reason",
+      "evidence_ids",
+      "assessment_version",
+      "provenance"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "case_notes": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "note_id",
+      "case_id",
+      "author",
+      "author_role",
+      "timestamp",
+      "content",
+      "case_version"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "evidence_requests": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "request_id",
+      "case_id",
+      "requested_source",
+      "reason",
+      "uncertainty_target",
+      "priority",
+      "status",
+      "requested_by",
+      "created_at",
+      "completed_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "evidence_reviews": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "review_id",
+      "case_id",
+      "evidence_id",
+      "status",
+      "reviewer_id",
+      "reviewer_role",
+      "notes",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "assessment_versions": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "version_id",
+      "case_id",
+      "version_number",
+      "assessment",
+      "created_at",
+      "created_by",
+      "trigger",
+      "evidence_delta",
+      "uncertainty_delta",
+      "provenance"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "report_versions": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "report_id",
+      "case_id",
+      "report_version",
+      "presentation_mode",
+      "assessment_version",
+      "generated_at",
+      "provenance",
+      "hash",
+      "file_path",
+      "title",
+      "content_markdown"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "data_sources": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_name",
+      "adapter_class",
+      "category",
+      "endpoint",
+      "auth_type",
+      "configured",
+      "description",
+      "is_active",
+      "health_status",
+      "last_sync_at",
+      "last_success_at",
+      "last_failure_at",
+      "latency_ms",
+      "record_count",
+      "provenance_info",
+      "terms_url",
+      "metadata_info",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "dataset_registry": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "name",
+      "version",
+      "dataset_type",
+      "source",
+      "record_count",
+      "verified_count",
+      "class_distribution",
+      "training_eligible",
+      "manifest_path",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "governed_dataset_registry": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "dataset_id",
+      "provider",
+      "name",
+      "version",
+      "license_reference",
+      "coverage_scope",
+      "country",
+      "spatial_resolution",
+      "temporal_resolution",
+      "retention_policy",
+      "schema_version",
+      "quality_policy",
+      "provenance_policy",
+      "status",
+      "freshness_threshold_seconds",
+      "last_observation_time",
+      "last_ingestion_time",
+      "record_count",
+      "spatial_extent",
+      "temporal_extent",
+      "metadata_info"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "ml_model_registry": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "model_name",
+      "version",
+      "dataset_version",
+      "algorithm",
+      "metrics",
+      "artifact_path",
+      "status",
+      "is_active",
+      "trained_at",
+      "model_family",
+      "training_period",
+      "feature_schema_version",
+      "taxonomy_version",
+      "calibration_version",
+      "artifact_sha256",
+      "created_by",
+      "approved_by",
+      "approved_at",
+      "approval_timestamp",
+      "notes"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "analyst_feedback": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "feedback_id",
+      "case_id",
+      "event_id",
+      "analyst_id",
+      "analyst_role",
+      "feedback_type",
+      "rating",
+      "target_component",
+      "comments",
+      "details",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "users": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "email",
+      "hashed_password",
+      "full_name",
+      "role",
+      "organization",
+      "facility_id",
+      "is_active",
+      "created_at",
+      "updated_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "audit_logs": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "user_id",
+      "action",
+      "resource_type",
+      "resource_id",
+      "ip_address",
+      "details",
+      "timestamp"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "ibm_mineral_resources": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "record_id",
+      "sl_no",
+      "commodity",
+      "mineral",
+      "unit",
+      "reserves",
+      "remaining_resources",
+      "total_resources",
+      "not_estimated",
+      "reference_year",
+      "reference_date",
+      "source",
+      "source_document",
+      "page_number",
+      "table_number",
+      "provisional_flag",
+      "raw_metadata",
+      "created_at",
+      "last_updated"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "ibm_mining_lease_context": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "record_id",
+      "state",
+      "district",
+      "mineral",
+      "lease_count",
+      "lease_area_ha",
+      "sector",
+      "potential_category",
+      "reference_year",
+      "reference_date",
+      "source_document",
+      "table_number",
+      "page_number",
+      "provisional_flag",
+      "source",
+      "aggregation_level",
+      "created_at",
+      "last_updated"
+    ],
+    "excluded_source_columns": [
+      "raw_metadata"
+    ],
+    "spatial_columns": []
+  },
+  "ibm_auctioned_blocks": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "source_doc_id",
+      "sl_no",
+      "block_name",
+      "state",
+      "district",
+      "mineral",
+      "preferred_bidder",
+      "auction_financial_year",
+      "matched_facility_id",
+      "match_confidence",
+      "match_score",
+      "match_method",
+      "geom",
+      "firms_count_500m",
+      "firms_count_1km",
+      "firms_count_2km",
+      "source",
+      "source_document",
+      "page_number",
+      "table_number",
+      "is_provisional",
+      "raw_metadata",
+      "created_at",
+      "last_updated"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": [
+      "geom"
+    ]
+  },
+  "facility_mining_evidence": {
+    "pks": [
+      "facility_id"
+    ],
+    "projected_columns": [
+      "facility_id",
+      "facility_name",
+      "facility_type",
+      "osm_object_id",
+      "osm_object_type",
+      "operator",
+      "mineral_commodity",
+      "state",
+      "district",
+      "administrative_source",
+      "latitude",
+      "longitude",
+      "ibm_lease_context_present",
+      "ibm_district_lease_count",
+      "ibm_district_lease_area_ha",
+      "ibm_potential_tier",
+      "ibm_district_minerals",
+      "nmi_resource_context_present",
+      "nmi_commodity_reserves",
+      "nmi_commodity_resources",
+      "nmi_commodity_unit",
+      "firms_associated_500m",
+      "firms_associated_1km",
+      "firms_associated_2km",
+      "first_thermal_seen",
+      "last_thermal_seen",
+      "active_days_count",
+      "mean_frp",
+      "median_frp",
+      "p90_frp",
+      "p99_frp",
+      "max_frp",
+      "mining_context_present",
+      "mining_geometry_present",
+      "thermal_activity_present",
+      "thermal_persistence_category",
+      "confidence_score",
+      "scientific_attribution",
+      "evidence_summary",
+      "created_at",
+      "last_updated"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  },
+  "fsi_isfr_district_forest_stats": {
+    "pks": [
+      "id"
+    ],
+    "projected_columns": [
+      "id",
+      "state",
+      "district",
+      "admin_boundary_id",
+      "geographical_area_sqkm",
+      "very_dense_forest_sqkm",
+      "moderately_dense_forest_sqkm",
+      "open_forest_sqkm",
+      "total_forest_sqkm",
+      "percent_of_geo_area",
+      "scrub_sqkm",
+      "reference_year",
+      "source_id",
+      "source_document",
+      "page_table_reference",
+      "provisional_flag",
+      "created_at"
+    ],
+    "excluded_source_columns": [],
+    "spatial_columns": []
+  }
+}
