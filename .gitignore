@@ -51,12 +51,29 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Environment & Secrets (Preserve .env.example)
+# Environment & Secrets (Preserve .env.example templates)
 .env
 .env.*
+*.env
+*.env.*
+**/.env
+**/.env.*
 !.env.example
-deployment/.env
+!**/.env.example
 !deployment/.env.example
+!frontend/.env.example
+
+# Credentials, Keys, and Private Certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.secrets
+secrets.*
+credentials.json
+service_account*.json
 
 # Local SQLite databases & local caches
 *.db

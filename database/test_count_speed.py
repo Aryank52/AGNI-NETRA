@@ -1,7 +1,8 @@
+import os
 import time
 import psycopg2
 
-conn = psycopg2.connect('postgresql://postgres:projectdatabase_2026@localhost:5432/agni_netra')
+conn = psycopg2.connect(os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agni_netra"))
 cur = conn.cursor()
 t0 = time.perf_counter()
 cur.execute("""

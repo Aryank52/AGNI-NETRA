@@ -1,8 +1,10 @@
+import os
 import psycopg2
 
 def run_migration():
-    print("Connecting to PostgreSQL at 127.0.0.1:5432/agni_netra...")
-    conn = psycopg2.connect("postgresql://postgres:projectdatabase_2026@127.0.0.1:5432/agni_netra")
+    db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agni_netra")
+    print(f"Connecting to database...")
+    conn = psycopg2.connect(db_url)
     conn.autocommit = True
     cur = conn.cursor()
 

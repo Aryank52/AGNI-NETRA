@@ -7747,7 +7747,7 @@
                 "http://127.0.0.1:8000"
               ],
               "POSTGRES_USER": "postgres",
-              "POSTGRES_PASSWORD": "projectdatabase_2026",
+              "POSTGRES_PASSWORD": "********",
               "POSTGRES_DB": "agni_netra",
               "POSTGRES_PORT": "5432"
             },
@@ -7982,7 +7982,7 @@
           "http://127.0.0.1:8000"
         ],
         "POSTGRES_USER": "postgres",
-        "POSTGRES_PASSWORD": "projectdatabase_2026",
+        "POSTGRES_PASSWORD": "********",
         "POSTGRES_DB": "agni_netra",
         "POSTGRES_PORT": "5432"
       },

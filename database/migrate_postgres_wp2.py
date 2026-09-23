@@ -22,7 +22,7 @@ WORKSPACE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if WORKSPACE_DIR not in sys.path:
     sys.path.insert(0, WORKSPACE_DIR)
 
-DEFAULT_POSTGRES_URL = "postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra"
+DEFAULT_POSTGRES_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
 
 
 def run_wp2_postgres_migration(db_url: str = DEFAULT_POSTGRES_URL) -> dict:

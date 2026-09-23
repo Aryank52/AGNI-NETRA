@@ -52,7 +52,7 @@ from backend.app.models.domain import ThermalEvent, IngestionQuarantineModel
 
 client = TestClient(app)
 
-POSTGRES_URL = "postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra"
+POSTGRES_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
 
 
 @pytest.fixture(scope="module")

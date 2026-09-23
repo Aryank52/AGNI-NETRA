@@ -17,7 +17,7 @@ if WORKSPACE_DIR not in sys.path:
 from backend.app.core.database import engine as default_engine, DATABASE_MODE
 from sqlalchemy import create_engine
 
-PG_URL = "postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra"
+PG_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
 
 ARTIFACT_HASHES = {
     "xgb_v3_real_candidate.joblib": "c52b6369da19d4e423652a3001e38c72737f7f66684e5bc27b9bb1c2a9c754d8",

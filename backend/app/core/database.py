@@ -49,6 +49,11 @@ def normalize_db_url(url: str) -> str:
     cleaned = url.strip()
     while cleaned.startswith("DATABASE_URL="):
         cleaned = cleaned[len("DATABASE_URL="):].strip()
+    # Normalize cloud provider URLs (e.g. Supabase postgres:// or postgresql:// -> postgresql+psycopg2://)
+    if cleaned.startswith("postgres://"):
+        cleaned = "postgresql+psycopg2://" + cleaned[len("postgres://"):]
+    elif cleaned.startswith("postgresql://"):
+        cleaned = "postgresql+psycopg2://" + cleaned[len("postgresql://"):]
     return cleaned
 
 
