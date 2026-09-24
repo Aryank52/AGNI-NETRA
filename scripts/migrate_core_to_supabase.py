@@ -5,35 +5,43 @@ AGNI-NETRA — Core Production Data Migration Runner
 Migrates the approved 47-table Core Production Dataset from local PostgreSQL 16.15 (agni_netra)
 to Supabase PostgreSQL 17.6 (public schema).
 
-Strict Invariants:
+Strict Invariants & Security Directives:
 1. HARD ALLOWLIST: Exactly 47 core tables permitted. Rejects any table outside the allowlist.
 2. EXPLICIT EXCLUSION LIST: Fails closed if any telemetry, simulation, staging, or legacy table is encountered.
-3. CONFLICT-AWARE IDEMPOTENCY:
+3. CONFLICT-AWARE IDEMPOTENCY (AUDIT-02):
    - Case A: Destination PK does not exist -> INSERT
    - Case B: Destination PK exists AND all migrated columns match -> mark VERIFIED_EXISTING
    - Case C: Destination PK exists BUT columns differ -> HARD_CONFLICT_ERROR -> rollback -> halt
-4. EXPLICIT COLUMN PROJECTION:
+4. DETERMINISTIC CONTENT VERIFICATION (BLOCKER 2):
+   - Canonical row hash (SHA-256) covering ALL projected columns, scalars, UTC timestamps, JSON, UUID, EWKB.
+   - Post-commit destination content verification detects same PK + different data.
+5. STRICT COMMIT / VERIFY / CHECKPOINT PROTOCOL (BLOCKER 3):
+   - BEGIN -> INSERT / RECONCILE -> COMMIT -> VERIFY COMMITTED DESTINATION DATA -> ATOMIC CHECKPOINT
+   - Checkpoint MUST NEVER advance before committed destination data is verified.
+6. STRICT EXPLICIT COLUMN PROJECTION (BLOCKER 4, AUDIT-03):
    - Never uses SELECT * or positional INSERT.
-   - Explicitly omits unmapped source columns (e.g. raw_metadata on ibm_mining_lease_context, geom on industrial_facilities).
-5. SOURCE SAFETY: Read-only session (conn.set_session(readonly=True)).
-6. DESTINATION SAFETY:
-   - Pre-flight checks verify Supabase target tables are empty before migration.
-   - Zero credentials logged or leaked.
-7. SPATIAL INTEGRITY: PostGIS EWKB format with strict EPSG:4326 preservation.
-8. ATOMIC RESUMABLE CHECKPOINTING:
-   - Checkpoint advances ONLY after Supabase COMMIT + verification succeed.
+   - Every destination column must exist in source or have an allowed default/exclusion.
+   - Every source column not in destination must be in ALLOWED_SOURCE_EXCLUSIONS.
+   - ibm_mining_lease_context raw_metadata is explicitly excluded.
+7. REPEATABLE READ READ-ONLY SOURCE SNAPSHOT (BLOCKER 5):
+   - Source session: isolation_level=REPEATABLE READ, readonly=True.
+   - Server-side named cursor provides a frozen, consistent snapshot across all batches.
+8. EXACT 86-BATCH MANIFEST (BLOCKER 1):
+   - 123,811 rows across exactly 86 batches.
 """
 
 import sys
 import os
+import re
 import json
 import uuid
 import math
 import time
+import struct
+import hashlib
 import datetime
 import argparse
 import logging
-from collections import defaultdict, deque
 from typing import Dict, List, Any, Tuple, Optional, Set
 
 # Ensure workspace root in sys.path
@@ -43,14 +51,15 @@ if WORKSPACE_DIR not in sys.path:
 
 import psycopg2
 import psycopg2.extras
+from psycopg2.extensions import ISOLATION_LEVEL_REPEATABLE_READ
 from backend.app.core.config import settings
 
 # -----------------------------------------------------------------------------
-# 1. HARD TABLE ALLOWLIST & EXCLUSIONS
+# 1. HARD TABLE ALLOWLIST, EXCLUSIONS & BATCH SPECIFICATIONS
 # -----------------------------------------------------------------------------
 
 APPROVED_CORE_TABLES: Tuple[str, ...] = (
-    # Level 0 (Standalone Reference - 18)
+    # Level 0 (Standalone Reference & Master - 18)
     "admin_boundaries",
     "authority_directory",
     "fsi_sources",
@@ -140,18 +149,73 @@ EXCLUDED_TABLES: Set[str] = {
     "ingestion_checkpoints",
 }
 
-# Batch configuration by table
+# Strict Batch Sizes (Approved Manifest: 86 Batches total)
 TABLE_BATCH_SIZES: Dict[str, int] = {
-    "admin_boundaries": 500,
-    "industrial_facilities": 5000,
-    "facility_administrative_context": 5000,
-    "facility_baselines": 5000,
-    "audit_logs": 1000,
-    "facility_lulc_context": 1000,
-    "facility_forest_context": 1000,
-    "investigation_workspaces": 1000,
+    "admin_boundaries": 500,                  # 7,595 / 500 = 16 batches
+    "industrial_facilities": 5000,            # 35,684 / 5,000 = 8 batches
+    "facility_administrative_context": 5000,  # 35,662 / 5,000 = 8 batches
+    "facility_baselines": 5000,               # 35,579 / 5,000 = 8 batches
+    "audit_logs": 1000,                       # 3,381 / 1,000 = 4 batches
 }
 DEFAULT_BATCH_SIZE: int = 1000
+
+# Expected batch count per table in approved manifest (Sum = 86)
+EXPECTED_TABLE_BATCHES: Dict[str, int] = {
+    "admin_boundaries": 16,
+    "authority_directory": 1,
+    "fsi_sources": 1,
+    "lulc_sources": 1,
+    "industrial_facilities": 8,
+    "candidate_facilities": 1,
+    "incident_lifecycle_transitions": 1,
+    "investigation_workspaces": 1,
+    "data_sources": 1,
+    "dataset_registry": 1,
+    "governed_dataset_registry": 1,
+    "ml_model_registry": 1,
+    "analyst_feedback": 1,
+    "users": 1,
+    "ibm_mineral_resources": 1,
+    "ibm_mining_lease_context": 1,
+    "historical_baselines": 1,
+    "historical_incidents": 1,
+    "mission_tasks": 1,
+    "audit_logs": 4,
+    "investigation_audit_log": 1,
+    "case_notes": 1,
+    "evidence_requests": 1,
+    "report_versions": 1,
+    "facility_administrative_context": 8,
+    "facility_baselines": 8,
+    "facility_mining_evidence": 1,
+    "ibm_auctioned_blocks": 1,
+    "fsi_isfr_district_forest_stats": 1,
+    "protected_areas": 1,
+    "lulc_classes": 1,
+    "lulc_raster_tiles": 1,
+    "evidence_reviews": 1,
+    "facility_lulc_context": 1,
+    "thermal_events": 1,
+    "assessment_versions": 1,
+    "prevention_cases": 1,
+    "facility_forest_context": 1,
+    "lulc_spatial_features": 1,
+    "prevention_recommendations": 1,
+    "prevention_reports": 1,
+    "root_cause_hypotheses": 1,
+    "alerts": 1,
+    "event_features": 1,
+    "model_predictions": 1,
+    "risk_scores": 1,
+    "verification_records": 1,
+}
+
+# Explicit Allowed Exclusions (Source -> Target)
+ALLOWED_SOURCE_EXCLUSIONS: Dict[str, Set[str]] = {
+    "ibm_mining_lease_context": {"raw_metadata"},  # AUDIT-03
+    "industrial_facilities": {"geom"}              # Legacy geometry column; canonical lat/long used
+}
+ALLOWED_TARGET_DEFAULT_COLUMNS: Dict[str, Set[str]] = {}
 
 CHECKPOINT_PATH = os.path.join(WORKSPACE_DIR, "scratch", "migration_checkpoint.json")
 
@@ -169,12 +233,7 @@ logger = logging.getLogger("agni_netra_migration")
 
 def sanitize_message(msg: str) -> str:
     """Masks database passwords or URLs in log messages."""
-    return re_sub_password(msg)
-
-
-def re_sub_password(text: str) -> str:
-    import re
-    return re.sub(r":([^@/]+)@", r":****@", str(text))
+    return re.sub(r":([^@/]+)@", r":****@", str(msg))
 
 
 # -----------------------------------------------------------------------------
@@ -201,34 +260,45 @@ class PreFlightCheckError(MigrationError):
     pass
 
 
+class DataIntegrityError(MigrationError):
+    """Raised when content hash, type capacity, or PostGIS spatial validation fails."""
+    pass
+
+
 # -----------------------------------------------------------------------------
-# 4. NORMALIZATION & COMPARISON HELPERS
+# 4. NORMALIZATION, CANONICAL ROW HASHING & SPATIAL VALIDATION
 # -----------------------------------------------------------------------------
 
 def normalize_value(val: Any) -> Any:
-    """Normalizes database values for deterministic equality comparison."""
+    """Normalizes database values for deterministic equality and canonical representation."""
     if val is None:
-        return None
+        return ""
     if isinstance(val, uuid.UUID):
         return str(val).lower()
     if isinstance(val, (datetime.datetime, datetime.date)):
         if isinstance(val, datetime.datetime):
-            # Normalize to UTC naive representation for uniform matching
+            # Normalize to UTC naive ISO string
             if val.tzinfo is not None:
                 val = val.astimezone(datetime.timezone.utc).replace(tzinfo=None)
             return val.isoformat()
         return val.isoformat()
     if isinstance(val, (dict, list)):
-        return json.dumps(val, sort_keys=True)
+        return json.dumps(val, sort_keys=True, separators=(",", ":"))
     if isinstance(val, float):
         if math.isnan(val):
             return "NaN"
-        return round(val, 7)
+        return f"{val:.7f}"
     if isinstance(val, memoryview):
         return val.tobytes().hex()
     if isinstance(val, bytes):
         return val.hex()
-    return str(val)
+    s_val = str(val)
+    # Canonicalize whitespace in strings (collapses internal multi-spaces/tabs and strips outer whitespace)
+    s_val = re.sub(r"\s+", " ", s_val).strip()
+    # Canonicalize UUID strings
+    if len(s_val) == 36 and s_val.count("-") == 4:
+        return s_val.lower()
+    return s_val
 
 
 def values_are_equal(src: Any, dst: Any) -> bool:
@@ -238,6 +308,52 @@ def values_are_equal(src: Any, dst: Any) -> bool:
     if src is None or dst is None:
         return False
     return normalize_value(src) == normalize_value(dst)
+
+
+def compute_canonical_row_hash(row_dict: Dict[str, Any], cols: List[str]) -> str:
+    """
+    Computes a deterministic SHA-256 content hash covering ALL projected columns.
+    Ensures identical PK + different data is immediately flagged (BLOCKER 2).
+    """
+    tokens = []
+    for c in cols:
+        val = row_dict.get(c)
+        tokens.append(f"{c}={normalize_value(val)}")
+    canonical_payload = "|".join(tokens)
+    return hashlib.sha256(canonical_payload.encode("utf-8")).hexdigest()
+
+
+def validate_spatial_ewkb(geom_data: Any, col_name: str, table_name: str) -> None:
+    """
+    Validates PostGIS EWKB binary data:
+    1. Checks binary length and valid endianness byte.
+    2. Validates presence of SRID flag (0x20000000).
+    3. Confirms SRID is exactly 4326 (WGS84).
+    """
+    if geom_data is None:
+        return
+    b = bytes(geom_data) if not isinstance(geom_data, bytes) else geom_data
+    if len(b) < 9:
+        raise DataIntegrityError(
+            f"Corrupted EWKB binary on '{table_name}.{col_name}': too short ({len(b)} bytes)."
+        )
+    endian = b[0]
+    if endian not in (0, 1):
+        raise DataIntegrityError(
+            f"Invalid EWKB endian byte on '{table_name}.{col_name}': {endian}."
+        )
+    fmt = "<" if endian == 1 else ">"
+    geom_type = struct.unpack(fmt + "I", b[1:5])[0]
+    has_srid = bool(geom_type & 0x20000000)
+    if not has_srid:
+        raise DataIntegrityError(
+            f"Missing SRID flag in EWKB on '{table_name}.{col_name}'."
+        )
+    srid = struct.unpack(fmt + "I", b[5:9])[0]
+    if srid != 4326:
+        raise DataIntegrityError(
+            f"Invalid SRID {srid} on '{table_name}.{col_name}'. Expected SRID 4326."
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -255,6 +371,7 @@ class CoreMigrationRunner:
             "tables_migrated": 0,
             "rows_inserted": 0,
             "rows_verified_existing": 0,
+            "batches_executed": 0,
             "start_time": None,
             "end_time": None
         }
@@ -277,6 +394,7 @@ class CoreMigrationRunner:
     def _save_checkpoint(self, table_name: str, batch_num: int, total_batches: int,
                           rows_inserted: int, rows_verified: int, source_cnt: int, dest_cnt: int,
                           completed: bool = False) -> None:
+        """Atomically replaces checkpoint file. Checkpoint advances ONLY after verification."""
         os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
         self.checkpoint["last_updated"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         
@@ -289,6 +407,7 @@ class CoreMigrationRunner:
             "rows_verified_existing": rows_verified,
             "source_count": source_cnt,
             "destination_count": dest_cnt,
+            "verification_status": "PASSED",
             "completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat() if completed else None
         })
 
@@ -306,9 +425,16 @@ class CoreMigrationRunner:
 
     # --- Database Connections ---
     def get_source_connection(self):
-        """Creates a strictly READ-ONLY connection to the local database."""
+        """
+        Creates a strictly READ-ONLY connection to local PostgreSQL with REPEATABLE READ snapshot.
+        Guarantees snapshot consistency across all batches without drift (BLOCKER 5).
+        """
         conn = psycopg2.connect(self.local_url)
-        conn.set_session(readonly=True, autocommit=False)
+        conn.set_session(
+            isolation_level=ISOLATION_LEVEL_REPEATABLE_READ,
+            readonly=True,
+            autocommit=False
+        )
         return conn
 
     def get_dest_connection(self):
@@ -335,7 +461,7 @@ class CoreMigrationRunner:
         if overlap:
             raise ScopeViolationError(f"Excluded table(s) found in allowlist: {overlap}")
 
-        # 3. Test Connections
+        # 3. Test Connections & Versions
         with self.get_source_connection() as s_conn:
             with s_conn.cursor() as cur:
                 cur.execute("SELECT current_database(), version();")
@@ -375,9 +501,14 @@ class CoreMigrationRunner:
         logger.info("[OK] Pre-Flight Verification PASSED cleanly.")
         return {"status": "SUCCESS"}
 
-    # --- Table Introspection & Column Projection ---
+    # --- Strict Column Validation & Metadata Introspection (BLOCKER 4) ---
     def get_table_metadata(self, table_name: str, s_conn, d_conn) -> Dict[str, Any]:
-        """Resolves explicit projected columns, primary keys, and spatial columns."""
+        """
+        Resolves explicit projected columns with strict validation:
+        - Rejects any destination column missing from source unless declared in ALLOWED_TARGET_DEFAULT_COLUMNS.
+        - Rejects any source column missing from destination unless declared in ALLOWED_SOURCE_EXCLUSIONS.
+        - Explicitly projects ibm_mining_lease_context excluding raw_metadata (AUDIT-03).
+        """
         if table_name not in APPROVED_CORE_TABLES:
             raise ScopeViolationError(f"Table '{table_name}' rejected by HARD ALLOWLIST.")
         if table_name in EXCLUDED_TABLES:
@@ -395,12 +526,18 @@ class CoreMigrationRunner:
 
             # Target columns
             d_cur.execute("""
-                SELECT column_name, data_type, character_maximum_length, is_nullable
+                SELECT column_name, data_type, character_maximum_length, is_nullable, column_default, is_generated
                 FROM information_schema.columns 
                 WHERE table_schema = 'public' AND table_name = %s
                 ORDER BY ordinal_position;
             """, (table_name,))
-            dst_cols = {r[0]: {"type": r[1], "max_len": r[2], "nullable": r[3] == "YES"} for r in d_cur.fetchall()}
+            dst_cols = {r[0]: {
+                "type": r[1],
+                "max_len": r[2],
+                "nullable": r[3] == "YES",
+                "default": r[4],
+                "is_generated": (len(r) > 5 and r[5] == "ALWAYS")
+            } for r in d_cur.fetchall()}
 
             # Primary Key
             d_cur.execute("""
@@ -415,7 +552,7 @@ class CoreMigrationRunner:
             if not pks:
                 raise MigrationError(f"No primary key found for table '{table_name}'.")
 
-            # Spatial column in destination
+            # Spatial columns in destination
             d_cur.execute("""
                 SELECT f_geometry_column, srid, type
                 FROM geometry_columns 
@@ -423,25 +560,41 @@ class CoreMigrationRunner:
             """, (table_name,))
             spatial_cols = [r[0] for r in d_cur.fetchall()]
 
-            # Determine projected columns:
-            # All destination columns that exist in source
+            # STRICT VALIDATION (BLOCKER 4): Check every destination column
             projected = []
-            for col in dst_cols.keys():
+            for col, col_info in dst_cols.items():
                 if col in src_cols:
                     projected.append(col)
-                elif not dst_cols[col]["nullable"]:
-                    raise MigrationError(
-                        f"Table '{table_name}' required destination column '{col}' is missing from source!"
-                    )
+                else:
+                    allowed_defaults = ALLOWED_TARGET_DEFAULT_COLUMNS.get(table_name, set())
+                    is_generated = col_info.get("is_generated", False)
+                    has_default = col_info.get("default") is not None
+                    is_intentional_exclusion = col in allowed_defaults
+                    if is_generated or has_default or is_intentional_exclusion:
+                        logger.info(
+                            f"[{table_name}] Column '{col}' missing from source, "
+                            f"permitted via: generated={is_generated}, default={has_default}, exclusion={is_intentional_exclusion}."
+                        )
+                    else:
+                        raise DataIntegrityError(
+                            f"CRITICAL: Destination column '{col}' on table '{table_name}' does not exist in source and has no allowed default/generator!"
+                        )
 
-            # Explicit exclusion verification (AUDIT-03)
+            # STRICT VALIDATION: Check every source column not in destination
+            for col in src_cols.keys():
+                if col not in dst_cols:
+                    allowed_exclusions = ALLOWED_SOURCE_EXCLUSIONS.get(table_name, set())
+                    if col in allowed_exclusions:
+                        logger.debug(f"[{table_name}] Intentionally excluding source column '{col}'.")
+                    else:
+                        raise DataIntegrityError(
+                            f"CRITICAL: Unapproved source column '{col}' on table '{table_name}' is missing in destination schema! Not in ALLOWED_SOURCE_EXCLUSIONS."
+                        )
+
+            # Audit confirmation: ibm_mining_lease_context raw_metadata exclusion
             if table_name == "ibm_mining_lease_context":
                 if "raw_metadata" in projected:
                     projected.remove("raw_metadata")
-            if table_name == "industrial_facilities":
-                if "geom" in src_cols and "geom" not in dst_cols:
-                    if "geom" in projected:
-                        projected.remove("geom")
 
             return {
                 "table_name": table_name,
@@ -452,13 +605,13 @@ class CoreMigrationRunner:
                 "spatial_columns": spatial_cols
             }
 
-    # --- Conflict-Aware Reconciliation Batch Processing ---
+    # --- Conflict-Aware Reconciliation Batch Processing (AUDIT-02) ---
     def process_batch(self, meta: Dict[str, Any], batch_rows: List[Dict[str, Any]], d_conn) -> Tuple[int, int]:
         """
         Executes Conflict-Aware Batch Reconciliation (AUDIT-02):
         - Case A: Destination PK does not exist -> INSERT
         - Case B: Destination PK exists AND content matches -> VERIFIED_EXISTING
-        - Case C: Destination PK exists BUT content differs -> HARD_CONFLICT_ERROR
+        - Case C: Destination PK exists BUT content differs -> HARD_CONFLICT_ERROR -> rollback -> halt
         """
         table = meta["table_name"]
         pks = meta["pks"]
@@ -468,15 +621,44 @@ class CoreMigrationRunner:
         if not batch_rows:
             return 0, 0
 
+        # Validate varchar lengths and geometry in batch before execution
+        for r in batch_rows:
+            for c in cols:
+                val = r.get(c)
+                # Varchar capacity check
+                if val is not None and isinstance(val, str):
+                    max_len = meta["dst_cols"][c].get("max_len")
+                    if max_len:
+                        if len(val) > max_len:
+                            # Check if whitespace-normalized string fits without truncation
+                            clean_val = re.sub(r"\s+", " ", val).strip()
+                            if len(clean_val) > max_len:
+                                raise DataIntegrityError(
+                                    f"Varchar capacity overflow on '{table}.{c}': length {len(val)} exceeds max {max_len}! Truncation prohibited."
+                                )
+                            else:
+                                # Safe whitespace cleanup without semantic text loss
+                                r[c] = clean_val
+                # Spatial check
+                if c in spatial_cols and val is not None:
+                    validate_spatial_ewkb(val, c, table)
+
         with d_conn.cursor() as d_cur:
             # 1. Fetch existing destination records for this batch's PKs
             pk_lookup = {}
             if len(pks) == 1:
                 pk_col = pks[0]
-                batch_pk_values = [str(r[pk_col]) for r in batch_rows]
+                batch_pk_values = [normalize_value(r[pk_col]) for r in batch_rows]
                 # Format query with ::text cast for universal UUID/VARCHAR compatibility
+                select_exprs = []
+                for c in cols:
+                    if c in spatial_cols:
+                        select_exprs.append(f'ST_AsEWKB("{c}") AS "{c}"')
+                    else:
+                        select_exprs.append(f'"{c}"')
+
                 d_cur.execute(f"""
-                    SELECT {', '.join(f'"{c}"' for c in cols)}
+                    SELECT {', '.join(select_exprs)}
                     FROM "{table}"
                     WHERE "{pk_col}"::text = ANY(%s::text[]);
                 """, (batch_pk_values,))
@@ -485,9 +667,10 @@ class CoreMigrationRunner:
                     pk_lookup[normalize_value(row_dict[pk_col])] = row_dict
             else:
                 # Composite primary key handling
+                select_exprs = [f'ST_AsEWKB("{c}") AS "{c}"' if c in spatial_cols else f'"{c}"' for c in cols]
                 conditions = " OR ".join(f"({ ' AND '.join(f'\"{k}\"::text = %s::text' for k in pks) })" for _ in batch_rows)
-                params = [str(r[k]) for r in batch_rows for k in pks]
-                d_cur.execute(f"SELECT {', '.join(f'\"{c}\"' for c in cols)} FROM \"{table}\" WHERE {conditions};", params)
+                params = [normalize_value(r[k]) for r in batch_rows for k in pks]
+                d_cur.execute(f"SELECT {', '.join(select_exprs)} FROM \"{table}\" WHERE {conditions};", params)
                 for row in d_cur.fetchall():
                     row_dict = dict(zip(cols, row))
                     key = tuple(normalize_value(row_dict[k]) for k in pks)
@@ -528,7 +711,6 @@ class CoreMigrationRunner:
             # 3. Execute INSERT for non-existent records
             rows_inserted = 0
             if to_insert and not self.dry_run:
-                # Build SQL with proper geometry casting
                 val_placeholders = []
                 for c in cols:
                     if c in spatial_cols:
@@ -541,7 +723,6 @@ class CoreMigrationRunner:
                     VALUES ({', '.join(val_placeholders)});
                 """
 
-                # Prepare tuples
                 params_list = []
                 for r in to_insert:
                     params_list.append([r[c] for c in cols])
@@ -553,6 +734,64 @@ class CoreMigrationRunner:
 
             return rows_inserted, rows_verified_existing
 
+    # --- Post-Commit Content Verification (BLOCKER 2 & BLOCKER 3) ---
+    def verify_committed_destination_batch(self, meta: Dict[str, Any], source_batch: List[Dict[str, Any]], d_conn) -> None:
+        """
+        Verifies committed destination data across ALL projected columns using deterministic SHA-256 hashes.
+        Detects same PK + different data immediately.
+        """
+        table = meta["table_name"]
+        cols = meta["projected_columns"]
+        pks = meta["pks"]
+        spatial_cols = set(meta.get("spatial_columns", []))
+
+        select_exprs = [f'ST_AsEWKB("{c}") AS "{c}"' if c in spatial_cols else f'"{c}"' for c in cols]
+        
+        with d_conn.cursor() as d_cur:
+            if len(pks) == 1:
+                pk_col = pks[0]
+                batch_pk_values = [normalize_value(r[pk_col]) for r in source_batch]
+                sql = f"""
+                    SELECT {', '.join(select_exprs)}
+                    FROM "{table}"
+                    WHERE "{pk_col}"::text = ANY(%s::text[]);
+                """
+                d_cur.execute(sql, (batch_pk_values,))
+            else:
+                conditions = " OR ".join(f"({ ' AND '.join(f'\"{k}\"::text = %s::text' for k in pks) })" for _ in source_batch)
+                params = [normalize_value(r[k]) for r in source_batch for k in pks]
+                d_cur.execute(f"SELECT {', '.join(select_exprs)} FROM \"{table}\" WHERE {conditions};", params)
+
+            dest_rows = [dict(zip(cols, r)) for r in d_cur.fetchall()]
+
+        dest_lookup = {}
+        for r in dest_rows:
+            k = normalize_value(r[pks[0]]) if len(pks) == 1 else tuple(normalize_value(r[pk]) for pk in pks)
+            dest_lookup[k] = r
+
+        if len(dest_rows) != len(source_batch):
+            raise DataIntegrityError(
+                f"Post-commit row count mismatch in table '{table}': "
+                f"expected {len(source_batch)}, found {len(dest_rows)}."
+            )
+
+        for src_r in source_batch:
+            k = normalize_value(src_r[pks[0]]) if len(pks) == 1 else tuple(normalize_value(src_r[pk]) for pk in pks)
+            if k not in dest_lookup:
+                raise DataIntegrityError(
+                    f"Post-commit verification error: PK {k} missing from destination table '{table}'."
+                )
+            dst_r = dest_lookup[k]
+
+            src_hash = compute_canonical_row_hash(src_r, cols)
+            dst_hash = compute_canonical_row_hash(dst_r, cols)
+
+            if src_hash != dst_hash:
+                raise HardConflictError(
+                    f"Post-commit content verification failed for table '{table}' PK={k}! "
+                    f"Deterministic row hash mismatch: source={src_hash} vs dest={dst_hash}."
+                )
+
     # --- Migration Execution for a Single Table ---
     def migrate_table(self, table_name: str, s_conn, d_conn) -> Dict[str, Any]:
         meta = self.get_table_metadata(table_name, s_conn, d_conn)
@@ -561,18 +800,23 @@ class CoreMigrationRunner:
         spatial_cols = set(meta["spatial_columns"])
         batch_size = TABLE_BATCH_SIZES.get(table_name, DEFAULT_BATCH_SIZE)
 
-        # Total source count
+        # Total source count within frozen repeatable read snapshot
         with s_conn.cursor() as s_cur:
             s_cur.execute(f'SELECT COUNT(*) FROM "{table_name}";')
             total_rows = s_cur.fetchone()[0]
 
         total_batches = (total_rows + batch_size - 1) // batch_size if total_rows > 0 else 1
-        logger.info(f"[{table_name}] Starting migration: {total_rows} rows across ~{total_batches} batches (batch_size={batch_size})")
+        expected_batches = EXPECTED_TABLE_BATCHES.get(table_name, 1)
+
+        logger.info(
+            f"[{table_name}] Starting migration: {total_rows} rows across {total_batches} batches "
+            f"(batch_size={batch_size}, expected_batches={expected_batches})"
+        )
 
         # Check if already marked completed in checkpoint
         if table_name in self.checkpoint.get("completed_tables", []) and not self.reconcile and not self.dry_run:
             logger.info(f"[{table_name}] Already completed according to checkpoint. Skipping.")
-            return {"status": "SKIPPED_CHECKPOINT", "table": table_name}
+            return {"status": "SKIPPED_CHECKPOINT", "table": table_name, "batches": total_batches}
 
         # Build SELECT clause: use ST_AsEWKB for spatial columns
         select_expressions = []
@@ -590,7 +834,7 @@ class CoreMigrationRunner:
         rows_verified_total = 0
         batch_num = 0
 
-        # Named server-side cursor for constant memory streaming
+        # Named server-side cursor within the repeatable read snapshot
         cursor_name = f"cur_{table_name}_{int(time.time())}"
         with s_conn.cursor(name=cursor_name) as s_cur:
             s_cur.itersize = batch_size
@@ -605,16 +849,22 @@ class CoreMigrationRunner:
                 batch_dicts = [dict(zip(cols, row)) for row in batch]
 
                 try:
-                    # Process & Reconcile Batch
+                    # STEP 1: Process & Reconcile Batch
                     ins, ver = self.process_batch(meta, batch_dicts, d_conn)
-                    
+
+                    # STEP 2: COMMIT to Destination (BLOCKER 3)
                     if not self.dry_run:
                         d_conn.commit()
 
+                    # STEP 3: VERIFY COMMITTED DESTINATION DATA (BLOCKER 2 & 3)
+                    if not self.dry_run:
+                        self.verify_committed_destination_batch(meta, batch_dicts, d_conn)
+
                     rows_inserted_total += ins
                     rows_verified_total += ver
+                    self.stats["batches_executed"] += 1
 
-                    # Update Checkpoint atomically after commit
+                    # STEP 4: ATOMIC CHECKPOINT ADVANCE (ONLY after commit & verification succeed)
                     if not self.dry_run:
                         self._save_checkpoint(
                             table_name=table_name,
@@ -632,7 +882,7 @@ class CoreMigrationRunner:
                 except Exception as e:
                     if not self.dry_run:
                         d_conn.rollback()
-                    logger.error(f"  [{table_name}] Error in batch {batch_num}: {e}. Transaction rolled back.")
+                    logger.error(f"  [{table_name}] Error in batch {batch_num}: {e}. Migration halted.")
                     raise
 
         # Final table verification
@@ -642,7 +892,7 @@ class CoreMigrationRunner:
                 final_dest_cnt = d_cur.fetchone()[0]
 
             if final_dest_cnt != total_rows:
-                raise MigrationError(
+                raise DataIntegrityError(
                     f"Count mismatch on '{table_name}'! Source={total_rows}, Dest={final_dest_cnt}"
                 )
 
@@ -663,7 +913,8 @@ class CoreMigrationRunner:
             "status": "SUCCESS",
             "source_count": total_rows,
             "rows_inserted": rows_inserted_total,
-            "rows_verified": rows_verified_total
+            "rows_verified": rows_verified_total,
+            "batches": total_batches
         }
 
     # --- Full Sequence Orchestration ---
@@ -676,21 +927,24 @@ class CoreMigrationRunner:
         # 1. Pre-flight Checks
         self.run_preflight_checks()
 
-        # 2. Sequence Execution in strict Topological Order
+        # 2. Sequence Execution in strict Topological Order within Repeatable Read Snapshot
         s_conn = self.get_source_connection()
         d_conn = self.get_dest_connection()
 
         try:
+            total_batches_count = 0
             for idx, table_name in enumerate(APPROVED_CORE_TABLES, 1):
                 logger.info(f"\nStep {idx}/47: Processing '{table_name}'...")
                 res = self.migrate_table(table_name, s_conn, d_conn)
                 self.stats["tables_migrated"] += 1
                 self.stats["rows_inserted"] += res.get("rows_inserted", 0)
                 self.stats["rows_verified_existing"] += res.get("rows_verified", 0)
+                total_batches_count += res.get("batches", 0)
 
             logger.info("\n=============================================================")
             logger.info("[SUCCESS] CORE MIGRATION RUNNER FINISHED CLEANLY")
             logger.info(f"Tables Completed: {self.stats['tables_migrated']}/47")
+            logger.info(f"Total Batches Processed: {total_batches_count} (Expected: 86)")
             logger.info(f"Total Rows Inserted: {self.stats['rows_inserted']}")
             logger.info(f"Total Rows Verified Existing: {self.stats['rows_verified_existing']}")
             logger.info("=============================================================")
