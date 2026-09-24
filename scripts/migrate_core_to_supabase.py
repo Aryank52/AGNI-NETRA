@@ -273,6 +273,8 @@ def normalize_value(val: Any) -> Any:
     """Normalizes database values for deterministic equality and canonical representation."""
     if val is None:
         return ""
+    if hasattr(val, "adapted"):
+        val = val.adapted
     if isinstance(val, uuid.UUID):
         return str(val).lower()
     if isinstance(val, (datetime.datetime, datetime.date)):
@@ -293,6 +295,13 @@ def normalize_value(val: Any) -> Any:
     if isinstance(val, bytes):
         return val.hex()
     s_val = str(val)
+    # Canonicalize JSON strings if string starts with { or [
+    if (s_val.startswith("{") and s_val.endswith("}")) or (s_val.startswith("[") and s_val.endswith("]")):
+        try:
+            parsed = json.loads(s_val)
+            return json.dumps(parsed, sort_keys=True, separators=(",", ":"))
+        except Exception:
+            pass
     # Canonicalize whitespace in strings (collapses internal multi-spaces/tabs and strips outer whitespace)
     s_val = re.sub(r"\s+", " ", s_val).strip()
     # Canonicalize UUID strings
@@ -354,6 +363,33 @@ def validate_spatial_ewkb(geom_data: Any, col_name: str, table_name: str) -> Non
         raise DataIntegrityError(
             f"Invalid SRID {srid} on '{table_name}.{col_name}'. Expected SRID 4326."
         )
+
+
+def adapt_row_for_insertion(row_dict: Dict[str, Any], cols: List[str], json_cols: Set[str]) -> List[Any]:
+    """
+    Type-aware parameter adaptation for PostgreSQL insertion (TASK 3):
+    - JSON/JSONB columns: explicitly adapts dict and list using psycopg2.extras.Json.
+    - Preserves UUID handling (UUID object converted to canonical string).
+    - Preserves timestamp handling (datetime objects preserved).
+    - Preserves PostGIS/EWKB handling (bytes / memoryview preserved).
+    - Preserves NULL behavior (None -> SQL NULL).
+    - Does NOT blindly wrap non-JSON dicts.
+    """
+    row_params = []
+    for c in cols:
+        val = row_dict.get(c)
+        if val is None:
+            row_params.append(None)
+        elif c in json_cols:
+            if isinstance(val, (dict, list)):
+                row_params.append(psycopg2.extras.Json(val))
+            else:
+                row_params.append(val)
+        elif isinstance(val, uuid.UUID):
+            row_params.append(str(val))
+        else:
+            row_params.append(val)
+    return row_params
 
 
 # -----------------------------------------------------------------------------
@@ -596,13 +632,20 @@ class CoreMigrationRunner:
                 if "raw_metadata" in projected:
                     projected.remove("raw_metadata")
 
+            # JSON/JSONB columns in destination (for type-aware parameter adaptation)
+            json_cols = [
+                col for col, col_info in dst_cols.items()
+                if col_info["type"].lower() in ("json", "jsonb")
+            ]
+
             return {
                 "table_name": table_name,
                 "pks": pks,
                 "projected_columns": projected,
                 "src_cols": src_cols,
                 "dst_cols": dst_cols,
-                "spatial_columns": spatial_cols
+                "spatial_columns": spatial_cols,
+                "json_columns": json_cols
             }
 
     # --- Conflict-Aware Reconciliation Batch Processing (AUDIT-02) ---
@@ -617,6 +660,7 @@ class CoreMigrationRunner:
         pks = meta["pks"]
         cols = meta["projected_columns"]
         spatial_cols = set(meta["spatial_columns"])
+        json_cols = set(meta.get("json_columns", []))
 
         if not batch_rows:
             return 0, 0
@@ -710,27 +754,28 @@ class CoreMigrationRunner:
 
             # 3. Execute INSERT for non-existent records
             rows_inserted = 0
-            if to_insert and not self.dry_run:
-                val_placeholders = []
-                for c in cols:
-                    if c in spatial_cols:
-                        val_placeholders.append("ST_GeomFromEWKB(%s)")
-                    else:
-                        val_placeholders.append("%s")
-
-                insert_sql = f"""
-                    INSERT INTO "{table}" ({', '.join(f'"{c}"' for c in cols)})
-                    VALUES ({', '.join(val_placeholders)});
-                """
-
+            if to_insert:
                 params_list = []
                 for r in to_insert:
-                    params_list.append([r[c] for c in cols])
+                    params_list.append(adapt_row_for_insertion(r, cols, json_cols))
 
-                psycopg2.extras.execute_batch(d_cur, insert_sql, params_list, page_size=len(params_list))
-                rows_inserted = len(to_insert)
-            elif to_insert and self.dry_run:
-                rows_inserted = len(to_insert)
+                if not self.dry_run:
+                    val_placeholders = []
+                    for c in cols:
+                        if c in spatial_cols:
+                            val_placeholders.append("ST_GeomFromEWKB(%s)")
+                        else:
+                            val_placeholders.append("%s")
+
+                    insert_sql = f"""
+                        INSERT INTO "{table}" ({', '.join(f'"{c}"' for c in cols)})
+                        VALUES ({', '.join(val_placeholders)});
+                    """
+
+                    psycopg2.extras.execute_batch(d_cur, insert_sql, params_list, page_size=len(params_list))
+                    rows_inserted = len(to_insert)
+                else:
+                    rows_inserted = len(to_insert)
 
             return rows_inserted, rows_verified_existing
 

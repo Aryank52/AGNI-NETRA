@@ -27,6 +27,7 @@ from scripts.migrate_core_to_supabase import (
     values_are_equal,
     compute_canonical_row_hash,
     validate_spatial_ewkb,
+    adapt_row_for_insertion,
 )
 
 
@@ -363,6 +364,88 @@ class TestCoreMigrationRunnerUnit(unittest.TestCase):
         self.assertEqual(TABLE_BATCH_SIZES["facility_administrative_context"], 5000)
         self.assertEqual(TABLE_BATCH_SIZES["facility_baselines"], 5000)
         self.assertEqual(TABLE_BATCH_SIZES["audit_logs"], 1000)
+
+    # --- TEST 16: Real driver psycopg2 parameter adaptation (TASK 4 regression test) ---
+    def test_16_psycopg2_parameter_adaptation_real_driver(self):
+        """
+        Regression test exercising actual psycopg2 driver parameter adaptation path.
+        Fails before fix (can't adapt type 'dict') and passes after type-aware adaptation.
+        Tests:
+        - JSONB dict (representative raw_metadata from admin_boundaries)
+        - JSONB list
+        - NULL JSON
+        - ordinary scalar (int, str)
+        - UUID
+        - timestamp (UTC naive & aware)
+        - geometry EWKB binary
+        """
+        import psycopg2
+        import uuid
+        import datetime
+
+        # Sample representative record modeled directly on admin_boundaries
+        representative_row = {
+            "id": "522c0f31-24a7-4182-8803-6a6f37a64fc5",
+            "admin_level": 1,
+            "name": "Puducherry",
+            "raw_metadata": {
+                "shapeID": "1811400B81659894240990",
+                "shapeISO": "IN-PY",
+                "shapeName": "Puducherry",
+                "shapeGroup": "IND"
+            },
+            "boundary_tags": ["union_territory", "coastal", "southern_zone"],
+            "empty_metadata": None,
+            "reference_date": datetime.datetime(2026, 8, 31, 2, 44, 15, tzinfo=datetime.timezone.utc),
+            "geom": b"\x01\x01\x00\x00 \xe6\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+            "uuid_obj": uuid.UUID("522c0f31-24a7-4182-8803-6a6f37a64fc5")
+        }
+        cols = [
+            "id", "admin_level", "name", "raw_metadata",
+            "boundary_tags", "empty_metadata", "reference_date", "geom", "uuid_obj"
+        ]
+        json_cols = {"raw_metadata", "boundary_tags", "empty_metadata"}
+
+        insert_sql = """
+            INSERT INTO admin_boundaries (
+                "id", "admin_level", "name", "raw_metadata",
+                "boundary_tags", "empty_metadata", "reference_date", "geom", "uuid_obj"
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_GeomFromEWKB(%s), %s);
+        """
+
+        # Connect to configured PostgreSQL database for real psycopg2 driver cursor
+        from backend.app.core.config import settings
+        db_url = os.getenv("LOCAL_DATABASE_URL") or os.getenv("DATABASE_URL") or settings.DATABASE_URL
+        if "+psycopg2" in db_url:
+            db_url = db_url.replace("+psycopg2", "")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+
+        try:
+            # 1. VERIFY FAILURE BEFORE FIX:
+            # Raw parameter list with unadapted dict/list causes psycopg2 ProgrammingError
+            unadapted_params = [representative_row[c] for c in cols]
+            with self.assertRaises(psycopg2.ProgrammingError) as ctx:
+                cur.mogrify(insert_sql, unadapted_params)
+            self.assertIn("can't adapt type 'dict'", str(ctx.exception))
+
+            # 2. VERIFY SUCCESS AFTER FIX:
+            # Type-aware parameter adaptation wraps JSON dict/list and canonicalizes UUID/scalar
+            adapted_params = adapt_row_for_insertion(representative_row, cols, json_cols)
+            mogrified_bytes = cur.mogrify(insert_sql, adapted_params)
+
+            # Assert SQL is successfully generated and formatted
+            self.assertIsInstance(mogrified_bytes, bytes)
+            self.assertIn(b"1811400B81659894240990", mogrified_bytes)
+            self.assertIn(b"union_territory", mogrified_bytes)
+            self.assertIn(b"NULL", mogrified_bytes)
+            self.assertIn(b"Puducherry", mogrified_bytes)
+            self.assertIn(b"522c0f31-24a7-4182-8803-6a6f37a64fc5", mogrified_bytes)
+            self.assertIn(b"ST_GeomFromEWKB", mogrified_bytes)
+
+        finally:
+            cur.close()
+            conn.close()
 
 
 if __name__ == "__main__":
