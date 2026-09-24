@@ -217,6 +217,12 @@ ALLOWED_SOURCE_EXCLUSIONS: Dict[str, Set[str]] = {
 }
 ALLOWED_TARGET_DEFAULT_COLUMNS: Dict[str, Set[str]] = {}
 
+# Explicit Date-Semantic Columns (where source is DATE and target is TIMESTAMP WITHOUT TIME ZONE at midnight)
+DATE_SEMANTIC_COLUMNS: Dict[str, Set[str]] = {
+    "ibm_mineral_resources": {"reference_date"},
+    "ibm_mining_lease_context": {"reference_date"},
+}
+
 CHECKPOINT_PATH = os.path.join(WORKSPACE_DIR, "scratch", "migration_checkpoint.json")
 
 # -----------------------------------------------------------------------------
@@ -269,7 +275,7 @@ class DataIntegrityError(MigrationError):
 # 4. NORMALIZATION, CANONICAL ROW HASHING & SPATIAL VALIDATION
 # -----------------------------------------------------------------------------
 
-def normalize_value(val: Any) -> Any:
+def normalize_value(val: Any, is_date_semantic: bool = False) -> Any:
     """Normalizes database values for deterministic equality and canonical representation."""
     if val is None:
         return ""
@@ -282,6 +288,9 @@ def normalize_value(val: Any) -> Any:
             # Normalize to UTC naive ISO string
             if val.tzinfo is not None:
                 val = val.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            # Schema-aware date semantic: treat timestamp at midnight as equivalent to pure date
+            if is_date_semantic and val.time() == datetime.time(0, 0, 0, 0):
+                return val.date().isoformat()
             return val.isoformat()
         return val.isoformat()
     if isinstance(val, (dict, list)):
@@ -310,24 +319,46 @@ def normalize_value(val: Any) -> Any:
     return s_val
 
 
-def values_are_equal(src: Any, dst: Any) -> bool:
+def values_are_equal(src: Any, dst: Any, is_date_semantic: bool = False) -> bool:
     """Strict semantic comparison of source and destination values."""
     if src is None and dst is None:
         return True
     if src is None or dst is None:
         return False
+    if is_date_semantic:
+        return normalize_value(src, is_date_semantic=True) == normalize_value(dst, is_date_semantic=True)
+    if (type(src) is datetime.date and isinstance(dst, datetime.datetime)) or \
+       (type(dst) is datetime.date and isinstance(src, datetime.datetime)):
+        dt_val = dst if isinstance(dst, datetime.datetime) else src
+        d_val = src if type(src) is datetime.date else dst
+        if dt_val.tzinfo is not None:
+            dt_val = dt_val.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        if dt_val.time() == datetime.time(0, 0, 0, 0) and dt_val.date() == d_val:
+            return True
     return normalize_value(src) == normalize_value(dst)
 
 
-def compute_canonical_row_hash(row_dict: Dict[str, Any], cols: List[str]) -> str:
+def compute_canonical_row_hash(
+    row_dict: Dict[str, Any],
+    cols: List[str],
+    date_cols: Optional[Set[str]] = None,
+    table_name: Optional[str] = None
+) -> str:
     """
     Computes a deterministic SHA-256 content hash covering ALL projected columns.
     Ensures identical PK + different data is immediately flagged (BLOCKER 2).
+    Supports schema-aware date-semantic canonicalization for columns declared in date_cols
+    or established by DATE_SEMANTIC_COLUMNS for the given table_name.
     """
+    active_date_cols = set(date_cols or set())
+    if table_name and table_name in DATE_SEMANTIC_COLUMNS:
+        active_date_cols |= DATE_SEMANTIC_COLUMNS[table_name]
+
     tokens = []
     for c in cols:
         val = row_dict.get(c)
-        tokens.append(f"{c}={normalize_value(val)}")
+        is_date = c in active_date_cols
+        tokens.append(f"{c}={normalize_value(val, is_date_semantic=is_date)}")
     canonical_payload = "|".join(tokens)
     return hashlib.sha256(canonical_payload.encode("utf-8")).hexdigest()
 
@@ -670,6 +701,14 @@ class CoreMigrationRunner:
                 if col_info["type"].lower() in ("json", "jsonb")
             ]
 
+            # Date-semantic columns in schema (for type-aware date/timestamp normalization)
+            date_cols = set(DATE_SEMANTIC_COLUMNS.get(table_name, set()))
+            for col in projected:
+                s_type = src_cols.get(col, {}).get("type", "").lower()
+                d_type = dst_cols.get(col, {}).get("type", "").lower()
+                if s_type == "date" or d_type == "date":
+                    date_cols.add(col)
+
             return {
                 "table_name": table_name,
                 "pks": pks,
@@ -677,7 +716,8 @@ class CoreMigrationRunner:
                 "src_cols": src_cols,
                 "dst_cols": dst_cols,
                 "spatial_columns": spatial_cols,
-                "json_columns": json_cols
+                "json_columns": json_cols,
+                "date_columns": date_cols
             }
 
     # --- Conflict-Aware Reconciliation Batch Processing (AUDIT-02) ---
@@ -693,6 +733,7 @@ class CoreMigrationRunner:
         cols = meta["projected_columns"]
         spatial_cols = set(meta["spatial_columns"])
         json_cols = set(meta.get("json_columns", []))
+        date_cols = set(meta.get("date_columns", []))
 
         if not batch_rows:
             return 0, 0
@@ -767,11 +808,12 @@ class CoreMigrationRunner:
                     existing_row = pk_lookup[key]
                     mismatched_columns = []
                     for c in cols:
-                        if not values_are_equal(src_row[c], existing_row[c]):
+                        is_date = c in date_cols
+                        if not values_are_equal(src_row[c], existing_row[c], is_date_semantic=is_date):
                             mismatched_columns.append({
                                 "column": c,
-                                "source": normalize_value(src_row[c]),
-                                "dest": normalize_value(existing_row[c])
+                                "source": normalize_value(src_row[c], is_date_semantic=is_date),
+                                "dest": normalize_value(existing_row[c], is_date_semantic=is_date)
                             })
 
                     if mismatched_columns:
@@ -821,6 +863,7 @@ class CoreMigrationRunner:
         cols = meta["projected_columns"]
         pks = meta["pks"]
         spatial_cols = set(meta.get("spatial_columns", []))
+        date_cols = set(meta.get("date_columns", []))
 
         select_exprs = [f'ST_AsEWKB("{c}") AS "{c}"' if c in spatial_cols else f'"{c}"' for c in cols]
         
@@ -860,8 +903,8 @@ class CoreMigrationRunner:
                 )
             dst_r = dest_lookup[k]
 
-            src_hash = compute_canonical_row_hash(src_r, cols)
-            dst_hash = compute_canonical_row_hash(dst_r, cols)
+            src_hash = compute_canonical_row_hash(src_r, cols, date_cols=date_cols, table_name=table)
+            dst_hash = compute_canonical_row_hash(dst_r, cols, date_cols=date_cols, table_name=table)
 
             if src_hash != dst_hash:
                 raise HardConflictError(

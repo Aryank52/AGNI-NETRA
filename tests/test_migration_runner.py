@@ -28,6 +28,7 @@ from scripts.migrate_core_to_supabase import (
     compute_canonical_row_hash,
     validate_spatial_ewkb,
     adapt_row_for_insertion,
+    DATE_SEMANTIC_COLUMNS,
 )
 
 
@@ -577,6 +578,118 @@ class TestCoreMigrationRunnerUnit(unittest.TestCase):
         # TEST F: Dry run allows uncompleted rows
         res_f = run_mocked_preflight(completed_tables=completed_7, dest_counts=counts_c, dry_run=True)
         self.assertEqual(res_f, {"status": "SUCCESS"})
+
+    # --- TEST 18: Date/Timestamp Schema-Aware Canonical Hash Normalization ---
+    def test_18_date_timestamp_canonical_hash_normalization(self):
+        """
+        Regression tests reproducing exact ibm_mineral_resources post-commit verification failure:
+        - Source: datetime.date(2020, 4, 1)
+        - Destination: datetime.datetime(2020, 4, 1, 0, 0)
+        Verifies:
+        1. Exact failure reproduction: canonical representation and SHA-256 hash are identical after fix.
+        2. Genuine timestamps remain distinct (preserves timestamp precision, e.g. midnight vs 1 second later).
+        3. Timezone-aware datetimes convert deterministically to UTC naive representation.
+        4. values_are_equal semantic equivalence check.
+        5. verify_committed_destination_batch passes on equivalent date/timestamp and rejects true conflicts.
+        """
+        src_date = datetime.date(2020, 4, 1)
+        dst_dt = datetime.datetime(2020, 4, 1, 0, 0)
+
+        # 1. Exact Failure Reproduction (Requirement 5):
+        # A) With is_date_semantic=True, both produce exact canonical string "2020-04-01"
+        self.assertEqual(normalize_value(src_date, is_date_semantic=True), "2020-04-01")
+        self.assertEqual(normalize_value(dst_dt, is_date_semantic=True), "2020-04-01")
+
+        # B) compute_canonical_row_hash produces IDENTICAL SHA-256 hash with date_cols
+        src_row = {"id": "00228a23-1c23-4bcd-ad0b-0b91aac58975", "reference_date": src_date}
+        dst_row = {"id": "00228a23-1c23-4bcd-ad0b-0b91aac58975", "reference_date": dst_dt}
+        cols = ["id", "reference_date"]
+
+        hash_src = compute_canonical_row_hash(src_row, cols, date_cols={"reference_date"})
+        hash_dst = compute_canonical_row_hash(dst_row, cols, date_cols={"reference_date"})
+        self.assertEqual(hash_src, hash_dst)
+
+        # C) compute_canonical_row_hash with table_name="ibm_mineral_resources" produces IDENTICAL hash
+        hash_src_tbl = compute_canonical_row_hash(src_row, cols, table_name="ibm_mineral_resources")
+        hash_dst_tbl = compute_canonical_row_hash(dst_row, cols, table_name="ibm_mineral_resources")
+        self.assertEqual(hash_src_tbl, hash_dst_tbl)
+        self.assertEqual(hash_src_tbl, hash_src)
+
+        # 2. Genuine Timestamps Remain Distinct (Requirement 6):
+        # When not date_semantic, midnight timestamp preserves full ISO timestamp "2020-04-01T00:00:00"
+        ts_midnight = datetime.datetime(2020, 4, 1, 0, 0, 0)
+        ts_plus_1s = datetime.datetime(2020, 4, 1, 0, 0, 1)
+        ts_subsecond = datetime.datetime(2020, 4, 1, 0, 0, 0, 500000)
+
+        self.assertEqual(normalize_value(ts_midnight), "2020-04-01T00:00:00")
+        self.assertEqual(normalize_value(ts_plus_1s), "2020-04-01T00:00:01")
+        self.assertEqual(normalize_value(ts_subsecond), "2020-04-01T00:00:00.500000")
+
+        # Distinct genuine timestamps produce distinct hashes
+        hash_midnight = compute_canonical_row_hash({"created_at": ts_midnight}, ["created_at"])
+        hash_plus_1s = compute_canonical_row_hash({"created_at": ts_plus_1s}, ["created_at"])
+        self.assertNotEqual(hash_midnight, hash_plus_1s)
+
+        # Even with is_date_semantic=True, non-zero time is not truncated into a date
+        ts_afternoon = datetime.datetime(2020, 4, 1, 14, 30, 0)
+        self.assertEqual(normalize_value(ts_afternoon, is_date_semantic=True), "2020-04-01T14:30:00")
+
+        # 3. Timezone-Aware Datetimes (Requirement 7):
+        ist_tz = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        ts_ist = datetime.datetime(2020, 4, 1, 5, 30, 0, tzinfo=ist_tz)
+        ts_utc = datetime.datetime(2020, 4, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        ts_utc_naive = datetime.datetime(2020, 4, 1, 0, 0, 0)
+
+        self.assertEqual(normalize_value(ts_ist), "2020-04-01T00:00:00")
+        self.assertEqual(normalize_value(ts_utc), "2020-04-01T00:00:00")
+        self.assertEqual(normalize_value(ts_utc_naive), "2020-04-01T00:00:00")
+
+        # Different instant in time with timezone remains distinct
+        ts_ist_later = datetime.datetime(2020, 4, 1, 6, 30, 0, tzinfo=ist_tz)
+        self.assertEqual(normalize_value(ts_ist_later), "2020-04-01T01:00:00")
+        self.assertNotEqual(normalize_value(ts_ist), normalize_value(ts_ist_later))
+
+        # 4. values_are_equal Semantic Equivalence:
+        self.assertTrue(values_are_equal(src_date, dst_dt, is_date_semantic=True))
+        self.assertTrue(values_are_equal(src_date, dst_dt))  # Automatic date vs midnight datetime detection
+        self.assertFalse(values_are_equal(src_date, ts_plus_1s, is_date_semantic=True))
+        self.assertFalse(values_are_equal(src_date, datetime.date(2020, 4, 2), is_date_semantic=True))
+
+        # 5. verify_committed_destination_batch Integration:
+        meta = {
+            "table_name": "ibm_mineral_resources",
+            "pks": ["id"],
+            "projected_columns": ["id", "reference_date", "reserves"],
+            "spatial_columns": [],
+            "date_columns": {"reference_date"}
+        }
+        mock_d_conn = MagicMock()
+        mock_cur = MagicMock()
+        mock_d_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+        source_batch = [{
+            "id": "00228a23-1c23-4bcd-ad0b-0b91aac58975",
+            "reference_date": src_date,
+            "reserves": 0.0
+        }]
+        # Destination returns timestamp representation
+        mock_cur.fetchall.return_value = [(
+            "00228a23-1c23-4bcd-ad0b-0b91aac58975",
+            dst_dt,
+            0.0
+        )]
+
+        # Must pass without raising HardConflictError
+        self.runner.verify_committed_destination_batch(meta, source_batch, mock_d_conn)
+
+        # But if destination has truly different date or reserves, must raise HardConflictError
+        mock_cur.fetchall.return_value = [(
+            "00228a23-1c23-4bcd-ad0b-0b91aac58975",
+            datetime.datetime(2020, 4, 2, 0, 0),  # Differing date
+            0.0
+        )]
+        with self.assertRaises(HardConflictError):
+            self.runner.verify_committed_destination_batch(meta, source_batch, mock_d_conn)
 
 
 if __name__ == "__main__":
