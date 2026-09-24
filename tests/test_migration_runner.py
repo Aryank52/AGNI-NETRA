@@ -39,6 +39,7 @@ class TestCoreMigrationRunnerUnit(unittest.TestCase):
             dry_run=True,
             reconcile=False
         )
+        self.runner.checkpoint = {"completed_tables": [], "tables": {}, "in_progress": None}
 
     # --- TEST 1: Destination empty -> row inserts successfully ---
     def test_01_destination_empty_inserts_successfully(self):
@@ -442,6 +443,40 @@ class TestCoreMigrationRunnerUnit(unittest.TestCase):
             self.assertIn(b"Puducherry", mogrified_bytes)
             self.assertIn(b"522c0f31-24a7-4182-8803-6a6f37a64fc5", mogrified_bytes)
             self.assertIn(b"ST_GeomFromEWKB", mogrified_bytes)
+
+            # 3. REGRESSION TEST FOR JSON SCALAR VALUES (TASK 5 & 6):
+            # Tests exact failed case from investigation_workspaces (INV-20260911-8EA9DA)
+            # where scalar string 'KNOWN' previously caused 'invalid input syntax for type json'
+            ws_row = {
+                "investigation_id": "INV-20260911-8EA9DA",
+                "uncertainty": "KNOWN",
+                "assessment_changes": "NO_PRIOR_ASSESSMENT",
+                "is_active": True,
+                "observation_count": 123,
+                "empty_meta": None,
+                "dict_data": {"level": "HIGH"},
+                "list_data": ["sensor_a", "sensor_b"]
+            }
+            ws_cols = list(ws_row.keys())
+            ws_json_cols = {
+                "uncertainty", "assessment_changes", "is_active",
+                "observation_count", "empty_meta", "dict_data", "list_data"
+            }
+            ws_insert_sql = f'INSERT INTO investigation_workspaces ({", ".join(f"{c}" for c in ws_cols)}) VALUES ({", ".join(["%s"]*len(ws_cols))});'
+
+            ws_adapted = adapt_row_for_insertion(ws_row, ws_cols, ws_json_cols)
+            ws_mogrified = cur.mogrify(ws_insert_sql, ws_adapted)
+
+            self.assertIsInstance(ws_mogrified, bytes)
+            # Verify Python "KNOWN" is adapted to JSON string '"KNOWN"' rather than unquoted token KNOWN
+            self.assertIn(b'"KNOWN"', ws_mogrified)
+            self.assertIn(b'"NO_PRIOR_ASSESSMENT"', ws_mogrified)
+            # Verify boolean, numeric, NULL, dict, list
+            self.assertIn(b"'true'", ws_mogrified)
+            self.assertIn(b"'123'", ws_mogrified)
+            self.assertIn(b"NULL", ws_mogrified)
+            self.assertIn(b'"HIGH"', ws_mogrified)
+            self.assertIn(b'"sensor_a"', ws_mogrified)
 
         finally:
             cur.close()

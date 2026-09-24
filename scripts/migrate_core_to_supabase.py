@@ -365,15 +365,41 @@ def validate_spatial_ewkb(geom_data: Any, col_name: str, table_name: str) -> Non
         )
 
 
+def adapt_json_value(val: Any) -> Any:
+    """
+    Safely adapts a JSON/JSONB value for PostgreSQL parameterization:
+    - None -> None (SQL NULL)
+    - psycopg2.extras.Json -> returned as-is
+    - dict, list, int, float, bool -> wrapped in psycopg2.extras.Json
+    - str -> if JSON serialized object/array string, parses and wraps in Json; otherwise wraps scalar string in Json
+    """
+    if val is None:
+        return None
+    if isinstance(val, psycopg2.extras.Json):
+        return val
+    if isinstance(val, (dict, list, int, float, bool)):
+        return psycopg2.extras.Json(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
+            try:
+                parsed = json.loads(s)
+                return psycopg2.extras.Json(parsed)
+            except Exception:
+                pass
+        return psycopg2.extras.Json(val)
+    return psycopg2.extras.Json(val)
+
+
 def adapt_row_for_insertion(row_dict: Dict[str, Any], cols: List[str], json_cols: Set[str]) -> List[Any]:
     """
-    Type-aware parameter adaptation for PostgreSQL insertion (TASK 3):
-    - JSON/JSONB columns: explicitly adapts dict and list using psycopg2.extras.Json.
+    Type-aware parameter adaptation for PostgreSQL insertion:
+    - JSON/JSONB columns: explicitly adapts dict, list, scalar str/num/bool via adapt_json_value().
     - Preserves UUID handling (UUID object converted to canonical string).
     - Preserves timestamp handling (datetime objects preserved).
     - Preserves PostGIS/EWKB handling (bytes / memoryview preserved).
     - Preserves NULL behavior (None -> SQL NULL).
-    - Does NOT blindly wrap non-JSON dicts.
+    - Does NOT blindly wrap non-JSON dicts or values.
     """
     row_params = []
     for c in cols:
@@ -381,10 +407,7 @@ def adapt_row_for_insertion(row_dict: Dict[str, Any], cols: List[str], json_cols
         if val is None:
             row_params.append(None)
         elif c in json_cols:
-            if isinstance(val, (dict, list)):
-                row_params.append(psycopg2.extras.Json(val))
-            else:
-                row_params.append(val)
+            row_params.append(adapt_json_value(val))
         elif isinstance(val, uuid.UUID):
             row_params.append(str(val))
         else:
