@@ -1307,85 +1307,91 @@ class IndiaIntelligenceService:
 
         # 1. OSM Industrial Facility (< 10km)
         try:
-            fac_sql = """
-                SELECT id, name, master_sector,
-                       ROUND(ST_Distance(geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)::numeric, 0) as dist_m
-                FROM industrial_facilities
-                WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 10000)
-                ORDER BY geom <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
-                LIMIT 1;
-            """
-            row = db.execute(text(fac_sql), {"lat": lat, "lon": lon}).mappings().first()
-            if row:
-                ctx["osm_industrial"] = {
-                    "facility_id": row["id"],
-                    "name": row["name"],
-                    "sector": row["master_sector"],
-                    "distance_m": int(row["dist_m"])
-                }
+            with db.begin_nested():
+                fac_sql = """
+                    SELECT id, name, master_sector,
+                           ROUND(ST_Distance(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)::numeric, 0) as dist_m
+                    FROM industrial_facilities
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND ST_DWithin(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 10000)
+                    ORDER BY ST_Distance(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)
+                    LIMIT 1;
+                """
+                row = db.execute(text(fac_sql), {"lat": lat, "lon": lon}).mappings().first()
+                if row:
+                    ctx["osm_industrial"] = {
+                        "facility_id": row["id"],
+                        "name": row["name"],
+                        "sector": row["master_sector"],
+                        "distance_m": int(row["dist_m"])
+                    }
         except Exception:
             pass
 
         # 2. CEA Power Station
         try:
-            cea_sql = """
-                SELECT id, cea_record_id, project_name, state, organisation, prime_mover, installed_capacity_mw
-                FROM cea_power_stations_staging
-                WHERE state ILIKE :state
-                LIMIT 1;
-            """
-            st_param = f"%{event_state}%" if event_state else "%Gujarat%"
-            row = db.execute(text(cea_sql), {"state": st_param}).mappings().first()
-            if row:
-                ctx["cea_power"] = {
-                    "record_id": row["cea_record_id"],
-                    "project_name": row["project_name"],
-                    "prime_mover": row["prime_mover"],
-                    "capacity_mw": row["installed_capacity_mw"],
-                    "distance_m": 2400
-                }
+            with db.begin_nested():
+                cea_sql = """
+                    SELECT id, cea_record_id, project_name, state, organisation, prime_mover, installed_capacity_mw
+                    FROM cea_power_stations_staging
+                    WHERE state ILIKE :state
+                    LIMIT 1;
+                """
+                st_param = f"%{event_state}%" if event_state else "%Gujarat%"
+                row = db.execute(text(cea_sql), {"state": st_param}).mappings().first()
+                if row:
+                    ctx["cea_power"] = {
+                        "record_id": row["cea_record_id"],
+                        "project_name": row["project_name"],
+                        "prime_mover": row["prime_mover"],
+                        "capacity_mw": row["installed_capacity_mw"],
+                        "distance_m": 2400
+                    }
         except Exception:
             pass
 
         # 3. IBM Mining Lease
         try:
-            ibm_sql = """
-                SELECT id, record_id, state, mineral, lease_count
-                FROM ibm_mining_lease_context
-                WHERE state ILIKE :state
-                LIMIT 1;
-            """
-            st_param = f"%{event_state}%" if event_state else "%Gujarat%"
-            row = db.execute(text(ibm_sql), {"state": st_param}).mappings().first()
-            if row:
-                ctx["ibm_mining"] = {
-                    "record_id": row["record_id"],
-                    "state": row["state"],
-                    "mineral": row["mineral"],
-                    "lease_count": row["lease_count"],
-                    "distance_m": 4200
-                }
+            with db.begin_nested():
+                ibm_sql = """
+                    SELECT id, record_id, state, mineral, lease_count
+                    FROM ibm_mining_lease_context
+                    WHERE state ILIKE :state
+                    LIMIT 1;
+                """
+                st_param = f"%{event_state}%" if event_state else "%Gujarat%"
+                row = db.execute(text(ibm_sql), {"state": st_param}).mappings().first()
+                if row:
+                    ctx["ibm_mining"] = {
+                        "record_id": row["record_id"],
+                        "state": row["state"],
+                        "mineral": row["mineral"],
+                        "lease_count": row["lease_count"],
+                        "distance_m": 4200
+                    }
         except Exception:
             pass
 
         # 4. PARIVESH Clearances
         try:
-            par_sql = """
-                SELECT id, proposal_id, project_name, sector,
-                       ROUND(ST_Distance(geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)::numeric, 0) as dist_m
-                FROM parivesh_projects_staging
-                WHERE geom IS NOT NULL
-                ORDER BY geom <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
-                LIMIT 1;
-            """
-            row = db.execute(text(par_sql), {"lat": lat, "lon": lon}).mappings().first()
-            if row:
-                ctx["parivesh"] = {
-                    "proposal_id": row["proposal_id"],
-                    "project_name": row["project_name"],
-                    "sector": row["sector"],
-                    "distance_m": int(row["dist_m"])
-                }
+            with db.begin_nested():
+                par_sql = """
+                    SELECT id, proposal_id, project_name, sector,
+                           ROUND(ST_Distance(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)::numeric, 0) as dist_m
+                    FROM parivesh_projects_staging
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND ST_DWithin(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 10000)
+                    ORDER BY ST_Distance(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)
+                    LIMIT 1;
+                """
+                row = db.execute(text(par_sql), {"lat": lat, "lon": lon}).mappings().first()
+                if row:
+                    ctx["parivesh"] = {
+                        "proposal_id": row["proposal_id"],
+                        "project_name": row["project_name"],
+                        "sector": row["sector"],
+                        "distance_m": int(row["dist_m"])
+                    }
         except Exception:
             pass
 
