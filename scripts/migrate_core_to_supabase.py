@@ -543,18 +543,27 @@ class CoreMigrationRunner:
                 if missing_tables:
                     raise PreFlightCheckError(f"Missing core tables on destination: {missing_tables}")
 
-                # 5. Check destination row count
-                non_empty = {}
+                # 5. Checkpoint-Aware Destination Row Count Verification
+                completed_tables = set(self.checkpoint.get("completed_tables", []))
+                invalid_cp_tables = completed_tables - set(APPROVED_CORE_TABLES)
+                if invalid_cp_tables:
+                    raise ScopeViolationError(
+                        f"Checkpoint contains unapproved table(s) not in allowlist: {invalid_cp_tables}"
+                    )
+
+                uncompleted_non_empty = {}
                 for t in APPROVED_CORE_TABLES:
+                    if t in completed_tables:
+                        continue
                     cur.execute(f'SELECT COUNT(*) FROM "{t}";')
                     cnt = cur.fetchone()[0]
                     if cnt > 0:
-                        non_empty[t] = cnt
+                        uncompleted_non_empty[t] = cnt
 
-                if non_empty and not self.reconcile and not self.dry_run:
+                if uncompleted_non_empty and not self.reconcile and not self.dry_run:
                     raise PreFlightCheckError(
-                        f"Destination tables are not empty: {non_empty}. "
-                        "Pre-flight requires a pristine target database or explicit --reconcile flag."
+                        f"Uncompleted destination tables are not empty: {uncompleted_non_empty}. "
+                        "Pre-flight requires uncompleted target tables to be empty or explicit --reconcile flag."
                     )
 
         logger.info("[OK] Pre-Flight Verification PASSED cleanly.")

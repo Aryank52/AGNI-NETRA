@@ -482,6 +482,102 @@ class TestCoreMigrationRunnerUnit(unittest.TestCase):
             cur.close()
             conn.close()
 
+    # --- TEST 17: Checkpoint-Aware Pre-Flight Destination Verification ---
+    def test_17_checkpoint_aware_preflight_destination_verification(self):
+        """
+        Verifies all pre-flight destination verification conditions:
+        - TEST A: Clean initial migration (empty checkpoint, empty destination) -> PASS
+        - TEST B: Valid checkpoint resume (7 completed tables non-empty, remaining empty) -> PASS
+        - TEST C: Unsafe uncompleted data (uncompleted table non-empty) -> FAIL with PreFlightCheckError
+        - TEST D: Checkpoint contains unapproved table -> FAIL with ScopeViolationError
+        - TEST E: Populated destination without checkpoint -> FAIL without reconcile; PASS with reconcile
+        - TEST F: Dry run with uncompleted destination data -> PASS
+        """
+        import re
+
+        def run_mocked_preflight(completed_tables, dest_counts, dry_run=False, reconcile=False):
+            runner = CoreMigrationRunner(
+                local_url="postgresql://mock_local:5432/db",
+                supabase_url="postgresql://mock_supa:5432/db",
+                dry_run=dry_run,
+                reconcile=reconcile
+            )
+            runner.checkpoint = {
+                "completed_tables": list(completed_tables),
+                "tables": {t: {"status": "COMPLETED"} for t in completed_tables},
+                "in_progress": None
+            }
+
+            s_conn = MagicMock()
+            s_conn.__enter__.return_value = s_conn
+            d_conn = MagicMock()
+            d_conn.__enter__.return_value = d_conn
+
+            s_cur = MagicMock()
+            s_cur.__enter__.return_value = s_cur
+            d_cur = MagicMock()
+            d_cur.__enter__.return_value = d_cur
+
+            s_conn.cursor.return_value = s_cur
+            d_conn.cursor.return_value = d_cur
+
+            s_cur.fetchone.return_value = ("agni_netra", "PostgreSQL 16.15")
+
+            all_tables = [(t,) for t in APPROVED_CORE_TABLES]
+            d_cur.fetchall.return_value = all_tables
+
+            def dest_execute(query, *args, **kwargs):
+                if "SELECT current_database()" in query:
+                    d_cur.fetchone.return_value = ("postgres", "public", "PostgreSQL 17.6")
+                elif "COUNT(*)" in query:
+                    match = re.search(r'FROM\s+"([^"]+)"', query)
+                    tbl = match.group(1) if match else "unknown"
+                    cnt = dest_counts.get(tbl, 0)
+                    d_cur.fetchone.return_value = (cnt,)
+
+            d_cur.execute.side_effect = dest_execute
+
+            with patch.object(runner, "get_source_connection", return_value=s_conn), \
+                 patch.object(runner, "get_dest_connection", return_value=d_conn):
+                return runner.run_preflight_checks()
+
+        # TEST A: Clean initial migration
+        res_a = run_mocked_preflight(completed_tables=[], dest_counts={})
+        self.assertEqual(res_a, {"status": "SUCCESS"})
+
+        # TEST B: Valid checkpoint resume (7 completed tables)
+        completed_7 = [
+            "admin_boundaries", "authority_directory", "fsi_sources", "lulc_sources",
+            "industrial_facilities", "candidate_facilities", "incident_lifecycle_transitions"
+        ]
+        counts_7 = {t: 100 for t in completed_7}
+        res_b = run_mocked_preflight(completed_tables=completed_7, dest_counts=counts_7)
+        self.assertEqual(res_b, {"status": "SUCCESS"})
+
+        # TEST C: Unsafe uncompleted data
+        counts_c = dict(counts_7)
+        counts_c["investigation_workspaces"] = 1
+        with self.assertRaises(PreFlightCheckError) as ctx:
+            run_mocked_preflight(completed_tables=completed_7, dest_counts=counts_c)
+        self.assertIn("investigation_workspaces", str(ctx.exception))
+
+        # TEST D: Unapproved checkpoint table
+        with self.assertRaises(ScopeViolationError) as ctx:
+            run_mocked_preflight(completed_tables=completed_7 + ["unapproved_bad_table"], dest_counts=counts_7)
+        self.assertIn("unapproved_bad_table", str(ctx.exception))
+
+        # TEST E: Populated destination without checkpoint
+        with self.assertRaises(PreFlightCheckError):
+            run_mocked_preflight(completed_tables=[], dest_counts={"admin_boundaries": 7595})
+
+        # TEST E2: Populated destination with reconcile=True
+        res_e2 = run_mocked_preflight(completed_tables=[], dest_counts={"admin_boundaries": 7595}, reconcile=True)
+        self.assertEqual(res_e2, {"status": "SUCCESS"})
+
+        # TEST F: Dry run allows uncompleted rows
+        res_f = run_mocked_preflight(completed_tables=completed_7, dest_counts=counts_c, dry_run=True)
+        self.assertEqual(res_f, {"status": "SUCCESS"})
+
 
 if __name__ == "__main__":
     unittest.main()
