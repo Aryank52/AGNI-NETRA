@@ -16,11 +16,11 @@ PG_DUMP = os.path.join(PG_BIN_DIR, "pg_dump.exe")
 PG_RESTORE = os.path.join(PG_BIN_DIR, "pg_restore.exe")
 PSQL = os.path.join(PG_BIN_DIR, "psql.exe")
 
-HOST = "localhost"
-PORT = 5432
-USER = "postgres"
-PASSWORD = "projectdatabase_2026"
-SOURCE_DB = "agni_netra"
+HOST = os.getenv("POSTGRES_HOST", "localhost")
+PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+USER = os.getenv("POSTGRES_USER", "postgres")
+PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+SOURCE_DB = os.getenv("POSTGRES_DB", "agni_netra")
 RECOVERY_DB = "agni_netra_isolated_restore_test"
 
 BACKUP_ARTIFACT = r"E:\PROJECTS\AGNI-NETRA\database\backups\agni_netra_core_wp8.dump"

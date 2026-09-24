@@ -1,6 +1,7 @@
+import os
 import psycopg2
 
-conn = psycopg2.connect('postgresql://postgres:projectdatabase_2026@localhost:5432/agni_netra')
+conn = psycopg2.connect(os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agni_netra"))
 cur = conn.cursor()
 cur.execute("SELECT pid, state, wait_event_type, wait_event, query_start, query FROM pg_stat_activity WHERE datname = 'agni_netra' AND pid != pg_backend_pid();")
 rows = cur.fetchall()

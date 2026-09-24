@@ -7,13 +7,14 @@ Measures:
 4. PostGIS EXPLAIN ANALYZE plan verification of GiST spatial index utilization.
 """
 
+import os
 import sys
 import time
 import random
 import numpy as np
 from sqlalchemy import create_engine, text
 
-POSTGRES_URL = "postgresql+psycopg2://postgres:projectdatabase_2026@localhost:5432/agni_netra"
+POSTGRES_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
 
 
 def run_benchmark():
