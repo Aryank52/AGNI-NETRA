@@ -89,6 +89,17 @@ backend/app/cache/
 artifacts/
 database/backups/
 
+# Local Project Archive & Historical Preservation
+LOCAL_PROJECT_ARCHIVE/
+
+# Local Development Scratch & Diagnostic Workspaces
+scratch/
+
+# Local Runtime Backups & Generated Report Artifacts
+backups/
+reports/
+STRESS_TEST_RESULTS.json
+
 # OS & IDE
 .DS_Store
 Thumbs.db
