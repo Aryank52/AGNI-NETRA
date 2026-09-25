@@ -18,6 +18,7 @@ Guarantees consistency across Database, API, GIS Map, Dashboard, Event Dossier, 
 
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Union
+from sqlalchemy import cast, Text
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.models.domain import (
@@ -93,7 +94,7 @@ class CanonicalEventService:
 
         # Link to HistoricalIncident if verified
         linked_inc = db.query(HistoricalIncident).filter(
-            HistoricalIncident.linked_event_ids.contains(event.id)
+            cast(HistoricalIncident.linked_event_ids, Text).contains(event.id)
         ).first()
 
         # Detections
@@ -272,7 +273,8 @@ class CanonicalEventService:
         # Governed Priority
         tier_weight = 75.0 if risk_level == "CRITICAL" else (50.0 if risk_level == "HIGH" else 25.0)
         recency_score = 80.0
-        prio_score = compute_governed_priority(risk_score, conf, tier_weight, recency_score)
+        conf_scaled = conf * 100.0 if conf <= 1.0 else conf
+        prio_score = compute_governed_priority(risk_score, conf_scaled, tier_weight, recency_score)
         prio_tier = "TIER_1_CRITICAL" if prio_score >= 70.0 else ("TIER_2_HIGH" if prio_score >= 50.0 else "TIER_3_ROUTINE")
 
         analytics = EventAnalyticsIntelligence(
@@ -292,7 +294,7 @@ class CanonicalEventService:
             priority_tier=prio_tier,
             priority_decomposition={
                 "risk_component": round(0.40 * risk_score, 2),
-                "confidence_component": round(0.20 * (conf * 100.0), 2),
+                "confidence_component": round(0.20 * conf_scaled, 2),
                 "tier_component": round(0.30 * tier_weight, 2),
                 "recency_component": round(0.10 * recency_score, 2)
             },

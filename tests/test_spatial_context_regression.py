@@ -196,3 +196,45 @@ def test_08_alert_dossier_resilience(db: Session):
         token = login_res.json()["access_token"]
         res = client.get(f"/api/v1/alerts/{alert.id}/dossier", headers={"Authorization": f"Bearer {token}"})
         assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+
+
+def test_09_canonical_event_priority_confidence_scale_regression(db: Session):
+    """
+    Phase D Regression Test:
+    Guarantees that confidence (supplied as a 0-1 probability, e.g. 0.9013) is properly scaled
+    to the 0-100 operational domain for the canonical event intelligence priority calculation.
+    Verifies that canonical priority_score and priority_decomposition agree, preventing
+    the 23.6 vs 41.45 unit mismatch discrepancy from recurring.
+    Also verifies existing callers using normalized 0-1 convention remain functional.
+    """
+    from backend.app.models.domain import ThermalEvent
+    from backend.app.services.intelligence.canonical_event_service import canonical_event_service
+    from backend.app.services.jarvis.jarvis_situational_service import compute_governed_priority
+
+    # 1. Verify generic compute_governed_priority on 0-1 scale remains unbroken
+    norm_val = compute_governed_priority(0.8, 0.9, 1.0, 0.5)
+    assert abs(norm_val - 0.85) < 0.0001, f"0-1 caller broke: {norm_val}"
+
+    # 2. Verify sample event EVT-20260901-0077A6
+    ev = db.query(ThermalEvent).filter(ThermalEvent.event_code == "EVT-20260901-0077A6").first()
+    assert ev is not None, "Event EVT-20260901-0077A6 must exist in database"
+    assert ev.prediction is not None, "Sample event must have associated prediction"
+    assert abs(ev.prediction.confidence - 0.9013) < 0.01, f"Expected ~0.9013 confidence, got {ev.prediction.confidence}"
+
+    canon = canonical_event_service.get_canonical_event(db, ev)
+    assert canon is not None, "Canonical event must be generated"
+
+    decomp = canon.analytics.priority_decomposition
+    decomp_sum = round(sum(decomp.values()), 2)
+    prio_score = canon.analytics.priority_score
+
+    # Check components
+    assert abs(decomp["risk_component"] - 7.92) <= 0.05
+    assert abs(decomp["confidence_component"] - 18.03) <= 0.05
+    assert abs(decomp["tier_component"] - 7.50) <= 0.05
+    assert abs(decomp["recency_component"] - 8.00) <= 0.05
+    assert abs(decomp_sum - 41.45) <= 0.1
+
+    # Verify canonical priority agrees with decomposition and is NOT the broken 23.6
+    assert abs(prio_score - decomp_sum) <= 0.2, f"Priority score {prio_score} disagrees with decomposition sum {decomp_sum}"
+    assert prio_score > 35.0, f"Priority score {prio_score} must not collapse to unscaled 23.6"
