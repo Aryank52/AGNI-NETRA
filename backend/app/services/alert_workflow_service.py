@@ -532,27 +532,32 @@ class AlertWorkflowService:
         feat = db.query(EventFeature).filter(EventFeature.event_id == event_id).first()
 
         # Audit History
-        audit_rows = db.execute(text("""
-            SELECT id, action, previous_state, new_state, analyst_name, notes,
-                   verification_outcome, timestamp
-            FROM alert_audit_logs
-            WHERE alert_id = :aid
-            ORDER BY timestamp ASC;
-        """), {"aid": actual_aid}).fetchall()
+        audit_history = []
+        try:
+            with db.begin_nested():
+                audit_rows = db.execute(text("""
+                    SELECT id, action, previous_state, new_state, analyst_name, notes,
+                           verification_outcome, timestamp
+                    FROM alert_audit_logs
+                    WHERE alert_id = :aid
+                    ORDER BY timestamp ASC;
+                """), {"aid": actual_aid}).fetchall()
 
-        audit_history = [
-            {
-                "audit_id": r[0],
-                "action": r[1],
-                "previous_state": r[2],
-                "new_state": r[3],
-                "analyst_name": r[4],
-                "notes": r[5],
-                "verification_outcome": r[6],
-                "timestamp": r[7].isoformat() if hasattr(r[7], "isoformat") else (str(r[7]) if r[7] else None)
-            }
-            for r in audit_rows
-        ]
+                audit_history = [
+                    {
+                        "audit_id": r[0],
+                        "action": r[1],
+                        "previous_state": r[2],
+                        "new_state": r[3],
+                        "analyst_name": r[4],
+                        "notes": r[5],
+                        "verification_outcome": r[6],
+                        "timestamp": r[7].isoformat() if hasattr(r[7], "isoformat") else (str(r[7]) if r[7] else None)
+                    }
+                    for r in audit_rows
+                ]
+        except Exception:
+            audit_history = []
 
         # Assemble Evidence Sources
         dossier = {

@@ -447,7 +447,7 @@ def get_industrial_facilities_geojson(
             CASE 
                 WHEN length(id) = 36 THEN 1
                 WHEN source = 'PROMOTED_CANDIDATE' THEN 2
-                WHEN environmental_clearance_present = 1 THEN 3
+                WHEN environmental_clearance_present IS TRUE THEN 3
                 ELSE 4
             END ASC,
             id ASC

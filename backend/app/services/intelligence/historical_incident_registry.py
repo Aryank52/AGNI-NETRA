@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, cast, Text
 
 from backend.app.models.domain import HistoricalIncident, ThermalEvent, VerificationRecord, IndustrialFacility
 
@@ -255,7 +255,7 @@ class HistoricalIncidentRegistryService:
 
         for ev in verified_events:
             existing = db.query(HistoricalIncident).filter(
-                HistoricalIncident.linked_event_ids.contains(ev.id)
+                cast(HistoricalIncident.linked_event_ids, Text).contains(ev.id)
             ).first()
             if existing:
                 continue
