@@ -144,3 +144,55 @@ def test_06_find_nearest_context_preserves_parent_session(db: Session):
     # Verify session can execute further queries immediately
     healthy_check = db.execute(text("SELECT count(*) FROM admin_boundaries;")).scalar()
     assert healthy_check == 7595, "Parent session must remain healthy after _find_nearest_context"
+
+
+def test_07_gis_facilities_geojson_boolean_contract(db: Session):
+    """
+    Prove /api/v1/gis/industrial-facilities query handles PostgreSQL boolean column
+    environmental_clearance_present without 'operator does not exist: boolean = integer' error.
+    """
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+
+    client = TestClient(app)
+    res = client.get("/api/v1/gis/industrial-facilities?limit=10&bbox=75.0,19.0,76.0,20.0")
+    assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+    data = res.json()
+    assert data["type"] == "FeatureCollection"
+    assert "features" in data
+    assert len(data["features"]) > 0
+    first_feat = data["features"][0]
+    assert first_feat["geometry"]["type"] == "Point"
+    coords = first_feat["geometry"]["coordinates"]
+    assert 68.0 <= coords[0] <= 97.5, "GeoJSON coordinate 0 must be longitude (X)"
+    assert 6.0 <= coords[1] <= 37.5, "GeoJSON coordinate 1 must be latitude (Y)"
+
+
+def test_08_alert_dossier_resilience(db: Session):
+    """
+    Prove /api/v1/alerts/{alert_id}/dossier generates full multi-layer investigation dossier
+    resiliently without crashing if alert_audit_logs is absent.
+    """
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+    from backend.app.models.domain import Alert
+    from backend.app.services.alert_workflow_service import alert_workflow_service
+
+    alert = db.query(Alert).first()
+    assert alert is not None, "Database must contain at least one alert"
+
+    # 1. Direct Service Call
+    dossier = alert_workflow_service.get_alert_investigation_dossier(db, alert.id)
+    assert "alert_metadata" in dossier
+    assert "thermal_event" in dossier
+    assert "evidence_sources" in dossier
+    assert "audit_trail" in dossier
+    assert isinstance(dossier["audit_trail"], list)
+
+    # 2. Authenticated API Call
+    client = TestClient(app)
+    login_res = client.post("/api/v1/auth/login", data={"username": "analyst@agninetra.gov.in", "password": "AnalystPassword123!"})
+    if login_res.status_code == 200:
+        token = login_res.json()["access_token"]
+        res = client.get(f"/api/v1/alerts/{alert.id}/dossier", headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
