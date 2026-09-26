@@ -48,7 +48,19 @@ class FacilityEntityResolver:
         Executes entity resolution against the existing PostgreSQL/PostGIS database.
         Inserts new facilities or enriches existing records with additional source provenance.
         """
-        existing_facilities = db.query(IndustrialFacility).all()
+        # Bounded query around incoming records (+-0.05 deg ~ 5.5 km envelope)
+        valid_records = [r for r in incoming_records if r.latitude is not None and r.longitude is not None]
+        if valid_records:
+            min_lat = min(r.latitude for r in valid_records) - 0.05
+            max_lat = max(r.latitude for r in valid_records) + 0.05
+            min_lon = min(r.longitude for r in valid_records) - 0.05
+            max_lon = max(r.longitude for r in valid_records) + 0.05
+            existing_facilities = db.query(IndustrialFacility).filter(
+                IndustrialFacility.latitude.between(min_lat, max_lat),
+                IndustrialFacility.longitude.between(min_lon, max_lon)
+            ).all()
+        else:
+            existing_facilities = []
         created_count = 0
         updated_count = 0
 

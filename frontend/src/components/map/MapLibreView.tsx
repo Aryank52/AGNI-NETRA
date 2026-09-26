@@ -499,38 +499,42 @@ export default function MapLibreView({
     // Click Popups & Feature Selection
     setupLayerClickHandlers(m);
 
-    // Initial Static Boundary & Multi-Layer Loading
+    // Initial Static Boundary & Multi-Layer Loading (Staggered to prevent backend burst storms)
     fetchApi<any>("/gis/admin/states?simplify=0.01")
       .then((data) => {
         if (m.getSource("admin_states")) {
           (m.getSource("admin_states") as maplibregl.GeoJSONSource).setData(data);
         }
+        // Stagger districts after state boundaries arrive
+        return fetchApi<any>("/gis/admin/districts?simplify=0.008&limit=800");
       })
-      .catch(() => {});
-
-    fetchApi<any>("/gis/admin/districts?simplify=0.008&limit=800")
       .then((data) => {
-        if (m.getSource("admin_districts")) {
+        if (data && m.getSource("admin_districts")) {
           (m.getSource("admin_districts") as maplibregl.GeoJSONSource).setData(data);
         }
       })
       .catch(() => {});
 
-    fetchApi<any>("/gis/protected-areas")
-      .then((data) => {
-        if (m.getSource("protected_areas")) {
-          (m.getSource("protected_areas") as maplibregl.GeoJSONSource).setData(data);
-        }
-      })
-      .catch(() => {});
+    // Optional thematic layers deferred slightly to prioritize operational map display
+    setTimeout(() => {
+      fetchApi<any>("/gis/protected-areas")
+        .then((data) => {
+          if (m.getSource("protected_areas")) {
+            (m.getSource("protected_areas") as maplibregl.GeoJSONSource).setData(data);
+          }
+        })
+        .catch(() => {});
+    }, 1200);
 
-    fetchApi<any>("/gis/lulc")
-      .then((data) => {
-        if (m.getSource("lulc")) {
-          (m.getSource("lulc") as maplibregl.GeoJSONSource).setData(data);
-        }
-      })
-      .catch(() => {});
+    setTimeout(() => {
+      fetchApi<any>("/gis/lulc")
+        .then((data) => {
+          if (m.getSource("lulc")) {
+            (m.getSource("lulc") as maplibregl.GeoJSONSource).setData(data);
+          }
+        })
+        .catch(() => {});
+    }, 2400);
   };
 
   // 3. Interactive Click Popups

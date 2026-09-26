@@ -30,9 +30,21 @@ services:
       - key: FIRMS_MAP_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: "https://agni-netra.vercel.app,http://localhost:3000"
+        value: "https://agni-netra.vercel.app,https://agni-netra-eight.vercel.app,https://agni-netra-three.vercel.app,http://localhost:3000"
       - key: BACKEND_CORS_ORIGINS
-        value: "https://agni-netra.vercel.app,http://localhost:3000"
+        value: "https://agni-netra.vercel.app,https://agni-netra-eight.vercel.app,https://agni-netra-three.vercel.app,http://localhost:3000"
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"
+      - key: REDIS_URL
+        sync: false # Upstash Managed Redis URL
+      - key: S3_ENDPOINT
+        sync: false # Cloudflare R2 / S3 Endpoint
+      - key: S3_ACCESS_KEY
+        sync: false # Cloudflare R2 / S3 Access Key
+      - key: S3_SECRET_KEY
+        sync: false # Cloudflare R2 / S3 Secret Key
 
   # =========================================================================
   # 2. SATELLITE FIRMS INGESTION & ANOMALY WORKER (BACKGROUND DAEMON)

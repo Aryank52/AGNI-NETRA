@@ -259,8 +259,25 @@ class LiveThermalIngestionService:
         # 1. Spatiotemporal DBSCAN Clustering on new observations
         clustered = cluster_thermal_detections(new_detections, eps_km=1.5)
 
-        # Load facility context for spatial enrichment
-        facilities = db.query(IndustrialFacility).all()
+        # Load facility context within bounding box of clusters (+-0.15 deg ~ 16 km)
+        lats = [c["latitude"] for c in clustered if c.get("latitude") is not None]
+        lons = [c["longitude"] for c in clustered if c.get("longitude") is not None]
+        if lats and lons:
+            pad = 0.15
+            facilities = db.query(
+                IndustrialFacility.id,
+                IndustrialFacility.name,
+                IndustrialFacility.facility_type,
+                IndustrialFacility.latitude,
+                IndustrialFacility.longitude,
+                IndustrialFacility.state
+            ).filter(
+                IndustrialFacility.latitude.between(min(lats) - pad, max(lats) + pad),
+                IndustrialFacility.longitude.between(min(lons) - pad, max(lons) + pad)
+            ).all()
+        else:
+            facilities = []
+
         fac_dicts = [
             {
                 "id": f.id, "name": f.name, "facility_type": f.facility_type,

@@ -282,8 +282,25 @@ class AutonomousIntelligenceCore:
         cluster_duration_ms = (time.perf_counter() - t_cluster_start) * 1000.0
         self.last_stage_timings["clustering_ms"] = round(cluster_duration_ms, 2)
 
-        # Preload industrial facilities for spatial context
-        facilities = db.query(IndustrialFacility).all()
+        # Preload industrial facilities within bounding box of clusters (+-0.15 deg ~ 16 km)
+        lats = [c["latitude"] for c in clustered_events if c.get("latitude") is not None]
+        lons = [c["longitude"] for c in clustered_events if c.get("longitude") is not None]
+        if lats and lons:
+            pad = 0.15  # ~16 km buffer around clusters (vicinity threshold is 8 km)
+            facilities = db.query(
+                IndustrialFacility.id,
+                IndustrialFacility.name,
+                IndustrialFacility.facility_type,
+                IndustrialFacility.latitude,
+                IndustrialFacility.longitude,
+                IndustrialFacility.state
+            ).filter(
+                IndustrialFacility.latitude.between(min(lats) - pad, max(lats) + pad),
+                IndustrialFacility.longitude.between(min(lons) - pad, max(lons) + pad)
+            ).all()
+        else:
+            facilities = []
+
         fac_dicts = [
             {
                 "id": f.id,
