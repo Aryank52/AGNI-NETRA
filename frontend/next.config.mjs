@@ -26,7 +26,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com",
       "font-src 'self' https://fonts.gstatic.com data: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com",
       "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://demotiles.maplibre.org https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://*.cartocdn.com",
-      "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://demotiles.maplibre.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://*.cartocdn.com",
+      "connect-src 'self' https://agni-netra-api.onrender.com http://localhost:8000 http://127.0.0.1:8000 https://demotiles.maplibre.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://*.cartocdn.com",
       "frame-ancestors 'none'",
       "form-action 'self'",
     ].join("; "),

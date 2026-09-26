@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, role?: UserRole) => Promise<void>;
+  login: (email: string, passwordOrRole?: string, role?: UserRole) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -73,7 +73,14 @@ const DEMO_PROFILES: Record<UserRole, User> = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+const isDevAuthEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true" ||
+  (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH !== "false");
+
 async function fetchRoleToken(role: UserRole) {
+  if (!isDevAuthEnabled) {
+    return null;
+  }
   try {
     const res = await fetch(`${API_BASE_URL}/auth/dev-token`, {
       method: "POST",
@@ -108,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   const refreshAuthToken = async (role: UserRole = "ANALYST") => {
+    if (!isDevAuthEnabled) return;
     const auth = await fetchRoleToken(role);
     if (auth) {
       setUser(auth.user);
@@ -130,31 +138,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     }
 
-    // Cached token missing, invalid, or expired -> fetch fresh authentic signed session
+    // Cached token missing, invalid, or expired -> purge storage
     localStorage.removeItem("agni_user");
     localStorage.removeItem("agni_token");
-    refreshAuthToken("ANALYST");
 
-    // Listen for unauthorized 401 events to auto-refresh session
-    const handleUnauthorized = () => {
+    // Only auto-mint dev session when explicitly enabled in development
+    if (isDevAuthEnabled) {
       refreshAuthToken("ANALYST");
+    } else {
+      setUser(null);
+      setToken(null);
+    }
+
+    // Listen for unauthorized 401 events to auto-refresh session (dev only) or reset session
+    const handleUnauthorized = () => {
+      if (isDevAuthEnabled) {
+        refreshAuthToken("ANALYST");
+      } else {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("agni_user");
+        localStorage.removeItem("agni_token");
+      }
     };
     window.addEventListener("agni:unauthorized", handleUnauthorized);
     return () => window.removeEventListener("agni:unauthorized", handleUnauthorized);
   }, []);
 
-  const login = async (email: string, role: UserRole = "ANALYST") => {
-    const auth = await fetchRoleToken(role);
-    if (auth) {
-      setUser(auth.user);
-      setToken(auth.token);
-      localStorage.setItem("agni_user", JSON.stringify(auth.user));
-      localStorage.setItem("agni_token", auth.token);
-    } else {
-      const profile = DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST;
-      setUser(profile);
-      localStorage.setItem("agni_user", JSON.stringify(profile));
+  const login = async (email: string, passwordOrRole?: string, role?: UserRole) => {
+    const isRole = (val?: string): val is UserRole =>
+      !!val && ["ADMIN", "ANALYST", "RESEARCHER", "INDUSTRY", "AGENCY", "PUBLIC"].includes(val);
+
+    const password = typeof passwordOrRole === "string" && !isRole(passwordOrRole) ? passwordOrRole : undefined;
+    const targetRole: UserRole = role || (isRole(passwordOrRole) ? passwordOrRole : "ANALYST");
+
+    if (password) {
+      // Real authentication flow using standard OAuth2 password request endpoint
+      const body = new URLSearchParams();
+      body.append("username", email);
+      body.append("password", password);
+
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      });
+
+      if (!res.ok) {
+        let errorMsg = `HTTP ${res.status}: Authentication failed`;
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      setToken(data.access_token);
+      localStorage.setItem("agni_user", JSON.stringify(data.user));
+      localStorage.setItem("agni_token", data.access_token);
+      return;
     }
+
+    // Development-only fallback: only fetch dev-token when explicitly enabled
+    if (isDevAuthEnabled) {
+      const auth = await fetchRoleToken(targetRole);
+      if (auth) {
+        setUser(auth.user);
+        setToken(auth.token);
+        localStorage.setItem("agni_user", JSON.stringify(auth.user));
+        localStorage.setItem("agni_token", auth.token);
+        return;
+      }
+    }
+
+    const profile = DEMO_PROFILES[targetRole] || DEMO_PROFILES.ANALYST;
+    setUser(profile);
+    localStorage.setItem("agni_user", JSON.stringify(profile));
   };
 
   const logout = () => {
@@ -165,17 +226,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const switchRole = async (role: UserRole) => {
-    const auth = await fetchRoleToken(role);
-    if (auth) {
-      setUser(auth.user);
-      setToken(auth.token);
-      localStorage.setItem("agni_user", JSON.stringify(auth.user));
-      localStorage.setItem("agni_token", auth.token);
-    } else {
-      const profile = DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST;
-      setUser(profile);
-      localStorage.setItem("agni_user", JSON.stringify(profile));
+    if (isDevAuthEnabled) {
+      const auth = await fetchRoleToken(role);
+      if (auth) {
+        setUser(auth.user);
+        setToken(auth.token);
+        localStorage.setItem("agni_user", JSON.stringify(auth.user));
+        localStorage.setItem("agni_token", auth.token);
+        return;
+      }
     }
+    const profile = DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST;
+    setUser(profile);
+    localStorage.setItem("agni_user", JSON.stringify(profile));
   };
 
   return (
