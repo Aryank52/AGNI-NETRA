@@ -93,7 +93,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, selectedRole);
+      await login(email, password, selectedRole);
       if (selectedRole === "AGENCY") {
         router.push("/portal/agency");
       } else if (selectedRole === "PUBLIC") {

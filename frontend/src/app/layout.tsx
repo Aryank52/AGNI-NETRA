@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/authContext";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://agni-netra-three.vercel.app"),
   title: "AGNI-NETRA — Geospatial Thermal Intelligence & Industrial Monitoring Platform",
   description: "National-scale geospatial intelligence platform fusing NASA FIRMS satellite observations, OpenStreetMap cadastre, CEA utilities, and PostGIS 3.4 spatial analytics for industrial thermal anomaly detection and environmental risk assessment.",
   icons: {

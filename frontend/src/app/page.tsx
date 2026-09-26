@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Flame, ShieldAlert, Cpu, Activity, 
@@ -11,8 +11,31 @@ import {
 } from "lucide-react";
 import ObservationQuickExplorer from "@/components/common/ObservationQuickExplorer";
 import SystemStatusBanner from "@/components/common/SystemStatusBanner";
+import { fetchApi } from "@/lib/api";
 
 export default function LandingPage() {
+  const [dbHealth, setDbHealth] = useState<{ status?: string; database?: string; engine?: string; spatial?: string; postgis_version?: string } | null>(null);
+  const [dbLoading, setDbLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchApi<{ status?: string; database?: string; engine?: string; spatial?: string; postgis_version?: string }>("/health/db")
+      .then((data) => {
+        if (isMounted) {
+          setDbHealth(data);
+          setDbLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDbHealth(null);
+          setDbLoading(false);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const primaryStats = [
     {
       label: "Active Facilities",
@@ -143,8 +166,26 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 mr-2 font-mono">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>PostGIS 16 Connected</span>
+            {dbLoading ? (
+              <>
+                <span className="inline-block w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
+                <span>Checking database status...</span>
+              </>
+            ) : dbHealth && (dbHealth.status === "HEALTHY" || dbHealth.database === "CONNECTED") ? (
+              <>
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>
+                  {dbHealth.spatial === "PostGIS"
+                    ? `PostGIS ${dbHealth.postgis_version ? `${dbHealth.postgis_version} ` : ""}Connected`
+                    : `${dbHealth.engine || "Database"} Connected`}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>Database status unavailable</span>
+              </>
+            )}
           </div>
           <Link
             href="/login"
