@@ -22,26 +22,26 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "agni_netra_secret_key_change_in_production_2026_super_secure_key_12345"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # Production PostgreSQL + PostGIS Connection Pooling
+    # Production PostgreSQL + PostGIS Connection Pooling (Optimized for Managed Supabase + Render)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")
-    DB_POOL_SIZE: int = 15
-    DB_MAX_OVERFLOW: int = 25
-    DB_POOL_TIMEOUT: int = 30
-    DB_POOL_RECYCLE: int = 1800
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "5"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    DB_POOL_TIMEOUT: int = int(os.getenv("DB_POOL_TIMEOUT", "20"))
+    DB_POOL_RECYCLE: int = int(os.getenv("DB_POOL_RECYCLE", "300"))
     
-    # Redis & Celery Async Workers
-    REDIS_URL: str = "redis://localhost:6379/0"
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    # Redis & Celery Async Workers (Upstash Managed Redis / Local)
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
+    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
     
-    # Object Storage (MinIO / AWS S3)
-    S3_ENDPOINT: str = "http://localhost:9000"
-    S3_ACCESS_KEY: str = "minioadmin"
-    S3_SECRET_KEY: str = "minioadmin"
-    S3_USE_SSL: bool = False
-    S3_BUCKET_NAME: str = "agni-netra"
-    S3_BUCKET_IMAGERY: str = "agni-netra-imagery"
-    S3_BUCKET_REPORTS: str = "agni-netra-reports"
+    # Object Storage (MinIO / AWS S3 / Cloudflare R2)
+    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "http://localhost:9000")
+    S3_ACCESS_KEY: str = os.getenv("S3_ACCESS_KEY", "minioadmin")
+    S3_SECRET_KEY: str = os.getenv("S3_SECRET_KEY", "minioadmin")
+    S3_USE_SSL: bool = os.getenv("S3_USE_SSL", "false").lower() in ("true", "1", "yes")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "agni-netra")
+    S3_BUCKET_IMAGERY: str = os.getenv("S3_BUCKET_IMAGERY", "agni-netra-imagery")
+    S3_BUCKET_REPORTS: str = os.getenv("S3_BUCKET_REPORTS", "agni-netra-reports")
     
     # Remote Sensing & Satellite Ingestion APIs
     FIRMS_MAP_KEY: str = os.getenv("FIRMS_MAP_KEY", "")
@@ -79,7 +79,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "https://agni-netra.vercel.app"
+        "https://agni-netra.vercel.app",
+        "https://agni-netra-eight.vercel.app",
+        "https://agni-netra-three.vercel.app"
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -107,7 +109,9 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
             "http://localhost:8000",
             "http://127.0.0.1:8000",
-            "https://agni-netra.vercel.app"
+            "https://agni-netra.vercel.app",
+            "https://agni-netra-eight.vercel.app",
+            "https://agni-netra-three.vercel.app"
         ]
 
     model_config = SettingsConfigDict(

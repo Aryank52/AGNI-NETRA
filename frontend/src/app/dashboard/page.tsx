@@ -104,10 +104,10 @@ function DashboardContent() {
   const [classFilter, setClassFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  // Auto-Refresh
+  // Auto-Refresh (60s default, pauses when browser tab is hidden)
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
-  const [refreshInterval, setRefreshInterval] = useState<number>(20);
-  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState<number>(20);
+  const [refreshInterval, setRefreshInterval] = useState<number>(60);
+  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState<number>(60);
 
   // Pagination & Sorting
   const [page, setPage] = useState<number>(1);
@@ -153,7 +153,7 @@ function DashboardContent() {
       if (classFilter !== "ALL") params.append("event_type", classFilter);
       if (statusFilter !== "ALL") params.append("status", statusFilter);
 
-      params.append("limit", "250");
+      params.append("limit", "50");
 
       const [eventsData, ccData] = await Promise.all([
         fetchApi<any>(`/events?${params.toString()}`),
@@ -187,6 +187,8 @@ function DashboardContent() {
   useEffect(() => {
     if (!autoRefresh) return;
     const timer = setInterval(() => {
+      // Pause refreshing if document tab is not active
+      if (typeof document !== "undefined" && document.hidden) return;
       setSecondsUntilRefresh((prev) => {
         if (prev <= 1) {
           loadData(true);

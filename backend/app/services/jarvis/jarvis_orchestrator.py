@@ -3562,7 +3562,11 @@ class JarvisMasterOrchestrator:
                 sample_lat = active_sample[0].get("latitude", 22.0) if active_sample else 22.0
                 sample_lon = active_sample[0].get("longitude", 72.0) if active_sample else 72.0
 
-                facilities = db.query(IndustrialFacility).all()
+                pad = 0.5  # ~55 km envelope
+                facilities = db.query(IndustrialFacility).filter(
+                    IndustrialFacility.latitude.between(sample_lat - pad, sample_lat + pad),
+                    IndustrialFacility.longitude.between(sample_lon - pad, sample_lon + pad)
+                ).all()
                 best_fac_name = "Gujarat Petrochemical Asset"
                 best_fac_type = "Refinery / Petrochemical"
                 min_dist_km = 4.2
