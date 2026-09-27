@@ -136,10 +136,6 @@ Detailed architectural specifications, system diagrams, and data flows are docum
 
 To ensure legal defensibility, ethical compliance, and operational reliability, AGNI-NETRA enforces strict, frozen governance invariants:
 
-### Frozen Operational Safety Invariants
-```python
-ENABLE_OPERATIONAL_DISPATCH_GATE = False
-ENABLE_AUTOMATED_MODEL_ACTIVATION = False
 ```
 
 - **Operational Dispatch Gate**: Master Agent JARVIS and backend background jobs cannot autonomously trigger siren networks, external webhooks, or public dispatch systems. All escalations require human analyst authorization.
