@@ -288,8 +288,21 @@ class JarvisSituationalService:
             "Atmospheric plume dispersion modeling unavailable due to NOT_CONFIGURED ECMWF weather telemetry."
         ]
 
+        # Build shared hotspot intelligence once for this snapshot.
+        # Attention queue and change detection reuse the same result.
+        shared_hotspots = india_intelligence_service.get_india_hotspot_intelligence(
+            db=db,
+            state=state,
+            limit=20
+        )
+
         # Build Attention Items for the snapshot
-        attention_items = self.build_attention_queue(db, limit=10, state=state)
+        attention_items = self.build_attention_queue(
+            db,
+            limit=10,
+            state=state,
+            hotspots=shared_hotspots
+        )
 
         # Snapshot ID
         snap_id = f"SNP-{uuid.uuid4().hex[:8].upper()}"
@@ -325,7 +338,13 @@ class JarvisSituationalService:
 
         # Detect changes against prior snapshot if available
         global LATEST_SNAPSHOT
-        changes = self.detect_changes(db, prior_snapshot=LATEST_SNAPSHOT, current_snapshot=snapshot, state=state)
+        changes = self.detect_changes(
+            db,
+            prior_snapshot=LATEST_SNAPSHOT,
+            current_snapshot=snapshot,
+            state=state,
+            hotspots=shared_hotspots
+        )
         snapshot.major_changes = changes
 
         # Update cache
@@ -345,7 +364,8 @@ class JarvisSituationalService:
         state: Optional[str] = None,
         entity_ref: Optional[str] = None,
         time_filter: Optional[str] = None,
-        lookback_hours: Optional[float] = None
+        lookback_hours: Optional[float] = None,
+        hotspots: Optional[List[Dict[str, Any]]] = None
     ) -> List[SituationalChange]:
         """
         Identifies material, operationally important changes between two operational moments.
@@ -420,9 +440,17 @@ class JarvisSituationalService:
             ))
 
         # 3. Inspect High Risk / Escalated Events
-        hotspots = india_intelligence_service.get_india_hotspot_intelligence(
-            db=db, state=state, limit=15, min_risk=65.0
-        )
+        # Reuse the snapshot hotspot intelligence when supplied so the
+        # expensive hotspot/spatial pipeline is not executed twice.
+        if hotspots is None:
+            hotspots = india_intelligence_service.get_india_hotspot_intelligence(
+                db=db, state=state, limit=15, min_risk=65.0
+            )
+        else:
+            hotspots = [
+                h for h in hotspots
+                if float((h.get("derived") or {}).get("risk_score", 0.0)) >= 65.0
+            ]
         for h in hotspots[:5]:
             der = h.get("derived", {})
             obs = h.get("observed", {})
@@ -487,7 +515,8 @@ class JarvisSituationalService:
         db: Session,
         limit: int = 15,
         state: Optional[str] = None,
-        max_items: Optional[int] = None
+        max_items: Optional[int] = None,
+        hotspots: Optional[List[Dict[str, Any]]] = None
     ) -> List[AttentionItem]:
         """
         Builds the ranked JARVIS Analyst Attention Queue.
@@ -507,9 +536,12 @@ class JarvisSituationalService:
         now = datetime.now(timezone.utc)
         items: List[AttentionItem] = []
 
-        hotspots = india_intelligence_service.get_india_hotspot_intelligence(
-            db=db, state=state, limit=limit * 2
-        )
+        if hotspots is None:
+            hotspots = india_intelligence_service.get_india_hotspot_intelligence(
+                db=db, state=state, limit=limit * 2
+            )
+        else:
+            hotspots = hotspots[:limit * 2]
 
         # Prefetch verification records
         all_ids = [h["event_id"] for h in hotspots]
