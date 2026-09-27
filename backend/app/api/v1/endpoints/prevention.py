@@ -7,7 +7,6 @@ prevention recommendations, authority routing, and governed report review/approv
 import os
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
-from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 
@@ -40,6 +39,7 @@ from backend.app.services.intelligence.root_cause_intelligence_service import ro
 from backend.app.services.intelligence.authority_registry_service import authority_registry_service
 from backend.app.services.intelligence.historical_comparison_engine import HistoricalComparisonEngine
 from backend.app.services.prevention_report_generator import prevention_report_generator
+from backend.app.core.storage import storage_service
 
 router = APIRouter()
 
@@ -270,45 +270,6 @@ def create_case_report(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Report generation failed: {str(e)}")
 
 
-@router.get("/reports/{report_id}/pdf")
-def download_prevention_report_pdf(
-    report_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Downloads formal ReportLab PDF dossier for a prevention report with application/pdf MIME type.
-    """
-    report = db.query(PreventionReportRecord).filter(
-        (PreventionReportRecord.id == report_id) | (PreventionReportRecord.report_number == report_id)
-    ).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Report '{report_id}' not found.")
-
-    pdf_bytes = None
-    if report.pdf_path and os.path.exists(report.pdf_path):
-        try:
-            with open(report.pdf_path, "rb") as f:
-                pdf_bytes = f.read()
-        except Exception:
-            pdf_bytes = None
-
-    if not pdf_bytes and report.sections_data:
-        try:
-            pdf_bytes = prevention_report_generator.generate_pdf(report.sections_data)
-        except Exception as e:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"PDF generation error: {str(e)}")
-
-    if not pdf_bytes:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF content unavailable for this report.")
-
-    filename = f"AGNI_NETRA_{report.report_number}.pdf"
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
-
-
 @router.get("/cases/{case_id}/root-cause/pdf")
 def download_case_root_cause_pdf(
     case_id: str,
@@ -484,24 +445,64 @@ def download_prevention_report_pdf(
     db: Session = Depends(get_db)
 ):
     """
-    Downloads the compiled PDF artifact for a prevention report.
+    Downloads the compiled prevention PDF from private B2 storage.
+    Regenerates and stores the PDF when the persisted object is unavailable.
     """
     report = db.query(PreventionReportRecord).filter(
-        (PreventionReportRecord.id == report_id) | (PreventionReportRecord.report_number == report_id)
+        (PreventionReportRecord.id == report_id) |
+        (PreventionReportRecord.report_number == report_id)
     ).first()
+
     if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Report '{report_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report '{report_id}' not found."
+        )
 
-    if not report.pdf_path or not os.path.exists(report.pdf_path):
-        # Regenerate PDF if file missing
-        os.makedirs("artifacts/prevention_reports", exist_ok=True)
-        pdf_path = f"artifacts/prevention_reports/{report.report_number}.pdf"
-        prevention_report_generator.generate_pdf(report.sections_data, output_filepath=pdf_path)
-        report.pdf_path = pdf_path
-        db.commit()
+    pdf_bytes = None
 
-    return FileResponse(
-        path=report.pdf_path,
-        filename=f"{report.report_number}.pdf",
-        media_type="application/pdf"
+    if report.pdf_path and storage_service.file_exists(report.pdf_path):
+        try:
+            pdf_bytes = storage_service.read_file(report.pdf_path)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PDF retrieval error: {str(e)}"
+            )
+
+    if not pdf_bytes and report.sections_data:
+        try:
+            pdf_bytes = prevention_report_generator.generate_pdf(
+                report.sections_data
+            )
+
+            object_key = storage_service.save_file(
+                f"prevention-reports/{report.report_number}.pdf",
+                pdf_bytes,
+                content_type="application/pdf"
+            )
+
+            report.pdf_path = object_key
+            db.commit()
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PDF regeneration/storage error: {str(e)}"
+            )
+
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF content unavailable for this report."
+        )
+
+    filename = f"AGNI_NETRA_{report.report_number}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
     )

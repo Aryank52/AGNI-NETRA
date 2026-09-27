@@ -8,7 +8,6 @@ DRAFT -> REVIEW -> APPROVE -> DELIVERED.
 Zero autonomous dispatch: sending strictly requires authenticated human review and explicit role authorization.
 """
 
-import os
 import io
 import uuid
 import hashlib
@@ -30,6 +29,7 @@ from backend.app.models.domain import (
     IndustrialFacility
 )
 from backend.app.services.intelligence.authority_registry_service import authority_registry_service
+from backend.app.core.storage import storage_service
 
 
 class PreventionReportGenerator:
@@ -513,10 +513,12 @@ class PreventionReportGenerator:
         base_rep_num = f"REP-{case.case_number[5:] if len(case.case_number) > 5 else uuid.uuid4().hex[:8].upper()}"
         report_num = f"{base_rep_num}-V{existing_count + 1}" if existing_count > 0 else base_rep_num
 
-        os.makedirs("artifacts/prevention_reports", exist_ok=True)
-        pdf_path = f"artifacts/prevention_reports/{report_num}.pdf"
-
-        cls.generate_pdf(sections, output_filepath=pdf_path)
+        pdf_bytes = cls.generate_pdf(sections)
+        pdf_path = storage_service.save_file(
+            f"prevention-reports/{report_num}.pdf",
+            pdf_bytes,
+            content_type="application/pdf"
+        )
 
         now_utc = datetime.now(timezone.utc)
         report = PreventionReportRecord(
