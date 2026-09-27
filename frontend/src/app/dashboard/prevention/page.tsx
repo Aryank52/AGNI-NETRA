@@ -91,8 +91,9 @@ function PreventionDashboardContent() {
       const res = await fetchApi<any>("/prevention/analyze", {
         method: "POST",
         body: JSON.stringify({
-          event_code: targetEventCode.trim(),
-          lookback_years: lookbackYears
+          event_ref: targetEventCode.trim(),
+          radius_km: 15.0,
+          include_environmental: true
         })
       });
 

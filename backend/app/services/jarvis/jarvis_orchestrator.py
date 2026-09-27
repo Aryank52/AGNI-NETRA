@@ -658,22 +658,23 @@ class JarvisMasterOrchestrator:
         goal = getattr(objective, "primary_goal", "") if objective else ""
 
         if goal == "SAFETY_SQL_REFUSAL" or entities.get("is_security_sql_refusal"):
-            log_state(JarvisState.COMPLETED, "Security Guard Intervention: SQL query rejected")
+            log_state(JarvisState.BLOCKED, "Security Guard Intervention: SQL mutation blocked")
             summary_txt = (
                 "### AGNI-NETRA // SECURITY GUARD INTERVENTION\n\n"
-                "- **Status**: `REFUSED / PROHIBITED`\n"
-                "- **Policy Violation**: Arbitrary SQL Execution / Unauthorized Database Inspection\n"
+                "- **Status**: `BLOCKED / SAFETY ENFORCED`\n"
+                "- **Policy Violation**: `MUTATION_BLOCKED` ? Arbitrary SQL Execution / Unauthorized Database Inspection\n"
                 "- **Enforcement**: Direct database manipulation and SQL inspection queries are strictly forbidden. "
                 "AGNI-NETRA operates strictly through governed read-only service abstractions and role-based access controls.\n"
                 "- **Dispatch Gate**: `BLOCKED [SAFETY ENFORCED]`"
             )
-            stopping_reason = "SECURITY_REFUSAL_SQL: Arbitrary SQL query rejected by safety guard. Returning to IDLE."
+            stopping_reason = "SECURITY_BLOCK_MUTATION: Arbitrary SQL mutation blocked by JARVIS safety policy."
             trace = ExecutionTrace(
                 trace_id=trace_id,
                 command=request.command,
                 parsed_intent="QUERY",
                 user_role=user_role,
-                current_state=JarvisState.COMPLETED,
+                current_state=JarvisState.BLOCKED,
+                status=StepStatus.BLOCKED,
                 capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
                 state_transitions=state_transitions,
                 started_at=datetime.now(timezone.utc),
@@ -687,12 +688,12 @@ class JarvisMasterOrchestrator:
             return JarvisResponse(
                 command=request.command,
                 intent="QUERY",
-                state=JarvisState.COMPLETED,
+                state=JarvisState.BLOCKED,
                 objective=objective,
                 stopping_reason=stopping_reason,
                 capabilities_used=[JarvisCapability.SYSTEM_GOVERNANCE.value],
-                summary=summary_txt,
-                details={"status": "REFUSED", "violation": "ARBITRARY_SQL", "prohibited": True},
+                summary=f"Operation Blocked by JARVIS Guardian: MUTATION_BLOCKED: {summary_txt}",
+                details={"status": "BLOCKED", "violation": "MUTATION_BLOCKED", "prohibited": True},
                 fused_evidence=FusedEvidence(),
                 execution_trace=trace,
                 dispatch_gate_blocked=True

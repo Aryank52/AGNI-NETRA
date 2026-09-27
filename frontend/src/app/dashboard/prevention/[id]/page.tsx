@@ -119,6 +119,55 @@ interface AuditRecord {
 }
 
 export default function PreventionCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const handlePreventionPdfDownload = async () => {
+    if (!activeReport?.id) return;
+
+    try {
+      const token = localStorage.getItem("agni_token");
+
+      if (!token) {
+        throw new Error("Authentication token not found. Please sign in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/prevention/reports/${activeReport.id}/pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const message = await response.text().catch(() => "");
+        throw new Error(
+          message || `PDF download failed (${response.status})`
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `agni-netra-prevention-${activeReport.report_number || activeReport.id}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download prevention PDF:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to download prevention PDF."
+      );
+    }
+  };
+
+
   const resolvedParams = use(params);
   const caseId = resolvedParams.id;
   const router = useRouter();
@@ -774,15 +823,14 @@ export default function PreventionCaseDetailPage({ params }: { params: Promise<{
 
                     <div className="flex flex-wrap items-center gap-2.5">
                       {/* PDF Download */}
-                      <a
-                        href={`${API_BASE_URL}/prevention/reports/${activeReport.id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={handlePreventionPdfDownload}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Export Certified PDF</span>
-                      </a>
+                      </button>
 
                       {/* Approval Gate */}
                       {activeReport.status === "DRAFT" && (

@@ -25,6 +25,55 @@ interface DossierProps {
 }
 
 export default function EventInvestigationDossier({ eventId, onClose }: DossierProps) {
+  const handleEventDossierPdfDownload = async () => {
+    if (!eventId) return;
+
+    try {
+      const token = localStorage.getItem("agni_token");
+
+      if (!token) {
+        throw new Error("Authentication token not found. Please sign in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/reports/event/${eventId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const message = await response.text().catch(() => "");
+        throw new Error(
+          message || `PDF download failed (${response.status})`
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `agni-netra-event-dossier-${eventId}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download event dossier PDF:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to download event dossier PDF."
+      );
+    }
+  };
+
+
   const [dossier, setDossier] = useState<any | null>(null);
   const [canonical, setCanonical] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -142,16 +191,15 @@ export default function EventInvestigationDossier({ eventId, onClose }: DossierP
               <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
               <span className="hidden sm:inline">Why This Fire? (Prevention)</span>
             </Link>
-            <a
-              href={`${API_BASE_URL}/reports/event/${eventId}/download`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={handleEventDossierPdfDownload}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all"
               title="Download Certified PDF Dossier"
             >
               <FileText className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Export PDF</span>
-            </a>
+            </button>
           </div>
         </div>
 
