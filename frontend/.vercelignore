@@ -1,0 +1,4 @@
+# Frontend Vercel Ignore Configuration
+*.log
+.DS_Store
+*.tsbuildinfo
