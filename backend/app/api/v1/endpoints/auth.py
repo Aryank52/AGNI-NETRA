@@ -44,21 +44,30 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="A user with this email address already exists."
         )
 
-    # Public registration always receives the safest default role.
-    # Elevated roles (ANALYST, AGENCY) are requested but assigned strictly through administrative approval.
-    # Self-assignment of ADMIN is strictly disallowed.
-    raw_requested = (user_in.requested_role or getattr(user_in, "role", None) or "PUBLIC").strip().upper()
-    if raw_requested in ["ANALYST", "AGENCY"]:
-        requested_role = raw_requested
-    else:
-        requested_role = "PUBLIC"
+    # Self-service portal registration:
+    # ANALYST -> role = ANALYST
+    # AGENCY  -> role = AGENCY
+    # PUBLIC  -> role = PUBLIC
+    # ADMIN cannot be self-registered
+    raw_role = (getattr(user_in, "role", None) or user_in.requested_role or "PUBLIC").strip().upper()
+    if raw_role == "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ADMIN accounts cannot be created via public self-service registration."
+        )
+
+    if raw_role not in ["PUBLIC", "ANALYST", "AGENCY"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid registration role '{raw_role}'. Allowed roles are ANALYST, AGENCY, or PUBLIC."
+        )
 
     user = User(
         email=clean_email,
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name.strip(),
         organization=user_in.organization.strip() if user_in.organization else None,
-        role="PUBLIC",
+        role=raw_role,
         facility_id=user_in.facility_id,
         is_active=True
     )
@@ -66,17 +75,15 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # Durable audit record for access request & registration
-    audit_status = "PENDING" if requested_role in ["ANALYST", "AGENCY"] else "APPROVED"
+    # Audit record for user registration
     audit = AuditLog(
         user_id=user.id,
-        action="ACCESS_REQUEST",
+        action="USER_REGISTRATION",
         resource_type="User",
         resource_id=user.id,
         details={
-            "requested_role": requested_role,
-            "assigned_role": "PUBLIC",
-            "status": audit_status,
+            "role": user.role,
+            "assigned_role": user.role,
             "email": user.email,
             "full_name": user.full_name,
             "organization": user.organization,

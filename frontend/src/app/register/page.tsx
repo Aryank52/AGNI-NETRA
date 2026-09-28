@@ -81,10 +81,10 @@ export default function RegisterPage() {
           <AgniNetraLogo size={46} subtext="NATIONAL GEOSPATIAL INTELLIGENCE" />
         </Link>
         <h2 className="mt-4 text-2xl font-black text-white tracking-tight font-sans">
-          Request Operational Access
+          Create AGNI-NETRA Account
         </h2>
         <p className="mt-1 text-xs text-slate-400 max-w-sm">
-          Operational roles require organizational verification before elevated platform activation.
+          Select your operational workspace and get started.
         </p>
       </div>
 
@@ -96,16 +96,9 @@ export default function RegisterPage() {
                 <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white">Registration Submitted Successfully</h3>
+                <h3 className="text-lg font-bold text-white">Account Created Successfully</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Your credentials have been provisioned with <strong className="text-amber-400">Public Viewer</strong> tier. Your request for <strong className="text-cyan-400">{requestedRole}</strong> workspace access has been logged for administrative verification before operational activation.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs text-slate-400 space-y-1">
-                <div className="font-mono font-bold text-[11px] text-slate-300 uppercase">Verification Notice</div>
-                <p className="text-[11px]">
-                  Government & institutional accounts (@gov.in, @nic.in, @isro.res.in, authorized enterprises) are prioritized for operational clearance.
+                  Your account has been registered for the <strong className="text-amber-400">{requestedRole}</strong> workspace. You can now log in directly.
                 </p>
               </div>
 
@@ -119,17 +112,6 @@ export default function RegisterPage() {
             </div>
           ) : (
             <>
-              {/* Access Policy Banner */}
-              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <div className="font-mono font-bold text-[11px] text-cyan-300 uppercase">Credentialing Policy</div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                    All accounts are initially provisioned with Public Viewer permissions. Operational command features are activated post-verification.
-                  </p>
-                </div>
-              </div>
-
               {error && (
                 <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -138,6 +120,65 @@ export default function RegisterPage() {
               )}
 
               <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* Portal Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                      SELECT PORTAL
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-mono">Active Workspace</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("ANALYST")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "ANALYST"
+                          ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">ANALYST</span>
+                        {requestedRole === "ANALYST" && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Intelligence & Triage</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("AGENCY")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "AGENCY"
+                          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">AGENCY</span>
+                        {requestedRole === "AGENCY" && <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Emergency Response</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("PUBLIC")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "PUBLIC"
+                          ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">PUBLIC</span>
+                        {requestedRole === "PUBLIC" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Public Safety Viewer</p>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
@@ -154,14 +195,14 @@ export default function RegisterPage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
-                        placeholder="Dr. Vikram Sarabhai"
+                        placeholder="Aryan"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
-                      Organization / Agency
+                      Organization (Optional)
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
@@ -169,24 +210,20 @@ export default function RegisterPage() {
                       </div>
                       <input
                         type="text"
-                        required
                         disabled={loading}
                         value={organization}
                         onChange={(e) => setOrganization(e.target.value)}
                         className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
-                        placeholder="NDMA / CPCB / State PCB / Forest Dept"
+                        placeholder="Optional"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                      Official Work Email
-                    </label>
-                    <span className="text-[10px] text-slate-500 font-mono">Institutional domain preferred</span>
-                  </div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
+                    EMAIL ADDRESS
+                  </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                       <Mail className="w-4 h-4" />
@@ -198,70 +235,9 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
-                      placeholder="officer@organization.gov.in"
+                      placeholder="name@gmail.com"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                      Requested Access / Portal
-                    </label>
-                    <span className="text-[10px] text-amber-500 font-mono">ROLE VERIFICATION REQUIRED</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRequestedRole("PUBLIC")}
-                      className={`p-2.5 rounded-xl border text-left transition ${
-                        requestedRole === "PUBLIC"
-                          ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono">PUBLIC</span>
-                        {requestedRole === "PUBLIC" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Public Safety Viewer</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRequestedRole("ANALYST")}
-                      className={`p-2.5 rounded-xl border text-left transition ${
-                        requestedRole === "ANALYST"
-                          ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono">ANALYST</span>
-                        {requestedRole === "ANALYST" && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>}
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Geospatial Analyst</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRequestedRole("AGENCY")}
-                      className={`p-2.5 rounded-xl border text-left transition ${
-                        requestedRole === "AGENCY"
-                          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono">AGENCY</span>
-                        {requestedRole === "AGENCY" && <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>}
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Emergency Agency</p>
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5">
-                    Specifies your intended workspace request. All new accounts are initially provisioned as Public; elevated analyst/agency roles are activated post-verification.
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -329,11 +305,11 @@ export default function RegisterPage() {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Submitting Access Request...</span>
+                      <span>Creating Account...</span>
                     </>
                   ) : (
                     <>
-                      <span>Submit Access Request</span>
+                      <span>Create Account</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -341,7 +317,7 @@ export default function RegisterPage() {
               </form>
 
               <div className="text-center text-xs text-slate-400 border-t border-slate-800 pt-4">
-                Already have an authorized profile?{" "}
+                Already registered?{" "}
                 <Link href="/login" className="text-amber-400 hover:underline font-bold">
                   Sign In
                 </Link>
