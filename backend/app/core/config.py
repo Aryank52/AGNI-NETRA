@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "agni_netra_secret_key_change_in_production_2026_super_secure_key_12345"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    AGNI_PROTOTYPE_MODE: bool = os.getenv("AGNI_PROTOTYPE_MODE", "false").lower() in ("true", "1", "yes")
     
     # Production PostgreSQL + PostGIS Connection Pooling (Optimized for Managed Supabase + Render)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/agni_netra")

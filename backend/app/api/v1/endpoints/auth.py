@@ -9,7 +9,9 @@ from backend.app.core.database import get_db
 from backend.app.core.security import verify_password, get_password_hash, create_access_token
 from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User, AuditLog
-from backend.app.models.schemas import UserCreate, UserLogin, UserOut, Token, AccessRequestCreate
+from backend.app.models.schemas import (
+    UserCreate, UserLogin, UserOut, Token, AccessRequestCreate, PrototypeSessionRequest
+)
 
 router = APIRouter()
 
@@ -165,6 +167,124 @@ def logout(response: Response):
     response.delete_cookie(key="access_token", path="/")
     response.delete_cookie(key="agni_token", path="/")
     return {"message": "Session terminated successfully"}
+
+
+# ------------------------------------------------------------------------------
+# PROTOTYPE DEMO ACCESS (TEMPORARY DEMO MECHANISM)
+# Active only when AGNI_PROTOTYPE_MODE=True in environment configuration.
+# Issues standard cryptographic JWT tokens for pre-provisioned prototype identities.
+# Does NOT bypass JWT verification or downstream RBAC dependencies.
+# ------------------------------------------------------------------------------
+
+@router.post("/prototype-session", response_model=Token)
+def create_prototype_session(
+    req: PrototypeSessionRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """
+    Temporary prototype demo access endpoint.
+    Creates or reuses dedicated prototype identity and issues a standard signed JWT.
+    Available ONLY when AGNI_PROTOTYPE_MODE=True.
+    Restricted to ANALYST, AGENCY, and PUBLIC roles.
+    ADMIN role is strictly forbidden.
+    """
+    if not settings.AGNI_PROTOTYPE_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Prototype demo access is disabled in this environment."
+        )
+
+    target_role = req.role.strip().upper() if req.role else ""
+
+    if target_role == "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ADMIN role is not available for prototype demo access."
+        )
+
+    if target_role not in ["ANALYST", "AGENCY", "PUBLIC"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid prototype role '{target_role}'. Allowed: ANALYST, AGENCY, PUBLIC."
+        )
+
+    proto_emails = {
+        "ANALYST": "prototype-analyst@agni-netra.local",
+        "AGENCY": "prototype-agency@agni-netra.local",
+        "PUBLIC": "prototype-public@agni-netra.local",
+    }
+    proto_names = {
+        "ANALYST": "Prototype Analyst Workstation",
+        "AGENCY": "Prototype Agency Dispatcher",
+        "PUBLIC": "Prototype Public Citizen",
+    }
+
+    proto_email = proto_emails[target_role]
+    user = db.query(User).filter(User.email == proto_email).first()
+
+    if not user:
+        user = User(
+            id=f"usr-proto-{target_role.lower()}",
+            email=proto_email,
+            full_name=proto_names[target_role],
+            organization="AGNI-NETRA Prototype Workspace",
+            role=target_role,
+            hashed_password=get_password_hash("PrototypeAccess2026!"),
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        # Guarantee role and active status
+        if user.role != target_role or not user.is_active:
+            user.role = target_role
+            user.is_active = True
+            db.commit()
+            db.refresh(user)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id,
+        role=user.role,
+        expires_delta=access_token_expires
+    )
+
+    is_production = settings.ENVIRONMENT.lower() == "production"
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=is_production,
+        samesite="lax",
+        max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+        path="/"
+    )
+    response.set_cookie(
+        key="agni_token",
+        value=access_token,
+        httponly=False,
+        secure=is_production,
+        samesite="lax",
+        max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+        path="/"
+    )
+
+    audit = AuditLog(
+        user_id=user.id,
+        action="PROTOTYPE_LOGIN",
+        details={"role": user.role, "email": user.email}
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
 
 
 @router.get("/me", response_model=UserOut)

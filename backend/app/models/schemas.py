@@ -54,6 +54,10 @@ class TokenPayload(BaseModel):
     exp: Optional[int] = None
 
 
+class PrototypeSessionRequest(BaseModel):
+    role: str
+
+
 # ------------------------------------------------------------------------------
 # Detections & Events Schemas
 # ------------------------------------------------------------------------------
