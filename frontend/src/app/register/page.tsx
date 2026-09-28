@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   Building, User, Mail, Lock, Eye, EyeOff,
-  AlertCircle, CheckCircle2, ArrowRight
+  AlertCircle, CheckCircle2, ArrowRight, Sparkles,
+  Activity, Shield, Users
 } from "lucide-react";
 import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { fetchApi } from "@/lib/api";
@@ -71,30 +72,39 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-agni-navy flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-slate-950 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center">
         <Link href="/" className="inline-block transition-transform hover:scale-105">
-          <AgniNetraLogo size={46} subtext="NATIONAL GEOSPATIAL INTELLIGENCE" />
+          <AgniNetraLogo size={42} subtext="NATIONAL GEOSPATIAL INTELLIGENCE" />
         </Link>
-        <h1 className="mt-4 text-2xl font-black text-white tracking-tight">
-          Create AGNI-NETRA Account
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <span className="text-xl font-black text-white tracking-wider font-mono">
+            AGNI-NETRA
+          </span>
+          <span className="py-0.5 px-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold tracking-widest uppercase inline-flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5" />
+            PROTOTYPE
+          </span>
+        </div>
+        <h1 className="mt-2 text-2xl font-black text-white tracking-tight">
+          Create Prototype Workspace
         </h1>
         <p className="mt-1 text-xs text-slate-400 max-w-sm">
-          Select your portal workspace and register for access.
+          Select your workspace role to create a prototype account.
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="bg-agni-card py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-agni-border space-y-6">
+        <div className="bg-slate-900/90 py-8 px-6 shadow-2xl rounded-2xl sm:px-8 border border-slate-800 space-y-6 backdrop-blur-md">
           {success ? (
             <div className="text-center space-y-5 py-4">
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-xl font-bold text-white">Registration Successful</h2>
+                <h2 className="text-xl font-bold text-white">Workspace Initialized</h2>
                 <p className="text-sm font-mono text-amber-400 font-bold">
-                  Your workspace: {requestedRole}
+                  Role: {requestedRole}
                 </p>
                 <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed pt-1">
-                  Your account has been created. You can now sign in to access your designated workspace.
+                  Your prototype account has been created successfully. You can now access your designated workspace.
                 </p>
               </div>
 
@@ -116,11 +126,11 @@ export default function RegisterPage() {
               )}
 
               <form className="space-y-4" onSubmit={handleSubmit}>
-                {/* 3-Portal Workspace Selector */}
+                {/* 3-Role Workspace Selector */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                      WORKSPACE
+                      WORKSPACE ROLE
                     </label>
                     <span className="text-[10px] text-slate-500 font-mono">Select One</span>
                   </div>
@@ -131,14 +141,17 @@ export default function RegisterPage() {
                       className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
                         requestedRole === "ANALYST"
                           ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                          : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono text-cyan-400">ANALYST</span>
+                        <span className="text-xs font-bold font-mono text-cyan-400 flex items-center gap-1">
+                          <Activity className="w-3 h-3" />
+                          ANALYST
+                        </span>
                         {requestedRole === "ANALYST" && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>}
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-1 truncate">Intelligence</p>
+                      <p className="text-[10px] text-slate-400 mt-1 truncate">Operational Intel</p>
                     </button>
 
                     <button
@@ -146,15 +159,18 @@ export default function RegisterPage() {
                       onClick={() => setRequestedRole("AGENCY")}
                       className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
                         requestedRole === "AGENCY"
-                          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                          ? "border-rose-500 bg-rose-500/10 ring-1 ring-rose-500/40 text-white"
+                          : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono text-red-400">AGENCY</span>
-                        {requestedRole === "AGENCY" && <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>}
+                        <span className="text-xs font-bold font-mono text-rose-400 flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          AGENCY
+                        </span>
+                        {requestedRole === "AGENCY" && <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>}
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-1 truncate">Response</p>
+                      <p className="text-[10px] text-slate-400 mt-1 truncate">Response Ops</p>
                     </button>
 
                     <button
@@ -163,14 +179,17 @@ export default function RegisterPage() {
                       className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
                         requestedRole === "PUBLIC"
                           ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/40 text-white"
-                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                          : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono text-emerald-400">PUBLIC</span>
+                        <span className="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          PUBLIC
+                        </span>
                         {requestedRole === "PUBLIC" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-1 truncate">Advisory</p>
+                      <p className="text-[10px] text-slate-400 mt-1 truncate">Public Safety</p>
                     </button>
                   </div>
                 </div>
@@ -190,7 +209,7 @@ export default function RegisterPage() {
                         disabled={loading}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
                         placeholder="Aryan Sharma"
                       />
                     </div>
@@ -209,7 +228,7 @@ export default function RegisterPage() {
                         disabled={loading}
                         value={organization}
                         onChange={(e) => setOrganization(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
                         placeholder="Optional"
                       />
                     </div>
@@ -230,8 +249,8 @@ export default function RegisterPage() {
                       disabled={loading}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
-                      placeholder="name@gmail.com"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                      placeholder="name@example.com"
                     />
                   </div>
                 </div>
@@ -252,7 +271,7 @@ export default function RegisterPage() {
                         minLength={8}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                        className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
                         placeholder="Min 8 characters"
                       />
                       <button
@@ -282,7 +301,7 @@ export default function RegisterPage() {
                         minLength={8}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
                         placeholder="Confirm password"
                       />
                     </div>
@@ -292,26 +311,25 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-extrabold text-xs tracking-wider shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-extrabold text-xs tracking-wider shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-mono"
                 >
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Creating Account...</span>
+                      <span>Creating Workspace...</span>
                     </>
                   ) : (
                     <>
-                      <span>Register for Portal</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>Create Prototype Workspace →</span>
                     </>
                   )}
                 </button>
               </form>
 
               <div className="text-center text-xs text-slate-400 border-t border-slate-800 pt-4">
-                Already registered?{" "}
+                Already have access?{" "}
                 <Link href="/login" className="text-amber-400 hover:underline font-bold">
-                  Sign In
+                  Sign In to Prototype
                 </Link>
               </div>
             </>
