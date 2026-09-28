@@ -484,3 +484,25 @@ def test_unauthenticated_protected_routes_middleware_simulation():
 
     sim_auth = simulate_nextjs_middleware("/dashboard", "", has_cookie=True)
     assert sim_auth["status"] == 200
+
+
+def test_three_public_portals_only_and_no_admin_in_login():
+    """10 & 11. Verify that public login page configures exactly ANALYST, AGENCY, PUBLIC and NO ADMIN."""
+    import re
+    import os
+    login_page_path = os.path.join("frontend", "src", "app", "login", "page.tsx")
+    with open(login_page_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Verify 3 persona cards only
+    assert '"ANALYST"' in content
+    assert '"AGENCY"' in content
+    assert '"PUBLIC"' in content
+
+    # Assert ADMIN, RESEARCHER, INDUSTRY are not in PERSONA_CARDS
+    persona_match = re.search(r"PERSONA_CARDS: PersonaCard\[\] = \[(.*?)\];", content, re.DOTALL)
+    assert persona_match is not None
+    persona_block = persona_match.group(1)
+    assert "ADMIN" not in persona_block
+    assert "RESEARCHER" not in persona_block
+    assert "INDUSTRY" not in persona_block
