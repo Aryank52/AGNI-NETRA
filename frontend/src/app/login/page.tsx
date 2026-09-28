@@ -38,37 +38,61 @@ function LoginForm() {
     try {
       await login(email.trim(), password);
 
+      const storedUser = localStorage.getItem("agni_user");
+
+      if (!storedUser) {
+        throw new Error(
+          "Authentication succeeded but account profile was not returned."
+        );
+      }
+
+      const authenticatedUser = JSON.parse(storedUser) as {
+        role?: string;
+      };
+
+      const accountRole = String(
+        authenticatedUser.role || ""
+      ).toUpperCase();
+
+      const rolePortalMap: Record<string, string> = {
+        ADMIN: "/admin",
+        ANALYST: "/dashboard",
+        AGENCY: "/portal/agency",
+        PUBLIC: "/portal/public",
+      };
+
+      const authorizedPortal = rolePortalMap[accountRole];
       const targetRedirect = getSafeRedirectUrl();
+
       if (targetRedirect) {
+        const requestedPortal =
+          targetRedirect.replace(/\/+$/, "") || "/";
+
+        const authorized =
+          !!authorizedPortal &&
+          (
+            requestedPortal === authorizedPortal ||
+            requestedPortal.startsWith(`${authorizedPortal}/`)
+          );
+
+        if (!authorized) {
+          setError(
+            `Portal access denied. Your account is authorized for ${authorizedPortal || "an assigned workspace"}.`
+          );
+          return;
+        }
+
         router.push(targetRedirect);
         return;
       }
 
-      // Check stored user role to route appropriately
-      try {
-        const storedUser = localStorage.getItem("agni_user");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          if (user.role === "AGENCY") {
-            router.push("/portal/agency");
-            return;
-          } else if (user.role === "ADMIN") {
-            router.push("/admin");
-            return;
-          } else if (user.role === "INDUSTRY") {
-            router.push("/portal/industry");
-            return;
-          } else if (user.role === "RESEARCHER") {
-            router.push("/portal/research");
-            return;
-          } else if (user.role === "PUBLIC") {
-            router.push("/portal/public");
-            return;
-          }
-        }
-      } catch {}
-
-      router.push("/dashboard");
+      if (authorizedPortal) {
+        router.push(authorizedPortal);
+      } else {
+        setError(
+          "Portal access denied. No authorized workspace is assigned to this account."
+        );
+      }
     } catch (err: any) {
       setError(err.message || "Invalid email or passcode. Operational access denied.");
     } finally {
