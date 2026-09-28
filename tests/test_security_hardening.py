@@ -455,6 +455,12 @@ def evaluate_login_portal_routing(account_role: str, target_redirect: str = None
         )
 
         if not authorized:
+            if account_role == "PUBLIC":
+                return (
+                    False,
+                    "",
+                    "Your account is currently PUBLIC. Request operational access from the Public Portal to obtain ANALYST/AGENCY clearance.",
+                )
             return False, "", f"Portal access denied. Your account is authorized for {account_role}."
 
         return True, target_redirect, ""
@@ -509,10 +515,11 @@ def test_scenario_12_mismatch_rejection_agency_requesting_admin():
 
 
 def test_scenario_13_mismatch_rejection_public_requesting_dashboard():
-    """Scenario 13: Mismatch rejection — PUBLIC requesting /dashboard rejected with exact warning."""
+    """Scenario 13: Mismatch rejection — PUBLIC requesting /dashboard rejected with operational guidance."""
     authorized, dest, err = evaluate_login_portal_routing("PUBLIC", "/dashboard")
     assert authorized is False
-    assert err == "Portal access denied. Your account is authorized for PUBLIC."
+    assert "Your account is currently PUBLIC" in err
+    assert "Request operational access from the Public Portal" in err
 
 
 def test_scenario_14_nested_authorized_redirects_validation():
@@ -588,3 +595,251 @@ def test_scenario_16_regression_auth_rbac_invariants():
     assert require_admin(USER_ADMIN) == USER_ADMIN
     assert require_analyst(USER_ANALYST) == USER_ANALYST
     assert require_agency(USER_AGENCY) == USER_AGENCY
+
+
+# =========================================================================
+# 12. Existing User Operational Access Request Tests (Requirements 1-13)
+# =========================================================================
+
+def test_req1_existing_public_user_can_submit_analyst_access_request():
+    """1. Existing PUBLIC user can submit ANALYST access request."""
+    email = f"existing_pub1_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Existing Citizen One",
+        "email": email,
+        "organization": "Citizen Science Hub",
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    assert reg_res.status_code == status.HTTP_200_OK
+    user_id = reg_res.json()["id"]
+
+    # Authenticate as this existing PUBLIC user
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    res = client.post("/api/v1/auth/access-request", json={
+        "requested_role": "ANALYST",
+        "organization": "National Remote Sensing",
+        "reason": "Forest fire spatial analysis"
+    })
+    assert res.status_code == status.HTTP_200_OK
+    data = res.json()
+    assert data["status"] == "PENDING"
+    assert data["requested_role"] == "ANALYST"
+    assert data["message"] == "Access request submitted. Await administrator approval."
+
+    # Verify query status endpoint returns PENDING
+    status_res = client.get("/api/v1/auth/access-request")
+    assert status_res.status_code == status.HTTP_200_OK
+    assert status_res.json()["status"] == "PENDING"
+    assert status_res.json()["requested_role"] == "ANALYST"
+
+
+def test_req2_existing_public_user_can_submit_agency_access_request():
+    """2. Existing PUBLIC user can submit AGENCY access request."""
+    email = f"existing_pub2_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Existing Citizen Two",
+        "email": email,
+        "organization": "Disaster Response Unit",
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    assert reg_res.status_code == status.HTTP_200_OK
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    res = client.post("/api/v1/auth/access-request", json={
+        "requested_role": "AGENCY",
+        "organization": "State Fire Brigade"
+    })
+    assert res.status_code == status.HTTP_200_OK
+    data = res.json()
+    assert data["status"] == "PENDING"
+    assert data["requested_role"] == "AGENCY"
+
+
+def test_req3_existing_public_user_cannot_create_duplicate_pending_request():
+    """3. Existing PUBLIC user cannot create duplicate pending request."""
+    email = f"existing_pub3_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Existing Citizen Three",
+        "email": email,
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    # First request
+    res1 = client.post("/api/v1/auth/access-request", json={"requested_role": "ANALYST"})
+    assert res1.status_code == status.HTTP_200_OK
+
+    # Second request while pending
+    res2 = client.post("/api/v1/auth/access-request", json={"requested_role": "AGENCY"})
+    assert res2.status_code == status.HTTP_400_BAD_REQUEST
+    assert "already pending" in res2.json()["detail"].lower()
+
+
+def test_req4_existing_analyst_cannot_request_analyst_again():
+    """4. Existing ANALYST cannot request ANALYST again."""
+    app.dependency_overrides[get_current_active_user] = lambda: USER_ANALYST
+    res = client.post("/api/v1/auth/access-request", json={"requested_role": "ANALYST"})
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_req5_existing_agency_cannot_request_agency_again():
+    """5. Existing AGENCY cannot request AGENCY again."""
+    app.dependency_overrides[get_current_active_user] = lambda: USER_AGENCY
+    res = client.post("/api/v1/auth/access-request", json={"requested_role": "AGENCY"})
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_req6_public_user_remains_public_while_request_is_pending():
+    """6. PUBLIC user remains PUBLIC while request is pending."""
+    email = f"pending_pub_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Pending Applicant",
+        "email": email,
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    # Submit access request
+    client.post("/api/v1/auth/access-request", json={"requested_role": "ANALYST"})
+
+    # Verify user record in database still has role == PUBLIC
+    with SessionLocal() as db:
+        user_in_db = db.query(User).filter(User.id == user_id).first()
+        assert user_in_db.role == "PUBLIC"
+
+
+def test_req7_admin_can_approve_analyst_request():
+    """7. ADMIN can approve ANALYST request."""
+    email = f"appr_analyst_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Analyst Applicant",
+        "email": email,
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    sub_res = client.post("/api/v1/auth/access-request", json={"requested_role": "ANALYST"})
+    request_id = sub_res.json()["request_id"]
+
+    # Admin approves
+    app.dependency_overrides[require_admin] = lambda: USER_ADMIN
+    app.dependency_overrides[get_current_active_user] = lambda: USER_ADMIN
+    appr_res = client.post(f"/api/v1/admin/access-requests/{request_id}/approve")
+    assert appr_res.status_code == status.HTTP_200_OK
+    assert appr_res.json()["status"] == "APPROVED"
+    assert appr_res.json()["role"] == "ANALYST"
+
+
+def test_req8_admin_can_approve_agency_request():
+    """8. ADMIN can approve AGENCY request."""
+    email = f"appr_agency_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Agency Applicant",
+        "email": email,
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    sub_res = client.post("/api/v1/auth/access-request", json={"requested_role": "AGENCY"})
+    request_id = sub_res.json()["request_id"]
+
+    # Admin approves
+    app.dependency_overrides[require_admin] = lambda: USER_ADMIN
+    app.dependency_overrides[get_current_active_user] = lambda: USER_ADMIN
+    appr_res = client.post(f"/api/v1/admin/access-requests/{request_id}/approve")
+    assert appr_res.status_code == status.HTTP_200_OK
+    assert appr_res.json()["status"] == "APPROVED"
+    assert appr_res.json()["role"] == "AGENCY"
+
+
+def test_req9_after_approval_user_role_changes_correctly():
+    """9. After approval, user role changes correctly in the database."""
+    email = f"role_change_{uuid.uuid4().hex[:8]}@public.in"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Role Change Applicant",
+        "email": email,
+        "requested_role": "PUBLIC",
+        "password": "ValidPassword123!"
+    })
+    user_id = reg_res.json()["id"]
+
+    user_obj = User(id=user_id, email=email, role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: user_obj
+    app.dependency_overrides[get_current_user] = lambda: user_obj
+
+    sub_res = client.post("/api/v1/auth/access-request", json={"requested_role": "ANALYST"})
+    request_id = sub_res.json()["request_id"]
+
+    app.dependency_overrides[require_admin] = lambda: USER_ADMIN
+    app.dependency_overrides[get_current_active_user] = lambda: USER_ADMIN
+    client.post(f"/api/v1/admin/access-requests/{request_id}/approve")
+
+    with SessionLocal() as db:
+        user_db = db.query(User).filter(User.id == user_id).first()
+        assert user_db.role == "ANALYST"
+
+
+def test_req10_public_user_selecting_analyst_from_login_rejected_safely():
+    """10. Public user selecting ANALYST from login is rejected safely with guidance."""
+    authorized, dest, err = evaluate_login_portal_routing("PUBLIC", "/dashboard")
+    assert authorized is False
+    assert "Your account is currently PUBLIC" in err
+    assert "Request operational access from the Public Portal" in err
+
+
+def test_req11_public_user_selecting_agency_from_login_rejected_safely():
+    """11. Public user selecting AGENCY from login is rejected safely with guidance."""
+    authorized, dest, err = evaluate_login_portal_routing("PUBLIC", "/portal/agency")
+    assert authorized is False
+    assert "Your account is currently PUBLIC" in err
+    assert "Request operational access from the Public Portal" in err
+
+
+def test_req12_no_admin_self_assignment():
+    """12. No ADMIN self-assignment during registration or via access-request endpoint."""
+    # Registration attempt
+    reg_res = client.post("/api/v1/auth/register", json={
+        "full_name": "Admin Escalation Attacker",
+        "email": f"attacker_{uuid.uuid4().hex[:8]}@bad.com",
+        "role": "ADMIN",
+        "requested_role": "ADMIN",
+        "password": "ValidPassword123!"
+    })
+    assert reg_res.status_code == status.HTTP_200_OK
+    assert reg_res.json()["role"] == "PUBLIC"
+
+    # Authenticated access-request attempt with requested_role=ADMIN
+    attacker = User(id="attacker-id", email="attacker@bad.com", role="PUBLIC", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: attacker
+    req_res = client.post("/api/v1/auth/access-request", json={"requested_role": "ADMIN"})
+    assert req_res.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Only ANALYST and AGENCY" in req_res.json()["detail"]

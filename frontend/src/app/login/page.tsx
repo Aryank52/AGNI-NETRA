@@ -81,9 +81,15 @@ function LoginForm() {
           );
 
         if (!authorized) {
-          setError(
-            `Portal access denied. Your account is authorized for ${accountRole}.`
-          );
+          if (accountRole === "PUBLIC") {
+            setError(
+              "Your account is currently PUBLIC. Request operational access from the Public Portal to obtain ANALYST/AGENCY clearance."
+            );
+          } else {
+            setError(
+              `Portal access denied. Your account is authorized for ${accountRole}.`
+            );
+          }
           return;
         }
 
@@ -121,9 +127,20 @@ function LoginForm() {
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-          <span>{error}</span>
+        <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <span>{error}</span>
+          </div>
+          {error.includes("Request operational access from the Public Portal") && (
+            <Link
+              href="/portal/public"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 ml-6 transition-colors"
+            >
+              <span>Request Operational Access</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
       )}
 
