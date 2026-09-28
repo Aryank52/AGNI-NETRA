@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/authContext";
 import AgniNetraLogo from "@/components/common/AgniNetraLogo";
 import { 
   ShieldCheck, ArrowRight, Lock,
-  Mail, AlertCircle, Eye, EyeOff, ShieldAlert
+  Mail, AlertCircle, Eye, EyeOff
 } from "lucide-react";
 
 function LoginForm() {
@@ -21,6 +21,7 @@ function LoginForm() {
   const [rememberWorkstation, setRememberWorkstation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roleMismatch, setRoleMismatch] = useState<{ role: string; portal: string } | null>(null);
 
   const getSafeRedirectUrl = () => {
     const rawRedirect = searchParams.get("redirect");
@@ -34,6 +35,7 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setRoleMismatch(null);
 
     try {
       await login(email.trim(), password);
@@ -81,14 +83,12 @@ function LoginForm() {
           );
 
         if (!authorized) {
-          if (accountRole === "PUBLIC") {
-            setError(
-              "Your account is currently PUBLIC. Request operational access from the Public Portal to obtain ANALYST/AGENCY clearance."
-            );
-          } else {
-            setError(
-              `Portal access denied. Your account is authorized for ${accountRole}.`
-            );
+          setError(`Your account is registered for ${accountRole} access.`);
+          if (authorizedPortal) {
+            setRoleMismatch({
+              role: accountRole,
+              portal: authorizedPortal,
+            });
           }
           return;
         }
@@ -105,25 +105,28 @@ function LoginForm() {
         );
       }
     } catch (err: any) {
-      setError(err.message || "Invalid email or passcode. Operational access denied.");
+      setError(err.message || "Invalid email or password. Access denied.");
     } finally {
       setLoading(false);
     }
   };
 
   const currentRedirect = searchParams.get("redirect") || "";
+  const isAnalystActive = currentRedirect.startsWith("/dashboard") || (!currentRedirect.startsWith("/portal/agency") && !currentRedirect.startsWith("/portal/public") && !currentRedirect.startsWith("/admin"));
+  const isAgencyActive = currentRedirect.startsWith("/portal/agency");
+  const isPublicActive = currentRedirect.startsWith("/portal/public");
 
   return (
     <div className="bg-agni-card py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-agni-border space-y-6">
-      {/* Statutory Security Invariant Notice */}
-      <div className="p-3.5 rounded-xl bg-slate-900/90 border border-amber-500/30 text-slate-300 text-xs space-y-1">
-        <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold text-[11px] uppercase tracking-wider">
-          <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-          <span>OFFICIAL SYSTEM — UNAUTHORIZED ACCESS PROHIBITED</span>
+      {/* Operational Notice */}
+      <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-slate-300 text-xs flex items-center justify-between">
+        <div className="flex items-center gap-2 text-slate-200 font-mono font-bold text-[11px] uppercase tracking-wider">
+          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>CHOOSE YOUR WORKSPACE</span>
         </div>
-        <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
-          This platform is restricted to authorized national and state entities. All sessions, spatial queries, and intelligence actions are monitored and cryptographically logged.
-        </p>
+        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
+          SELECT PORTAL
+        </span>
       </div>
 
       {error && (
@@ -132,125 +135,101 @@ function LoginForm() {
             <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
-          {error.includes("Request operational access from the Public Portal") && (
+          {roleMismatch && (
             <Link
-              href="/portal/public"
+              href={roleMismatch.portal}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 ml-6 transition-colors"
             >
-              <span>Request Operational Access</span>
+              <span>
+                Switch to {roleMismatch.role === "ANALYST" ? "Analyst" : roleMismatch.role === "AGENCY" ? "Agency" : roleMismatch.role === "ADMIN" ? "Admin" : "Public"} Portal
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           )}
         </div>
       )}
 
-      {/* Form */}
-{/* AGNI_PORTAL_SELECTOR_V1 */}
-<div className="mb-6">
-  <div className="mb-3 flex items-center justify-between">
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-        Select authorized workspace
-      </p>
-      <p className="mt-1 text-[11px] text-slate-500">
-        Portal selection does not grant access. Your assigned RBAC role is verified after sign-in.
-      </p>
-    </div>
-    <span className="hidden text-[9px] font-mono uppercase tracking-widest text-amber-500 sm:block">
-      RBAC GATED
-    </span>
-  </div>
+      {/* 3-Portal Workspace Selector */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+            Target Destination
+          </label>
+          <span className="text-[9px] font-mono uppercase tracking-widest text-amber-500">
+            RBAC VERIFIED
+          </span>
+        </div>
 
-  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-    <Link
-      href="/login?redirect=%2Fadmin"
-      className={`group rounded-lg border px-3 py-3 transition ${
-        currentRedirect.startsWith("/admin")
-          ? "border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40"
-          : "border-slate-700/80 bg-slate-950/30 hover:border-amber-500/60 hover:bg-amber-500/5"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-[10px] font-bold text-amber-400">
-          AD
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-amber-300">
-            Admin
-          </p>
-          <p className="text-[9px] text-slate-500">Administration</p>
+        <div className="grid grid-cols-3 gap-2">
+          <Link
+            href="/login?redirect=%2Fdashboard"
+            className={`group rounded-lg border px-2.5 py-2.5 transition flex flex-col items-center sm:items-start ${
+              isAnalystActive
+                ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40"
+                : "border-slate-700/80 bg-slate-950/30 hover:border-cyan-500/60 hover:bg-cyan-500/5"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 text-[9px] font-bold text-cyan-400">
+                AN
+              </span>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-cyan-300">
+                  Analyst
+                </p>
+                <p className="hidden sm:block text-[9px] text-slate-500">Dashboard</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/login?redirect=%2Fportal%2Fagency"
+            className={`group rounded-lg border px-2.5 py-2.5 transition flex flex-col items-center sm:items-start ${
+              isAgencyActive
+                ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40"
+                : "border-slate-700/80 bg-slate-950/30 hover:border-red-500/60 hover:bg-red-500/5"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-[9px] font-bold text-red-400">
+                AG
+              </span>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-red-300">
+                  Agency
+                </p>
+                <p className="hidden sm:block text-[9px] text-slate-500">Response</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/login?redirect=%2Fportal%2Fpublic"
+            className={`group rounded-lg border px-2.5 py-2.5 transition flex flex-col items-center sm:items-start ${
+              isPublicActive
+                ? "border-emerald-400 bg-emerald-500/15 ring-1 ring-emerald-500/40"
+                : "border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-400/70 hover:bg-emerald-500/10"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[9px] font-bold text-emerald-400">
+                PU
+              </span>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-emerald-300">
+                  Public
+                </p>
+                <p className="hidden sm:block text-[9px] text-slate-500">Advisory</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
-    </Link>
 
-    <Link
-      href="/login?redirect=%2Fdashboard"
-      className={`group rounded-lg border px-3 py-3 transition ${
-        currentRedirect.startsWith("/dashboard")
-          ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40"
-          : "border-slate-700/80 bg-slate-950/30 hover:border-cyan-500/60 hover:bg-cyan-500/5"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">
-          AN
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-cyan-300">
-            Analyst
-          </p>
-          <p className="text-[9px] text-slate-500">Intelligence</p>
-        </div>
-      </div>
-    </Link>
-
-    <Link
-      href="/login?redirect=%2Fportal%2Fagency"
-      className={`group rounded-lg border px-3 py-3 transition ${
-        currentRedirect.startsWith("/portal/agency")
-          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40"
-          : "border-slate-700/80 bg-slate-950/30 hover:border-red-500/60 hover:bg-red-500/5"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-[10px] font-bold text-red-400">
-          AG
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-red-300">
-            Agency
-          </p>
-          <p className="text-[9px] text-slate-500">Response</p>
-        </div>
-      </div>
-    </Link>
-
-    <Link
-      href="/login?redirect=%2Fportal%2Fpublic"
-      className={`group rounded-lg border px-3 py-3 transition ${
-        currentRedirect.startsWith("/portal/public")
-          ? "border-emerald-400 bg-emerald-500/15 ring-1 ring-emerald-500/40"
-          : "border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-400/70 hover:bg-emerald-500/10"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">
-          PU
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-emerald-300">
-            Public
-          </p>
-          <p className="text-[9px] text-slate-500">Safety</p>
-        </div>
-      </div>
-    </Link>
-  </div>
-</div>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
-            Official / Work Email
+            EMAIL ADDRESS
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
@@ -263,7 +242,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-500 disabled:opacity-50"
-              placeholder="officer@domain.gov.in"
+              placeholder="name@gmail.com"
               autoComplete="username"
             />
           </div>
@@ -272,13 +251,13 @@ function LoginForm() {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-              Security Passcode
+              PASSWORD
             </label>
             <Link
               href="/forgot-password"
               className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold transition-colors"
             >
-              Forgot passcode?
+              Forgot password?
             </Link>
           </div>
           <div className="relative">
@@ -300,7 +279,7 @@ function LoginForm() {
               onClick={() => setShowPassword(!showPassword)}
               disabled={loading}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
-              aria-label={showPassword ? "Hide passcode" : "Show passcode"}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -332,18 +311,18 @@ function LoginForm() {
             </>
           ) : (
             <>
-              <span>Sign In to Operational Portal</span>
+              <span>Sign In to Workspace</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>
       </form>
 
-      {/* Access Request Links */}
+      {/* Access Request / Registration Link */}
       <div className="text-center text-xs text-slate-400 border-t border-slate-800 pt-4">
-        Need operational authorization?{" "}
+        Don&apos;t have an account?{" "}
         <Link href="/register" className="text-amber-400 hover:underline font-bold">
-          Request Operational Access
+          Register for Portal Access
         </Link>
       </div>
     </div>
@@ -361,7 +340,7 @@ export default function LoginPage() {
           Secure Intelligence Portal
         </h2>
         <p className="mt-1 text-xs text-slate-400 max-w-sm">
-          Authorized users only. Sign in to access operational intelligence, satellite telemetry, and investigation dossiers.
+          Select your portal workspace and sign in to access geospatial intelligence, operational response, or advisory data.
         </p>
       </div>
 
