@@ -83,11 +83,11 @@ export default function RegisterPage() {
             PROTOTYPE
           </span>
         </div>
-        <h1 className="mt-2 text-2xl font-black text-white tracking-tight">
-          Create Prototype Workspace
+        <h1 className="mt-3 text-xl sm:text-2xl font-black text-white tracking-tight">
+          Register New Organization
         </h1>
         <p className="mt-1 text-xs text-slate-400 max-w-sm">
-          Select your workspace role to create a prototype account.
+          Select your operational role and register for command portal access.
         </p>
       </div>
 
@@ -320,7 +320,7 @@ export default function RegisterPage() {
                     </>
                   ) : (
                     <>
-                      <span>Create Prototype Workspace →</span>
+                      <span>Register Organization →</span>
                     </>
                   )}
                 </button>
@@ -329,7 +329,7 @@ export default function RegisterPage() {
               <div className="text-center text-xs text-slate-400 border-t border-slate-800 pt-4">
                 Already have access?{" "}
                 <Link href="/login" className="text-amber-400 hover:underline font-bold">
-                  Sign In to Prototype
+                  Sign In to Command Center
                 </Link>
               </div>
             </>
