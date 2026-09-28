@@ -97,6 +97,92 @@ function LoginForm() {
       )}
 
       {/* Form */}
+{/* AGNI_PORTAL_SELECTOR_V1 */}
+<div className="mb-6">
+  <div className="mb-3 flex items-center justify-between">
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+        Select authorized workspace
+      </p>
+      <p className="mt-1 text-[11px] text-slate-500">
+        Portal selection does not grant access. Your assigned RBAC role is verified after sign-in.
+      </p>
+    </div>
+    <span className="hidden text-[9px] font-mono uppercase tracking-widest text-amber-500 sm:block">
+      RBAC GATED
+    </span>
+  </div>
+
+  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <Link
+      href="/login?redirect=%2Fadmin"
+      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-amber-500/60 hover:bg-amber-500/5"
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-[10px] font-bold text-amber-400">
+          AD
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-amber-300">
+            Admin
+          </p>
+          <p className="text-[9px] text-slate-500">Administration</p>
+        </div>
+      </div>
+    </Link>
+
+    <Link
+      href="/login?redirect=%2Fdashboard"
+      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-cyan-500/60 hover:bg-cyan-500/5"
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">
+          AN
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-cyan-300">
+            Analyst
+          </p>
+          <p className="text-[9px] text-slate-500">Intelligence</p>
+        </div>
+      </div>
+    </Link>
+
+    <Link
+      href="/login?redirect=%2Fportal%2Fagency"
+      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-red-500/60 hover:bg-red-500/5"
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-[10px] font-bold text-red-400">
+          AG
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-red-300">
+            Agency
+          </p>
+          <p className="text-[9px] text-slate-500">Response</p>
+        </div>
+      </div>
+    </Link>
+
+    <Link
+      href="/login?redirect=%2Fportal%2Fpublic"
+      className="group rounded-lg border border-emerald-500/40 bg-emerald-500/5 px-3 py-3 transition hover:border-emerald-400/70 hover:bg-emerald-500/10"
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">
+          PU
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-200 group-hover:text-emerald-300">
+            Public
+          </p>
+          <p className="text-[9px] text-slate-500">Safety</p>
+        </div>
+      </div>
+    </Link>
+  </div>
+</div>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
