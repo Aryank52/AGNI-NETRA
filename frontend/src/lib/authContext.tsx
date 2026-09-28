@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, passwordOrRole?: string, role?: UserRole) => Promise<void>;
+  loginPrototype: (role: "ANALYST" | "AGENCY" | "PUBLIC") => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -218,6 +219,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     throw new Error("Password is required to authenticate.");
   };
 
+  const loginPrototype = async (role: "ANALYST" | "AGENCY" | "PUBLIC") => {
+    const res = await fetch(`${API_BASE_URL}/auth/prototype-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ role }),
+    });
+
+    if (!res.ok) {
+      let errorMsg = `HTTP ${res.status}: Prototype demo access failed`;
+      try {
+        const errData = await res.json();
+        errorMsg = errData.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    const data = await res.json();
+    setUser(data.user);
+    setToken(data.access_token);
+    localStorage.setItem("agni_user", JSON.stringify(data.user));
+    localStorage.setItem("agni_token", data.access_token);
+    if (typeof document !== "undefined") {
+      document.cookie = `access_token=${encodeURIComponent(data.access_token)}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `agni_token=${encodeURIComponent(data.access_token)}; path=/; max-age=86400; SameSite=Lax`;
+    }
+  };
+
   const logout = () => {
     // Terminate server cookie session
     fetch(`${API_BASE_URL}/auth/logout`, {
@@ -257,6 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user && !!token,
         isLoading,
         login,
+        loginPrototype,
         logout,
         switchRole,
       }}
