@@ -42,7 +42,7 @@ def update_user_role(
     """
     Updates the RBAC role of a user (Admin only).
     """
-    allowed_roles = ["ADMIN", "ANALYST", "OPERATOR", "RESEARCHER", "INDUSTRY", "PUBLIC"]
+    allowed_roles = ["ADMIN", "ANALYST", "AGENCY", "OPERATOR", "RESEARCHER", "INDUSTRY", "PUBLIC"]
     if req.new_role.upper() not in allowed_roles:
         raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {allowed_roles}")
 
@@ -65,6 +65,105 @@ def update_user_role(
     db.refresh(target_user)
 
     return target_user
+
+
+@router.get("/access-requests")
+def get_access_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Retrieves all submitted access requests and their current approval status (Admin only).
+    """
+    logs = (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCESS_REQUEST")
+        .order_by(AuditLog.timestamp.desc())
+        .all()
+    )
+    result = []
+    for l in logs:
+        details = l.details or {}
+        user = db.query(User).filter(User.id == l.user_id).first() if l.user_id else None
+        req_role = details.get("requested_role", "PUBLIC")
+        curr_role = user.role if user else "UNKNOWN"
+
+        if user and user.role == req_role and req_role != "PUBLIC":
+            status_val = "APPROVED"
+        else:
+            status_val = details.get("status", "PENDING")
+
+        result.append({
+            "id": l.id,
+            "user_id": l.user_id,
+            "email": user.email if user else details.get("email"),
+            "full_name": user.full_name if user else details.get("full_name"),
+            "organization": user.organization if user else details.get("organization"),
+            "current_role": curr_role,
+            "requested_role": req_role,
+            "status": status_val,
+            "timestamp": l.timestamp.isoformat() if l.timestamp else None,
+        })
+    return result
+
+
+@router.post("/access-requests/{request_id}/approve")
+def approve_access_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Approves an access request, granting the user ANALYST or AGENCY role (Admin only).
+    """
+    log = db.query(AuditLog).filter(AuditLog.id == request_id).first()
+    if not log or log.action != "ACCESS_REQUEST":
+        raise HTTPException(status_code=404, detail="Access request not found")
+
+    user = db.query(User).filter(User.id == log.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User associated with access request not found")
+
+    requested_role = (log.details or {}).get("requested_role", "").upper()
+    if requested_role not in ["ANALYST", "AGENCY"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot approve role '{requested_role}'. Only ANALYST and AGENCY requests may be approved."
+        )
+
+    old_role = user.role
+    user.role = requested_role
+
+    updated_details = dict(log.details or {})
+    updated_details["status"] = "APPROVED"
+    updated_details["approved_by"] = current_user.email
+    updated_details["approved_at"] = datetime.now(timezone.utc).isoformat()
+    log.details = updated_details
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="APPROVE_ACCESS_REQUEST",
+        resource_type="User",
+        resource_id=user.id,
+        details={
+            "request_id": request_id,
+            "user_email": user.email,
+            "old_role": old_role,
+            "approved_role": requested_role,
+            "approved_by": current_user.email
+        }
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": f"Successfully approved {requested_role} access for {user.email}",
+        "user_id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "status": "APPROVED"
+    }
 
 
 @router.get("/audit-logs")

@@ -1,0 +1,18 @@
+# Vercel Deployment Ignore Configuration
+# Excludes backend, local databases, and machine learning archives from frontend deployment
+
+database/
+agni_netra.db
+*.db
+backend/
+ml/
+tests/
+scratch/
+LOCAL_PROJECT_ARCHIVE/
+venv/
+.venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+.env*
+!.env.example

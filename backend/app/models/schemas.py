@@ -18,6 +18,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
     facility_id: Optional[str] = None
+    requested_role: Optional[str] = None
 
 
 class UserLogin(BaseModel):

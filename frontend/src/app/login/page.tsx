@@ -59,25 +59,30 @@ function LoginForm() {
         ANALYST: "/dashboard",
         AGENCY: "/portal/agency",
         PUBLIC: "/portal/public",
+        RESEARCHER: "/portal/research",
+        INDUSTRY: "/portal/industry",
       };
 
       const authorizedPortal = rolePortalMap[accountRole];
       const targetRedirect = getSafeRedirectUrl();
 
       if (targetRedirect) {
-        const requestedPortal =
-          targetRedirect.replace(/\/+$/, "") || "/";
+        const parsedPath = (
+          targetRedirect.startsWith("http")
+            ? new URL(targetRedirect).pathname
+            : new URL(targetRedirect, "http://localhost").pathname
+        ).replace(/\/+$/, "") || "/";
 
         const authorized =
           !!authorizedPortal &&
           (
-            requestedPortal === authorizedPortal ||
-            requestedPortal.startsWith(`${authorizedPortal}/`)
+            parsedPath === authorizedPortal ||
+            parsedPath.startsWith(`${authorizedPortal}/`)
           );
 
         if (!authorized) {
           setError(
-            `Portal access denied. Your account is authorized for ${authorizedPortal || "an assigned workspace"}.`
+            `Portal access denied. Your account is authorized for ${accountRole}.`
           );
           return;
         }
@@ -99,6 +104,8 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  const currentRedirect = searchParams.get("redirect") || "";
 
   return (
     <div className="bg-agni-card py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-agni-border space-y-6">
@@ -140,7 +147,11 @@ function LoginForm() {
   <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
     <Link
       href="/login?redirect=%2Fadmin"
-      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-amber-500/60 hover:bg-amber-500/5"
+      className={`group rounded-lg border px-3 py-3 transition ${
+        currentRedirect.startsWith("/admin")
+          ? "border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40"
+          : "border-slate-700/80 bg-slate-950/30 hover:border-amber-500/60 hover:bg-amber-500/5"
+      }`}
     >
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-[10px] font-bold text-amber-400">
@@ -157,7 +168,11 @@ function LoginForm() {
 
     <Link
       href="/login?redirect=%2Fdashboard"
-      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-cyan-500/60 hover:bg-cyan-500/5"
+      className={`group rounded-lg border px-3 py-3 transition ${
+        currentRedirect.startsWith("/dashboard")
+          ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40"
+          : "border-slate-700/80 bg-slate-950/30 hover:border-cyan-500/60 hover:bg-cyan-500/5"
+      }`}
     >
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">
@@ -174,7 +189,11 @@ function LoginForm() {
 
     <Link
       href="/login?redirect=%2Fportal%2Fagency"
-      className="group rounded-lg border border-slate-700/80 bg-slate-950/30 px-3 py-3 transition hover:border-red-500/60 hover:bg-red-500/5"
+      className={`group rounded-lg border px-3 py-3 transition ${
+        currentRedirect.startsWith("/portal/agency")
+          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40"
+          : "border-slate-700/80 bg-slate-950/30 hover:border-red-500/60 hover:bg-red-500/5"
+      }`}
     >
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-[10px] font-bold text-red-400">
@@ -191,7 +210,11 @@ function LoginForm() {
 
     <Link
       href="/login?redirect=%2Fportal%2Fpublic"
-      className="group rounded-lg border border-emerald-500/40 bg-emerald-500/5 px-3 py-3 transition hover:border-emerald-400/70 hover:bg-emerald-500/10"
+      className={`group rounded-lg border px-3 py-3 transition ${
+        currentRedirect.startsWith("/portal/public")
+          ? "border-emerald-400 bg-emerald-500/15 ring-1 ring-emerald-500/40"
+          : "border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-400/70 hover:bg-emerald-500/10"
+      }`}
     >
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">

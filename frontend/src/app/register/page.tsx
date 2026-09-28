@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
+  const [requestedRole, setRequestedRole] = useState<"PUBLIC" | "ANALYST" | "AGENCY">("PUBLIC");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -61,6 +62,8 @@ export default function RegisterPage() {
           email: trimmedEmail,
           organization: organization.trim(),
           password,
+          requested_role: requestedRole,
+          role: requestedRole,
         }),
       });
       setSuccess(true);
@@ -95,7 +98,7 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <h3 className="text-lg font-bold text-white">Registration Submitted Successfully</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Your credentials have been provisioned with <strong className="text-amber-400">Public Viewer</strong> tier. Operational roles (Analyst, Agency, Administrator) are activated following verification of organizational credentials by platform administrators.
+                  Your credentials have been provisioned with <strong className="text-amber-400">Public Viewer</strong> tier. Your request for <strong className="text-cyan-400">{requestedRole}</strong> workspace access has been logged for administrative verification before operational activation.
                 </p>
               </div>
 
@@ -198,6 +201,67 @@ export default function RegisterPage() {
                       placeholder="officer@organization.gov.in"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                      Requested Access / Portal
+                    </label>
+                    <span className="text-[10px] text-amber-500 font-mono">ROLE VERIFICATION REQUIRED</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("PUBLIC")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "PUBLIC"
+                          ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">PUBLIC</span>
+                        {requestedRole === "PUBLIC" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Public Safety Viewer</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("ANALYST")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "ANALYST"
+                          ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">ANALYST</span>
+                        {requestedRole === "ANALYST" && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Geospatial Analyst</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("AGENCY")}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        requestedRole === "AGENCY"
+                          ? "border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-white"
+                          : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono">AGENCY</span>
+                        {requestedRole === "AGENCY" && <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">Emergency Agency</p>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1.5">
+                    Specifies your intended workspace request. All new accounts are initially provisioned as Public; elevated analyst/agency roles are activated post-verification.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

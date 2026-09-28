@@ -10,7 +10,7 @@ import {
   ShieldCheck, Activity, RefreshCw, CheckCircle2, AlertTriangle,
   Play, Sliders, Shield, Globe, Layers, Clock, ShieldAlert, FileText, Radio,
   TrendingUp, MapPin, BarChart3, AlertOctagon, Flame, Compass, ChevronRight, Info,
-  Search, ShieldX, HelpCircle, CheckSquare, Sparkles
+  Search, ShieldX, HelpCircle, CheckSquare, Sparkles, KeyRound
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import SystemStatusBanner from "@/components/common/SystemStatusBanner";
@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [accessRequests, setAccessRequests] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
@@ -102,7 +103,7 @@ export default function AdminPage() {
         provData, dsData, freshData, quarData, batchData, liveProvData,
         invData, auditData, scoreData,
         p19States, p19Districts, p19Persistent, p19Ranked, p19Trends, p19Audit,
-        p20Decision, p20Triage
+        p20Decision, p20Triage, arData
       ] = await Promise.all([
         fetchApi<any[]>("/ingestion/sources").catch(() => []),
         fetchApi<any>("/ml/model-info").catch(() => null),
@@ -129,11 +130,13 @@ export default function AdminPage() {
         fetchApi<any>("/intelligence/india/audit").catch(() => null),
         fetchApi<any>("/analyst/metrics/decision-effectiveness").catch(() => null),
         fetchApi<any>("/analyst/metrics/triage-effectiveness").catch(() => null),
+        fetchApi<any[]>("/admin/access-requests").catch(() => []),
       ]);
       setSources(sData || []);
       setModelInfo(mData);
       setAuditLogs(lData || []);
       setUsersList(uData || []);
+      setAccessRequests(arData || []);
       setSystemHealth(hData);
       setSystemStats(statsData);
       setActiveAlerts(alertsData?.alerts || []);
@@ -228,6 +231,19 @@ export default function AdminPage() {
       await loadAdminData();
     } catch (err: any) {
       setAdminNotice({ type: "error", message: "Failed to update role: " + (err?.message || err) });
+    }
+  };
+
+  const handleApproveAccessRequest = async (requestId: string) => {
+    setAdminNotice(null);
+    try {
+      const res = await fetchApi<any>(`/admin/access-requests/${requestId}/approve`, {
+        method: "POST",
+      });
+      setAdminNotice({ type: "success", message: res?.message || "Access request approved successfully." });
+      await loadAdminData();
+    } catch (err: any) {
+      setAdminNotice({ type: "error", message: "Failed to approve access request: " + (err?.message || err) });
     }
   };
 
@@ -1756,6 +1772,93 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Operational Access Requests & Approvals Table */}
+          <div className="p-5 rounded-2xl bg-agni-card border border-agni-border shadow-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                Operational Access Requests & Approvals
+              </h3>
+              <span className="text-xs font-mono text-slate-400">
+                {accessRequests.filter((r) => r.status === "PENDING" && r.requested_role !== "PUBLIC").length} Pending
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th className="p-3">APPLICANT</th>
+                    <th className="p-3">EMAIL</th>
+                    <th className="p-3">ORGANIZATION</th>
+                    <th className="p-3">REQUESTED ROLE</th>
+                    <th className="p-3">CURRENT ROLE</th>
+                    <th className="p-3">STATUS</th>
+                    <th className="p-3 text-right">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-sans">
+                  {accessRequests.length > 0 ? (
+                    accessRequests.map((req) => {
+                      const isPending = req.status === "PENDING" && ["ANALYST", "AGENCY"].includes(req.requested_role);
+                      return (
+                        <tr key={req.id} className="hover:bg-slate-800/40">
+                          <td className="p-3 font-semibold text-white">{req.full_name || "Applicant"}</td>
+                          <td className="p-3 font-mono text-slate-400">{req.email}</td>
+                          <td className="p-3 text-slate-300">{req.organization || "General Public"}</td>
+                          <td className="p-3 font-mono font-bold">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded border ${
+                                req.requested_role === "ANALYST"
+                                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                                  : req.requested_role === "AGENCY"
+                                  ? "bg-red-500/20 text-red-300 border-red-500/40"
+                                  : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              }`}
+                            >
+                              {req.requested_role}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono text-slate-300">{req.current_role}</td>
+                          <td className="p-3 font-mono">
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold ${
+                                req.status === "APPROVED"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                              }`}
+                            >
+                              {req.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">
+                            {isPending ? (
+                              <button
+                                type="button"
+                                onClick={() => handleApproveAccessRequest(req.id)}
+                                className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs font-mono transition-all shadow-sm cursor-pointer"
+                              >
+                                Approve {req.requested_role}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-slate-500 font-mono">Processed</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="p-4 text-center text-slate-500 font-mono">
+                        No access requests recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* User Management Table */}

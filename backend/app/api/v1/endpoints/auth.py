@@ -45,14 +45,20 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         )
 
     # Public registration always receives the safest default role.
-    # Elevated roles (ANALYST, AGENCY, ADMIN) are assigned only through controlled server-side administration.
-    user_role = "PUBLIC"
+    # Elevated roles (ANALYST, AGENCY) are requested but assigned strictly through administrative approval.
+    # Self-assignment of ADMIN is strictly disallowed.
+    raw_requested = (user_in.requested_role or getattr(user_in, "role", None) or "PUBLIC").strip().upper()
+    if raw_requested in ["ANALYST", "AGENCY"]:
+        requested_role = raw_requested
+    else:
+        requested_role = "PUBLIC"
+
     user = User(
         email=clean_email,
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name.strip(),
         organization=user_in.organization.strip() if user_in.organization else None,
-        role=user_role,
+        role="PUBLIC",
         facility_id=user_in.facility_id,
         is_active=True
     )
@@ -60,8 +66,22 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # Audit log
-    audit = AuditLog(user_id=user.id, action="USER_REGISTER", details={"role": user.role})
+    # Durable audit record for access request & registration
+    audit_status = "PENDING" if requested_role in ["ANALYST", "AGENCY"] else "APPROVED"
+    audit = AuditLog(
+        user_id=user.id,
+        action="ACCESS_REQUEST",
+        resource_type="User",
+        resource_id=user.id,
+        details={
+            "requested_role": requested_role,
+            "assigned_role": "PUBLIC",
+            "status": audit_status,
+            "email": user.email,
+            "full_name": user.full_name,
+            "organization": user.organization,
+        }
+    )
     db.add(audit)
     db.commit()
 
