@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from backend.app.core.database import get_db
 from backend.app.core.security import verify_password, get_password_hash, create_access_token
 from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User, AuditLog
-from backend.app.models.schemas import UserCreate, UserLogin, UserOut, Token
+from backend.app.models.schemas import UserCreate, UserLogin, UserOut, Token, AccessRequestCreate
 
 router = APIRouter()
 
@@ -166,6 +166,142 @@ def read_current_user(current_user: User = Depends(get_current_active_user)):
     Returns current authenticated user profile and permissions.
     """
     return current_user
+
+
+@router.post("/access-request")
+def request_access_elevation(
+    req: AccessRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Allows an existing authenticated user (specifically PUBLIC role) to submit
+    an operational access request for ANALYST or AGENCY clearance.
+    Prevents duplicate pending requests and records immutable audit logging.
+    """
+    raw_role = (req.requested_role or "").strip().upper()
+
+    # Reject invalid roles
+    if raw_role not in ["ANALYST", "AGENCY"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid requested role '{raw_role}'. Only ANALYST and AGENCY clearances may be requested."
+        )
+
+    # Check user role authorization
+    user_curr_role = (current_user.role or "PUBLIC").strip().upper()
+    if user_curr_role == "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Administrators already possess root operational clearance and cannot request role elevation."
+        )
+
+    if user_curr_role == raw_role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Account is already authorized with {raw_role} operational clearance."
+        )
+
+    if user_curr_role != "PUBLIC":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only accounts with PUBLIC status may request operational elevation. Current role: {user_curr_role}."
+        )
+
+    # Prevent duplicate pending requests
+    existing_pending = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.user_id == current_user.id,
+            AuditLog.action == "ACCESS_REQUEST"
+        )
+        .all()
+    )
+    for log in existing_pending:
+        details = log.details or {}
+        if details.get("status") == "PENDING":
+            pending_role = details.get("requested_role", "OPERATIONAL")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"An access request for {pending_role} is already pending administrator approval."
+            )
+
+    # Contextual metadata
+    org = (req.organization or "").strip() or current_user.organization
+    if req.organization and not current_user.organization:
+        current_user.organization = org
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="ACCESS_REQUEST",
+        resource_type="User",
+        resource_id=current_user.id,
+        details={
+            "requested_role": raw_role,
+            "assigned_role": current_user.role,
+            "status": "PENDING",
+            "email": current_user.email,
+            "full_name": current_user.full_name,
+            "organization": org,
+            "reason": (req.reason or "").strip() or None,
+            "submitted_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return {
+        "message": "Access request submitted. Await administrator approval.",
+        "request_id": audit.id,
+        "requested_role": raw_role,
+        "status": "PENDING",
+        "user_id": current_user.id,
+        "email": current_user.email
+    }
+
+
+@router.get("/access-request")
+def get_current_user_access_request(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Retrieves the latest access request status for the currently authenticated user.
+    """
+    latest = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.user_id == current_user.id,
+            AuditLog.action == "ACCESS_REQUEST"
+        )
+        .order_by(AuditLog.timestamp.desc())
+        .first()
+    )
+    if not latest:
+        return {
+            "has_request": False,
+            "current_role": current_user.role,
+            "requested_role": None,
+            "status": None
+        }
+
+    details = latest.details or {}
+    req_role = details.get("requested_role")
+
+    if current_user.role == req_role and req_role != "PUBLIC":
+        status_val = "APPROVED"
+    else:
+        status_val = details.get("status", "PENDING")
+
+    return {
+        "has_request": True,
+        "request_id": latest.id,
+        "current_role": current_user.role,
+        "requested_role": req_role,
+        "status": status_val,
+        "submitted_at": latest.timestamp.isoformat() if latest.timestamp else None,
+    }
 
 
 from pydantic import BaseModel

@@ -21,6 +21,12 @@ class UserCreate(UserBase):
     requested_role: Optional[str] = None
 
 
+class AccessRequestCreate(BaseModel):
+    requested_role: str
+    organization: Optional[str] = None
+    reason: Optional[str] = None
+
+
 class UserLogin(BaseModel):
     email: str
     password: str
