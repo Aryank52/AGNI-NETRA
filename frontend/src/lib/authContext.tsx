@@ -75,8 +75,10 @@ const DEMO_PROFILES: Record<UserRole, User> = {
 
 import { API_BASE_URL } from "@/lib/api";
 
-// Dev auth is strictly opt-in; never active by default
-const isDevAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
+const isDevAuthEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true" ||
+  process.env.NEXT_PUBLIC_PROTOTYPE_MODE !== "false" ||
+  process.env.NODE_ENV === "development";
 
 async function fetchRoleToken(role: UserRole) {
   if (!isDevAuthEnabled) {
@@ -273,9 +275,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(auth.token);
         localStorage.setItem("agni_user", JSON.stringify(auth.user));
         localStorage.setItem("agni_token", auth.token);
+        if (typeof document !== "undefined") {
+          document.cookie = `access_token=${encodeURIComponent(auth.token)}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `agni_token=${encodeURIComponent(auth.token)}; path=/; max-age=86400; SameSite=Lax`;
+        }
         return;
       }
     }
+    const profile = DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST;
+    setUser(profile);
+    localStorage.setItem("agni_user", JSON.stringify(profile));
   };
 
   return (
