@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_optional_current_user, require_analyst, require_admin
+from backend.app.api.deps import get_current_active_user, require_analyst, require_admin
 from backend.app.models.domain import (
     User, IngestionBatchModel, IngestionRecordModel, IngestionQuarantineModel,
     DatasetRegistryModel, IngestionCheckpointModel
@@ -39,7 +39,7 @@ class RunBatchRequest(BaseModel):
 @router.get("/providers")
 def get_data_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns registered intelligence providers with truthful availability, coverage, and capabilities.
@@ -400,7 +400,8 @@ def get_latest_live_observations(
     limit: int = Query(20, ge=1, le=100, description="Maximum observations to return"),
     provider: Optional[str] = Query(None, description="Optional provider filter"),
     india_only: bool = Query(True, description="Enforce strict India sovereign boundary scope (excludes foreign observations e.g. Sri Lanka)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Returns latest successfully ingested real-time live observations (data_tier='LIVE').
@@ -448,7 +449,8 @@ def get_latest_live_observations(
 
 @router.get("/live/freshness")
 def get_live_stream_freshness(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Calculates observation-time freshness for live feeds against SLA limits.
@@ -459,7 +461,8 @@ def get_live_stream_freshness(
 @router.get("/live/coverage")
 def get_live_stream_coverage(
     india_only: bool = Query(True, description="Compute coverage strictly over sovereign India territory"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns actual observed spatial and temporal extent computed from real live records.
@@ -471,7 +474,8 @@ def get_live_stream_coverage(
 @router.get("/live/provenance/{source_record_id}")
 def get_live_record_provenance(
     source_record_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns the complete end-to-end lineage for a live observation record.

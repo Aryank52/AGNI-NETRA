@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from backend.app.core.database import get_db
-from backend.app.models.domain import HistoricalBaseline, ThermalEvent, IndustrialFacility
+from backend.app.api.deps import get_current_active_user
+from backend.app.models.domain import HistoricalBaseline, ThermalEvent, IndustrialFacility, User
 from backend.app.models.schemas import HistoricalBaselineOut
 
 router = APIRouter()
@@ -27,6 +28,7 @@ class BaselineCellSummary(BaseModel):
 @router.get("", response_model=List[HistoricalBaselineOut])
 def get_historical_baselines(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
     facility_id: Optional[str] = None,
     month: Optional[int] = None
 ):
@@ -49,7 +51,10 @@ def get_historical_baselines(
 
 
 @router.get("/grid-cells", response_model=List[BaselineCellSummary])
-def get_baseline_grid_cells(db: Session = Depends(get_db)):
+def get_baseline_grid_cells(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
     Computes national industrial cluster baseline cells with current vs historical deviation metrics.
     """

@@ -70,6 +70,7 @@ def get_research_portal_overview(db: Session = Depends(get_db)):
 @router.get("/research/geojson-export")
 def export_research_geojson(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
     state: Optional[str] = None,
     limit: int = 100
 ):
@@ -140,7 +141,8 @@ def get_industry_portal_facilities(
     status_filter: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns industrial plant roster with thermal emission compliance status and flare-stack inventory.
@@ -200,7 +202,8 @@ def get_industry_portal_facilities(
 @router.post("/industry/declare-emission")
 def submit_planned_emission_declaration(
     req: EmissionDeclarationRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Allows plant operators to declare planned maintenance flaring or kiln burns.

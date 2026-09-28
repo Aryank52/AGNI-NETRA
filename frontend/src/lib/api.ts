@@ -102,6 +102,7 @@ export async function fetchApi<T>(
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...fetchOptions,
         headers,
+        credentials: "include",
         signal: fetchOptions.signal || controller.signal,
       });
 

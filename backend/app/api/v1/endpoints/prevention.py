@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_current_active_user, get_optional_current_user
+from backend.app.api.deps import get_current_active_user, require_analyst
 from backend.app.models.domain import (
     User,
     PreventionCase,
@@ -48,7 +48,7 @@ router = APIRouter()
 def analyze_event_root_cause(
     req: PreventionAnalysisRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Executes comprehensive point-in-time safe root-cause and prevention analysis for a target thermal event.
@@ -77,7 +77,8 @@ def list_prevention_cases(
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by Case Status"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Lists registered prevention cases with filtering and pagination.
@@ -111,7 +112,8 @@ def list_prevention_cases(
 @router.get("/cases/{case_id}", response_model=PreventionCaseOut)
 def get_prevention_case(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves full details of a PreventionCase by UUID or case number.
@@ -131,7 +133,8 @@ def get_prevention_case(
 @router.get("/cases/{case_id}/history")
 def get_case_historical_profile(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns longitudinal historical intelligence, seasonality profile, and baseline deviation for the case.
@@ -157,7 +160,8 @@ def get_case_historical_profile(
 @router.get("/cases/{case_id}/evidence")
 def get_case_evidence_matrix(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves supporting evidence, contradicting evidence, unknowns, missing data, and conflicting sources.
@@ -197,7 +201,8 @@ def get_case_evidence_matrix(
 @router.get("/cases/{case_id}/hypotheses", response_model=List[RootCauseHypothesisOut])
 def get_case_hypotheses(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns the 13 structured root-cause hypotheses with confidence and evidence status.
@@ -213,7 +218,8 @@ def get_case_hypotheses(
 @router.get("/cases/{case_id}/recommendations", response_model=List[PreventionRecommendationOut])
 def get_case_recommendations(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns evidence-linked preventive recommendations ('MAY REDUCE RECURRENCE RISK').
@@ -229,7 +235,8 @@ def get_case_recommendations(
 @router.get("/cases/{case_id}/authorities", response_model=List[AuthorityDirectoryOut])
 def get_case_authorities(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Resolves verified responsible authorities matching case jurisdiction.
@@ -255,7 +262,7 @@ def get_case_authorities(
 def create_case_report(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Compiles formal 24-section Root-Cause & Fire Prevention Intelligence Report in DRAFT state.
@@ -274,7 +281,7 @@ def create_case_report(
 def download_case_root_cause_pdf(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Downloads the 24-section Root-Cause and Prevention Report PDF for a specific case.
@@ -294,13 +301,14 @@ def download_case_root_cause_pdf(
         creator = current_user.full_name if current_user else "JARVIS Intelligence Layer"
         latest_report = prevention_report_generator.create_draft_report(db, case.id, creator_name=creator)
 
-    return download_prevention_report_pdf(latest_report.id, db=db)
+    return download_prevention_report_pdf(latest_report.id, db=db, current_user=current_user)
 
 
 @router.get("/reports/{report_id}/audits", response_model=List[ReportDeliveryAuditOut])
 def get_report_audits(
     report_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns formal delivery and review audits for a report.
@@ -319,7 +327,8 @@ def get_report_audits(
 @router.get("/cases/{case_id}/audits", response_model=List[ReportDeliveryAuditOut])
 def get_case_audits(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns all report delivery and governance audits associated with a prevention case.
@@ -342,7 +351,8 @@ def get_case_audits(
 @router.get("/cases/{case_id}/reports", response_model=List[PreventionReportOut])
 def list_case_reports(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Lists all reports compiled for a prevention case.
@@ -442,7 +452,8 @@ def send_report(
 @router.get("/reports/{report_id}/pdf")
 def download_prevention_report_pdf(
     report_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Downloads the compiled prevention PDF from private B2 storage.

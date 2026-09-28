@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_current_active_user, get_optional_current_user
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User, SatelliteTelemetryLog, MissionTask
 from backend.app.models.schemas import SatelliteTaskingRequest, SatelliteTelemetryOut, MissionTaskOut
 from backend.app.services.satellite_simulator import satellite_simulator
@@ -42,7 +42,7 @@ def list_simulation_scenarios():
 def run_simulation_scenario(
     scenario_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Triggers an end-to-end satellite observation sequence for the selected scenario:
@@ -85,7 +85,7 @@ def get_sensor_footprint(
 def task_virtual_satellite(
     request: SatelliteTaskingRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Schedules operational simulated satellite tasking for targeted emergency or industrial AOIs.
@@ -105,7 +105,8 @@ def task_virtual_satellite(
 @router.get("/tasks")
 def list_mission_tasks(
     db: Session = Depends(get_db),
-    limit: int = Query(20, ge=1, le=100)
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves history of scheduled and executed satellite mission tasks.
@@ -163,7 +164,7 @@ def get_telemetry_logs(
 def replay_historical_incident(
     payload: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Replays a real historical Indian thermal event from FIRMS/Landsat through the AGNI-SAT virtual pipeline.

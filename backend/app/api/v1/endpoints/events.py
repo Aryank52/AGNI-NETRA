@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, text
 
 from backend.app.core.database import get_db, IS_POSTGRESQL, haversine_distance_meters
-from backend.app.api.deps import require_agency, require_analyst, get_optional_current_user, get_current_active_user
+from backend.app.api.deps import require_agency, require_analyst, get_current_active_user
 from backend.app.models.domain import ThermalEvent, ThermalDetection, IndustrialFacility, CandidateFacility, ModelPrediction, RiskScore, EventFeature, User
 from backend.app.models.schemas import ThermalEventOut, ThermalDetectionOut, PaginatedEventsOut, EventTraceLineageOut
 from backend.app.services.lineage_service import generate_event_trace_lineage
@@ -162,7 +162,7 @@ def get_thermal_events(
 @router.get("/geojson")
 def get_thermal_events_geojson(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
     state: Optional[str] = None,
     district: Optional[str] = None,
     risk_level: Optional[str] = None,
@@ -593,7 +593,8 @@ def get_event_buffer_assets(
 @router.get("/{event_id}/canonical")
 def get_canonical_event_intelligence(
     event_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Synthesizes and returns the unified Canonical Event Intelligence Object (9 core pillars)
@@ -623,7 +624,8 @@ def get_canonical_event_intelligence(
 @router.get("/{event_id}/lifecycle")
 def get_event_lifecycle_history(
     event_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves the immutable, auditable lifecycle transition history for a thermal event.
