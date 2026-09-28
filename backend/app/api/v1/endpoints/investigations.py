@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_optional_current_user
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import (
     User,
     InvestigationWorkspace,
@@ -60,7 +60,7 @@ router = APIRouter()
 def get_investigation_case(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> InvestigationWorkspace:
     """
     Retrieves investigation workspace case details with strict RBAC enforcement.
@@ -78,7 +78,7 @@ def get_investigation_case(
 def get_investigation_timeline(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[CaseTimelineItem]:
     """
     Returns deterministic chronological case timeline across all operational milestones.
@@ -98,7 +98,7 @@ def get_investigation_audit_trail(
     investigation_id: str,
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[InvestigationAuditLog]:
     """
     Returns immutable append-only audit trail records for this investigation.
@@ -121,7 +121,7 @@ def get_investigation_audit_trail(
 def get_assessment_versions(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[AssessmentVersion]:
     """
     Returns versioned assessment history with evidence and uncertainty deltas.
@@ -143,7 +143,7 @@ def get_assessment_versions(
 def get_evidence_reviews(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[EvidenceReview]:
     """
     Returns analyst review decisions across individual evidence items.
@@ -159,7 +159,7 @@ def get_evidence_reviews(
 def get_evidence_requests(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[EvidenceRequest]:
     """
     Returns open and resolved formal evidence requests for this case.
@@ -175,7 +175,7 @@ def get_evidence_requests(
 def get_report_versions(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[ReportVersion]:
     """
     Returns versioned reproducible reports generated for this investigation.
@@ -193,7 +193,7 @@ def execute_case_action(
     investigation_id: str,
     req: CaseActionExecutionRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Executes or proposes a governed case action with strict RBAC and write safety validation.
@@ -240,7 +240,7 @@ def add_case_note(
     investigation_id: str,
     req: CaseNoteCreateRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> CaseNote:
     """
     Adds a structured analyst note. Prohibits JARVIS autonomous impersonation.
@@ -280,7 +280,7 @@ def review_evidence_item(
     investigation_id: str,
     req: EvidenceReviewUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> EvidenceReview:
     """
     Records an analyst review decision for an evidence item.
@@ -321,7 +321,7 @@ def create_evidence_request(
     investigation_id: str,
     req: EvidenceRequestCreateRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> EvidenceRequest:
     """
     Creates a formal evidence request for additional sensor or external data.

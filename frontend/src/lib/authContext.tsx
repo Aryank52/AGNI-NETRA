@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, passwordOrRole?: string, role?: UserRole) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
@@ -73,9 +74,8 @@ const DEMO_PROFILES: Record<UserRole, User> = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-const isDevAuthEnabled =
-  process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true" ||
-  (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH !== "false");
+// Dev auth is strictly opt-in; never active by default
+const isDevAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
 
 async function fetchRoleToken(role: UserRole) {
   if (!isDevAuthEnabled) {
@@ -85,6 +85,7 @@ async function fetchRoleToken(role: UserRole) {
     const res = await fetch(`${API_BASE_URL}/auth/dev-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ role }),
     });
     if (res.ok) {
@@ -113,52 +114,46 @@ function isTokenExpired(jwtToken: string): boolean {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-
-  const refreshAuthToken = async (role: UserRole = "ANALYST") => {
-    if (!isDevAuthEnabled) return;
-    const auth = await fetchRoleToken(role);
-    if (auth) {
-      setUser(auth.user);
-      setToken(auth.token);
-      localStorage.setItem("agni_user", JSON.stringify(auth.user));
-      localStorage.setItem("agni_token", auth.token);
-    } else {
-      setUser(DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST);
-    }
-  };
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("agni_user");
-    const savedToken = localStorage.getItem("agni_token");
-    if (savedToken && savedToken.startsWith("ey") && savedUser && !isTokenExpired(savedToken)) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setToken(savedToken);
-        return;
-      } catch {}
-    }
+    try {
+      const savedUser = localStorage.getItem("agni_user");
+      const savedToken = localStorage.getItem("agni_token");
+      if (savedToken && savedToken.startsWith("ey") && savedUser && !isTokenExpired(savedToken)) {
+        try {
+          setUser(JSON.parse(savedUser));
+          setToken(savedToken);
+          if (typeof document !== "undefined" && !document.cookie.includes("agni_token=")) {
+            document.cookie = `agni_token=${encodeURIComponent(savedToken)}; path=/; max-age=86400; SameSite=Lax`;
+          }
+          setIsLoading(false);
+          return;
+        } catch {}
+      }
 
-    // Cached token missing, invalid, or expired -> purge storage
-    localStorage.removeItem("agni_user");
-    localStorage.removeItem("agni_token");
-
-    // Only auto-mint dev session when explicitly enabled in development
-    if (isDevAuthEnabled) {
-      refreshAuthToken("ANALYST");
-    } else {
+      // Cached token missing, invalid, or expired -> purge storage and cookies
+      localStorage.removeItem("agni_user");
+      localStorage.removeItem("agni_token");
+      if (typeof document !== "undefined") {
+        document.cookie = "agni_token=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
+      }
       setUser(null);
       setToken(null);
+    } finally {
+      setIsLoading(false);
     }
 
-    // Listen for unauthorized 401 events to auto-refresh session (dev only) or reset session
+    // Listen for unauthorized 401 events to reset session
     const handleUnauthorized = () => {
-      if (isDevAuthEnabled) {
-        refreshAuthToken("ANALYST");
-      } else {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem("agni_user");
-        localStorage.removeItem("agni_token");
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("agni_user");
+      localStorage.removeItem("agni_token");
+      if (typeof document !== "undefined") {
+        document.cookie = "agni_token=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
       }
     };
     window.addEventListener("agni:unauthorized", handleUnauthorized);
@@ -181,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        credentials: "include",
         body: body.toString(),
       });
 
@@ -198,10 +194,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(data.access_token);
       localStorage.setItem("agni_user", JSON.stringify(data.user));
       localStorage.setItem("agni_token", data.access_token);
+      if (typeof document !== "undefined") {
+        document.cookie = `agni_token=${encodeURIComponent(data.access_token)}; path=/; max-age=86400; SameSite=Lax`;
+      }
       return;
     }
 
-    // Development-only fallback: only fetch dev-token when explicitly enabled
+    // Explicit opt-in dev auth only
     if (isDevAuthEnabled) {
       const auth = await fetchRoleToken(targetRole);
       if (auth) {
@@ -209,20 +208,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(auth.token);
         localStorage.setItem("agni_user", JSON.stringify(auth.user));
         localStorage.setItem("agni_token", auth.token);
+        if (typeof document !== "undefined") {
+          document.cookie = `agni_token=${encodeURIComponent(auth.token)}; path=/; max-age=86400; SameSite=Lax`;
+        }
         return;
       }
     }
 
-    const profile = DEMO_PROFILES[targetRole] || DEMO_PROFILES.ANALYST;
-    setUser(profile);
-    localStorage.setItem("agni_user", JSON.stringify(profile));
+    throw new Error("Password is required to authenticate.");
   };
 
   const logout = () => {
+    // Terminate server cookie session
+    fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
+
     setUser(null);
     setToken(null);
     localStorage.removeItem("agni_user");
     localStorage.removeItem("agni_token");
+    if (typeof document !== "undefined") {
+      document.cookie = "agni_token=; path=/; max-age=0; SameSite=Lax";
+      document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
+    }
+    window.dispatchEvent(new CustomEvent("agni:unauthorized"));
   };
 
   const switchRole = async (role: UserRole) => {
@@ -236,9 +247,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
     }
-    const profile = DEMO_PROFILES[role] || DEMO_PROFILES.ANALYST;
-    setUser(profile);
-    localStorage.setItem("agni_user", JSON.stringify(profile));
   };
 
   return (
@@ -246,7 +254,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!token,
+        isLoading,
         login,
         logout,
         switchRole,

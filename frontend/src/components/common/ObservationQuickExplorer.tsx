@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { 
   Flame, MapPin, Factory, ShieldCheck, 
-  ExternalLink, Layers, ArrowUpRight, Clock,
-  Cpu, Activity, CheckCircle2, ChevronRight, Zap
+  ExternalLink, Layers, ArrowRight, Clock,
+  Cpu, Activity, CheckCircle2, ChevronRight, Zap,
+  AlertTriangle, Lock, ShieldAlert
 } from "lucide-react";
 
 interface SampleObservation {
@@ -33,15 +34,15 @@ interface SampleObservation {
   summary: string;
 }
 
-const SAMPLE_OBSERVATIONS: SampleObservation[] = [
+const SYNTHETIC_DEMO_SCENARIOS: SampleObservation[] = [
   {
-    id: "EVT-20260905-GUJ01",
-    code: "EVT-GUJ-JAM-0842",
+    id: "SYN-GUJ-01",
+    code: "SYN-GUJ-JAM-0842",
     name: "Petrochemical Refining Complex",
     sector: "Oil Refining & Hydrocarbon Processing",
     state: "Gujarat",
-    district: "Jamnagar",
-    coords: "22.4715° N, 69.8320° E",
+    district: "Jamnagar Region",
+    coords: "22.4715° N, 69.8320° E [SYNTHETIC]",
     lat: 22.4715,
     lon: 69.8320,
     satellite: "VIIRS NOAA-20 (375m)",
@@ -59,13 +60,13 @@ const SAMPLE_OBSERVATIONS: SampleObservation[] = [
     summary: "High-temperature elevated thermal signature matching regulated flaring stacks within the industrial perimeter. Close proximity to hydrocarbon processing cadastre."
   },
   {
-    id: "EVT-20260904-MAH02",
-    code: "EVT-MAH-TRO-1109",
+    id: "SYN-MAH-02",
+    code: "SYN-MAH-TRO-1109",
     name: "Thermal Power Station & Utility Stack",
     sector: "Central Electricity Authority (CEA) Power Grid",
     state: "Maharashtra",
     district: "Mumbai Suburban",
-    coords: "19.0028° N, 72.8942° E",
+    coords: "19.0028° N, 72.8942° E [SYNTHETIC]",
     lat: 19.0028,
     lon: 72.8942,
     satellite: "VIIRS Suomi-NPP (375m)",
@@ -83,13 +84,13 @@ const SAMPLE_OBSERVATIONS: SampleObservation[] = [
     summary: "Consistent radiative thermal signature conforming to routine baseload power generation. Low baseline variance with established 4-year seasonal recurrence."
   },
   {
-    id: "EVT-20260902-ODI03",
-    code: "EVT-ODI-ANG-3901",
+    id: "SYN-ODI-03",
+    code: "SYN-ODI-ANG-3901",
     name: "Integrated Metallurgical Smelter Complex",
     sector: "Steel & Primary Metals Manufacturing",
     state: "Odisha",
-    district: "Angul",
-    coords: "20.8350° N, 85.1520° E",
+    district: "Angul Region",
+    coords: "20.8350° N, 85.1520° E [SYNTHETIC]",
     lat: 20.8350,
     lon: 85.1520,
     satellite: "MODIS Terra (1km)",
@@ -107,13 +108,13 @@ const SAMPLE_OBSERVATIONS: SampleObservation[] = [
     summary: "Acute radiant energy spike recorded during daytime satellite overpass. Validated against registered blast furnace cadastre with valid consent-to-operate clearance."
   },
   {
-    id: "EVT-20260829-CHH04",
-    code: "EVT-CHH-KOR-5520",
+    id: "SYN-CHH-04",
+    code: "SYN-CHH-KOR-5520",
     name: "Open-Cast Coal Seam Mine",
     sector: "Indian Bureau of Mines (IBM) Leasehold",
     state: "Chhattisgarh",
-    district: "Korba",
-    coords: "22.3595° N, 82.7501° E",
+    district: "Korba Region",
+    coords: "22.3595° N, 82.7501° E [SYNTHETIC]",
     lat: 22.3595,
     lon: 82.7501,
     satellite: "VIIRS NOAA-20 (375m)",
@@ -134,7 +135,7 @@ const SAMPLE_OBSERVATIONS: SampleObservation[] = [
 
 export default function ObservationQuickExplorer() {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
-  const current = SAMPLE_OBSERVATIONS[selectedIdx];
+  const current = SYNTHETIC_DEMO_SCENARIOS[selectedIdx];
 
   const getRiskBadge = (level: string) => {
     switch (level) {
@@ -151,44 +152,38 @@ export default function ObservationQuickExplorer() {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <span className="text-xs font-mono uppercase text-amber-400 font-bold tracking-wider">
-              INTERACTIVE GEOSPATIAL EXPLORER
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-mono font-bold">
-              REFERENCE OBSERVATION / FIELD BENCHMARK
-            </span>
+      {/* Synthetic Demonstration Watermark / Banner */}
+      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+          <div className="space-y-0.5">
+            <div className="text-xs font-mono font-black text-amber-300 tracking-wider">
+              SYNTHETIC DEMONSTRATION — NOT LIVE OPERATIONAL DATA
+            </div>
+            <p className="text-[11px] text-slate-300">
+              The scenarios below demonstrate AGNI-NETRA&apos;s analytical classification and reasoning capabilities using simulated spaceborne telemetry. Live satellite feeds, operational coordinates, and real-time dossiers require authenticated access.
+            </p>
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
-            Real-World Observation Inspection Dossier
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Select an authoritative reference observation to inspect how AGNI-NETRA combines raw remote sensing telemetry with PostGIS cadastre spatial enrichment and calibrated ML inference.
-          </p>
         </div>
 
         <Link
-          href="/dashboard"
-          className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
+          href="/login"
+          className="shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors shadow-sm"
         >
-          <span>Open Tactical Map</span>
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <Lock className="w-3.5 h-3.5" />
+          <span>Sign In for Live Data</span>
         </Link>
       </div>
 
       {/* Observation Selector Tabs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {SAMPLE_OBSERVATIONS.map((obs, idx) => {
+        {SYNTHETIC_DEMO_SCENARIOS.map((obs, idx) => {
           const isSelected = idx === selectedIdx;
           return (
             <button
               key={obs.id}
               onClick={() => setSelectedIdx(idx)}
-              className={`p-3 rounded-xl border text-left transition-all ${
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 isSelected
                   ? "bg-slate-800/90 border-amber-500/60 shadow-lg shadow-amber-500/10"
                   : "bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60"
@@ -215,7 +210,7 @@ export default function ObservationQuickExplorer() {
         <div className="lg:col-span-5 bg-slate-950/90 border border-slate-800/80 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
-              <span className="text-[10px] font-mono text-slate-500 uppercase">EVENT CODE</span>
+              <span className="text-[10px] font-mono text-slate-500 uppercase">SIMULATED EVENT ID</span>
               <div className="text-sm font-mono font-extrabold text-amber-400">{current.code}</div>
             </div>
             <div className="text-right">
@@ -229,12 +224,12 @@ export default function ObservationQuickExplorer() {
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400 flex items-center gap-1.5 font-medium">
                 <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                Geographic Anchor:
+                Regional Anchor:
               </span>
               <span className="font-mono font-bold text-white">{current.district}, {current.state}</span>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-500">WGS84 Coordinates:</span>
+              <span className="text-slate-500">Spatial Telemetry:</span>
               <span className="text-amber-400 font-bold">{current.coords}</span>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
@@ -302,36 +297,29 @@ export default function ObservationQuickExplorer() {
           <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed space-y-1.5">
             <div className="text-[10px] font-mono uppercase text-slate-400 font-bold flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-cyan-400" />
-              Intelligence Brief & Physical Interpretation
+              Simulated Intelligence Brief & Physical Interpretation
             </div>
             <p>{current.summary}</p>
           </div>
 
-          {/* Bottom Action Dock with Cross-Navigation */}
+          {/* Bottom Action Dock with Gated Navigation */}
           <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <span className="text-[11px] font-mono text-slate-400">
-              Target Asset: <strong className="text-white">{current.nearestAsset}</strong>
+              Cadastre Target: <strong className="text-white">{current.nearestAsset}</strong>
             </span>
             <div className="flex items-center gap-2">
               <Link
-                href={`/dashboard?lat=${current.lat}&lon=${current.lon}&state=${encodeURIComponent(current.state)}`}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 text-xs font-mono font-bold flex items-center gap-1 transition-colors"
+                href="/login?redirect=/dashboard"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
               >
-                <span>Fly on Map</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                <Lock className="w-3 h-3 text-amber-400" />
+                <span>Verify in Command Center</span>
               </Link>
               <Link
-                href={`/dashboard/baselines?state=${encodeURIComponent(current.state)}`}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono font-bold flex items-center gap-1 transition-colors"
+                href="/register"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono font-bold flex items-center gap-1 transition-colors"
               >
-                <span>Historical Baseline</span>
-              </Link>
-              <Link
-                href={`/dashboard/events?state=${encodeURIComponent(current.state)}`}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs flex items-center gap-1 transition-colors shadow-md"
-              >
-                <span>Events in {current.state}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span>Request Clearance</span>
               </Link>
             </div>
           </div>

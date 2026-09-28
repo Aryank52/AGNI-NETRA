@@ -13,12 +13,13 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text, func
 
 from backend.app.core.database import get_db, IS_POSTGRESQL, haversine_distance_meters
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import (
     ThermalEvent, ThermalDetection, IndustrialFacility,
     CandidateFacility, ModelPrediction, RiskScore, EventFeature,
     ProtectedArea, FSIISFRDistrictStats, FSISource,
     IbmAuctionedBlock, FacilityMiningEvidence, LULCSpatialFeature, LULCClass,
-    AdminBoundary, Alert, AuditLog
+    AdminBoundary, Alert, AuditLog, User
 )
 from backend.app.services.alert_workflow_service import alert_workflow_service
 from backend.app.services.intelligence.evidence_graph_engine import evidence_graph_engine
@@ -304,7 +305,8 @@ def get_thermal_events_geojson(
     status: Optional[str] = Query(None, description="Filter: ACTIVE, RESOLVED, etc."),
     min_frp: Optional[float] = Query(None, description="Minimum FRP in MW"),
     limit: int = Query(300, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns authentic GeoJSON FeatureCollection of clustered thermal events with ML classification & risk.
@@ -965,7 +967,8 @@ def _safe_get_historical_intelligence(db: Session, event: ThermalEvent) -> Optio
 @router.get("/dossier/{event_id}")
 def get_event_spatial_dossier(
     event_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Assembles complete, multi-source spatial investigation dossier across 7 evidence layers.
@@ -1344,7 +1347,8 @@ def get_parivesh_projects_geojson(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     category: Optional[str] = Query(None, description="Filter by Clearance Category (A/B)"),
     limit: int = Query(300, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns authentic GeoJSON FeatureCollection of MoEFCC PARIVESH Environmental Clearance projects.

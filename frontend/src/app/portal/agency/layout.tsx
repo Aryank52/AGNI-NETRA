@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 
-export default function DashboardLayout({
+export default function AgencyPortalLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ export default function DashboardLayout({
     if (isLoading) return;
 
     if (!isAuthenticated || !user) {
-      router.replace("/login?redirect=/dashboard");
+      router.replace("/login?redirect=/portal/agency");
       return;
     }
 
@@ -31,7 +31,7 @@ export default function DashboardLayout({
       <div className="min-h-screen bg-agni-navy flex flex-col items-center justify-center text-slate-400">
         <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-3" />
         <span className="font-mono text-xs uppercase tracking-wider text-slate-400">
-          Verifying Session Authorization...
+          Authenticating Agency Portal Access...
         </span>
       </div>
     );

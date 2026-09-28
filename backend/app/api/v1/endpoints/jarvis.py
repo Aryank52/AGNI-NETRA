@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.core.config import settings
-from backend.app.api.deps import get_current_active_user, get_optional_current_user
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User, InvestigationWorkspace
 from backend.app.models.jarvis_schemas import (
     JarvisCommandRequest, JarvisResponse, ExecutionTrace, JarvisToolInfo, SessionContext,
@@ -33,7 +33,7 @@ router = APIRouter()
 def execute_jarvis_command(
     req: JarvisCommandRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisResponse:
     """
     Executes an autonomous agentic command through the JARVIS Master Orchestrator.
@@ -49,7 +49,7 @@ def execute_jarvis_command(
 @router.get("/trace/{trace_id}", response_model=ExecutionTrace)
 def get_execution_trace(
     trace_id: str,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> ExecutionTrace:
     """
     Retrieves the complete step-by-step execution trace for an audited JARVIS command.
@@ -65,7 +65,7 @@ def get_execution_trace(
 
 @router.get("/tools", response_model=List[JarvisToolInfo])
 def list_jarvis_tools(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[JarvisToolInfo]:
     """
     Returns the catalog of registered, typed, and permission-controlled tools.
@@ -76,7 +76,7 @@ def list_jarvis_tools(
 @router.get("/status")
 def get_jarvis_system_status(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns operational health, FIRMS ingestion telemetry, database stats, and safety configuration.
@@ -89,7 +89,7 @@ def get_jarvis_world_state(
     event_ref: Optional[str] = Query(None, description="Optional focused event code or UUID"),
     state_filter: Optional[str] = Query(None, description="Optional state filter"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns live sovereign India situation snapshot and complete 18-dimension JarvisWorldState
@@ -101,7 +101,7 @@ def get_jarvis_world_state(
 
 @router.get("/intelligence-registry")
 def get_jarvis_intelligence_registry(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns the canonical 21-domain AGNI-NETRA Intelligence Context Registry (A through U).
@@ -114,7 +114,7 @@ def get_jarvis_intelligence_registry(
 @router.get("/session/{session_id}", response_model=SessionContext)
 def get_session_context(
     session_id: str,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> SessionContext:
     """
     Retrieves the scoped session memory and recent command history for an active operator.
@@ -127,7 +127,7 @@ def investigate_event_shortcut(
     event_ref: str = Query(..., description="Event code or UUID to investigate"),
     session_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisResponse:
     """
     Direct structured investigation shortcut mapping to a full JARVIS investigation plan.
@@ -151,7 +151,7 @@ def list_investigations(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[InvestigationWorkspace]:
     """
     Lists intelligence investigations with RBAC enforcement.
@@ -184,7 +184,7 @@ def create_investigation_workspace(
     primary_objective: Optional[str] = Query(None, description="Optional investigation objective"),
     target_region: Optional[str] = Query(None, description="Optional target geographic state/region"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> InvestigationWorkspace:
     """
     Explicitly initializes and persists a new Investigation Workspace.
@@ -213,7 +213,7 @@ def create_investigation_workspace(
 def get_investigation_workspace(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> InvestigationWorkspace:
     """
     Retrieves full details of a specific investigation workspace.
@@ -234,7 +234,7 @@ def get_investigation_workspace(
 def get_investigation_evidence(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves structured epistemic evidence for an investigation workspace.
@@ -266,7 +266,7 @@ def get_investigation_evidence(
 def get_investigation_history(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves the ordered command and execution trace history for an investigation workspace.
@@ -292,7 +292,7 @@ def execute_investigation_scoped_command(
     investigation_id: str,
     req: JarvisCommandRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisResponse:
     """
     Executes a command scoped strictly to the specified active investigation workspace.
@@ -315,7 +315,7 @@ def execute_investigation_scoped_command(
 def refresh_investigation_evidence(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisResponse:
     """
     Forces full re-execution and freshness update for an active investigation workspace.
@@ -343,7 +343,7 @@ def refresh_investigation_evidence(
 def close_investigation_workspace(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Transitions workspace status to CLOSED while preserving audit trails and reporting any unresolved actions.
@@ -369,7 +369,7 @@ def close_investigation_workspace(
 def get_investigation_sources(
     investigation_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves sources used, geographic coverage profile, missing sources, and provenance records for a specific investigation.
@@ -403,7 +403,7 @@ def get_investigation_sources(
 def execute_intelligence_mission(
     req: JarvisMissionRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisMission:
     """
     Phase 22 Governed Intelligence Mission Orchestration Endpoint.
@@ -423,7 +423,7 @@ def execute_intelligence_mission(
 
 @router.get("/governed-tools")
 def list_governed_mission_tools(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Returns the Phase 22 catalog of registered, typed, governed intelligence tools.
@@ -435,7 +435,7 @@ def list_governed_mission_tools(
 @router.get("/mission/active")
 def get_active_mission(
     session_id: Optional[str] = Query(None),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Optional[Dict[str, Any]]:
     """
     Retrieves the most recent mission executed in the current session.
@@ -454,7 +454,7 @@ def get_situational_snapshot(
     time_window: str = Query("LAST_30_DAYS"),
     state: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> SituationalSnapshot:
     """
     Returns the canonical SituationalSnapshot across Sovereign India.
@@ -474,7 +474,7 @@ def get_situational_changes(
     state: Optional[str] = Query(None),
     entity_ref: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[SituationalChange]:
     """
     Evaluates what changed across sovereign Indian thermal clusters with deterministic significance.
@@ -487,7 +487,7 @@ def get_situational_attention_queue(
     limit: int = Query(20, ge=1, le=100),
     state: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[AttentionItem]:
     """
     Returns the ranked Analyst Attention Queue ordered by the governed priority score.
@@ -504,7 +504,7 @@ def get_situational_attention_queue(
 def generate_situational_brief(
     req: SituationalBriefRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Generates situational briefs (60-second, India national, regional, industrial, trend, executive, or analyst).
@@ -543,7 +543,7 @@ def generate_situational_brief(
 def get_situational_timeline(
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[TimelineEvent]:
     """
     Retrieves chronological timeline of events, escalations, assessment revisions, and verifications.
@@ -554,7 +554,7 @@ def get_situational_timeline(
 @router.post("/situational/investigate-top", response_model=JarvisMission)
 def investigate_top_attention_item(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> JarvisMission:
     """
     Transition endpoint: Identifies highest-priority item in the attention queue and launches Phase 22 mission mode.
@@ -606,7 +606,7 @@ class AutonomousTriggerRequest(BaseModel):
 def get_jarvis_world_state(
     state: Optional[str] = Query(None, description="Optional state filter"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns live operational situation summary, active incidents, changed events,
@@ -619,7 +619,7 @@ def get_jarvis_world_state(
 def trigger_autonomous_pipeline(
     req: AutonomousTriggerRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Triggers Path A autonomous intelligence pipeline across observations.
@@ -677,7 +677,7 @@ def trigger_autonomous_pipeline(
 @router.get("/autonomous/lifecycle/{event_code}")
 def get_event_lifecycle_history(
     event_code: str,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves the chronological, audited 12-state lifecycle transition history for an event.
@@ -694,7 +694,7 @@ def get_event_lifecycle_history(
 def process_voice_interaction(
     req: VoiceInteractRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Unified voice and conversational console endpoint.
@@ -714,7 +714,7 @@ def process_voice_interaction(
 
 @router.get("/voice/proactive")
 def get_proactive_voice_notifications(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves queued proactive spoken notifications that exceed the significance threshold.
@@ -730,7 +730,7 @@ def get_proactive_voice_notifications(
 @router.post("/voice/settings")
 def update_voice_settings(
     req: VoiceSettingsRequest,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Updates voice preferences (mute, proactive threshold, auto-speak).
@@ -740,14 +740,14 @@ def update_voice_settings(
 
 @router.get("/voice/settings")
 def get_voice_settings(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     return jarvis_voice_service.get_settings()
 
 
 @router.get("/mission/orchestrated")
 def get_orchestrated_mission(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Optional[Dict[str, Any]]:
     """
     Returns the latest governed multi-capability investigation executed by the JARVIS Agentic Orchestrator.
@@ -757,7 +757,7 @@ def get_orchestrated_mission(
 
 @router.get("/observer/status")
 def get_jarvis_observer_status(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns the real-time operational status of the JARVIS Intelligence Observer,
@@ -769,7 +769,7 @@ def get_jarvis_observer_status(
 @router.get("/missions")
 def get_jarvis_missions(
     limit: int = Query(20, ge=1, le=100),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns recent governed investigations and missions executed by JARVIS Observer,

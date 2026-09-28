@@ -28,7 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_optional_current_user
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User
 from backend.app.services.intelligence.india_intelligence_service import india_intelligence_service
 
@@ -80,7 +80,7 @@ def _sanitize_for_public(data: Any) -> Any:
 @router.get("/audit")
 def get_india_audit(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns 11-dimension operational audit of India datasets.
@@ -96,7 +96,7 @@ def get_india_hotspots(
     persistence_category: Optional[str] = Query(None, description="Filter by persistence category"),
     limit: int = Query(50, ge=1, le=200, description="Maximum records to return"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Retrieves active Indian thermal hotspot intelligence with explicit observed vs derived separation.
@@ -122,7 +122,7 @@ def get_persistent_hotspots(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Ranks persistent thermal hotspots across 6 deterministic categories.
@@ -146,7 +146,7 @@ def get_industrial_correlations(
     radius_km: float = Query(10.0, ge=1.0, le=25.0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Correlates active thermal events with Indian industrial infrastructure using non-causal spatial language.
@@ -168,7 +168,7 @@ def get_power_plant_correlations(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     limit: int = Query(25, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Returns thermal anomalies spatially associated with CEA power generating complexes.
@@ -186,7 +186,7 @@ def get_mining_correlations(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     limit: int = Query(25, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Returns thermal activity associated with IBM mining concessions and mineral blocks.
@@ -202,7 +202,7 @@ def get_mining_correlations(
 @router.get("/states")
 def get_state_intelligence(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Aggregates operational indicators across Indian States and Union Territories.
@@ -215,7 +215,7 @@ def get_district_intelligence(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Aggregates operational indicators by Indian District.
@@ -227,7 +227,7 @@ def get_district_intelligence(
 def get_trend_intelligence(
     time_window: str = Query("30d", pattern="^(24h|7d|30d|90d|1yr)$"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns deterministic temporal trend analysis with observed vs derived separation.
@@ -239,7 +239,7 @@ def get_trend_intelligence(
 def get_priority_explanation(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Decomposes the composite priority score into governed risk, confidence, tier, and recency terms.
@@ -254,7 +254,7 @@ def get_priority_explanation(
 def get_why_it_matters(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Produces structured 7-factor analyst briefing based on actual evidence.
@@ -269,7 +269,7 @@ def get_why_it_matters(
 def get_competing_hypotheses(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Evaluates competing operational hypotheses with explicit metric separation.
@@ -284,7 +284,7 @@ def get_competing_hypotheses(
 def get_next_best_evidence(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Recommends targeted information acquisitions; unconfigured feeds declared NOT_CONFIGURED.
@@ -296,7 +296,7 @@ def get_next_best_evidence(
 def get_incident_intelligence(
     limit: int = Query(15, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Synthesizes multi-event incidents across Indian priority corridors.
@@ -311,7 +311,7 @@ def get_incident_intelligence(
 @router.get("/report")
 def get_national_report(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Compiles national operational thermal intelligence briefing.

@@ -27,7 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_optional_current_user
+from backend.app.api.deps import require_analyst, get_current_active_user
 from backend.app.models.domain import User
 from backend.app.models.canonical import (
     EvidenceDecisionRequest,
@@ -62,7 +62,7 @@ def get_triage_queue(
     facility_type: Optional[str] = Query(None, description="Filter by industrial facility type"),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Retrieves the prioritized operational triage queue categorized into prioritized lists.
@@ -113,7 +113,7 @@ def get_triage_queue(
 def get_event_dossier(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Assembles standardized 7-dimension operational dossier for an event.
@@ -131,7 +131,7 @@ def get_event_dossier(
 def get_triage_explanation(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Provides mathematical breakdown of the governed priority formula.
@@ -149,7 +149,7 @@ def get_triage_explanation(
 def get_workflow_state(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Retrieves current 8-step guided investigation workflow state.
@@ -168,7 +168,7 @@ def transition_workflow_step(
     case_id: str,
     payload: Dict[str, Any],
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Transitions to next step in the 8-step sequence with audit logging.
@@ -204,7 +204,7 @@ def transition_workflow_step(
 def get_evidence_review_workspace(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Retrieves evidence review items with review statuses and immutability guarantee.
@@ -223,7 +223,7 @@ def record_evidence_decision(
     case_id: str,
     req: EvidenceDecisionRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Records an analyst decision on an evidence item without altering raw observations.
@@ -254,7 +254,7 @@ def record_evidence_decision(
 def get_competing_hypotheses(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Retrieves competing hypotheses evaluation matrix.
@@ -273,7 +273,7 @@ def assess_hypothesis(
     case_id: str,
     req: HypothesisAssessmentRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Records analyst assessment on a competing hypothesis with mandatory rationale.
@@ -307,7 +307,7 @@ def record_analyst_confidence(
     case_id: str,
     req: AnalystConfidenceSubmission,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Records analyst confidence score and justification strictly decoupled from model confidence.
@@ -338,7 +338,7 @@ def submit_human_verification(
     event_id: Optional[str] = Query(None, description="Event ID if not verifying by case"),
     case_id: Optional[str] = Query(None, description="Case ID"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Submits human verification decision with immutable cryptographic audit record.
@@ -376,7 +376,7 @@ def submit_human_verification(
 def get_case_lifecycle(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Returns valid state transitions and audit integrity for a case.
@@ -397,7 +397,7 @@ def get_case_lifecycle(
 @router.get("/metrics/decision-effectiveness", response_model=DecisionEffectivenessMetrics)
 def get_decision_effectiveness_metrics(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Computes real empirical decision effectiveness metrics from database verifications.
@@ -412,7 +412,7 @@ def get_decision_effectiveness_metrics(
 @router.get("/metrics/triage-effectiveness", response_model=TriageEffectivenessMetrics)
 def get_triage_effectiveness_metrics(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Computes real operational triage performance metrics and queue latency.
@@ -427,7 +427,7 @@ def get_triage_effectiveness_metrics(
 def submit_analyst_feedback(
     req: AnalystFeedbackSubmission,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Submits structured operational analyst feedback.
@@ -446,7 +446,7 @@ def submit_analyst_feedback(
 def get_analyst_feedback(
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> List[Dict[str, Any]]:
     """
     Retrieves operational feedback history.
@@ -461,7 +461,7 @@ def get_analyst_feedback(
 def generate_operational_report(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(require_analyst),
 ) -> Dict[str, Any]:
     """
     Generates standardized 17-section operational analyst report.

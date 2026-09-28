@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.api.deps import get_optional_current_user
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import User, InvestigationWorkspace
 from backend.app.services.intelligence.provider_registry import provider_registry
 from backend.app.services.intelligence.profiles import IndiaIntelligenceProfile, GlobalIntelligenceProfile, GlobalContextProfile
@@ -29,7 +29,7 @@ router = APIRouter()
 @router.get("/providers", response_model=List[Dict[str, Any]])
 def list_intelligence_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Lists registered provider adapters and their capabilities.
@@ -44,7 +44,7 @@ def list_intelligence_providers(
 def get_provider_details(
     provider_name: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves detailed metadata for a specific intelligence provider adapter.
@@ -68,7 +68,7 @@ def get_provider_details(
 
 @router.get("/coverage")
 def get_geographic_coverage_summary(
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns factual geographic intelligence coverage across profiles.
@@ -83,7 +83,7 @@ def get_geographic_coverage_summary(
 @router.get("/health")
 def get_providers_health(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Lightweight operational status check across all registered provider adapters.
@@ -94,7 +94,7 @@ def get_providers_health(
 @router.get("/thermal/providers")
 def get_thermal_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Lists registered thermal observation provider adapters and their sensor characteristics.
@@ -111,7 +111,7 @@ def get_thermal_providers(
 @router.get("/thermal/coverage")
 def get_thermal_coverage(
     region: Optional[str] = None,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns multi-constellation thermal observation coverage breakdown.
@@ -122,7 +122,7 @@ def get_thermal_coverage(
 @router.get("/thermal/health")
 def get_thermal_health(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns operational health status across thermal observation provider adapters.
@@ -148,7 +148,7 @@ def get_thermal_health(
 def get_event_thermal_sources(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves contributing thermal observation sources and agreement metrics for a specific event.
@@ -191,7 +191,7 @@ def get_event_thermal_sources(
 @router.get("/context/providers")
 def get_context_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Lists registered contextual intelligence providers across all 7 domains:
@@ -209,7 +209,7 @@ def get_context_providers(
 @router.get("/context/coverage")
 def get_context_coverage(
     region: Optional[str] = "GLOBAL",
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns multi-domain contextual intelligence coverage breakdown across the 7 domains.
@@ -221,7 +221,7 @@ def get_context_coverage(
 @router.get("/context/health")
 def get_context_health(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns operational health status across registered contextual intelligence providers.
@@ -249,7 +249,7 @@ def get_event_context(
     event_id: str,
     buffer_meters: Optional[int] = 5000,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Discovers and correlates multi-domain contextual intelligence around a specific thermal event.
@@ -287,7 +287,7 @@ def get_event_context(
 def get_event_context_provenance(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves full contextual provenance records and uncertainty analysis for a specific event.
@@ -331,7 +331,7 @@ def get_event_context_provenance(
 @router.get("/temporal/providers")
 def get_temporal_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Lists registered temporal observation and baseline provider adapters.
@@ -342,7 +342,7 @@ def get_temporal_providers(
 @router.get("/temporal/coverage")
 def get_temporal_coverage(
     region: Optional[str] = "GLOBAL",
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns multi-constellation temporal observation coverage breakdown across providers.
@@ -353,7 +353,7 @@ def get_temporal_coverage(
 @router.get("/temporal/health")
 def get_temporal_health(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns operational health status across registered temporal intelligence provider adapters.
@@ -381,7 +381,7 @@ def get_event_temporal_intelligence(
     event_id: str,
     radius_km: Optional[float] = 3.0,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Executes full longitudinal temporal intelligence analysis for a specific thermal event.
@@ -416,7 +416,7 @@ def get_event_temporal_history(
     event_id: str,
     radius_km: Optional[float] = 3.0,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves historical baseline radiometric telemetry and multi-scale observation windows for an event.
@@ -451,7 +451,7 @@ def get_event_temporal_patterns(
     event_id: str,
     radius_km: Optional[float] = 3.0,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves behavioral temporal patterns: persistence tiers, recurrence frequency, seasonality, and diurnal cycles.
@@ -485,7 +485,7 @@ def get_event_temporal_patterns(
 def get_event_temporal_provenance(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves longitudinal temporal provenance records, uncertainty factors, and uncertainty reduction guidance.
@@ -526,7 +526,7 @@ def get_event_temporal_provenance(
 @router.get("/environment/providers")
 def get_environmental_providers(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Lists registered environmental, meteorological, and atmospheric providers.
@@ -538,7 +538,7 @@ def get_environmental_providers(
 @router.get("/environment/coverage")
 def get_environmental_coverage(
     region: str = "GLOBAL",
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves environmental observation coverage and unconfigured provider disclosures.
@@ -549,7 +549,7 @@ def get_environmental_coverage(
 @router.get("/environment/health")
 def get_environmental_health(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Returns operational health across all environmental and meteorological provider adapters.
@@ -571,7 +571,7 @@ def get_environmental_health(
 def get_event_environment(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves surface weather, atmospheric conditions, wind transport, precipitation persistence, and cloud observability for an event.
@@ -596,7 +596,7 @@ def get_event_environment(
 def get_event_environmental_provenance(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves provenance records, limiting factors, and uncertainty reduction guidance for environmental data.
@@ -631,7 +631,7 @@ def get_event_environmental_provenance(
 def get_event_cross_modal(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Evaluates multi-modal corroboration comparing thermal telemetry against optical, SAR, land cover, and weather modalities.
@@ -656,7 +656,7 @@ def get_event_cross_modal(
 def get_event_cross_modal_provenance(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves cross-modal provenance, highest-value next observation recommendations, and data gaps.
@@ -697,7 +697,7 @@ def get_event_cross_modal_provenance(
 @router.get("/environmental/providers/status")
 def get_environmental_and_cross_modal_status(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Returns coverage and status summaries across environmental and cross-modal providers."""
     env_cov = provider_registry.get_environmental_coverage_summary()
@@ -715,7 +715,7 @@ def get_environmental_and_cross_modal_status(
 def get_environmental_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves surface weather, atmospheric conditions, and wind transport for an event."""
     env_result = environmental_discovery_engine.analyze_event_environment(
@@ -732,7 +732,7 @@ def get_environmental_for_event(
 def get_environmental_weather_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves meteorological surface observations for an event."""
     env_result = environmental_discovery_engine.analyze_event_environment(
@@ -749,7 +749,7 @@ def get_environmental_weather_for_event(
 def get_environmental_plume_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves wind vector and plume dispersion transport direction for an event."""
     env_result = environmental_discovery_engine.analyze_event_environment(
@@ -776,7 +776,7 @@ def get_environmental_plume_for_event(
 def get_cross_modal_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves multi-modal corroboration across optical, SAR, land cover, and weather."""
     xm_result = cross_modal_verification_engine.verify_event_cross_modal(
@@ -793,7 +793,7 @@ def get_cross_modal_for_event(
 def get_cross_modal_optical_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves optical observation (Sentinel-2) details and observability status."""
     xm_result = cross_modal_verification_engine.verify_event_cross_modal(
@@ -810,7 +810,7 @@ def get_cross_modal_optical_for_event(
 def get_cross_modal_sar_for_event(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves SAR radar backscatter observation (Sentinel-1) details and coherence."""
     xm_result = cross_modal_verification_engine.verify_event_cross_modal(
@@ -831,7 +831,7 @@ def get_cross_modal_sar_for_event(
 def get_event_evidence_graph_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves full canonical evidence graph for an event with support profiles and epistemic nature breakdown."""
     user_role = current_user.role if current_user else "PUBLIC"
@@ -850,7 +850,7 @@ def get_event_evidence_graph_endpoint(
 def get_event_evidence_nodes_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves all evidence nodes for an event with nature and uncertainty."""
     graph_obj = evidence_graph_engine.build_event_evidence_graph(db=db, event_ref=event_id)
@@ -866,7 +866,7 @@ def get_event_evidence_nodes_endpoint(
 def get_event_supporting_evidence_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves supporting evidence items directly substantiating the operational assessment."""
     supp = evidence_graph_engine.get_supporting_evidence(db=db, event_id=event_id)
@@ -881,7 +881,7 @@ def get_event_supporting_evidence_endpoint(
 def get_event_conflicting_evidence_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves contradicting/limiting evidence items and conflicting hypotheses."""
     conf = evidence_graph_engine.get_conflicting_evidence(db=db, event_id=event_id)
@@ -896,7 +896,7 @@ def get_event_conflicting_evidence_endpoint(
 def get_event_hypotheses_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves standardized candidate hypotheses (A through G) with support profiles."""
     hyps = evidence_graph_engine.get_hypotheses(db=db, event_id=event_id)
@@ -911,7 +911,7 @@ def get_event_hypotheses_endpoint(
 def get_event_assessment_lineage_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves assessment lineage tracing conclusion from root observations to final synthesis."""
     lineage = evidence_graph_engine.get_assessment_lineage(db=db, event_id=event_id)
@@ -925,7 +925,7 @@ def get_event_assessment_lineage_endpoint(
 def get_event_data_gaps_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves identified missing evidence, unconfigured feeds, and recommendations to reduce uncertainty."""
     gaps = evidence_graph_engine.get_data_gaps(db=db, event_id=event_id)
@@ -939,7 +939,7 @@ def get_event_data_gaps_endpoint(
 def get_event_provenance_chain_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves complete provenance chain for all evidence nodes in the graph."""
     prov = evidence_graph_engine.get_provenance_chain(db=db, event_id=event_id)
@@ -957,7 +957,7 @@ def get_event_provenance_chain_endpoint(
 def get_event_related_events_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves related event IDs discovered via multi-event correlation."""
     res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
@@ -974,7 +974,7 @@ def get_event_related_events_endpoint(
 def get_event_relationships_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves pairwise typed relationships between primary event and related events."""
     res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
@@ -990,7 +990,7 @@ def get_event_relationships_endpoint(
 def get_event_cluster_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves spatial-temporal DBSCAN clusters formed around event."""
     res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
@@ -1007,7 +1007,7 @@ def get_event_cluster_endpoint(
 def get_event_incident_endpoint(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves complete multi-event incident correlation result for event."""
     res = multi_event_correlation_engine.correlate_incident(db, event_id=event_id)
@@ -1022,7 +1022,7 @@ def get_event_incident_endpoint(
 def get_incident_by_id_endpoint(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves incident assessment and impact profile by incident ID."""
     primary_event_id = incident_id.replace("INC-", "")
@@ -1041,7 +1041,7 @@ def get_incident_by_id_endpoint(
 def get_incident_events_endpoint(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves member events associated with the correlated incident."""
     primary_event_id = incident_id.replace("INC-", "")
@@ -1062,7 +1062,7 @@ def get_incident_events_endpoint(
 def get_incident_evidence_endpoint(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves evidence nodes, uncertainty, and data gaps for the incident."""
     primary_event_id = incident_id.replace("INC-", "")
@@ -1081,7 +1081,7 @@ def get_incident_evidence_endpoint(
 def get_incident_hypotheses_endpoint(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves the 9 standardized incident hypotheses (H1-H9) for the incident."""
     primary_event_id = incident_id.replace("INC-", "")
@@ -1099,7 +1099,7 @@ def get_incident_hypotheses_endpoint(
 def get_incident_provenance_endpoint(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """Retrieves provenance and audit trail for the incident correlation."""
     primary_event_id = incident_id.replace("INC-", "")
@@ -1135,7 +1135,7 @@ def get_event_intelligence_assessment(
     event_id: str,
     mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Synthesizes and retrieves the comprehensive UnifiedIntelligenceAssessment for an event
@@ -1159,7 +1159,7 @@ def get_event_intelligence_assessment(
 def get_event_assessment_history(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves chronological assessment evolution history and delta changes for an event workspace.
@@ -1184,7 +1184,7 @@ def get_event_decision_support(
     event_id: str,
     mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves tailored decision-support package for the requested stakeholder presentation mode.
@@ -1208,7 +1208,7 @@ def get_event_decision_support(
 def get_event_next_best_evidence(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves prioritized Next-Best-Evidence recommendations to reduce epistemic uncertainty.
@@ -1229,7 +1229,7 @@ def get_event_next_best_evidence(
 def get_event_assessment_provenance(
     event_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves auditable provenance and source integrity trail for the synthesized intelligence assessment.
@@ -1254,7 +1254,7 @@ def get_incident_intelligence_assessment(
     incident_id: str,
     mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Synthesizes and retrieves multi-event incident-level intelligence assessment.
@@ -1278,7 +1278,7 @@ def get_incident_decision_support(
     incident_id: str,
     mode: str = Query("ANALYST", description="Decision support mode: ANALYST, AGENCY, EXECUTIVE, PUBLIC_SAFE"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves incident-level decision-support package for the requested stakeholder presentation mode.
@@ -1302,7 +1302,7 @@ def get_incident_decision_support(
 def get_incident_next_best_evidence(
     incident_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Retrieves incident-level Next-Best-Evidence recommendations.

@@ -1,5 +1,5 @@
 from typing import Generator, Optional, List
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
@@ -10,16 +10,33 @@ from backend.app.models.domain import User
 from backend.app.models.schemas import TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/login"
-)
-optional_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login",
     auto_error=False
 )
+optional_oauth2 = reusable_oauth2
+
+
+def extract_token_from_request(
+    request: Request,
+    header_token: Optional[str] = Depends(optional_oauth2)
+) -> Optional[str]:
+    """
+    Extracts authentication token from Authorization Bearer header or HTTP-only session cookie.
+    Provides seamless incremental migration to cookie-based authentication while maintaining
+    full backward compatibility for Bearer tokens.
+    """
+    if header_token:
+        return header_token
+    # Check HTTP-only cookie fallback
+    cookie_token = request.cookies.get("access_token") or request.cookies.get("agni_token")
+    if cookie_token:
+        return cookie_token
+    return None
 
 
 def get_optional_current_user(
-    db: Session = Depends(get_db), token: Optional[str] = Depends(optional_oauth2)
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(extract_token_from_request)
 ) -> Optional[User]:
     if not token:
         return None
@@ -34,13 +51,17 @@ def get_optional_current_user(
 
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(extract_token_from_request)
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        raise credentials_exception
+
     try:
         payload = decode_access_token(token)
         token_data = TokenPayload(**payload)

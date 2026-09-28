@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from backend.app.core.database import get_db
-from backend.app.models.domain import ThermalHistory, ThermalEvent, IndustrialFacility
+from backend.app.api.deps import get_current_active_user
+from backend.app.models.domain import ThermalHistory, ThermalEvent, IndustrialFacility, User
 from backend.app.models.schemas import ThermalHistoryOut
 
 router = APIRouter()
@@ -21,7 +22,8 @@ def query_historical_observations(
     min_frp: float = Query(0.0, ge=0.0),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=500),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Queries historical Indian satellite thermal observations (NOAA-21, NOAA-20, MODIS, Landsat)
@@ -96,7 +98,8 @@ def query_historical_observations(
 @router.get("/timeline")
 def get_historical_timeline(
     state: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Computes monthly time-series thermal activity distributions across Indian industrial regions.
@@ -132,7 +135,8 @@ def get_thermal_recurrence_map(
     state: Optional[str] = Query(None),
     min_frequency_days: int = Query(1, ge=1),
     limit: int = Query(250, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Returns spatial recurrence density clusters identifying multi-temporal persistent thermal hubs.
@@ -200,7 +204,8 @@ def query_historical_incidents(
     min_frp: Optional[float] = Query(None, ge=0.0, description="Minimum peak FRP in MW"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Queries the authoritative Historical Incident Registry with verified ground truth,
@@ -224,7 +229,8 @@ def query_historical_incidents(
 @router.get("/incidents/{incident_id}")
 def get_historical_incident_detail(
     incident_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves a single historical incident record by its UUID or human-readable incident code (INC-...).
@@ -241,7 +247,8 @@ def get_historical_incident_detail(
 @router.get("/compare/{event_id}")
 def compare_event_with_historical_baseline(
     event_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Executes a point-in-time safe (t < T_obs) historical baseline comparison for an active thermal event.

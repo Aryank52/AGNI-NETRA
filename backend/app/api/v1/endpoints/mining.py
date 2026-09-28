@@ -9,9 +9,10 @@ from sqlalchemy import text, func
 from typing import List, Optional, Dict, Any
 
 from backend.app.core.database import get_db
+from backend.app.api.deps import get_current_active_user
 from backend.app.models.domain import (
     FacilityMiningEvidence, MiningThermalAssociation, CandidateFacility,
-    IndustrialFacility, IbmAuctionedBlock
+    IndustrialFacility, IbmAuctionedBlock, User
 )
 from backend.app.models.schemas import (
     FacilityMiningEvidenceOut, MiningThermalAssociationOut, MiningContextSummaryOut,
@@ -31,7 +32,8 @@ def get_mining_facilities(
     persistence_category: Optional[str] = Query(None, description="Filter by persistence: HIGH_PERSISTENCE, MODERATE_PERSISTENCE, etc."),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve fused mining facilities enriched with IBM lease statistics and NASA FIRMS thermal metrics.
@@ -57,7 +59,8 @@ def get_mining_facilities(
 @router.get("/facilities/{facility_id}", response_model=FacilityMiningEvidenceOut)
 def get_mining_facility_detail(
     facility_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve single mining facility evidence by facility_id.
@@ -75,7 +78,8 @@ def get_mining_facility_detail(
 def get_mining_context_summary(
     state: Optional[str] = Query(None, description="Filter by Indian State"),
     potential_tier: Optional[str] = Query(None, description="Filter by Potential Tier: HIGH, MEDIUM, LOW"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve aggregate mining lease context across states and districts with active OSM facility counts.
@@ -127,7 +131,8 @@ def get_mining_thermal_associations(
     min_detections: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve detailed multi-distance concentric FIRMS thermal association telemetry.
@@ -147,7 +152,8 @@ def get_mining_candidate_sources(
     state: Optional[str] = Query(None, description="Filter by state"),
     min_detections: int = Query(3, ge=1),
     limit: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve candidate mining thermal sources detected from NASA FIRMS clustering near mining geometry.
@@ -188,7 +194,8 @@ def get_auctioned_mineral_blocks(
     has_geometry: Optional[bool] = Query(None, description="Filter only blocks with inherited geometry"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieve IBM Table 15 Successful Mineral Block Auctions (2024-25).
