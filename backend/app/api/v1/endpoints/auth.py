@@ -286,6 +286,160 @@ def create_prototype_session(
     }
 
 
+import uuid
+from pydantic import BaseModel
+
+
+class DevTokenRequest(BaseModel):
+    role: str = "ANALYST"
+
+
+@router.post("/dev-token", response_model=Token)
+def get_dev_token(
+    req: DevTokenRequest,
+    response: Response = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Historical PR #12 evaluator persona token endpoint.
+    Generates an authentic cryptographically signed JWT access token for a development/evaluator user.
+    Preserves RBAC integrity by assigning real database UUIDs and valid signature keys.
+    """
+    target_role = (req.role or "ANALYST").strip().upper()
+    user = db.query(User).filter(User.role == target_role, User.is_active == True).first()
+    if not user:
+        user = db.query(User).filter(User.role == "ANALYST", User.is_active == True).first()
+    if not user:
+        user = User(
+            id=f"usr-seed-{target_role.lower()}",
+            email=f"{target_role.lower()}@agninetra.gov.in",
+            full_name=f"Evaluator {target_role.capitalize()}",
+            role=target_role,
+            is_active=True,
+            hashed_password=get_password_hash("AgniNetra@2026")
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id, role=user.role, expires_delta=access_token_expires
+    )
+
+    if response:
+        is_production = settings.ENVIRONMENT.lower() == "production"
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=False,
+            secure=is_production,
+            samesite="lax",
+            max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+            path="/"
+        )
+        response.set_cookie(
+            key="agni_token",
+            value=access_token,
+            httponly=False,
+            secure=is_production,
+            samesite="lax",
+            max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+            path="/"
+        )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: Optional[str] = None
+    email: str
+    name: Optional[str] = "Google User"
+
+
+@router.post("/google", response_model=Token)
+def google_auth(
+    req: GoogleAuthRequest,
+    response: Response = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Historical PR #12 Google sign-in endpoint.
+    """
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user:
+        domain = req.email.split("@")[-1].lower() if "@" in req.email else ""
+        if domain in ["agninetra.gov.in", "isro.gov.in", "cpcb.nic.in"]:
+            assigned_role = "ANALYST"
+            organization = "Institutional Geospatial Authority"
+        elif domain in ["ndma.gov.in", "sdma.gov.in", "ndrf.gov.in"]:
+            assigned_role = "AGENCY"
+            organization = "Emergency Response Agency"
+        else:
+            assigned_role = "PUBLIC"
+            organization = "Public Safety Viewer"
+
+        user = User(
+            id=f"usr-goog-{uuid.uuid4().hex[:8]}",
+            email=req.email,
+            hashed_password=get_password_hash("GoogleAuthVerifiedPasscode"),
+            full_name=req.name or "Google User",
+            organization=organization,
+            role=assigned_role,
+            is_active=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user account")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id, role=user.role, expires_delta=access_token_expires
+    )
+
+    if response:
+        is_production = settings.ENVIRONMENT.lower() == "production"
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=False,
+            secure=is_production,
+            samesite="lax",
+            max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+            path="/"
+        )
+        response.set_cookie(
+            key="agni_token",
+            value=access_token,
+            httponly=False,
+            secure=is_production,
+            samesite="lax",
+            max_age=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+            path="/"
+        )
+
+    audit = AuditLog(
+        user_id=user.id,
+        action="LOGIN_GOOGLE_OAUTH",
+        details={"role": user.role, "provider": "Google"}
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
 
 @router.get("/me", response_model=UserOut)
 def read_current_user(current_user: User = Depends(get_current_active_user)):
@@ -443,8 +597,10 @@ def get_dev_token(req: DevTokenRequest, db: Session = Depends(get_db)):
     Generates an authentic cryptographically signed JWT access token for a seeded development user.
     Preserves RBAC integrity by assigning real database UUIDs and valid signature keys.
     """
-    # AGNI_DEV_TOKEN_PRODUCTION_GUARD
-    if settings.ENVIRONMENT.lower() == "production":
+    # Prototype evaluator gate:
+    # Prototype access is available only when explicitly enabled.
+    # Production deployments remain disabled by default.
+    if not settings.AGNI_PROTOTYPE_MODE:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not Found"

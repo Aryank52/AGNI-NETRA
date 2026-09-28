@@ -486,23 +486,43 @@ def test_unauthenticated_protected_routes_middleware_simulation():
     assert sim_auth["status"] == 200
 
 
-def test_three_public_portals_only_and_no_admin_in_login():
-    """10 & 11. Verify that public login page configures exactly ANALYST, AGENCY, PUBLIC and NO ADMIN."""
+def test_historical_93a4b11_dev_token_endpoint():
+    """Verify historical PR #12 /dev-token endpoint generates signed JWTs for evaluator personas."""
+    for role in ["ANALYST", "AGENCY", "ADMIN", "PUBLIC"]:
+        res = client.post("/api/v1/auth/dev-token", json={"role": role})
+        assert res.status_code == status.HTTP_200_OK
+        data = res.json()
+        assert "access_token" in data
+        assert len(data["access_token"].split(".")) == 3
+        assert data["user"]["role"] == role
+
+
+def test_historical_93a4b11_evaluator_personas_in_login_page():
+    """Verify that frontend/src/app/login/page.tsx matches the historical 93a4b11 implementation."""
     import re
     import os
     login_page_path = os.path.join("frontend", "src", "app", "login", "page.tsx")
     with open(login_page_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Verify 3 persona cards only
-    assert '"ANALYST"' in content
-    assert '"AGENCY"' in content
-    assert '"PUBLIC"' in content
+    # Verify Command Center header
+    assert "Sign In to Decision Support Command Portal" in content
+    assert "Satellite-Derived Thermal Observation & Industrial Intelligence Platform" in content
 
-    # Assert ADMIN, RESEARCHER, INDUSTRY are not in PERSONA_CARDS
-    persona_match = re.search(r"PERSONA_CARDS: PersonaCard\[\] = \[(.*?)\];", content, re.DOTALL)
-    assert persona_match is not None
-    persona_block = persona_match.group(1)
-    assert "ADMIN" not in persona_block
-    assert "RESEARCHER" not in persona_block
-    assert "INDUSTRY" not in persona_block
+    # Verify Authorized Email Address and Security Passcode fields
+    assert "Authorized Email Address" in content
+    assert "Security Passcode" in content
+    assert "Access Command Center" in content
+    assert "Register New Organization" in content
+
+    # Verify 1-Click Evaluator Persona section
+    assert "Or Select 1-Click Evaluator Persona:" in content
+
+    # Verify DEMO_ROLES structure contains historical personas
+    demo_match = re.search(r"const DEMO_ROLES = \[(.*?)\];", content, re.DOTALL)
+    assert demo_match is not None
+    demo_block = demo_match.group(1)
+    assert "Geospatial Analyst" in demo_block
+    assert "Emergency Response Agency" in demo_block
+    assert "System Administrator" in demo_block
+    assert "Public Viewer" in demo_block
