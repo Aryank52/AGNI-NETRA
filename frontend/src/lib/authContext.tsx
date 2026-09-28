@@ -73,7 +73,7 @@ const DEMO_PROFILES: Record<UserRole, User> = {
   },
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE_URL } from "@/lib/api";
 
 // Dev auth is strictly opt-in; never active by default
 const isDevAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";

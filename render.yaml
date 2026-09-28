@@ -27,6 +27,8 @@ services:
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "1440"
+      - key: AGNI_PROTOTYPE_MODE
+        value: "true"
       - key: FIRMS_MAP_KEY
         sync: false
       - key: CORS_ORIGINS
